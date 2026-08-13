@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
+  echo "                                  linux-musl, linux-bionic, linux-ohos, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --targetrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -309,6 +309,10 @@ while [[ $# -gt 0 ]]; do
         linux-musl)
           os="linux"
           __PortableTargetOS=linux-musl
+          ;;
+        linux-ohos)
+          os="linux"
+          __PortableTargetOS=linux-ohos
           ;;
         haiku)
           os="haiku" ;;
