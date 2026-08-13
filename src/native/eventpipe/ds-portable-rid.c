@@ -12,6 +12,8 @@
 
 #if defined(TARGET_ANDROID)
 #define PORTABLE_RID_OS "linux-bionic"
+#elif defined(TARGET_OHOS)
+#define PORTABLE_RID_OS "linux-ohos"
 #elif defined(TARGET_LINUX_MUSL)
 #define PORTABLE_RID_OS "linux-musl"
 #elif defined(TARGET_LINUX)
