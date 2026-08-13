@@ -37,7 +37,7 @@ endif(NOT DEFINED FEATURE_EVENT_TRACE)
 # Currently Linux-only (excluding Android). Used as the sole guard for all LTTng-related code;
 # platforms without this flag (Windows, macOS, Browser, WASI) use EventPipe-only eventing.
 if(NOT DEFINED FEATURE_EVENTSOURCE_XPLAT)
-  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
+  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OHOS AND NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
     # To actually disable FEATURE_EVENTSOURCE_XPLAT, also change clr.featuredefines.props
     set(FEATURE_EVENTSOURCE_XPLAT 1)
   endif()

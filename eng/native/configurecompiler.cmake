@@ -651,9 +651,15 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   if(CLR_CMAKE_HOST_OHOS)
     # The OHOS NDK toolchain injects --gcc-toolchain (via CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN)
     # which clang reports as unused; silence it (in CMAKE_C_FLAGS so try_compile checks
-    # inherit it) so -Werror doesn't fail the build.
+    # inherit it) so -Werror doesn't fail the build. Applies to assembly too.
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Qunused-arguments")
+    # The arm64 asm helpers access t_ThreadStatics/t_runtime_thread_locals via TLS
+    # descriptors; the C++ definitions must use native (non-emulated) TLS with the
+    # global-dynamic model to match.
+    add_compile_options(-fno-emulated-tls)
+    add_compile_options(-ftls-model=global-dynamic)
   endif()
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
