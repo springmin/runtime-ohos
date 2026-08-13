@@ -2159,6 +2159,29 @@
         "linux-x86"
       ]
     },
+    "linux-ohos": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-ohos-arm": {
+      "#import": [
+        "linux-ohos",
+        "linux-arm"
+      ]
+    },
+    "linux-ohos-arm64": {
+      "#import": [
+        "linux-ohos",
+        "linux-arm64"
+      ]
+    },
+    "linux-ohos-x64": {
+      "#import": [
+        "linux-ohos",
+        "linux-x64"
+      ]
+    },
     "linux-ppc64le": {
       "#import": [
         "linux",
