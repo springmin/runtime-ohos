@@ -142,6 +142,10 @@ build_native()
 
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ohosToolchainFile $cmakeArgs"
         cmakeArgs="-DOHOS_NDK_HOME=$OHOS_NDK_HOME $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in ohos.toolchain.cmake already
+        __Compiler="default"
 
         if [[ "$hostArch" == arm64 ]]; then
             cmakeArgs="-DOHOS_ARCH=arm64-v8a $cmakeArgs"
