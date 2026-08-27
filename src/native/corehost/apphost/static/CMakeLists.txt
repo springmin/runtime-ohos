@@ -292,14 +292,18 @@ target_link_libraries(
     singlefilehost
     PRIVATE
     ${NATIVE_LIBS}
-
-    runtimeinfo
 )
 
-# CMake 4.x's WHOLE_ARCHIVE generator expression is not supported for the CXX
-# link language with older linkers; use the traditional --whole-archive flag
-# which works with both lld and GNU ld.
-target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
+# Force the whole runtimeinfo archive into the link. CMake's WHOLE_ARCHIVE
+# generator expression is the cross-platform way (Windows -> /WHOLEARCHIVE,
+# Apple -> -force_load, GNU/lld -> --whole-archive). The HarmonyOS NDK ships a
+# linker (lld 15) that CMake 4.x rejects for the CXX link language, so OHOS uses
+# the traditional --whole-archive flag instead.
+if(CLR_CMAKE_TARGET_OHOS)
+    target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
+else()
+    target_link_libraries(singlefilehost PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>)
+endif()
 
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
