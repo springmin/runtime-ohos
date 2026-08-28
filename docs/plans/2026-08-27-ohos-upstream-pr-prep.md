@@ -42,13 +42,13 @@ and mergeable on its own. Order matters only for the CI/validation story.
 | File | Change |
 |---|---|
 | `eng/build.sh` | Add `linux-ohos` case → `os=linux` + `__PortableTargetOS=linux-ohos`; skip ROOTFS_DIR pass (NDK is self-contained); usage text |
-| `eng/RuntimeIdentifier.props` | `PortableOS=linux-ohos`; `TargetsLinuxOhos=true`; exclude from `TargetsLinuxGlibc` |
+| `eng/RuntimeIdentifier.props` | `PortableOS=linux-ohos`; `TargetsOhos=true`; exclude from `TargetsLinuxGlibc` |
 | `eng/native/build-commons.sh` | OHOS branch: `OHOS_NDK_HOME` required, inject `ohos.toolchain.cmake` + `tryrun.cmake`, map arch→`OHOS_ARCH` (`arm64-v8a`/`armeabi-v7a`/`x86_64`), `__Compiler=default`; skip rootfs creation |
 | `eng/native/gen-buildsys.sh` | Don't require ROOTFS_DIR for linux-ohos; don't override the NDK toolchain |
 | `eng/native/configureplatform.cmake` | `CMAKE_SYSTEM_NAME=OHOS` → normalize to `linux` + `CLR_CMAKE_HOST_LINUX_MUSL` + `CLR_CMAKE_HOST_OHOS`; set `CLR_CMAKE_TARGET_OHOS` |
 | `eng/native/configurecompiler.cmake` | OHOS flags: `-Qunused-arguments` (NDK `--gcc-toolchain` unused warning vs `-Werror`), `-fno-emulated-tls` + `-ftls-model=global-dynamic` (arm64 asm TLS match); `TARGET_OHOS` define |
 | `eng/native/configuretools.cmake` | Hint `find_program` at compiler dir (NDK tools outside PATH) |
-| `eng/Subsets.props` | `DefaultSubsets` for `TargetsLinuxOhos` (incl. `clr.nativeaotruntime`+`clr.nativeaotlibs`); `_BuildAnyCrossArch` includes OHOS |
+| `eng/Subsets.props` | `DefaultSubsets` for `TargetsOhos` (incl. `clr.nativeaotruntime`+`clr.nativeaotlibs`); `_BuildAnyCrossArch` includes OHOS |
 | `eng/liveBuilds.targets` | `CoreCLRArtifactsPath` → `linux-ohos.<arch>.<config>` |
 | `src/coreclr/runtime.proj` | `_BuildNativeTargetOS=linux-ohos` |
 | `src/native/libs/build-native.proj` / `.sh` | `_BuildNativeTargetOS=linux-ohos`; exclude OHOS from auto-cross detection |
@@ -89,7 +89,7 @@ and mergeable on its own. Order matters only for the CI/validation story.
 | `src/libraries/System.Private.CoreLib/src/System/IO/SharedMemoryManager.Unix.cs` | Return `Path.GetTempPath()` instead of hardcoded `/tmp/` (OHOS mounts `/tmp` read-only; honors `TMPDIR`) |
 | `src/libraries/System.Private.CoreLib/src/System/Threading/NamedMutex.Unix.cs` | `UsePThreadMutexes` excludes OHOS (no robust pthread mutexes in sysroot) |
 | `src/libraries/System.Private.CoreLib/src/System/OperatingSystem.cs` | `internal static bool IsOhos()` (compile-time `TARGET_OHOS`; mirrors `IsHaiku()`) |
-| `src/libraries/System.Private.CoreLib/src/System.Private.CoreLib.Shared.projitems` | `TARGET_OHOS` define constant from `TargetsLinuxOhos` |
+| `src/libraries/System.Private.CoreLib/src/System.Private.CoreLib.Shared.projitems` | `TARGET_OHOS` define constant from `TargetsOhos` |
 | `src/coreclr/nativeaot/System.Private.CoreLib/src/System.Private.CoreLib.csproj` + `Test.CoreLib.csproj` | `IntermediatesDir` → `linux-ohos.<arch>.<config>` for NativeAOT |
 
 ---
@@ -258,3 +258,17 @@ supported for CXX link language`, see problem log #34). The NDK's own CMake
 singlefilehost link now takes the OHOS branch:
 `[1/2] Linking CXX executable Corehost.Static/singlefilehost` → `0 Warnings 0 Errors`.
 `singlefilehost` output verified as aarch64 ELF (musl interpreter).
+
+---
+
+## 9. Reviewer Feedback (2026-08-28)
+
+**jkotas** (dotnet/runtime#132827): rename `TargetsLinuxOhos` → `TargetsOhos` to
+match the `TargetsAndroid`/`TARGET_ANDROID` convention. Applied across all
+11 files in this port (build infra + RID + sysroot fixes); the historical log
+`docs/plans/2026-08-13-ohos-cross-compile.md` intentionally keeps the old name.
+
+**jkoritzinsky**: scoped the shared-memory path change (`/tmp/` →
+`Path.GetTempPath()`) to `TARGET_OHOS` only; other platforms keep `/tmp/`
+unchanged (PR #132827 `c00857406e0`). Confirmed HarmonyOS also targets desktop,
+so the cross-process NamedMutex fallback is preferred over in-process-only.
