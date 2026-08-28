@@ -752,3 +752,100 @@ artifacts/bin/ILCompiler_publish/arm64/Release/ilc (host x64)  [11.0 ilc 工具]
 ---
 
 *文档更新: 2026-08-17*
+
+---
+
+## C.6 端到端 AOT publish 实测（2026-08-28, 完整 SDK 发布链路）
+
+在 C.4/C.5（runtime 构建侧 AOT 产物）基础上，完成了**从 `dotnet publish` 到 qemu 运行的完整 SDK 发布链路验证**。
+
+### 目标
+
+用 `dotnet publish -r linux-ohos-arm64 -p:PublishAot=true` 端到端编译出一个可在 qemu 上运行的 OHOS AOT 原生可执行文件。
+
+### 最终结果（成功）
+
+```
+bin/Release/net11.0/linux-ohos-arm64/publish/
+├── aot-test     (1.5MB, ELF ARM aarch64, musl, stripped)
+└── aot-test.dbg (2.2MB, debug symbols)
+
+$ qemu-aarch64 -L /tmp/ohos-qemu-root -E LD_PRELOAD=/lib/libarc4random_shim.so ./aot-test
+Hello from OHOS AOT!
+RuntimeIdentifier: linux-ohos-arm64
+OS: Ubuntu 26.04 LTS
+```
+
+- **musl 链接**（`interpreter /lib/ld-musl-aarch64.so.1`），仅依赖 `libc.so`
+- 无任何托管 .dll（全部 AOT 编译成原生）
+- RuntimeIdentifier 正确报告 `linux-ohos-arm64`
+
+### 前提资产（本次实测用的本地构建产物）
+
+| Pack | 来源 |
+|---|---|
+| `runtime.linux-ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-dev.nupkg` (43.7MB) | runtime 构建（含 ilc + 6 交叉 JIT 库） |
+| `Microsoft.NETCore.App.Runtime.NativeAOT.linux-ohos-arm64.11.0.0-dev.nupkg` (25.4MB) | runtime 构建（19 个 musl 静态库） |
+| `Microsoft.DotNet.ILCompiler.11.0.0-dev.nupkg` | runtime 构建（补 build/ targets 后） |
+| host x64 ILCompiler | 从官方 `11.0.0-rc.1.26410.101` 复制重命名为 `11.0.0-dev`（x64 ilc 跑在 x64 主机交叉编译） |
+| `Microsoft.NETCoreSdk.BundledVersions.props` 补丁 | preview.6 SDK：KnownILCompilerPack + Runtime.NativeAOT 加 `linux-ohos-arm64`/`linux-ohos-x64`，版本改 `11.0.0-dev` |
+
+### 遇到的 5 个问题与修复（全部在 SDK/ILCompiler pack 层，非 runtime 编译问题）
+
+| # | 问题 | 根因 | 修复 |
+|---|---|---|---|
+| 1 | `The PrivateSdkAssemblies ItemGroup is required` | preview.6 SDK 的 `KnownILCompilerPack` 不认识 `linux-ohos-arm64`，回退到 linux-arm64 pack | `Microsoft.NETCoreSdk.BundledVersions.props` 补丁：加 ohos RID + dev 版本 |
+| 2 | AOT 静默跳过（产出自包含 CoreCLR） | 我们的 `Microsoft.DotNet.ILCompiler` pack 缺 `build/` 目录（NativeAOT 入口 targets） | 从官方 preview.6 包提取 `build/Microsoft.NETCore.Native*.targets` 补进 pack |
+| 3 | `libSystem.Net.Security.Native.a` 缺失 | OHOS 构建跳过 Net.Security（krb5），但 NativeAOT 默认链接它 | `Unix.targets` 的 `NetCoreAppNativeLibrary` 加 `!CrossCompileRid.StartsWith('linux-ohos-')` 跳过（仿 bionic） |
+| 4 | `x86_64-linux-gnu-ld.bfd: unrecognised emulation mode: aarch64linux` | `LinkerFlavor=bfd`（`_targetOS=='linux'` 默认），系统 ld 不识别 aarch64 | `Unix.targets` 加 `LinkerFlavor=lld` for OHOS（NDK 无 GNU bfd，与 bionic 同） |
+| 5 | 链接后 `objcopy` 不识别 aarch64 | 系统 GNU objcopy 不支持 aarch64 | PATH 前缀用 OHOS NDK 的 `llvm-objcopy` |
+
+### OHOS NativeAOT 链接的 4 个 targets 修复（提交上游时属 SDK 仓库）
+
+都在 `Microsoft.DotNet.ILCompiler` pack 的 targets 内：
+
+```xml
+<!-- Microsoft.NETCore.Native.Unix.targets -->
+<!-- 1. musl/ohos ABI: 匹配 OHOS NDK triple aarch64-linux-ohos -->
+<CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-ohos-'))">ohos</CrossCompileAbi>
+<!-- 2. lld linker: OHOS NDK 无 GNU bfd -->
+<LinkerFlavor Condition="'$(LinkerFlavor)' == '' and $([System.String]::Copy('$(_originalTargetOS)').StartsWith('linux-ohos'))">lld</LinkerFlavor>
+<!-- 3. 跳过 System.Net.Security.Native (OHOS 无 krb5) -->
+<NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic' and !$([System.String]::Copy('$(_originalTargetOS)').StartsWith('linux-ohos'))" />
+
+<!-- Microsoft.DotNet.ILCompiler.SingleEntry.targets -->
+<!-- 4. libcFlavor: OHOS 是 musl (stack size 等按 musl 处理) -->
+<_linuxLibcFlavor Condition="'$(_linuxLibcFlavor)' == 'ohos'">musl</_linuxLibcFlavor>
+```
+
+### 完整 publish 命令
+
+```bash
+SYSROOT=/home/springmin/hmos-tools/sdk/default/openharmony/native/sysroot
+OHOS_CLANG=/home/springmin/hmos-tools/sdk/default/openharmony/native/llvm/bin/clang
+export PATH="/tmp/opencode/bin-prefix:$PATH"   # llvm-objcopy 前缀
+
+dotnet restore -r linux-ohos-arm64 -p:PublishAot=true -p:ILCompilerVersion=11.0.0-dev
+dotnet publish -c Release -r linux-ohos-arm64 -p:PublishAot=true --no-restore \
+  -p:UsePureLlvmToolchain=true \
+  "-p:SysRoot=$SYSROOT" \
+  "-p:CppCompilerAndLinker=$OHOS_CLANG"
+```
+
+### qemu 运行
+
+```bash
+qemu-aarch64 -L /tmp/ohos-qemu-root -E LD_PRELOAD=/lib/libarc4random_shim.so ./aot-test
+```
+
+> `arc4random_buf` 符号：OHOS musl 缺该符号，rootfs 提供 `libarc4random_shim.so`（用 `-E LD_PRELOAD` 注入）。
+
+### 结论
+
+- **OHOS NativeAOT 完整链路已打通**：C# → ilc 交叉编译 → musl 链接 → qemu 运行
+- ilc 是 host 工具（x64 交叉编译），**不需要从 linux-musl 移植**——OHOS 的 JIT 库/静态库已用 OHOS 工具链构建
+- 4 个修复都在 **SDK 仓库**（`Microsoft.DotNet.ILCompiler` pack targets + `BundledVersions.props`），提交上游时归入 SDK PR
+
+---
+
+*文档更新: 2026-08-28*
