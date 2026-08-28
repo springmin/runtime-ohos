@@ -9,15 +9,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
-    <!-- crossgen2 is a host tool: publish self-contained IL (never AOT-compile it).
-         On RIDs where the injected RID graph marks NativeAOT as supported (e.g. linux-ohos),
-         the SDK would otherwise attempt an AOT publish that requires a NativeAOT runtime pack. -->
-    <PublishAot>false</PublishAot>
-    <!-- Do not import the NativeAOT publish targets: crossgen2 is a self-contained IL tool,
-         not an AOT-compiled binary. On RIDs where the injected RID graph advertises NativeAOT
-         (e.g. linux-ohos), the unconditionally-run _ComputeAssembliesToCompileToNative target
-         would otherwise require a NativeAOT runtime pack that does not exist for this tool. -->
-    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
   </PropertyGroup>
 
