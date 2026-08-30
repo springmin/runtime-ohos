@@ -312,7 +312,7 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
   # On Android and HarmonyOS, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OHOS)
+  if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(coreclrpal
       PUBLIC
       gcc_s

@@ -20,14 +20,14 @@ plus a musl-based sysroot. The runtime therefore:
 1. Recognizes `-os linux-ohos` end-to-end (build.sh → RID graph → packs → products).
 2. Routes native builds through the OHOS NDK toolchain (no rootfs, no distro
    container — the NDK is self-contained, like Android/bionic).
-3. Defines a `TARGET_OHOS` compile-time macro (mirroring `TARGET_ANDROID`) so
+3. Defines a `TARGET_OPENHARMONY` compile-time macro (mirroring `TARGET_ANDROID`) so
    platform guards can exclude OHOS where its sysroot/ABI differs.
 4. Carries a small set of sandbox/runtime fixes required by the OHOS app sandbox
    (seccomp-blocked NUMA syscalls, read-only `/tmp`, no robust pthread mutexes,
    no LTTng/gssapi in sysroot).
 
 Total: **34 source/build files, ~230 inserted lines** (plus this doc). No public
-API surface added. `OperatingSystem.IsOhos()` is `internal` (mirrors `IsHaiku()`).
+API surface added. `OperatingSystem.IsOpenHarmony()` is `internal` (mirrors `IsHaiku()`).
 
 ---
 
@@ -42,13 +42,13 @@ and mergeable on its own. Order matters only for the CI/validation story.
 | File | Change |
 |---|---|
 | `eng/build.sh` | Add `linux-ohos` case → `os=linux` + `__PortableTargetOS=linux-ohos`; skip ROOTFS_DIR pass (NDK is self-contained); usage text |
-| `eng/RuntimeIdentifier.props` | `PortableOS=linux-ohos`; `TargetsOhos=true`; exclude from `TargetsLinuxGlibc` |
+| `eng/RuntimeIdentifier.props` | `PortableOS=linux-ohos`; `TargetOpenHarmony=true`; exclude from `TargetsLinuxGlibc` |
 | `eng/native/build-commons.sh` | OHOS branch: `OHOS_NDK_HOME` required, inject `ohos.toolchain.cmake` + `tryrun.cmake`, map arch→`OHOS_ARCH` (`arm64-v8a`/`armeabi-v7a`/`x86_64`), `__Compiler=default`; skip rootfs creation |
 | `eng/native/gen-buildsys.sh` | Don't require ROOTFS_DIR for linux-ohos; don't override the NDK toolchain |
-| `eng/native/configureplatform.cmake` | `CMAKE_SYSTEM_NAME=OHOS` → normalize to `linux` + `CLR_CMAKE_HOST_LINUX_MUSL` + `CLR_CMAKE_HOST_OHOS`; set `CLR_CMAKE_TARGET_OHOS` |
-| `eng/native/configurecompiler.cmake` | OHOS flags: `-Qunused-arguments` (NDK `--gcc-toolchain` unused warning vs `-Werror`), `-fno-emulated-tls` + `-ftls-model=global-dynamic` (arm64 asm TLS match); `TARGET_OHOS` define |
+| `eng/native/configureplatform.cmake` | `CMAKE_SYSTEM_NAME=OHOS` → normalize to `linux` + `CLR_CMAKE_HOST_LINUX_MUSL` + `CLR_CMAKE_HOST_OHOS`; set `CLR_CMAKE_TARGET_OPENHARMONY` |
+| `eng/native/configurecompiler.cmake` | OHOS flags: `-Qunused-arguments` (NDK `--gcc-toolchain` unused warning vs `-Werror`), `-fno-emulated-tls` + `-ftls-model=global-dynamic` (arm64 asm TLS match); `TARGET_OPENHARMONY` define |
 | `eng/native/configuretools.cmake` | Hint `find_program` at compiler dir (NDK tools outside PATH) |
-| `eng/Subsets.props` | `DefaultSubsets` for `TargetsOhos` (incl. `clr.nativeaotruntime`+`clr.nativeaotlibs`); `_BuildAnyCrossArch` includes OHOS |
+| `eng/Subsets.props` | `DefaultSubsets` for `TargetOpenHarmony` (incl. `clr.nativeaotruntime`+`clr.nativeaotlibs`); `_BuildAnyCrossArch` includes OHOS |
 | `eng/liveBuilds.targets` | `CoreCLRArtifactsPath` → `linux-ohos.<arch>.<config>` |
 | `src/coreclr/runtime.proj` | `_BuildNativeTargetOS=linux-ohos` |
 | `src/native/libs/build-native.proj` / `.sh` | `_BuildNativeTargetOS=linux-ohos`; exclude OHOS from auto-cross detection |
@@ -61,7 +61,7 @@ and mergeable on its own. Order matters only for the CI/validation story.
 |---|---|
 | `src/libraries/Microsoft.NETCore.Platforms/src/runtime.json` | Add `linux-ohos`, `linux-ohos-arm`, `linux-ohos-arm64`, `linux-ohos-x64` (import `linux`/`linux-<arch>`) |
 | `eng/targetingpacks.targets` | Add `linux-ohos-{arm,arm64,x64}` to CoreCLR + Mono runtime pack RIDs; `linux-ohos-{arm64,x64}` to NativeAOT pack RIDs |
-| `src/native/eventpipe/ds-portable-rid.c` | `TARGET_OHOS` → `PORTABLE_RID_OS "linux-ohos"` |
+| `src/native/eventpipe/ds-portable-rid.c` | `TARGET_OPENHARMONY` → `PORTABLE_RID_OS "linux-ohos"` |
 | `src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj` | Disable `PublishReadyToRun` for OHOS (no PGO data yet) |
 
 ### PR C — CoreCLR/PAL/native-libs compile fixes for the OHOS sysroot
@@ -76,7 +76,7 @@ and mergeable on its own. Order matters only for the CI/validation story.
 | `src/native/libs/CMakeLists.txt` | OHOS → `System.Security.Cryptography.Native` (OpenSSL built for OHOS via `OPENSSL_*` cache vars), skip `System.Net.Security.Native` (no krb5) |
 | `src/native/libs/System.Net.Security.Native/extra_libs.cmake` | No `LIBGSS` link for OHOS (dlopen on demand like Linux) |
 | `src/native/libs/System.Native/CMakeLists.txt` | OHOS in the "no robust mutex" list |
-| `src/native/libs/System.Native/pal_interfaceaddresses.c` | `TARGET_OHOS` uses `ecmd.speed` directly (no `ethtool_cmd_speed`) |
+| `src/native/libs/System.Native/pal_interfaceaddresses.c` | `TARGET_OPENHARMONY` uses `ecmd.speed` directly (no `ethtool_cmd_speed`) |
 | `src/native/corehost/apphost/static/CMakeLists.txt` | Skip `NATIVE_LIBS_EMBEDDED` + `System.Net.Security.Native-Static` for OHOS; replace `WHOLE_ARCHIVE` genex with traditional `-Wl,--whole-archive` (linker compat) |
 | `src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj` | `PublishAot=false` + `NativeCompilationDuringPublish=false` (crossgen2 is a host IL tool) |
 
@@ -85,11 +85,11 @@ and mergeable on its own. Order matters only for the CI/validation story.
 
 | File | Change |
 |---|---|
-| `src/coreclr/gc/unix/numasupport.cpp` | Guard all NUMA syscalls (`get_mempolicy`/`mbind`) with `!TARGET_OHOS` — seccomp blocks them → SIGSYS crash |
+| `src/coreclr/gc/unix/numasupport.cpp` | Guard all NUMA syscalls (`get_mempolicy`/`mbind`) with `!TARGET_OPENHARMONY` — seccomp blocks them → SIGSYS crash |
 | `src/libraries/System.Private.CoreLib/src/System/IO/SharedMemoryManager.Unix.cs` | Return `Path.GetTempPath()` instead of hardcoded `/tmp/` (OHOS mounts `/tmp` read-only; honors `TMPDIR`) |
 | `src/libraries/System.Private.CoreLib/src/System/Threading/NamedMutex.Unix.cs` | `UsePThreadMutexes` excludes OHOS (no robust pthread mutexes in sysroot) |
-| `src/libraries/System.Private.CoreLib/src/System/OperatingSystem.cs` | `internal static bool IsOhos()` (compile-time `TARGET_OHOS`; mirrors `IsHaiku()`) |
-| `src/libraries/System.Private.CoreLib/src/System.Private.CoreLib.Shared.projitems` | `TARGET_OHOS` define constant from `TargetsOhos` |
+| `src/libraries/System.Private.CoreLib/src/System/OperatingSystem.cs` | `internal static bool IsOpenHarmony()` (compile-time `TARGET_OPENHARMONY`; mirrors `IsHaiku()`) |
+| `src/libraries/System.Private.CoreLib/src/System.Private.CoreLib.Shared.projitems` | `TARGET_OPENHARMONY` define constant from `TargetOpenHarmony` |
 | `src/coreclr/nativeaot/System.Private.CoreLib/src/System.Private.CoreLib.csproj` + `Test.CoreLib.csproj` | `IntermediatesDir` → `linux-ohos.<arch>.<config>` for NativeAOT |
 
 ---
@@ -103,7 +103,7 @@ and mergeable on its own. Order matters only for the CI/validation story.
   what differs. RID import: `linux-ohos-*` → `linux-*` (so `RuntimeInformation`
   and pack resolution inherit Linux behavior).
 
-### 3.2 Why `TARGET_OHOS` (not reuse `TARGET_LINUX_MUSL`)?
+### 3.2 Why `TARGET_OPENHARMONY` (not reuse `TARGET_LINUX_MUSL`)?
 - The sysroot is musl-based, but several OHOS specifics are *not* shared with
   plain `linux-musl` (Alpine): no LTTng, no krb5/gssapi, no robust mutexes, no
   `qsort_r`, seccomp-blocked NUMA syscalls, read-only `/tmp`. A dedicated macro
@@ -172,8 +172,8 @@ These are **sandbox requirements**, not performance choices:
 - **TLS in singlefilehost** → `System.Net.Security.Native-Static` excluded from
   the singlefilehost static link for OHOS; apphosts rely on dlopen of the shared
   lib (same as Android path).
-- **`OperatingSystem.IsOhos()` is `internal`** — no public API change in this port;
-  a public `OperatingSystem.IsOhos()` would need API review and a separate PR.
+- **`OperatingSystem.IsOpenHarmony()` is `internal`** — no public API change in this port;
+  a public `OperatingSystem.IsOpenHarmony()` would need API review and a separate PR.
 
 ---
 
@@ -247,7 +247,7 @@ to upstream:
 | File | Before (unconditional) | After (OHOS-guarded) |
 |---|---|---|
 | `eng/native/configuretools.cmake` | `find_program(... HINTS compiler_dir)` for all platforms | `HINTS` only under `if(CLR_CMAKE_HOST_OHOS)`; other platforms use the upstream `find_program` verbatim |
-| `src/native/corehost/apphost/static/CMakeLists.txt` | `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` replaced with `-Wl,--whole-archive` for all platforms | OHOS: `target_link_options(...-Wl,--whole-archive...)` inside `if(CLR_CMAKE_TARGET_OHOS)`; other platforms keep `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` (CMake maps to `/WHOLEARCHIVE` on Windows, `-force_load` on Apple) |
+| `src/native/corehost/apphost/static/CMakeLists.txt` | `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` replaced with `-Wl,--whole-archive` for all platforms | OHOS: `target_link_options(...-Wl,--whole-archive...)` inside `if(CLR_CMAKE_TARGET_OPENHARMONY)`; other platforms keep `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` (CMake maps to `/WHOLEARCHIVE` on Windows, `-force_load` on Apple) |
 
 **Why OHOS needs the traditional flag:** the HarmonyOS NDK ships lld 15, which
 CMake 4.x rejects for the `WHOLE_ARCHIVE` CXX link feature (`WHOLE_ARCHIVE not
@@ -263,12 +263,12 @@ singlefilehost link now takes the OHOS branch:
 
 ## 9. Reviewer Feedback (2026-08-28)
 
-**jkotas** (dotnet/runtime#132827): rename `TargetsLinuxOhos` → `TargetsOhos` to
+**jkotas** (dotnet/runtime#132827): rename `TargetsLinuxOhos` → `TargetOpenHarmony` to
 match the `TargetsAndroid`/`TARGET_ANDROID` convention. Applied across all
 11 files in this port (build infra + RID + sysroot fixes); the historical log
 `docs/plans/2026-08-13-ohos-cross-compile.md` intentionally keeps the old name.
 
 **jkoritzinsky**: scoped the shared-memory path change (`/tmp/` →
-`Path.GetTempPath()`) to `TARGET_OHOS` only; other platforms keep `/tmp/`
+`Path.GetTempPath()`) to `TARGET_OPENHARMONY` only; other platforms keep `/tmp/`
 unchanged (PR #132827 `c00857406e0`). Confirmed HarmonyOS also targets desktop,
 so the cross-process NamedMutex fallback is preferred over in-process-only.

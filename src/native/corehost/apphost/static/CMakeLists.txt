@@ -40,7 +40,7 @@ set(HEADERS
 )
 
 # TODO: https://github.com/dotnet/runtime/issues/111523
-if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OHOS)
+if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 endif()
 
@@ -158,7 +158,7 @@ else()
     )
 
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        if(NOT CLR_CMAKE_TARGET_OHOS)
+        if(NOT CLR_CMAKE_TARGET_OPENHARMONY)
             list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
         endif()
 
@@ -299,7 +299,7 @@ target_link_libraries(
 # Apple -> -force_load, GNU/lld -> --whole-archive). The HarmonyOS NDK ships a
 # linker (lld 15) that CMake 4.x rejects for the CXX link language, so OHOS uses
 # the traditional --whole-archive flag instead.
-if(CLR_CMAKE_TARGET_OHOS)
+if(CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
 else()
     target_link_libraries(singlefilehost PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>)

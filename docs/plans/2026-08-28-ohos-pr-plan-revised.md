@@ -4,7 +4,7 @@
 verified (qemu); SDK RID declarations + codesign done. This plan revises the
 remaining PR split given: (1) runtime NativeAOT BuildIntegration fixes landed
 locally, (2) SDK has 19 source changes incl. OhosCodesign, (3) reviewer
-feedback (TargetsOhos rename, TMPDIR scoping) is incorporated.
+feedback (TargetOpenHarmony rename, TMPDIR scoping) is incorporated.
 
 ---
 
@@ -41,12 +41,12 @@ feedback (TargetsOhos rename, TMPDIR scoping) is incorporated.
 ### Runtime repo (3 PRs after #132827)
 
 #### PR-R2 — Build infrastructure: `-os linux-ohos` + NDK toolchain (16 files)
-*Enables cross-build; defines `TargetsOhos` + `TARGET_OHOS` that everything keys off.*
+*Enables cross-build; defines `TargetOpenHarmony` + `TARGET_OPENHARMONY` that everything keys off.*
 
 Same as before (build.sh, RuntimeIdentifier.props, Subsets.props, liveBuilds.targets,
 build-commons.sh, configureplatform/compiler/tools.cmake, gen-buildsys.sh, runtime.proj,
 build-native.proj/.sh, corehost.proj, System.Native/CMakeLists.txt) — includes the
-`UseNativeAotForComponents` OHOS exclusion (crossgen2 stays IL) and `TargetsOhos` naming.
+`UseNativeAotForComponents` OHOS exclusion (crossgen2 stays IL) and `TargetOpenHarmony` naming.
 
 #### PR-R3 — sysroot compile fixes + NativeAOT support (13 files)
 *Make OHOS build & AOT publish actually work.*
@@ -107,7 +107,7 @@ mostly validation + possibly version alignment. Could be folded into PR-S1.*
   so PR-R3 can confidently include them.
 - **SDK's `NativeAotSupported=false` for ohos** targets SDK-internal tools only
   (dotnet-aot/dn build), NOT user publish — no conflict with runtime AOT support.
-- **`TargetsOhos` naming** (jkotas) applies across both repos; SDK uses RID
+- **`TargetOpenHarmony` naming** (jkotas) applies across both repos; SDK uses RID
   strings (`linux-ohos-*`) so it's naturally consistent.
 - **Exclude upstream merge residue** (SmtpClient etc.) from all PRs.
 

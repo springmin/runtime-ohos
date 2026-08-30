@@ -40,7 +40,7 @@
 | 3 | `eng/native/build-commons.sh` (:102-127) | 添加 ohos 分支：`OHOS_NDK_HOME` + `ohos.toolchain.cmake` |
 | 4 | `src/native/libs/build-native.sh` (:61-72) | ohos 排除自动 cross 检测 + 专用 CMake args |
 | 5 | `eng/targetingpacks.targets` + `runtime.json` | 添加 `linux-ohos-*` RID |
-| 6 | `eng/native/configureplatform.cmake` (:354-358) | `CLR_CMAKE_TARGET_OHOS` → 复用 `TARGET_LINUX_MUSL` 路径 |
+| 6 | `eng/native/configureplatform.cmake` (:354-358) | `CLR_CMAKE_TARGET_OPENHARMONY` → 复用 `TARGET_LINUX_MUSL` 路径 |
 | 7 | `src/native/eventpipe/ds-portable-rid.c` (:9-23) | ohos RID 字符串处理 |
 | 8 | `eng/Subsets.props` (:32-59, 385-391) | `_BuildAnyCrossArch` + runtime flavor 支持 |
 
@@ -56,7 +56,7 @@
 - [ ] 1.3 eng/native/build-commons.sh: ohos NDK 分支
 - [ ] 1.4 src/native/libs/build-native.sh: ohos args
 - [ ] 1.5 eng/targetingpacks.targets + runtime.json: RID
-- [ ] 1.6 eng/native/configureplatform.cmake: TARGET_OHOS
+- [ ] 1.6 eng/native/configureplatform.cmake: TARGET_OPENHARMONY
 - [ ] 1.7 src/native/eventpipe/ds-portable-rid.c
 - [ ] 1.8 eng/Subsets.props
 
@@ -128,7 +128,7 @@
 ### 问题 5: CMAKE_SYSTEM_NAME=OHOS 导致 CLR_CMAKE_HOST_OS 无法识别
 - **现象**: `configureplatform.cmake:12` 用 CMAKE_SYSTEM_NAME（ohos.toolchain.cmake 设为 OHOS）推导 CLR_CMAKE_HOST_OS，OHOS 非 linux → 所有 linux 分支不触发
 - **根因**: ohos NDK toolchain 的 CMAKE_SYSTEM_NAME 是 OHOS
-- **方案**: 归一化后添加 ohos→linux 映射 + `CLR_CMAKE_HOST_LINUX_MUSL=1`（libc 是 musl）+ `CLR_CMAKE_HOST_OHOS=1`；TARGET 传播 `CLR_CMAKE_TARGET_OHOS`；configurecompiler 发 `TARGET_OHOS` 宏
+- **方案**: 归一化后添加 ohos→linux 映射 + `CLR_CMAKE_HOST_LINUX_MUSL=1`（libc 是 musl）+ `CLR_CMAKE_HOST_OHOS=1`；TARGET 传播 `CLR_CMAKE_TARGET_OPENHARMONY`；configurecompiler 发 `TARGET_OPENHARMONY` 宏
 - **验证**: ohos sysroot 无 os-release → `cmake_host_system_information` 不覆盖；`CLR_CMAKE_HOST_LINUX_MUSL` → `CLR_CMAKE_TARGET_LINUX_MUSL` → `TARGET_LINUX_MUSL` 自动生效
 - **结果**: 已修正
 
@@ -224,14 +224,14 @@
 ### 问题 16: zstd qsort_r 未定义
 - **现象**: `cover.c:333: call to undeclared function 'qsort_r'`
 - **根因**: ohos musl 无 qsort_r (GNU 扩展), zstd 只豁免 __ANDROID__
-- **方案**: zstd.cmake 的 `if (ANDROID OR CLR_CMAKE_TARGET_OHOS)` → ZSTD_USE_C90_QSORT=1 (走 C90 fallback)
+- **方案**: zstd.cmake 的 `if (ANDROID OR CLR_CMAKE_TARGET_OPENHARMONY)` → ZSTD_USE_C90_QSORT=1 (走 C90 fallback)
 - **验证**: zstd 编译通过
 - **结果**: 已修正
 
 ### 问题 17: robust mutex + ethtool 不支持
 - **现象**: pthread_mutexattr_setrobust/pthread_mutex_consistent 未声明; ethtool_cmd_speed 未定义
 - **根因**: ohos musl 裁剪 robust mutex API; 内核头缺 ethtool 宏
-- **方案**: System.Native/CMakeLists.txt 加 ohos 到 robust-mutex 不支持列表 (用 pal_crossprocessmutex_unsupported.c); pal_interfaceaddresses.c 的 TARGET_ANDROID 豁免加 TARGET_OHOS
+- **方案**: System.Native/CMakeLists.txt 加 ohos 到 robust-mutex 不支持列表 (用 pal_crossprocessmutex_unsupported.c); pal_interfaceaddresses.c 的 TARGET_ANDROID 豁免加 TARGET_OPENHARMONY
 - **验证**: 编译通过
 - **结果**: 已修正 (managed 侧 UsePThreadMutexes 同步推迟到 Phase 2.3)
 
@@ -459,12 +459,12 @@ ALL FEATURES OK ✓
 | 冲突文件 | 原因 | 解决 |
 |---------|------|------|
 | `eng/targetingpacks.targets` | 10.0 无 openbsd/illumos/haiku RID | 保留 10.0 基线 + 加 ohos RID |
-| `eng/native/configurecompiler.cmake` | 10.0 的 TARGET_LINUX_MUSL 区域结构不同 | 在 10.0 linux 区域加 TARGET_OHOS |
+| `eng/native/configurecompiler.cmake` | 10.0 的 TARGET_LINUX_MUSL 区域结构不同 | 在 10.0 linux 区域加 TARGET_OPENHARMONY |
 | `eng/Subsets.props` | 10.0 的 `_BuildAnyCrossArch` 有 wasm 条件 | 合并：保留 wasm + 加 ohos/bionic |
 | `src/coreclr/runtime.proj` | 10.0 的 HasCdacBuildTool 条件不同 | 保留 10.0 + 加 `_BuildNativeTargetOS` ohos |
 | `src/native/libs/System.Native/CMakeLists.txt` | 10.0 有独立 browser/wasi 分支 | 只保留 robust mutex 的 OHOS 添加 |
 | `src/coreclr/CMakeLists.txt` | 10.0 用 MACCATALYST/IOS/TVOS 显式列表 | 保留 10.0 + 加 OHOS 排除 |
-| `src/libraries/.../OperatingSystem.cs` | 11.0 新增 IsOpenBSD 等（10.0 无） | 只提取 IsOhos 插入 IsAndroid 后 |
+| `src/libraries/.../OperatingSystem.cs` | 11.0 新增 IsOpenBSD 等（10.0 无） | 只提取 IsOpenHarmony 插入 IsAndroid 后 |
 
 **修正**: filter-branch 移除误提交的 AGENTS.md（2 个 commit 含文档文件）。
 
@@ -503,10 +503,10 @@ export OHOS_NDK_HOME=/home/springmin/hmos-tools/sdk/default/openharmony
 - **方案**: 删除残留的 11.0 风格 `target_link_options` 行（10.0 用自己的机制，无 CMake 4.2 兼容问题）
 - **结果**: 已修正
 
-#### 问题 46: OperatingSystem.cs 的 IsOhos 插错位置
+#### 问题 46: OperatingSystem.cs 的 IsOpenHarmony 插错位置
 - **现象**: `error CS8803: Top-level statements must precede namespace and type declarations`
-- **根因**: python 脚本把 IsOhos 插到 namespace 外（文件末尾），后又被误删
-- **方案**: 手动在 `IsAndroid()`（201 行）后插入 IsOhos（含 XML 文档注释）
+- **根因**: python 脚本把 IsOpenHarmony 插到 namespace 外（文件末尾），后又被误删
+- **方案**: 手动在 `IsAndroid()`（201 行）后插入 IsOpenHarmony（含 XML 文档注释）
 - **结果**: 已修正（最终 212 行）
 
 #### 问题 47: 构建竞争（用户 SDK 进程）

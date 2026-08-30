@@ -12,7 +12,7 @@
 
 #if defined(TARGET_ANDROID)
 #define PORTABLE_RID_OS "linux-bionic"
-#elif defined(TARGET_OHOS)
+#elif defined(TARGET_OPENHARMONY)
 #define PORTABLE_RID_OS "linux-ohos"
 #elif defined(TARGET_LINUX_MUSL)
 #define PORTABLE_RID_OS "linux-musl"
