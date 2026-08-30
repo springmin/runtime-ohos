@@ -653,7 +653,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_compile_options(-fstack-protector-strong)
   endif()
 
-  if(CLR_CMAKE_HOST_OHOS)
+  if(CLR_CMAKE_HOST_OPENHARMONY)
     # The OHOS NDK toolchain injects --gcc-toolchain (via CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN)
     # which clang reports as unused; silence it (in CMAKE_C_FLAGS so try_compile checks
     # inherit it) so -Werror doesn't fail the build. Applies to assembly too.

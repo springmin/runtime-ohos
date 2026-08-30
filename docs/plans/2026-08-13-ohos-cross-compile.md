@@ -128,7 +128,7 @@
 ### 问题 5: CMAKE_SYSTEM_NAME=OHOS 导致 CLR_CMAKE_HOST_OS 无法识别
 - **现象**: `configureplatform.cmake:12` 用 CMAKE_SYSTEM_NAME（ohos.toolchain.cmake 设为 OHOS）推导 CLR_CMAKE_HOST_OS，OHOS 非 linux → 所有 linux 分支不触发
 - **根因**: ohos NDK toolchain 的 CMAKE_SYSTEM_NAME 是 OHOS
-- **方案**: 归一化后添加 ohos→linux 映射 + `CLR_CMAKE_HOST_LINUX_MUSL=1`（libc 是 musl）+ `CLR_CMAKE_HOST_OHOS=1`；TARGET 传播 `CLR_CMAKE_TARGET_OPENHARMONY`；configurecompiler 发 `TARGET_OPENHARMONY` 宏
+- **方案**: 归一化后添加 ohos→linux 映射 + `CLR_CMAKE_HOST_LINUX_MUSL=1`（libc 是 musl）+ `CLR_CMAKE_HOST_OPENHARMONY=1`；TARGET 传播 `CLR_CMAKE_TARGET_OPENHARMONY`；configurecompiler 发 `TARGET_OPENHARMONY` 宏
 - **验证**: ohos sysroot 无 os-release → `cmake_host_system_information` 不覆盖；`CLR_CMAKE_HOST_LINUX_MUSL` → `CLR_CMAKE_TARGET_LINUX_MUSL` → `TARGET_LINUX_MUSL` 自动生效
 - **结果**: 已修正
 
@@ -175,7 +175,7 @@
 ### 问题 9: --gcc-toolchain unused 被 -Werror 升级为 error
 - **现象**: `clang: error: argument unused during compilation: '--gcc-toolchain=...' [-Werror,...]`
 - **根因**: ohos.toolchain.cmake 设 CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN → clang 收 --gcc-toolchain；check_c_source_compiles 加 -Werror
-- **方案**: configurecompiler.cmake 的 CLR_CMAKE_HOST_OHOS 分支把 `-Qunused-arguments` 加入 CMAKE_C_FLAGS/CXX_FLAGS（而非 add_compile_options，因 try_compile 只用 CMAKE_C_FLAGS）
+- **方案**: configurecompiler.cmake 的 CLR_CMAKE_HOST_OPENHARMONY 分支把 `-Qunused-arguments` 加入 CMAKE_C_FLAGS/CXX_FLAGS（而非 add_compile_options，因 try_compile 只用 CMAKE_C_FLAGS）
 - **验证**: mkstemp 检测通过
 - **结果**: 已修正
 

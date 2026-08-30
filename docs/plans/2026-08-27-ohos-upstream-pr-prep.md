@@ -45,7 +45,7 @@ and mergeable on its own. Order matters only for the CI/validation story.
 | `eng/RuntimeIdentifier.props` | `PortableOS=linux-ohos`; `TargetOpenHarmony=true`; exclude from `TargetsLinuxGlibc` |
 | `eng/native/build-commons.sh` | OHOS branch: `OHOS_NDK_HOME` required, inject `ohos.toolchain.cmake` + `tryrun.cmake`, map arch→`OHOS_ARCH` (`arm64-v8a`/`armeabi-v7a`/`x86_64`), `__Compiler=default`; skip rootfs creation |
 | `eng/native/gen-buildsys.sh` | Don't require ROOTFS_DIR for linux-ohos; don't override the NDK toolchain |
-| `eng/native/configureplatform.cmake` | `CMAKE_SYSTEM_NAME=OHOS` → normalize to `linux` + `CLR_CMAKE_HOST_LINUX_MUSL` + `CLR_CMAKE_HOST_OHOS`; set `CLR_CMAKE_TARGET_OPENHARMONY` |
+| `eng/native/configureplatform.cmake` | `CMAKE_SYSTEM_NAME=OHOS` → normalize to `linux` + `CLR_CMAKE_HOST_LINUX_MUSL` + `CLR_CMAKE_HOST_OPENHARMONY`; set `CLR_CMAKE_TARGET_OPENHARMONY` |
 | `eng/native/configurecompiler.cmake` | OHOS flags: `-Qunused-arguments` (NDK `--gcc-toolchain` unused warning vs `-Werror`), `-fno-emulated-tls` + `-ftls-model=global-dynamic` (arm64 asm TLS match); `TARGET_OPENHARMONY` define |
 | `eng/native/configuretools.cmake` | Hint `find_program` at compiler dir (NDK tools outside PATH) |
 | `eng/Subsets.props` | `DefaultSubsets` for `TargetOpenHarmony` (incl. `clr.nativeaotruntime`+`clr.nativeaotlibs`); `_BuildAnyCrossArch` includes OHOS |
@@ -246,7 +246,7 @@ to upstream:
 
 | File | Before (unconditional) | After (OHOS-guarded) |
 |---|---|---|
-| `eng/native/configuretools.cmake` | `find_program(... HINTS compiler_dir)` for all platforms | `HINTS` only under `if(CLR_CMAKE_HOST_OHOS)`; other platforms use the upstream `find_program` verbatim |
+| `eng/native/configuretools.cmake` | `find_program(... HINTS compiler_dir)` for all platforms | `HINTS` only under `if(CLR_CMAKE_HOST_OPENHARMONY)`; other platforms use the upstream `find_program` verbatim |
 | `src/native/corehost/apphost/static/CMakeLists.txt` | `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` replaced with `-Wl,--whole-archive` for all platforms | OHOS: `target_link_options(...-Wl,--whole-archive...)` inside `if(CLR_CMAKE_TARGET_OPENHARMONY)`; other platforms keep `$<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>` (CMake maps to `/WHOLEARCHIVE` on Windows, `-force_load` on Apple) |
 
 **Why OHOS needs the traditional flag:** the HarmonyOS NDK ships lld 15, which

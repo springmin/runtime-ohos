@@ -31,12 +31,12 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     # For NDK-style toolchains (HarmonyOS) the compiler lives outside PATH.
     # Hint find_program at the compiler's directory so tools like llvm-ar/nm are located.
     # Guarded to OHOS only so other platforms keep their existing lookup behavior.
-    if(CLR_CMAKE_HOST_OHOS)
+    if(CLR_CMAKE_HOST_OPENHARMONY)
       get_filename_component(CLR_COMPILER_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
     endif()
 
     unset(EXEC_LOCATION_${exec} CACHE)
-    if(CLR_CMAKE_HOST_OHOS)
+    if(CLR_CMAKE_HOST_OPENHARMONY)
       find_program(EXEC_LOCATION_${exec}
         NAMES
         "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
