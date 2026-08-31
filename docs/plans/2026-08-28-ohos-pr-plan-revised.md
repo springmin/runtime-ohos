@@ -320,3 +320,174 @@ module (XPM LSM), which is NOT in the open-source kernel.
 - Community: TermonyHQ/Termony (QEMU-on-OHOS JIT patch) — confirms JIT runs on
   OpenHarmony with prctl wrapping; QEMU TCG JIT works
 - Our verification: `dotnet --info` (CoreCLR+JIT) on OHOS musl rootfs (qemu)
+
+---
+
+## 10. Port classification: OpenHarmony shared / HarmonyOS-only / OpenHarmony-only + unified-binary design (2026-08-31)
+
+> **FACT UPDATE (user-verified):** JIT **does run on HarmonyOS** — the bun port and an
+> earlier dotnet runtime build have both been confirmed running on HarmonyOS with JIT.
+> The XPM enforcement question is **deferred to HarmonyOS hardware verification**
+> (see §10.4 probe plan); this section documents the classification and the
+> unified-design strategy without asserting a JIT ban as fact.
+
+### 10.1 Classification of all port changes
+
+#### Shared (OpenHarmony + HarmonyOS) — ~85% of changes
+
+| Change | Why (both platforms) |
+|---|---|
+| RID support (`RuntimeIdentifier.props`, `runtime.json`, `targetingpacks.targets`) | both use `linux-ohos` RID + musl |
+| OHOS NDK toolchain (`build-commons.sh`, `configureplatform/compiler/tools.cmake`, `gen-buildsys.sh`) | same NDK cross-compile |
+| NUMA fix (`numasupport.cpp`) | `get_mempolicy` not in either seccomp whitelist → SIGSYS |
+| TMPDIR (`SharedMemoryManager.Unix.cs`) | both sandboxes mount `/tmp` read-only |
+| robust-mutex fallback (`NamedMutex.Unix.cs`) | both sysroots lack robust pthread mutexes |
+| `OperatingSystem.IsOpenHarmony()` | platform detection |
+| NativeAOT BuildIntegration (ABI/lld/Net.Security skip) | both musl + NDK lld |
+| No-LTTng/gssapi/qsort_r/zstd sysroot fixes | same sysroot |
+| `OpenHarmonyEnvironmentDefaults` (TMPDIR/telemetry/nologo) | both sandbox environments |
+
+**Items to verify as shared (added by review):**
+- ICU / globalization data path (community OHOS branch added a dedicated compile flag)
+- Full syscall-whitelist check: `rseq`, `membarrier`, `faccessat2`, `getrandom`, `tgkill`,
+  `sched_getaffinity`, `prctl`, `clone3`
+- GC large virtual-memory reservation (`USE_REGIONS`; dotnet/runtime#111649) — test
+  whether OpenHarmony is also constrained before classifying
+
+#### HarmonyOS-only — ~10%
+
+| Change | Why |
+|---|---|
+| **codesign (`OpenHarmonyCodesign`)** | HarmonyOS kernel enforces `.codesign`; OpenHarmony ignores it (harmless) |
+| **W^X handling** | HarmonyOS XPM LSM restricts anonymous executable memory (exact behavior TBD by hardware probe) |
+| libstdc++ → libc++ dependency (CoreCLR native chain) | OHOS ships libc++, CoreCLR links libstdc++ (dotnet/runtime#103627) |
+| fork+exec restriction (if child processes needed) | HarmonyOS NEXT restricts third-party fork |
+| appspawn env-var filtering | `DOTNET_*` may be stripped → config via runtimeconfig.json |
+
+#### OpenHarmony-only
+
+**No code-level changes** — the only difference is the **deployment artifact**:
+OpenHarmony can ship the CoreCLR layout (JIT), HarmonyOS may ship CoreCLR or
+NativeAOT depending on the hardware probe outcome.
+
+### 10.2 Unified design: one codebase, artifacts per platform
+
+**One codebase** (already how the port is structured):
+- Compile-time: `TARGET_OPENHARMONY` guard (done) — both platforms share the
+  `linux-ohos` RID, so compile-time cannot distinguish them.
+- Runtime capability probe (recommended addition): at startup, `mmap(RW) → write →
+  mprotect(RX)` anonymous probe; if it fails, the environment enforces exec-memory
+  restrictions (HarmonyOS with XPM active). This is the only reliable way to
+  distinguish platforms under a unified binary.
+
+**Artifacts:**
+| Artifact | OpenHarmony | HarmonyOS |
+|---|---|---|
+| CoreCLR (JIT) layout | ✅ (verified in qemu) | ✅ (user-verified: bun + earlier dotnet build run) |
+| NativeAOT binary | ✅ (dotnet/runtime#103627) | ✅ |
+| codesign | optional (ignored) | required |
+
+**Signing**: one signed artifact serves both — sign is the last build step, strip
+before sign, zero modification after sign; OpenHarmony loader ignores the
+signature data.
+
+### 10.3 Key correction (from Oracle review)
+
+The earlier "redist runtimeconfig W^X off" item was **directionally wrong**:
+`EnableWriteXorExecute=0` produces **RWX** (not RW+RX split) — the form most
+likely blocked by an exec-memory LSM; `=1` (RW→RX publish) is the W^X-compliant
+form. But since JIT is user-verified running on HarmonyOS, the correct framing is:
+**keep both values as configuration options and let the hardware probe decide**
+(§10.4), rather than asserting one is blocked. If the probe shows exec-memory is
+allowed, CoreCLR defaults work; if restricted, configure accordingly or ship
+NativeAOT.
+
+### 10.4 XPM hardware verification plan (deferred to HarmonyOS machine)
+
+A self-contained probe program to run on HarmonyOS hardware, then report results
+back here to finalize the classification:
+
+```c
+// xpm_probe.c — verify anonymous executable-memory policy on HarmonyOS
+#include <stdio.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+
+int main(void) {
+    // Probe 1: mmap RWX (would be blocked if RWX is forbidden)
+    unsigned char *p = mmap(NULL, 4096, PROT_READ|PROT_WRITE|PROT_EXEC,
+                            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) {
+        printf("PROBE1 mmap(RWX): FAILED errno=%d (%s)\n", errno, strerror(errno));
+    } else {
+        printf("PROBE1 mmap(RWX): OK\n");
+        munmap(p, 4096);
+    }
+
+    // Probe 2: mmap RW then mprotect to RX (W^X-compliant JIT path)
+    p = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED) {
+        printf("PROBE2 mmap(RW): FAILED errno=%d\n", errno);
+        return 1;
+    }
+    memset(p, 0xc3, 4096);  // write (RET opcode)
+    if (mprotect(p, 4096, PROT_READ|PROT_EXEC) == 0) {
+        printf("PROBE2 mmap(RW)+mprotect(RX): OK — W^X JIT path works\n");
+    } else {
+        printf("PROBE2 mmap(RW)+mprotect(RX): FAILED errno=%d (%s)\n",
+               errno, strerror(errno));
+    }
+    munmap(p, 4096);
+
+    // Probe 3: prctl(PR_SET_JITFORT) behavior (0x6a6974)
+    long r = prctl(0x6a6974, 0, 0);
+    printf("PROBE3 prctl(PR_SET_JITFORT): ret=%ld errno=%d\n", r, errno);
+
+    // Probe 4: run a small JITted function (RW→RX, then call it)
+    p = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    if (p != MAP_FAILED) {
+        memset(p, 0xc3, 4096);  // ret
+        if (mprotect(p, 4096, PROT_READ|PROT_EXEC) == 0) {
+            int (*fn)(void) = (int (*)(void))p;
+            int v = fn();
+            printf("PROBE4 call JIT fn: OK returned=%d\n", v);
+        } else {
+            printf("PROBE4 call JIT fn: mprotect FAILED errno=%d\n", errno);
+        }
+        munmap(p, 4096);
+    }
+    return 0;
+}
+```
+
+Build & run on the HarmonyOS machine:
+```sh
+# cross-compile with OHOS NDK, then sign (HarmonyOS requires .codesign)
+aarch64-unknown-linux-ohos-clang xpm_probe.c -o xpm_probe
+binary-sign-tool sign -inFile xpm_probe -outFile xpm_probe -selfSign 1
+# copy to device, run in a normal app/shell context
+./xpm_probe
+```
+
+Report back the four probe results; they determine:
+- PROBE1/2 → whether anonymous exec memory is allowed (JIT feasible, CoreCLR
+  defaults usable) or restricted (need W^X-off config or NativeAOT)
+- PROBE3 → whether the JITFORT prctl gate is active
+- PROBE4 → whether a real JIT-then-execute round-trip works end-to-end
+
+### 10.5 Recommended path (pending probe)
+
+- **If PROBE1/2 OK** (likely, given user-verified JIT on HarmonyOS): CoreCLR layout
+  is the unified artifact; keep `EnableWriteXorExecute` configurable, default
+  W^X-compliant (`=1`); NativeAOT remains available for constrained devices.
+- **If PROBE1/2 FAIL**: HarmonyOS ships NativeAOT; OpenHarmony ships CoreCLR
+  (dual-artifact, one codebase).
+
+### 10.6 Open items
+
+- ICU data path on both platforms
+- Full syscall whitelist verification (list in §10.1)
+- GC `USE_REGIONS` / virtual-reservation behavior on HarmonyOS (dotnet/runtime#111649)
+- Signing order & zero-modification verification on OpenHarmony regression
