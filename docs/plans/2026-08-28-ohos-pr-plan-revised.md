@@ -244,3 +244,79 @@ not grant high-privilege capabilities (macOS Ad Hoc analogue).
   https://tech.meituan.com/2025/01/06/OpenHarmony.html
 - Community tooling notes (`.o` must not be signed):
   https://github.com/SwimmingTiger/command-line-tools
+
+---
+
+## 9. Runtime restrictions: OpenHarmony (open source) vs HarmonyOS (commercial) — JIT/W^X/seccomp (2026-08-31)
+
+### 9.1 Conclusion
+
+**OpenHarmony (open source, Linux-kernel standard system) does NOT enforce the
+W^X/JIT ban that HarmonyOS 5.0 (commercial) does. CoreCLR with JIT is viable on
+OpenHarmony.** The HarmonyOS JIT ban comes from the commercial kernel security
+module (XPM LSM), which is NOT in the open-source kernel.
+
+| Restriction | HarmonyOS 5.0 (commercial) | OpenHarmony (open source) |
+|---|---|---|
+| W^X / anonymous exec memory | **Enforced** (XPM LSM, vendor module) → JIT banned | **Not enforced** — JITFORT/XPM hooks exist but no open-source implementation registers them |
+| seccomp whitelist | Aggressive — unlisted syscall → SIGSYS kill | Has policies but **allows `mmap;all`, `mprotect;all`, `memfd_create;all`**; default action is `TRAP` not KILL |
+| JIT runtimes (V8/.NET CoreCLR) | Banned (except system JS engine) | **Allowed** — QEMU TCG JIT runs; our `dotnet --info` (CoreCLR+JIT) verified on OHOS musl rootfs |
+| CoreCLR | Only NativeAOT viable | **CoreCLR + NativeAOT both viable** |
+
+### 9.2 Evidence (kernel source-level, openharmony/kernel_linux_5.10)
+
+1. **`prctl(PR_SET_JITFORT 0x6a6974)`** ("jit" ASCII) — `kernel/sys.c` case is a
+   **no-op** (`error = 0; break;`). The kernel accepts it but does nothing by itself.
+2. **`MAP_XPM` mmap flag (0x40)** + `mm->xpm_region` + `/proc/<pid>/xpm_region` —
+   infrastructure exists for XPM (executable-permission management) regions.
+3. **`mprotect(PROT_EXEC)` HCK hook** (`mm/mprotect.c`):
+   ```c
+   if (prot & PROT_EXEC) {
+       CALL_HCK_LITE_HOOK(find_jit_memory_lhck, current, start, len, &error);
+       if (error) { pr_info("JITINFO: mprotect protection triggered"); return error; }
+   }
+   ```
+   `CALL_HCK_LITE_HOOK` is a **no-op when no module registers the hook** — the
+   open-source kernel has NO registration implementation, so `error` stays 0 and
+   mprotect(PROT_EXEC) is allowed.
+4. **`security/xpm` LSM is NOT in the open-source kernel repo** — only the hook
+   points + proc interface ship; the enforcing LSM is a vendor/commercial patch.
+5. **Per-board configs differ**: `rk3568_standard_defconfig` has
+   `CONFIG_HCK=y` + `CONFIG_SECURITY_XPM=y`, but `unionpi_tiger_standard_defconfig`
+   does NOT — the hooks only bite if both enabled AND a module registers them.
+6. **seccomp policies** (`startup_init/services/modules/seccomp/`):
+   `app_normal.seccomp.policy` allows `mmap;all`, `mprotect;all`,
+   `memfd_create;all`, `userfaultfd;all`, `ptrace;all`; `get_mempolicy` is NOT
+   whitelisted → TRAP → SIGSYS (this is exactly the NUMA crash we fixed in
+   `numasupport.cpp`). Default return value is `TRAP` (recoverable via SIGSYS
+   handler), not `KILL_PROCESS`.
+7. **JITFORT user-space**: `appspawn` `InitXpm(jitfortEnable, ...)` +
+   `persist.security.jitfort.disabled` sysprop (true → JITFORT off). Community
+   QEMU-on-OHOS patch shows JIT works by wrapping mmap(PROT_EXEC) with
+   `prctl(PR_SET_JITFORT, 0, 0/1)`.
+
+### 9.3 Implications for this port
+
+- **`linux-ohos` CoreCLR (with JIT) is the right target for OpenHarmony open
+  source** — our port (JIT + `DOTNET_EnableWriteXorExecute=0` + NUMA fix) is
+  correct. The W^X-off + sandbox fixes are **defensive** on OpenHarmony (avoid
+  vendor LSM if enabled) and **mandatory** on HarmonyOS commercial.
+- **HarmonyOS commercial still requires NativeAOT** (XPM LSM forcibly bans JIT).
+  The port must keep both CoreCLR and NativeAOT paths: CoreCLR for OpenHarmony
+  open source, NativeAOT for HarmonyOS commercial.
+- **seccomp**: `get_mempolicy`/`mbind` avoidance (numasupport.cpp) is needed on
+  both (not whitelisted). mmap/mprotect are fine.
+- **Docs**: the port docs currently assume "OHOS needs W^X off + sandbox fixes";
+  clarify these are defensive on OpenHarmony (vendor LSM may or may not be
+  enabled) and required on HarmonyOS.
+
+### 9.4 References
+
+- Kernel: `openharmony/kernel_linux_5.10` (prctl.h `PR_SET_JITFORT 0x6a6974`,
+  `mm/mprotect.c` `find_jit_memory_lhck`, `fs/proc/xpm_region.c`, defconfigs)
+- seccomp: `openharmony/startup_init/services/modules/seccomp/*.seccomp.policy`
+- JITFORT: `openharmony/startup_appspawn` `InitXpm`, `MSG_EXT_NAME_JIT_PERMISSIONS`
+- musl: `openharmony/third_party_musl` (`MAP_XPM`, `HM_PR_CHECK_ENCAPS`)
+- Community: TermonyHQ/Termony (QEMU-on-OHOS JIT patch) — confirms JIT runs on
+  OpenHarmony with prctl wrapping; QEMU TCG JIT works
+- Our verification: `dotnet --info` (CoreCLR+JIT) on OHOS musl rootfs (qemu)
