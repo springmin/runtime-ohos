@@ -24,7 +24,7 @@
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
 
     <IntermediatesDir>$(ArtifactsObjDir)\coreclr\$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
-    <IntermediatesDir Condition="'$(TargetOpenHarmony)' == 'true'">$(ArtifactsObjDir)\coreclr\linux-ohos.$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
+    <IntermediatesDir Condition="'$(TargetsOpenHarmony)' == 'true'">$(ArtifactsObjDir)\coreclr\linux-ohos.$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
     <IntermediatesDir Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform('Windows'))">$(IntermediatesDir)\ide</IntermediatesDir>
   </PropertyGroup>
   <PropertyGroup>
