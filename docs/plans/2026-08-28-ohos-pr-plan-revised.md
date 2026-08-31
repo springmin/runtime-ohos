@@ -118,3 +118,42 @@ mostly validation + possibly version alignment. Could be folded into PR-S1.*
 - SDK: `dotnet publish -r linux-ohos-arm64 -p:PublishAot=true` with local feed
   (documented in C.6 of the runtime plan).
 - Standard platform CI matrix must pass (no-op guarantee).
+
+---
+
+## 7. Post-review updates (2026-08-30/31)
+
+### 7.1 Naming: OPENHARMONY (jkotas + am11 review, #132827)
+
+Per reviewer feedback, all OHOS identifiers renamed to OPENHARMONY (kernel-agnostic,
+matches the HarmonyOS/OpenHarmony distinction):
+
+| Old | New | Scope |
+|---|---|---|
+| `TARGET_OHOS` | `TARGET_OPENHARMONY` | compile-time macro (numasupport, pal, CoreLib) |
+| `TargetsOhos` / `TargetOpenHarmony` | `TargetsOpenHarmony` (plural, jkotas 08-30) | MSBuild props (RID props, subsets, native build, NativeAOT) |
+| `IsOhos()` | `IsOpenHarmony()` | OperatingSystem |
+| `CLR_CMAKE_TARGET_OHOS` | `CLR_CMAKE_TARGET_OPENHARMONY` | CMake |
+| SDK `OhosCodesign` / `OhosEnvironmentDefaults` | `OpenHarmonyCodesign` / `OpenHarmonyEnvironmentDefaults` | SDK (renamed 08-31) |
+
+The **`linux-ohos` RID string is unchanged** (HarmonyOS PC ships linux-ohos +
+harmony-ohos kernels; the ohos RID migration is a separate tracked decision).
+
+### 7.2 PR ordering guidance (am11, #132827)
+
+am11: the first PR for a new platform should touch `eng/` (+ `src/coreclr`)
+to define the platform in the repo, not `src/libraries` changes while nothing
+defines the platform. This is the OpenBSD port's model (eng/ + coreclr first,
+then per-library PRs, arcade upstreamed separately).
+
+**Action:** the follow-up PRs are already infra-first (PR-R2 build infra touches
+eng/ + coreclr). Reorder so **PR-R2 (infra) lands before any further libraries
+changes**. PR #132827 (libraries sandbox fixes) stays as the standalone minimal
+first PR but is understood to be the exception; reviewers asked for infra-first
+going forward.
+
+### 7.3 SDK class-name rename (08-31)
+
+SDK `OhosCodesign` → `OpenHarmonyCodesign`, `OhosEnvironmentDefaults` →
+`OpenHarmonyEnvironmentDefaults` (files, classes, MSBuild targets, call sites).
+`linux-ohos` RID checks unchanged. Commit `229abfcc51` on `feature/ohos-cross-sdk`.
