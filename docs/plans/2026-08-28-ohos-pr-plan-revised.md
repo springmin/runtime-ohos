@@ -157,3 +157,90 @@ going forward.
 SDK `OhosCodesign` → `OpenHarmonyCodesign`, `OhosEnvironmentDefaults` →
 `OpenHarmonyEnvironmentDefaults` (files, classes, MSBuild targets, call sites).
 `linux-ohos` RID checks unchanged. Commit `229abfcc51` on `feature/ohos-cross-sdk`.
+
+---
+
+## 8. ELF code-signing requirements: OpenHarmony vs HarmonyOS (2026-08-31)
+
+### 8.1 Conclusion
+
+**`.codesign` is mandatory on HarmonyOS (Huawei commercial), NOT on OpenHarmony (open source).**
+
+| Platform | `.codesign` required to execute? | Enforcement point |
+|---|---|---|
+| **OpenHarmony** (open source, standard products e.g. rk3568/dayu200) | **No** — unsigned ELF runs directly | HAP install-time verify only (`security_appverify`), offline-passable with the pre-bundled public cert |
+| **HarmonyOS** (commercial: PC/HiShell, NEXT, security level ≥3) | **Yes** — kernel-enforced | exec/dlopen checks fs-verity/dm-verity protection; unsigned → `permission denied` |
+
+### 8.2 Evidence
+
+1. **OpenHarmony kernel lacks the enforcement components.** GitHub code search on
+   `openharmony/kernel_linux_common_modules` for `fs_security_verity` and `xpm`
+   (the modules that reject unsigned ELFs with "not protected by dmverity" /
+   `E_HM_PERM` in HarmonyOS kernel logs) returns **nothing** — they are
+   HarmonyOS-commercial-kernel-private, not in the open source tree.
+2. **Official docs wording** (`hapsigntool-overview.md`): signing is required
+   "on devices that support the mandatory code signing mechanism" — a device
+   capability, not an OpenHarmony global default; `-signCode 0` can disable it.
+   The official mandate targets HAP packages + debug tools (lldb-server), not
+   arbitrary ELFs.
+3. **Independent deep-dive** (hqzing's HarmonyOS PC series, 2026): "this
+   mechanism is a HarmonyOS-specific security feature. OpenHarmony does not
+   enable this check by default and its current source has not fully
+   implemented the binary verification logic." The OpenHarmony SDK ships the
+   *signing* toolchain (binary-sign-tool) even though the OS doesn't enforce it
+   ("upstream toolchain reverse-adapting to the downstream OS").
+4. **`security_code_signature` is optional** — all logic is behind
+   `code_signature_support_*` feature flags (bundle.json/BUILD.gn), and standard
+   product definitions (productdefine/vendor) do not enable it by default.
+5. **Our own qemu verification** confirms it: the unsigned `aot-test` ran
+   directly under the musl loader — the plain loader does not check `.codesign`.
+
+### 8.3 Files needing signing (on enforcing devices)
+
+- Main executable (ET_EXEC) + all loaded `.so` (ET_DYN) must carry `.codesign`.
+- `.o` object files must NOT be signed (lld emits multiple signatures → kernel
+  rejects with `Operation not permitted`).
+- Symlinks are skipped.
+
+### 8.4 Official tools
+
+| Tool | Purpose | Source |
+|---|---|---|
+| `binary-sign-tool` | ELF-only signing (bin/.so); `-selfSign 1` self-sign | OpenHarmony `developtools_hapsigner/binary_sign_tool/`, ships in Command Line Tools SDK (`openHarmony/toolchains/lib/`) |
+| `hap-sign-tool` | HAP/HSP/HQF + ELF binary signing | OpenHarmony `developtools_hapsigner/`, ships in Command Line Tools SDK |
+
+Self-sign (flags bit `0x10`) is sufficient to *run* on enforcing devices but does
+not grant high-privilege capabilities (macOS Ad Hoc analogue).
+
+### 8.5 Impact on this port
+
+- **`OpenHarmonyCodesign` auto-signing is NOT redundant** — the primary target
+  is HarmonyOS commercial (PC), where it is mandatory. Keep it.
+- The signing is **device-level enforcement on commercial HarmonyOS**, whereas
+  OpenHarmony open source treats it as optional; document this in the SDK PR
+  description to preempt reviewer questions.
+- Self-sign implementation (ElfSignInfo: fs-verity descriptor version=1,
+  hashAlgo=1, log2BlockSize=12, csVersion=3, flags|0x10, signature=SHA256 of
+  descriptor with signSize=0) matches the official `binary-sign-tool` algorithm
+  (byte-identical verified).
+- Do not sign `.o` files; only ET_EXEC/ET_DYN in the SDK's auto-sign pass.
+
+### 8.6 References
+
+- OpenHarmony `binary-sign-tool.md` (official docs, tool paths):
+  https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/binary-sign-tool.md
+- `hapsigntool-overview.md` ("on devices that support the mandatory code
+  signing mechanism"):
+  https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/security/hapsigntool-overview.md
+- `security_code_signature` (feature flags):
+  https://github.com/openharmony/security_code_signature/blob/master/bundle.json
+- `security_appverify` (HAP install verify + pre-bundled public cert):
+  https://github.com/openharmony/security_appverify
+- HarmonyOS PC code-signing deep dive (OpenHarmony not enforced):
+  https://harmonypc.csdn.net/69f750d154b52172bc71a036.html
+- Self-sign algorithm / ElfSignInfo format + kernel logs:
+  https://jishuzhan.net/article/2074363691891437569
+- Meituan HarmonyOS signing analysis (NEXT double-layer signing):
+  https://tech.meituan.com/2025/01/06/OpenHarmony.html
+- Community tooling notes (`.o` must not be signed):
+  https://github.com/SwimmingTiger/command-line-tools
