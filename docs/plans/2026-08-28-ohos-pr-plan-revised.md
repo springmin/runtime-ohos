@@ -251,17 +251,23 @@ not grant high-privilege capabilities (macOS Ad Hoc analogue).
 
 ### 9.1 Conclusion
 
-**OpenHarmony (open source, Linux-kernel standard system) does NOT enforce the
-W^X/JIT ban that HarmonyOS 5.0 (commercial) does. CoreCLR with JIT is viable on
-OpenHarmony.** The HarmonyOS JIT ban comes from the commercial kernel security
-module (XPM LSM), which is NOT in the open-source kernel.
+**Hardware-verified (2026-08-31, HarmonyOS HongMeng Kernel 1.13.0, aarch64):
+neither OpenHarmony (open source) nor HarmonyOS (commercial, tested device)
+enforces the W^X/JIT ban. CoreCLR with JIT is viable on both.** The earlier
+assumption that HarmonyOS commercial "forcibly bans JIT" (XPM LSM) is
+**falsified by on-device probes**: anonymous RWX mmap, RW→RX mprotect, the
+JITFORT prctl, and a real JIT-then-execute round-trip all succeed, and a full
+CoreCLR+JIT .NET 11.0 app (LINQ/generics/threads/GC) runs natively on the
+device. XPM enforcement is device/vendor-configuration dependent (see §9.2.5),
+so the W^X-off posture stays **defensive**, but it is not a hard blocker on the
+tested hardware.
 
-| Restriction | HarmonyOS 5.0 (commercial) | OpenHarmony (open source) |
+| Restriction | HarmonyOS 5.0 (commercial) — **hardware-verified** | OpenHarmony (open source) |
 |---|---|---|
-| W^X / anonymous exec memory | **Enforced** (XPM LSM, vendor module) → JIT banned | **Not enforced** — JITFORT/XPM hooks exist but no open-source implementation registers them |
-| seccomp whitelist | Aggressive — unlisted syscall → SIGSYS kill | Has policies but **allows `mmap;all`, `mprotect;all`, `memfd_create;all`**; default action is `TRAP` not KILL |
-| JIT runtimes (V8/.NET CoreCLR) | Banned (except system JS engine) | **Allowed** — QEMU TCG JIT runs; our `dotnet --info` (CoreCLR+JIT) verified on OHOS musl rootfs |
-| CoreCLR | Only NativeAOT viable | **CoreCLR + NativeAOT both viable** |
+| W^X / anonymous exec memory | **Not enforced on tested device** (HongMeng Kernel 1.13.0: mmap(RWX) OK, RW→RX OK); XPM LSM may be active on other devices/vendor configs | **Not enforced** — JITFORT/XPM hooks exist but no open-source implementation registers them |
+| seccomp whitelist | `get_mempolicy` → **SIGSYS verified on device** (TRAP, recoverable); mmap/mprotect allowed | Same policies — **allows `mmap;all`, `mprotect;all`, `memfd_create;all`**; default action is `TRAP` not KILL |
+| JIT runtimes (V8/.NET CoreCLR) | **Allowed — verified**: full .NET 11.0 CoreCLR+JIT app runs on device | **Allowed** — QEMU TCG JIT runs; `dotnet --info` verified on OHOS musl rootfs |
+| CoreCLR | **CoreCLR + NativeAOT both viable** (hardware-verified) | **CoreCLR + NativeAOT both viable** |
 
 ### 9.2 Evidence (kernel source-level, openharmony/kernel_linux_5.10)
 
@@ -297,18 +303,22 @@ module (XPM LSM), which is NOT in the open-source kernel.
 
 ### 9.3 Implications for this port
 
-- **`linux-ohos` CoreCLR (with JIT) is the right target for OpenHarmony open
-  source** — our port (JIT + `DOTNET_EnableWriteXorExecute=0` + NUMA fix) is
-  correct. The W^X-off + sandbox fixes are **defensive** on OpenHarmony (avoid
-  vendor LSM if enabled) and **mandatory** on HarmonyOS commercial.
-- **HarmonyOS commercial still requires NativeAOT** (XPM LSM forcibly bans JIT).
-  The port must keep both CoreCLR and NativeAOT paths: CoreCLR for OpenHarmony
-  open source, NativeAOT for HarmonyOS commercial.
+- **`linux-ohos` CoreCLR (with JIT) is the right target for BOTH OpenHarmony
+  open source and HarmonyOS commercial (hardware-verified on HongMeng Kernel
+  1.13.0)** — our port (JIT + `DOTNET_EnableWriteXorExecute` + NUMA fix) is
+  correct. The W^X-off + sandbox fixes are **defensive** everywhere (in case a
+  vendor LSM is enabled on some device), not a hard requirement on the tested
+  hardware.
+- **NativeAOT remains a supported artifact** but is **no longer the only option
+  for HarmonyOS commercial** — CoreCLR+JIT is verified running on a commercial
+  device. Keep both paths (CoreCLR unified binary, NativeAOT for constrained
+  devices or future XPM-enforcing firmware).
 - **seccomp**: `get_mempolicy`/`mbind` avoidance (numasupport.cpp) is needed on
-  both (not whitelisted). mmap/mprotect are fine.
+  both — **`get_mempolicy` → SIGSYS verified on device** (TRAP semantics;
+  without the fix the GC probe would crash startup). mmap/mprotect are fine.
 - **Docs**: the port docs currently assume "OHOS needs W^X off + sandbox fixes";
-  clarify these are defensive on OpenHarmony (vendor LSM may or may not be
-  enabled) and required on HarmonyOS.
+  clarify these are defensive (vendor LSM may or may not be enabled on a given
+  device) rather than universally required.
 
 ### 9.4 References
 
@@ -325,11 +335,12 @@ module (XPM LSM), which is NOT in the open-source kernel.
 
 ## 10. Port classification: OpenHarmony shared / HarmonyOS-only / OpenHarmony-only + unified-binary design (2026-08-31)
 
-> **FACT UPDATE (user-verified):** JIT **does run on HarmonyOS** — the bun port and an
-> earlier dotnet runtime build have both been confirmed running on HarmonyOS with JIT.
-> The XPM enforcement question is **deferred to HarmonyOS hardware verification**
-> (see §10.4 probe plan); this section documents the classification and the
-> unified-design strategy without asserting a JIT ban as fact.
+> **FACT UPDATE (hardware-verified 2026-08-31):** JIT **does run on HarmonyOS** —
+> the bun port, an earlier dotnet runtime build, and now the full CoreCLR+JIT
+> .NET 11.0 app on this device (HongMeng Kernel 1.13.0) have all been confirmed.
+> The XPM hardware probe (§10.4) **passed all four checks** — exec-memory
+> restrictions are not enforced on the tested device; this section documents the
+> classification and the unified-design strategy without asserting a JIT ban.
 
 ### 10.1 Classification of all port changes
 
@@ -402,10 +413,32 @@ form. But since JIT is user-verified running on HarmonyOS, the correct framing i
 allowed, CoreCLR defaults work; if restricted, configure accordingly or ship
 NativeAOT.
 
-### 10.4 XPM hardware verification plan (deferred to HarmonyOS machine)
+### 10.4 XPM hardware verification — **DONE (2026-08-31, HarmonyOS HongMeng Kernel 1.13.0, aarch64)**
 
-A self-contained probe program to run on HarmonyOS hardware, then report results
-back here to finalize the classification:
+Probe results (native compile + run on device):
+
+| Probe | Result |
+|---|---|
+| PROBE1 `mmap(RWX)` | **OK** — anonymous RWX memory allowed |
+| PROBE2 `mmap(RW)` + `mprotect(RX)` | **OK** — W^X-compliant JIT path works |
+| PROBE3 `prctl(PR_SET_JITFORT)` | **ret=0, errno=0** — no-op, matches kernel-source finding (§9.2.1) |
+| PROBE4 JIT-then-execute round-trip | **OK** — executed code from an RX page (aarch64 `ret`), returned 0 |
+
+Supporting verification on the same device:
+
+- **Full CoreCLR+JIT .NET 11.0.0-dev app runs natively** (RID `linux-ohos-arm64`):
+  LINQ/generics/lambdas, `Task<int>` + threads, forced GC — all OK.
+- **`get_mempolicy` → SIGSYS (signum 31)** confirmed via seccomp (TRAP semantics:
+  a SIGSYS handler receives it and the process survives) — validates the
+  `numasupport.cpp` NUMA fix on real hardware.
+
+Conclusion: **XPM is not enforcing exec-memory restrictions on the tested
+HarmonyOS device; CoreCLR (JIT) is the unified artifact.** Enforcement remains
+possible on other devices/vendor configs (§9.2.5), so the defensive posture
+stays.
+
+The probe program used (aarch64-corrected, unbuffered output):
+`xpm_probe.c` — 4 probes above; build with `cc xpm_probe.c -o xpm_probe && ./xpm_probe`.
 
 ```c
 // xpm_probe.c — verify anonymous executable-memory policy on HarmonyOS
@@ -477,13 +510,14 @@ Report back the four probe results; they determine:
 - PROBE3 → whether the JITFORT prctl gate is active
 - PROBE4 → whether a real JIT-then-execute round-trip works end-to-end
 
-### 10.5 Recommended path (pending probe)
+### 10.5 Recommended path — **adopted (probe passed)**
 
-- **If PROBE1/2 OK** (likely, given user-verified JIT on HarmonyOS): CoreCLR layout
-  is the unified artifact; keep `EnableWriteXorExecute` configurable, default
-  W^X-compliant (`=1`); NativeAOT remains available for constrained devices.
-- **If PROBE1/2 FAIL**: HarmonyOS ships NativeAOT; OpenHarmony ships CoreCLR
-  (dual-artifact, one codebase).
+- **PROBE1/2/4 OK** (hardware-verified): **CoreCLR layout is the unified
+  artifact**; keep `EnableWriteXorExecute` configurable, default W^X-compliant
+  (`=1`); NativeAOT remains available for constrained devices or future
+  XPM-enforcing firmware.
+- PROBE1/2 FAIL would have meant: HarmonyOS ships NativeAOT; OpenHarmony ships
+  CoreCLR (dual-artifact, one codebase) — not needed on tested hardware.
 
 ### 10.6 Open items
 
