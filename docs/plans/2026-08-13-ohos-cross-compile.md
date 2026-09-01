@@ -848,4 +848,88 @@ qemu-aarch64 -L /tmp/ohos-qemu-root -E LD_PRELOAD=/lib/libarc4random_shim.so ./a
 
 ---
 
-*文档更新: 2026-08-28*
+## C.7 RID 重命名后的 NativeAOT 标准 publish 链路（2026-09-01）
+
+在 C.6（手动补丁 + linux-ohos + dev）基础上，RID 重命名（`linux-ohos` → `ohos`）后
+**用标准 `dotnet publish` 链路重新验证**，产出 `rc.1.26451.1` 正式构建的 NativeAOT packs。
+
+### 与 C.6 的差异（本轮核心）
+
+| 维度 | C.6（2026-08-28） | C.7（2026-09-01） |
+|---|---|---|
+| RID | `linux-ohos-arm64` | **`ohos-arm64`**（import linux-musl） |
+| 版本 | `11.0.0-dev` | **`11.0.0-rc.1.26451.1`** |
+| SDK | preview.6 + 手动补丁 BundledVersions | **x64 host SDK**（`-os linux -arch x64`，源码 GenerateBundledVersions 含 ohos） |
+| ILCompiler pack | 手动补 build/ targets | **正式构建**（`clr.aot+packs` subset + sfxproj） |
+| 修复层 | SDK pack targets 手动补丁 | **runtime 源码**（SingleEntry.targets） |
+
+### 关键修复（runtime 源码层，已提交）
+
+**`Microsoft.DotNet.ILCompiler.SingleEntry.targets`**（`91572f4362c`）：
+ilc 只接受已知 target OS（linux/android/osx/...），`--targetos:ohos` 报
+`Target OS 'ohos' is not supported`。映射：
+```xml
+<_linuxLibcFlavor Condition="'$(_targetOS)' == 'ohos'">musl</_linuxLibcFlavor>
+<_targetOS Condition="'$(_targetOS)' == 'ohos'">linux</_targetOS>
+```
+- `_targetOS=linux` → ilc 接受 `--targetos:linux`
+- `_linuxLibcFlavor=musl` → 链接保留 musl
+- `CrossCompileRid`（源自 `_originalTargetOS`，未改）→ Native.Unix.targets 仍选 lld + OHOS 工具链
+
+**SDK `GenerateBundledVersions.targets`**（`380c2d764d`）：net10 三处名单
+（`Net100ILCompilerSupportedRids`/`Net100NativeAOTRuntimePackRids`/`AspNetCore100RuntimePackRids`）
+补 `ohos-arm64;ohos-x64`——否则 net10 目标发布回退 linux-musl-arm64 pack。
+
+### 正式构建命令（替代 DotNetBuildAllRuntimePacks=true）
+
+`DotNetBuildAllRuntimePacks=true` 会同时触发 Mono cross-AOT（android/ios 等），在 ohos
+环境下错乱。改用精确子集：
+
+```sh
+# ILCompiler packs（通用 + linux-x64 host + ohos-arm64 target）
+./build.sh -os ohos -arch arm64 --cross -c Release ... -subset clr.aot+packs \
+  -cmakeargs "-DOPENSSL_ROOT_DIR=/tmp/openssl-ohos/install ..."
+
+# NativeAOT runtime pack
+./build.sh -os ohos -arch arm64 --cross -c Release ... \
+  -projects "$(pwd)/src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj"
+```
+
+产出（全部 rc.1.26451.1，正式构建）：
+- `Microsoft.NETCore.App.Runtime.NativeAOT.ohos-arm64`（26.6MB，19 静库 + CoreLib）
+- `runtime.ohos-arm64.Microsoft.DotNet.ILCompiler`（15MB）
+- `runtime.linux-x64.Microsoft.DotNet.ILCompiler`（宿主，9.6MB）
+- `Microsoft.DotNet.ILCompiler`（通用）
+
+### 端到端 publish 验证（x64 host SDK）
+
+```sh
+dotnet publish -c Release -r ohos-arm64 -p:PublishAot=true \
+  -p:RestoreAdditionalProjectSources=/path/to/feed
+# 需应用层参数（链接工具链）：
+#   -p:LinkerFlavor=lld -p:SysRoot=$OHOS_NDK_HOME/native/sysroot \
+#   -p:CppCompilerAndLinker=$OHOS_NDK_HOME/native/llvm/bin/clang \
+#   -p:CrossCompileArch=aarch64 -p:StripSymbols=false
+```
+
+产出：`naot-test` = **ELF aarch64 musl**（interpreter `/lib/ld-musl-aarch64.so.1`）。
+
+### 运行状态
+
+- **qemu 运行 Segfault**：NativeAOT 运行时初始化在 `membarrier`/`mremap` 失败
+  （qemu 用户模式限制）——**需真机验证**（文档 `2026-09-01-ohos-ondevice-verification.md` 的
+  §2.2 NativeAOT 项）。
+
+### 环境恢复备忘（/tmp 依赖易丢）
+
+`/tmp/openssl-ohos`、`/tmp/icu-ohos-install` 等**重启会清空**。持久化备份在
+`~/sources/ohos-assets/`（`openssl-install/`、`icu/`）。恢复：
+```sh
+cp -r ~/sources/ohos-assets/openssl-install/* /tmp/openssl-ohos/install/
+cp -r ~/sources/ohos-assets/icu/* /tmp/icu-ohos-install/
+```
+若 `opensslv.h` 缺失 → `OPENSSL_VERSION` 空 → ilasm 链接 `OpenSSL::SSL` target 未定义失败。
+
+---
+
+*文档更新: 2026-09-01*
