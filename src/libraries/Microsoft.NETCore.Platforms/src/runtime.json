@@ -2159,27 +2159,27 @@
         "linux-x86"
       ]
     },
-    "linux-ohos": {
+    "ohos": {
       "#import": [
-        "linux"
+        "linux-musl"
       ]
     },
-    "linux-ohos-arm": {
+    "ohos-arm": {
       "#import": [
-        "linux-ohos",
-        "linux-arm"
+        "ohos",
+        "linux-musl-arm"
       ]
     },
-    "linux-ohos-arm64": {
+    "ohos-arm64": {
       "#import": [
-        "linux-ohos",
-        "linux-arm64"
+        "ohos",
+        "linux-musl-arm64"
       ]
     },
-    "linux-ohos-x64": {
+    "ohos-x64": {
       "#import": [
-        "linux-ohos",
-        "linux-x64"
+        "ohos",
+        "linux-musl-x64"
       ]
     },
     "linux-ppc64le": {
