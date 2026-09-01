@@ -82,6 +82,9 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 static void sigabrt_handler(int code, siginfo_t *siginfo, void *context);
+#if defined(TARGET_OPENHARMONY) && defined(SIGSYS)
+static void sigsys_handler(int code, siginfo_t *siginfo, void *context);
+#endif // TARGET_OPENHARMONY && SIGSYS
 
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
@@ -114,6 +117,9 @@ struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
 struct sigaction g_previous_sigabrt;
+#if defined(TARGET_OPENHARMONY) && defined(SIGSYS)
+struct sigaction g_previous_sigsys;
+#endif // TARGET_OPENHARMONY && SIGSYS
 
 #if !HAVE_MACH_EXCEPTIONS
 
@@ -241,6 +247,16 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
+
+#if defined(TARGET_OPENHARMONY) && defined(SIGSYS)
+        // HarmonyOS seccomp traps syscalls missing from the app whitelist by
+        // delivering SIGSYS (TRAP action). Convert the trap into a recoverable
+        // -ENOSYS (skip the faulting syscall instruction, set the return
+        // register) so callers fall back to their existing alternative
+        // implementations. Mirrors the Bun runtime's OHOS handling; the
+        // alternate stack is ensured above.
+        handle_signal(SIGSYS, sigsys_handler, &g_previous_sigsys, SA_ONSTACK);
+#endif // TARGET_OPENHARMONY && SIGSYS
     }
 
     /* The default action for SIGPIPE is process termination.
@@ -1175,6 +1191,48 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 #endif // !HAVE_MACH_EXCEPTIONS
     return false;
 }
+
+#if defined(TARGET_OPENHARMONY) && defined(SIGSYS)
+/*++
+Function :
+    sigsys_handler
+
+    HarmonyOS seccomp traps syscalls that are not in the app whitelist by
+    delivering SIGSYS (default action: terminate the process). Convert the
+    trap into a recoverable -ENOSYS so the caller's existing fallback paths
+    handle the unavailable syscall — the same approach the Bun runtime uses
+    on OpenHarmony, and what Android's bionic does internally.
+
+    On-device verification (HongMeng Kernel 1.13.0, aarch64): only the
+    return register must be modified; the PC must be left at the faulting
+    SVC. If the PC is advanced, the kernel forces the return value to 0;
+    with an unchanged PC the syscall returns the value written to the return
+    register. On standard Linux seccomp TRAP an unchanged PC makes the
+    kernel return -ENOSYS itself, so this handler is portable either way.
+--*/
+static void sigsys_handler(int code, siginfo_t *siginfo, void *context)
+{
+    (void)code;
+    (void)siginfo;
+
+    ucontext_t *uc = (ucontext_t *)context;
+    if (uc == NULL)
+    {
+        return;
+    }
+
+#if defined(HOST_ARM64)
+    // aarch64: x0 is the return register.
+    uc->uc_mcontext.regs[0] = (greg_t)(-ENOSYS);
+#elif defined(HOST_AMD64)
+    // x86-64: rax is the return register.
+    uc->uc_mcontext.gregs[REG_RAX] = (greg_t)(-ENOSYS);
+#elif defined(HOST_ARM)
+    // 32-bit ARM: r0 is the return register.
+    uc->uc_mcontext.arm_r0 = (greg_t)(-ENOSYS);
+#endif // HOST_ARM64 / HOST_AMD64 / HOST_ARM
+}
+#endif // TARGET_OPENHARMONY && SIGSYS
 
 /*++
 Function :
