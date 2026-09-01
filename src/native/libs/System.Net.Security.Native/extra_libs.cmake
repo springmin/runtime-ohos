@@ -25,7 +25,7 @@ macro(append_extra_security_libs NativeLibsExtra)
   elseif(HeimdalGssApi)
        message(FATAL_ERROR "HeimdalGssApi option was set but gssapi headers could not be found and System.Net.Security.Native cannot build without the headers. Try installing heimdal (or the appropriate package for your platform)")
   elseif(CLR_CMAKE_TARGET_OPENHARMONY)
-       # HarmonyOS has no krb5 in its sysroot; libgssapi_krb5 is dlopen'd on demand like on Linux.
+       # OpenHarmony has no krb5 in its sysroot; libgssapi_krb5 is dlopen'd on demand like on Linux.
        set(LIBGSS "")
   else()
      find_library(LIBGSS NAMES gssapi_krb5)

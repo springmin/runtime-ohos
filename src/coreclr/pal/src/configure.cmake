@@ -624,7 +624,7 @@ elseif(CLR_CMAKE_TARGET_BROWSER)
 elseif(CLR_CMAKE_TARGET_WASI)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
-  # LTTNG is not available on Android/HarmonyOS, so don't error out
+  # LTTNG is not available on Android/OpenHarmony, so don't error out
   if(FEATURE_EVENTSOURCE_XPLAT AND NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")

@@ -26,7 +26,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'openbsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
-    <!-- HarmonyOS ships no GNU bfd; the NDK provides lld only (like bionic). -->
+    <!-- OpenHarmony ships no GNU bfd; the NDK provides lld only (like bionic). -->
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and $(CrossCompileRid.StartsWith('ohos-'))">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'android'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
