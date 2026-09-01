@@ -3,8 +3,11 @@
 **RID:** `ohos` (renamed from `linux-ohos`, jkoritzinsky review: kernel-agnostic)
 **Branch:** `feature/ohos-cross-runtime` (runtime), `feature/ohos-cross-sdk` (sdk),
 `feature/ohos-cross-compile` (aspnetcore) — all pushed, working trees clean.
+**Version:** `11.0.0-rc.1.26451.1` (runtime/aspnetcore), `11.0.100-rc.1.26451.1` (sdk).
 **Cross-build verified:** `-os ohos -arch arm64 --cross` produces
 `ohos.arm64.Release/{libcoreclr.so, corerun, singlefilehost}` (aarch64).
+**NativeAOT publish verified** on x64 host: `dotnet publish -r ohos-arm64 -p:PublishAot=true`
+→ aarch64 musl ELF (qemu runs blocked by membarrier/mremap — device required).
 
 This document is the on-device (HarmonyOS hardware) verification runbook. Run on
 the device, fill in the checkboxes, and report back.
@@ -16,18 +19,25 @@ the device, fill in the checkboxes, and report back.
 - HarmonyOS device with developer mode + shell (HiShell) access.
 - `binary-sign-tool` available (OHOS NDK `toolchains/lib/` or DevBox).
 - Runtime/sdk/aspnetcore branches pushed with the `ohos` RID rename
-  (commits `e11ea8e6868` / `1917047256` / `acd8ffc3fa`).
+  (commits `91572f4362c` / `02cc6e4058` / `bbe515e36e`).
+- **Prefer the published rc.1.26451.1 release artifacts** (skip local rebuild):
+  `dotnet-runtime-11.0.0-rc.1.26451.1-ohos-arm64.tar.gz`,
+  `dotnet-sdk-11.0.100-rc.1.26451.1-ohos-arm64.tar.gz`,
+  `aspnetcore-runtime-11.0.0-rc.1.26451.1-ohos-arm64.tar.gz`
+  (springmin/{runtime,sdk,aspnetcore}-ohos releases; install via
+  `sh install-dotnet-ohos.sh` from the sdk repo docs).
 
 ## 1. Runtime verification
 
-### 1.1 Build (host, x64 cross-compile)
+### 1.1 Build (host, x64 cross-compile) — optional if using release artifacts
 
 ```sh
 # from runtime repo, OHOS_NDK_HOME set
 ./build.sh -os ohos -arch arm64 --cross -c Release -lc Release -rc Release \
   /p:BuildHostTools=true \
   /p:RuntimeIdentifierGraphPath="$(pwd)/.dotnet/sdk/11.0.100-preview.6.26359.118/RuntimeIdentifierGraph.json" \
-  /p:IncludeSymbols=false /p:DebugSymbols=false \
+  /p:IncludeSymbols=false \
+  /p:PreReleaseVersionLabel=rc /p:PreReleaseVersion=1 /p:OfficialBuildId=20260901.1 \
   -cmakeargs "-DOPENSSL_ROOT_DIR=/tmp/openssl-ohos -DOPENSSL_INCLUDE_DIR=/tmp/openssl-ohos/include \
   -DOPENSSL_CRYPTO_LIBRARY=/tmp/openssl-ohos/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=/tmp/openssl-ohos/lib/libssl.a \
   -DCMAKE_ICU_DIR=/tmp/icu-ohos-install"
@@ -36,12 +46,13 @@ the device, fill in the checkboxes, and report back.
 > Note: the TestHost pack step has a pre-existing host/target corerun path mixup
 > unrelated to the rename; core artifacts (libcoreclr.so/corerun/singlefilehost)
 > are produced. If building only the runtime packs is needed, use the subsets
-> that skip TestHost.
+> that skip TestHost. Fixed in commits `6cd14639177` (RuntimeBinDir ohos path) —
+> the TestHost pack now resolves `ohos.arm64.Release/corerun` correctly.
 
 ### 1.2 Deploy to device
 
 ```sh
-# Collect artifacts
+# Collect artifacts (or extract the released dotnet-runtime-*.tar.gz)
 ART=artifacts/bin/coreclr/ohos.arm64.Release
 # Sign every ELF (HarmonyOS requires .codesign)
 find $ART -type f -exec file {} \; | grep ELF | cut -d: -f1 | \
@@ -58,7 +69,7 @@ cd /data/local/tmp/dotnet-ohos
 ```
 
 - [ ] **RID reports `ohos-arm64`** (not `linux-ohos-arm64`)
-- [ ] Runtime version prints 11.0.0-dev
+- [ ] Runtime version prints 11.0.0-rc.1.26451.1
 - [ ] CoreCLR JIT loads (no "JIT banned" / exec-memory errors)
 
 ### 1.4 Runtime functional smoke
@@ -75,13 +86,13 @@ cd /data/local/tmp/dotnet-ohos
 
 ## 2. SDK verification
 
-### 2.1 Build SDK redist (host)
+### 2.1 Build SDK redist (host) — optional if using release artifacts
 
 ```sh
 # from sdk repo, with local feed (ohos packs) + updated RID graphs
 ./build.sh -os ohos -arch arm64 -c Release \
-  /p:MicrosoftNETCoreAppHostPackageVersion=11.0.0-dev \
-  /p:MicrosoftNETCoreAppRuntimePackageVersion=11.0.0-dev \
+  /p:MicrosoftNETCoreAppHostPackageVersion=11.0.0-rc.1.26451.1 \
+  /p:MicrosoftNETCoreAppRuntimePackageVersion=11.0.0-rc.1.26451.1 \
   /p:RestoreAdditionalProjectSources=$PWD/artifacts/ohos-local-feed \
   /p:RidGraphOverrideRuntimeJson=$PWD/eng/RuntimeIdentifierGraph.ohos.json \
   /p:RidGraphOverridePortableJson=$PWD/eng/PortableRuntimeIdentifierGraph.ohos.json \
@@ -101,9 +112,16 @@ dotnet publish -r ohos-arm64                      # CoreCLR self-contained path
 - [ ] CoreCLR self-contained publish runs the app
 - [ ] OpenHarmonyCodesign auto-signs outputs (`.codesign` present, `llvm-readelf -S`)
 
+> **NativeAOT note (host-verified 2026-09-01):** publish needs a x64 host SDK whose
+> BundledVersions includes `ohos-arm64` ILCompiler support (built with
+> `-os linux -arch x64` + GenerateBundledVersions ohos lists). The ILCompiler pack
+> must be the runtime-built one (ohos `_targetOS`→linux mapping in SingleEntry.targets,
+> commit `91572f4362c`); the linked ELF is aarch64 musl. On-device run is the remaining
+> gate (qemu membarrier/mremap limitation).
+
 ## 3. aspnetcore verification
 
-### 3.1 Rebuild aspnetcore runtime for ohos
+### 3.1 Rebuild aspnetcore runtime for ohos — optional if using release artifacts
 
 ```sh
 # from aspnetcore repo — pack references now use ohos-* (Dependencies.props)
@@ -124,7 +142,7 @@ dotnet publish -r ohos-arm64 -p:PublishAot=true   # or self-contained
 ```
 
 - [ ] Kestrel listens on a port, serves HTTP response
-- [ ] Runtimeconfig resolves Microsoft.AspNetCore.App 11.0.0-dev (no version-mismatch)
+- [ ] Runtimeconfig resolves Microsoft.AspNetCore.App 11.0.0-rc.1.26451.1 (no version-mismatch)
 
 ## 4. Cross-cutting checks
 
