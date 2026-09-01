@@ -291,15 +291,18 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     // until execve() is called so that exec failures can be reported back to the parent.
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
-#if HAVE_CLOSE_RANGE
+#if HAVE_CLOSE_RANGE && !defined(TARGET_OPENHARMONY)
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
+    // TARGET_OPENHARMONY: the HarmonyOS seccomp policy traps close_range (SIGSYS);
+    // HarmonyOS 7.1 is expected to relax it — revisit then. Use the fallback meanwhile.
     if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
     {
         SetCloexecForAllFdsFallback();
     }
-#elif defined(__NR_close_range)
+#elif defined(__NR_close_range) && !defined(TARGET_OPENHARMONY)
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
+    // TARGET_OPENHARMONY: same seccomp restriction as above; use the fallback.
     if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
     {
         SetCloexecForAllFdsFallback();

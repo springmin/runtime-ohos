@@ -1598,9 +1598,12 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
 
 intptr_t SystemNative_INotifyInit(void)
 {
-#if HAVE_INOTIFY
+#if HAVE_INOTIFY && !defined(TARGET_OPENHARMONY)
     return inotify_init1(IN_CLOEXEC);
 #else
+    // TARGET_OPENHARMONY: the HarmonyOS seccomp policy traps inotify_init1 (SIGSYS),
+    // so report ENOTSUP and let FileSystemWatcher fall back. Revisit if the
+    // whitelist is extended.
     errno = ENOTSUP;
     return -1;
 #endif
