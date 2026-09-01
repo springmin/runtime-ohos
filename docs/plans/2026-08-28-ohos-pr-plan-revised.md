@@ -525,3 +525,21 @@ Report back the four probe results; they determine:
 - Full syscall whitelist verification (list in §10.1)
 - GC `USE_REGIONS` / virtual-reservation behavior on HarmonyOS (dotnet/runtime#111649)
 - Signing order & zero-modification verification on OpenHarmony regression
+
+---
+
+## 11. Pending maintainer discussion items (2026-09-01)
+
+Tracked so the next @jkotas reply covers everything at once:
+
+1. **CMake musl fact inheritance** — `TARGET_LINUX_MUSL` / `CLR_CMAKE_HOST_LINUX_MUSL` kept for
+   OHOS as an explicit fact (OpenHarmony libc is musl-based). Gates pushing the CMake identity
+   refactor (`f924bf5824c`: OHOS keeps its own OS identity, no `CLR_CMAKE_HOST_OS=linux` remap).
+2. **NativeAOT SingleEntry.targets ohos→linux mapping** (`_targetOS == 'ohos'` → `linux`, line
+   44-50) — the MSBuild-layer equivalent of the old CMake "pretending to be Linux" remap.
+   Consistent with item 1, this should become explicit identity + musl inheritance as well
+   (ILC-side changes, PR-R3 scope). Raise together with item 1 so the principle is applied
+   uniformly across the CMake and MSBuild layers.
+3. **(resolved) seccomp audit** — 7 trapped syscalls, close_range/inotify_init1 guarded
+   (see `2026-09-01-ohos-syscall-audit.md`); HarmonyOS 7.1 relaxes 3 of 4 bun-negotiated
+   syscalls; `inotify_init1` needs a .NET-specific whitelist request or fallback.
