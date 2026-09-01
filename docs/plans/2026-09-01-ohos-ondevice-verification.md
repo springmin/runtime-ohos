@@ -163,3 +163,94 @@ For each section, report:
 If all pass, the `ohos` rename is validated end-to-end; proceed to update the
 upstream PRs (#132827 sandbox fixes, #132953 build infra) with the new RID once
 jkoritzinsky confirms the final name (`ohos` vs `openharmony`).
+
+---
+
+## 6. Verification results — executed 2026-09-01 on HarmonyOS hardware
+
+**Device**: HarmonyOS, HongMeng Kernel 1.13.0 (aarch64), HarmonyOS commercial.
+
+**Artifacts tested**: released `v11.0.100-rc.1.26451.1-ohos` (sdk),
+`v11.0.0-rc.1.26451.1-ohos` (runtime + aspnetcore) tarballs; installed via
+`install-dotnet-ohos.sh` (SDK+runtime+aspnetcore; all ELFs signed).
+
+### §1 Runtime — ✅ PASS (with one environment requirement)
+
+- [x] RID reports `ohos-arm64` (not `linux-ohos-arm64`) — `dotnet --info`
+- [x] Runtime version `11.0.0-rc.1.26451.1`; SDK `11.0.100-rc.1.26451.1`
+- [x] CoreCLR JIT loads; full smoke app (LINQ/generics/delegates/`Task`+threads/
+      forced GC) runs: `rid=ohos-arm64`, all checks OK
+- [x] `get_mempolicy` not called (NUMA fix) — app starts without SIGSYS
+- ⚠️ **W^X default (W^X=1) SIGSEGVs at startup; `DOTNET_EnableWriteXorExecute=0`
+      required.** Root cause (probe-verified): the HongMeng kernel **denies
+      `PROT_EXEC` on file-backed (memfd/shm) mappings — all variants
+      (MAP_SHARED/MAP_PRIVATE, mprotect/direct mmap) return EACCES; anonymous
+      private mappings are allowed**. CoreCLR's W^X double-mapping allocator
+      (memfd-based) therefore cannot work. Fix committed:
+      `clrconfigvalues.h` defaults `EnableWriteXorExecute` to 0 on
+      `TARGET_OPENHARMONY` (mirrors riscv64 precedent) — commit
+      `678ac21836c` on `feature/ohos-cross-runtime`. The released artifacts
+      predate this fix; SDK-launched processes work because
+      `OpenHarmonyEnvironmentDefaults` injects `DOTNET_EnableWriteXorExecute=0`.
+- ⚠️ **Named mutex fails on released runtime**: `IOException: Read-only file
+      system : '/tmp/.dotnet'` — the TMPDIR fix (`Path.GetTempPath()` on
+      `TARGET_OPENHARMONY`) is **not in the released runtime build**. Verified
+      `/tmp` is read-only and `$TMPDIR` writable on device. Requires a runtime
+      rebuild from the current feature branch (which contains the fix).
+
+### §2 SDK publish — ✅/❌ (split)
+
+- [x] `dotnet publish -r ohos-arm64` (CoreCLR self-contained/framework-dependent)
+      — restore resolves `ohos-*` packs from the local OHOS feed; published
+      apphost runs (with W^X off as above)
+- [x] `dotnet publish -r ohos-arm64 -p:PublishAot=true` — pipeline reaches
+      `ilc` (ILCompiler found); **NativeAOT codegen itself FAILED on device**
+- ❌ **Root cause**: the released ILCompiler pack
+      (`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler 11.0.0-preview.7.26381.103`)
+      is **glibc-linked**: DT_NEEDED `libdl.so.2/libpthread.so.0/libstdc++.so.6/
+      libm.so.6/libc.so.6/ld-linux-aarch64.so.1` — the device has only the musl
+      loader (`/lib/ld-musl-aarch64.so.1`) and libc++; `ilc` cannot run
+      ("No such file or directory"/loader errors). Additionally the pack was
+      built without `.note.ohos.ident` (kernel exec check) and its files lack
+      the exec bit (0644). **Requires rebuilding the ILCompiler pack from the
+      current branch** (incl. `_targetOS→linux` SingleEntry mapping, commit
+      `91572f4362c`) with the OHOS musl toolchain, then republishing.
+- Workaround exercised on device: patch `ilc` interp →
+      `/lib/ld-musl-aarch64.so.1` + sign with the SDK's own `selfsign` tool —
+      exec succeeds but glibc deps remain unsatisfiable; not a viable path.
+
+### §3 ASP.NET Core — ✅ PASS
+
+- [x] Minimal web app published `-r ohos-arm64`, Kestrel listening on
+      `http://127.0.0.1:5080`; `GET /` → "Hello from ASP.NET Core on OHOS!";
+      `GET /info` → `RID=ohos-arm64`, HarmonyOS HongMeng Kernel 1.13.0
+- [x] No version mismatch (Microsoft.AspNetCore.App 11.0.0-rc.1.26451.1)
+
+### §4 Cross-cutting
+
+- [x] XPM probe: anonymous `mmap(RWX)` / `mmap(RW)+mprotect(RX)` /
+      `prctl(PR_SET_JITFORT)` (no-op) / JIT-call — **all OK**; **new finding:
+      file-backed (memfd) `PROT_EXEC` denied (EACCES)** — see §1
+- [x] codesign: SDK's built-in signer verified working — `OpenHarmonyCodesign`
+      MSBuild task + `ElfSelfSigner` + standalone `selfsign` (built and run on
+      device; preserves owner/perms, re-signs with `--force`). **Do not use
+      system `binary-sign-tool`**: it changes ownership and write-seals signed
+      files (subsequent writes denied), and cannot re-sign.
+- [x] `get_mempolicy` → SIGSYS (TRAP, recoverable) confirmed on device
+- [x] `/tmp` read-only confirmed; `$TMPDIR` writable; shared-memory dir under
+      `$TMPDIR` — runtime fix required (see §1 named-mutex finding)
+
+### §5 Conclusion
+
+- **`ohos` RID rename validated end-to-end** (RID printed correctly, packs
+  resolve, apps build/publish/run on device).
+- **Three rebuild-and-republish items** for the next RC (current feature
+  branch fixes them):
+  1. Runtime: W^X default off (commit `678ac21836c`) + TMPDIR fix (in PR
+     #132827) — released rc.1.26451.1 lacks both.
+  2. ILCompiler pack: rebuild musl-linked, with ohos note + exec bit, from
+     current branch; release as rc.1.26451.1 (or newer).
+  3. SDK: `EnableWriteXorExecute` runtimeconfig bake for OHOS apps (currently
+     only env-var injection via OpenHarmonyEnvironmentDefaults covers
+     SDK-launched processes; direct-executed published apps need the bake or
+     the runtime default from item 1).
