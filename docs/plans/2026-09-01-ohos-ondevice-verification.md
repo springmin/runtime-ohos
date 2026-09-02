@@ -328,3 +328,35 @@ install, ELF signing, RID `ohos-arm64`).
    (`1e5e83cb012`).
 4. Pack `ilc` and the runtime libs with the exec bit set and pre-sign them
    (the new `sign-ohos-release.sh`), since the nupkg ships 0644/unsigned.
+
+---
+
+## 8. Re-verification round 2 — rebuilt release (2026-09-02 11:37+) results
+
+**Artifacts:** rebuilt `v11.0.0-rc.1.26451.1-ohos` (2026-09-02T11:37 runtime / 11:54 ILCompiler / 11:58 SDK), **pre-signed** (install script reported signed=0, already_signed=27/49 — `sign-ohos-release.sh` works).
+
+### Results
+
+- ✅ **W^X default off (§6/§7 item 1): PASS** — directly executed published app
+  runs without `DOTNET_EnableWriteXorExecute`; the `clrconfigvalues.h` default-off
+  fix is in the rebuilt runtime.
+- ✅ **Named mutex / TMPDIR (§6 item 2): PASS** — named mutex acquired,
+  `Path.GetTempPath()` = `$TMPDIR` (`/data/storage/el2/base/tmp/`); the TMPDIR fix
+  is in the rebuilt runtime.
+- ❌ **Device-side NativeAOT (§6 item 3): STILL BLOCKED — new root cause found.**
+  The rebuilt cxx-runtime fixed the SONAME (`libstdc++.so.6`/`libgcc_s.so.1` now
+  carry `DT_NEEDED libc.so`), but the device loader **requires the
+  `.note.ohos.ident` note on dlopen'd libraries**: control experiment — removing
+  the note from a locally compiled `.so` makes `dlopen` fail with "Permission
+  denied". The cross-built cxx-runtime libs lack the note → `ilc` cannot load
+  them on the real device. (qemu's loader does not enforce the note, which is why
+  the pack passed host-side verification.)
+- ✅ **Direct-executed published app (§6 item 4): PASS** — same mechanism as the
+  W^X item.
+
+### Action item (other machine) — 3rd round cxx-runtime rebuild
+
+Rebuild `OHOS_CXXRUNTIME_DIR` libstdc++/libgcc_s with a toolchain that emits the
+`.note.ohos.ident` note (the OHOS NDK clang adds it automatically — locally
+compiled `.so` files carry it), then re-release the ILCompiler pack and
+re-verify on device.
