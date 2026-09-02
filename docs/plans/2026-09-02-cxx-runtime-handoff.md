@@ -216,3 +216,29 @@ ILCompiler pack rebuilt with the round-5 libgcc_s (codesign applied) and
 re-released (`v11.0.0-rc.1.26451.1-ohos`, 2026-09-03).
 
 Device side: re-run runbook §8 item 3 end-to-end.
+
+---
+
+## Round-6 diagnosis (device side, 2026-09-03)
+
+Round-5 pack regressed `_Unwind_Resume` binding. Root cause identified:
+
+- ilc references `_Unwind_Resume@GCC_3.0` and `__clear_cache@GCC_3.0`
+  (versioned references).
+- Round-5 added the `GCC_3.0` version node (for `__clear_cache`). With the
+  node present, the loader binds `@GCC_3.0` references **strictly by version**:
+  `_Unwind_Resume` is exported only as `@@LIBGCC_S_OHOS`, so the
+  `_Unwind_Resume@GCC_3.0` reference fails.
+- Round-4 worked because there was no `GCC_3.0` node at all; the loader was
+  lenient for references to a nonexistent version and bound by name.
+
+Verify: `llvm-readelf -Ws tools/ilc | grep "@GCC_3.0"` → the complete list is
+`_Unwind_Resume@GCC_3.0`, `__clear_cache@GCC_3.0`.
+
+### Fix (build side, round 6)
+
+Export **`_Unwind_Resume` under the `GCC_3.0` version node too** (add it to the
+GCC_3.0 version-script node alongside `__clear_cache`), then re-release and
+re-verify. General rule going forward: every `@GCC_3.0`-referenced symbol
+needs a `@@GCC_3.0` export; every `@LIBGCC_S_OHOS`-referenced symbol needs a
+`@@LIBGCC_S_OHOS` export.
