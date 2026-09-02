@@ -242,3 +242,26 @@ GCC_3.0 version-script node alongside `__clear_cache`), then re-release and
 re-verify. General rule going forward: every `@GCC_3.0`-referenced symbol
 needs a `@@GCC_3.0` export; every `@LIBGCC_S_OHOS`-referenced symbol needs a
 `@@LIBGCC_S_OHOS` export.
+
+---
+
+## Round-6 completion (build side, 2026-09-03 08:10)
+
+`_Unwind_Resume` binding regression fixed by moving **all** exports under a
+single `GCC_3.0` version node (matching GNU libgcc_s layout):
+
+- Round-5's two-node map (`GCC_3.0` + `LIBGCC_S_OHOS`) made the loader bind
+  `@GCC_3.0` references strictly by version; `_Unwind_Resume` was only
+  `@@LIBGCC_S_OHOS` so `ilc`'s `_Unwind_Resume@GCC_3.0` failed.
+- Fix: single `GCC_3.0 { ... }` node (default) exporting every symbol
+  (`_Unwind_*`, tf helpers, `__emutls_*`, pthread stubs, `__clear_cache`).
+  Both `@GCC_3.0` references (ilc) and unversioned references (libstdc++)
+  bind to the default-version symbols.
+- **Verified on qemu**: `ilc` now loads and runs (usage output) — no
+  relocation errors. The only stub needed was `arc4random` (old qemu-rootfs
+  musl lacks it; NDK/device libc exports it).
+
+ILCompiler pack rebuilt with the round-6 libgcc_s (codesign) and re-released
+(`v11.0.0-rc.1.26451.1-ohos`, 2026-09-03).
+
+Device side: re-run runbook §8 item 3 end-to-end.
