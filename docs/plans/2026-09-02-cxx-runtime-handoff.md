@@ -98,3 +98,41 @@ readelf -S/-l libstdc++.so.6                  # .note.ohos.ident @ file 0x470000
 re-uploaded to the `v11.0.0-rc.1.26451.1-ohos` release (2026-09-03).
 
 Device side: re-run runbook §8 item 3 end-to-end.
+
+---
+
+## Round-4 diagnosis (device side, 2026-09-03) — libgcc_s export gap
+
+The round-3 pack (2026-09-03) loads the C++ libs (note + SONAME fixed) but
+`ilc` still fails symbol resolution. Verified on device:
+
+```sh
+# libstdc++ cannot resolve __emutls_get_address:
+llvm-readelf -Ws tools/libgcc_s.so.1 | grep emutls_get_address
+#   -> LOCAL DEFAULT (NOT exported!) — the synthesis export list missed it
+llvm-readelf -Ws tools/libstdc++.so.6 | grep emutls_get_address
+#   -> UND (libstdc++ needs it)
+# ilc also needs pthread robust symbols the device musl lacks:
+llvm-readelf -Ws tools/ilc | grep -E "pthread_mutexattr_setrobust|pthread_mutex_consistent"
+# device musl: neither exported; ~/.harmonybrew/lib/libmusl_compat.so provides
+# pthread_mutexattr_setrobust (weak) but not pthread_mutex_consistent
+```
+
+### Fix list (build side, round 4)
+
+1. **Export `__emutls_get_address` from the synthesized libgcc_s** (it is
+   currently LOCAL — extend the version script / export list; `emutls.c` was
+   compiled in but the symbol was not exported).
+2. **Audit coverage**: every UND symbol of `libstdc++.so.6` and `ilc` must be
+   resolvable from (libgcc_s ∪ libc ∪ libmusl_compat). Commands:
+   ```sh
+   llvm-readelf -Ws tools/libstdc++.so.6 | grep UND   # collect
+   llvm-readelf -Ws tools/libgcc_s.so.1 | grep GLOBAL # must cover _Unwind_*, __emutls_*
+   ```
+3. **pthread robust symbols**: if `ilc` must reference
+   `pthread_mutexattr_setrobust`/`pthread_mutex_consistent`, either provide
+   them in the pack's load path (musl-compat provides setrobust; `consistent`
+   needs adding) or ensure ilc does not use robust mutexes.
+4. **Prefer unversioned exports** in the synthesized libgcc_s
+   (`@@LIBGCC_S_OHOS` versioning may complicate binding with unversioned
+   references).
