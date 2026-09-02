@@ -53,3 +53,48 @@ llvm-readelf -d libgcc_s.so.1  | grep NEEDED       # must be libc.so
 The device side will re-run runbook §8 verification item 3
 (`dotnet publish -r ohos-arm64 -p:PublishAot=true` end-to-end) and update the
 verification record.
+
+---
+
+## Round-3 completion (build side, 2026-09-03 01:15)
+
+**Done by build side per this handoff.** Self-check below all PASS before
+publish:
+
+```sh
+# on x64 host with llvm-readelf/readelf
+readelf -S libstdc++.so.6 | grep ohos.ident   # PASS (section present)
+readelf -S libgcc_s.so.1  | grep ohos.ident   # PASS
+readelf -d libstdc++.so.6 | grep NEEDED       # libc.so + libgcc_s.so.1 (no libc.musl-*)
+readelf -d libgcc_s.so.1  | grep NEEDED       # libc.so
+# note content lies inside a mapped LOAD segment:
+readelf -S/-l libstdc++.so.6                  # .note.ohos.ident @ file 0x470000 ∈ LOAD 0x470000-0x531cb8
+```
+
+### How the libs were rebuilt (both carry `.note.ohos.ident`)
+
+- **libstdc++.so.6** — rebuilt from GCC 13.3.0 `libstdc++-v3` sources with the
+  **OHOS NDK clang 15** (`aarch64-unknown-linux-ohos` target, OHOS sysroot).
+  GCC `config.sub`/`configure.host` patched to treat `linux-ohos` as a
+  linux/musl-family target (`os/generic`, no glibc `__GLIBC_PREREQ`).
+  `CXX=clang++ --target=aarch64-linux-ohos -std=gnu++17 -fsized-deallocation
+  -nostdinc++ -nostdlib++`; NDK clang emits `.note.ohos.ident` automatically.
+  `src/c++20/tzdb.cc` intentionally stubbed (C++20 tzdb, unneeded by ilc;
+  clang-15 ranges incompat). SONAME `libstdc++.so.6`, `NEEDED libc.so +
+  libgcc_s.so.1`.
+- **libgcc_s.so.1** — synthesized with NDK clang from NDK `libunwind.a`
+  (`_Unwind_*`) + `libclang_rt.builtins.a` tf/soft-float objects
+  (`__addtf3`/`__multtf3`/`__udivti3`/...), 23 symbols exported via a version
+  script. compiler-rt objects are `GLOBAL HIDDEN`; st_other patched
+  hidden→default so the symbols are dynamically exported. `.note.ohos.ident`
+  present, `NEEDED libc.so`.
+- **ilc** — `libc.musl-aarch64.so.1` → `libc.so` NEEDED patched (matches every
+  working native lib on device). exec bit set on all `tools/*` ELF.
+- All three ELFs pre-signed with `sign-ohos-release.sh` (`.codesign` section).
+
+### Resulting artifact (released)
+
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg`
+re-uploaded to the `v11.0.0-rc.1.26451.1-ohos` release (2026-09-03).
+
+Device side: re-run runbook §8 item 3 end-to-end.
