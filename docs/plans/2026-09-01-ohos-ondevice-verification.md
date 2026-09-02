@@ -254,3 +254,22 @@ jkoritzinsky confirms the final name (`ohos` vs `openharmony`).
      only env-var injection via OpenHarmonyEnvironmentDefaults covers
      SDK-launched processes; direct-executed published apps need the bake or
      the runtime default from item 1).
+
+---
+
+## 6. Re-verification — rebuilt 2026-09-02 (items 1-3 from §5)
+
+The three §5 rebuild items are now in the **re-released** `v11.0.0-rc.1.26451.1-ohos`
+(2026-09-02 update). Re-run on device:
+
+- [ ] **W^X default off**: `DOTNET_EnableWriteXorExecute` NOT set → app starts without
+      SIGSEGV (W^X=0 baked as default; no env injection needed).
+- [ ] **Named mutex / TMPDIR**: app using named mutex starts (no
+      "Read-only file system : '/tmp/.dotnet'" — shared memory honors `$TMPDIR`).
+- [ ] **Device-side NativeAOT (ilc)**: `dotnet publish -r ohos-arm64 -p:PublishAot=true`
+      on device reaches `ilc` and completes. `ilc` now runs because the ILCompiler pack
+      ships `libstdc++.so.6` + `libgcc_s.so.1` (aarch64 musl); install script
+      (`install-dotnet-ohos.sh`) deploys them to `/lib` (or `$INSTALL_DIR/lib`).
+      If ilc still can't load: `export LD_LIBRARY_PATH=$INSTALL_DIR/lib` (or /lib).
+- [ ] **Direct-executed published app** (not SDK-launched): runs with W^X off by
+      default (runtime default, no env needed).
