@@ -51,6 +51,19 @@ build-native.proj/.sh, corehost.proj, System.Native/CMakeLists.txt) — includes
 #### PR-R3 — sysroot compile fixes + NativeAOT support (13 files)
 *Make OHOS build & AOT publish actually work.*
 
+**Scope addition (2026-09-02, decided with owner):** the on-device
+verification-era fixes stay on the dev branch and ship with R3 (NOT folded into
+#132827):
+
+- `clrconfigvalues.h` W^X default off (`678ac21836c`)
+- `pal_process.c` close_range guard + `pal_io.c` inotify_init1 guard
+  (`e8a1fe38fd7`)
+- ILCompiler pack libstdc++/libgcc_s (`cb2ffa742b4`) + `SingleEntry.targets` XML
+  fix (`1e5e83cb012`) + nativeaot `IntermediatesDir` cleanup
+
+
+*Make OHOS build & AOT publish actually work.*
+
 | File | Change |
 |---|---|
 | `clr.featuredefines.props` + `clrfeatures.cmake` | Disable LTTng (no LTTng in sysroot) |
