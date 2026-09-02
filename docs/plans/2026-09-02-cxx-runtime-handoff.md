@@ -171,3 +171,27 @@ Pack contents verified: `tools/ilc` (codesign), `tools/libstdc++.so.6`
 `.note.ohos.ident`), all `0755`.
 
 Device side: re-run runbook §8 item 3 end-to-end.
+
+---
+
+## Round-5 diagnosis (device side, 2026-09-03)
+
+Round-4 pack: emutls + pthread stubs resolve ✓ (errors reduced to one). The
+remaining loader error on device:
+
+```
+Error relocating .../ilc: __clear_cache: symbol not found
+```
+
+`__clear_cache` (aarch64 cache-maintenance helper, provided by compiler-rt
+builtins / libgcc `clear_cache.c`) is referenced by ilc
+(`__clear_cache@GCC_3.0`) but **not exported by the synthesized libgcc_s** —
+the same class of gap as round-3's `__emutls_get_address`.
+
+### Fix (build side, round 5)
+
+Add `__clear_cache` to the synthesized libgcc_s export list (compiler-rt
+builtins object `clear_cache` / aarch64 `__aarch64_sync_cache_range`), export
+unversioned like the rest, then re-release and re-verify. If further symbols
+surface after this one resolves, continue the same
+run → collect first error → add export → rebuild cycle.
