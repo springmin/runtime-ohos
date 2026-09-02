@@ -136,3 +136,38 @@ llvm-readelf -Ws tools/ilc | grep -E "pthread_mutexattr_setrobust|pthread_mutex_
 4. **Prefer unversioned exports** in the synthesized libgcc_s
    (`@@LIBGCC_S_OHOS` versioning may complicate binding with unversioned
    references).
+
+---
+
+## Round-4 completion (build side, 2026-09-03 06:40)
+
+All four round-4 fixes applied to the synthesized `libgcc_s.so.1`; the
+ILCompiler pack was rebuilt and re-released (`v11.0.0-rc.1.26451.1-ohos`,
+2026-09-03).
+
+1. **`__emutls_get_address` now exported** — was LOCAL in the round-3
+   synthesis (the emutls.c.o member was present but never globalized +
+   visibility-fixed + added to the version script). Now `T` (unversioned).
+2. **Full UND audit clean**: every strong UND of `libstdc++.so.6` and `ilc`
+   resolves from (libgcc_s ∪ libc):
+   ```sh
+   libstdc++ strong UND uncovered: 0
+   ilc        strong UND uncovered: 0   # incl. pthread_mutexattr_setrobust,
+                                         # pthread_mutex_consistent,
+                                         # pthread_setcancelstate
+   ```
+   Only weak UNDs remain (libstdc++ `_ITM_*`/`__at_fini`/`__{deregister,
+   register}_frame_info`; ilc `ZSTD_trace_*`/`_ITM_*`) — tolerable.
+3. **pthread robust + cancel symbols provided in libgcc_s** via a small
+   musl-compatible stub (`pthread_mutexattr_setrobust`, `pthread_mutexattr_
+   getrobust`, `pthread_mutex_consistent`, `pthread_setcancelstate`) —
+   compiled with the NDK clang, exported unversioned.
+4. **Unversioned exports** — the synthesized libgcc_s now uses an anonymous
+   version script (no `@@LIBGCC_S_OHOS` nodefs) so unversioned references
+   bind cleanly.
+
+Pack contents verified: `tools/ilc` (codesign), `tools/libstdc++.so.6`
+(codesign + `.note.ohos.ident`), `tools/libgcc_s.so.1` (codesign +
+`.note.ohos.ident`), all `0755`.
+
+Device side: re-run runbook §8 item 3 end-to-end.
