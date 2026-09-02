@@ -21,9 +21,6 @@
     <IntermediateOutputPath Condition="'$(PlatformName)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(TargetOS).$(TargetArchitecture).$(Configuration)\</IntermediateOutputPath>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <RuntimeBinDir>$(CoreclrRuntimeBinDir)</RuntimeBinDir>
-    <!-- OpenHarmony reports TargetOS as 'linux' (PortableOS='ohos'), but native artifacts
-         are laid out under 'ohos.<arch>.<config>' (see build-runtime.sh ConfigTriplet). -->
-    <RuntimeBinDir Condition="'$(PortableOS)' == 'ohos'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', 'ohos.$(TargetArchitecture).$(Configuration)'))</RuntimeBinDir>
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
