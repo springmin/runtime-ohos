@@ -356,7 +356,17 @@ install, ELF signing, RID `ohos-arm64`).
 
 ### Action item (other machine) — 3rd round cxx-runtime rebuild
 
-Rebuild `OHOS_CXXRUNTIME_DIR` libstdc++/libgcc_s with a toolchain that emits the
-`.note.ohos.ident` note (the OHOS NDK clang adds it automatically — locally
-compiled `.so` files carry it), then re-release the ILCompiler pack and
-re-verify on device.
+Rebuild `OHOS_CXXRUNTIME_DIR` libstdc++/libgcc_s with the **OHOS NDK clang**
+(the device-side harmonybrew clang 21.1.8 emits `.note.ohos.ident` automatically
+— every locally compiled `.so` carries it; the current bundle was built with a
+toolchain that did not). Device-loader requirement confirmed by control
+experiments: dlopen of a `.so` without the note fails with "Permission denied";
+the note must be present as a section with content in a mapped LOAD segment
+(section-only-at-file-end and content-only injections both fail).
+
+Self-check before publishing the rebuilt ILCompiler pack:
+```sh
+llvm-readelf -S libstdc++.so.6 | grep ohos.ident   # must show .note.ohos.ident
+llvm-readelf -d libstdc++.so.6 | grep NEEDED       # must show libc.so (not libc.musl-*)
+```
+Then re-release the ILCompiler pack and re-verify on device (item 3).
