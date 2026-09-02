@@ -532,7 +532,23 @@ Report back the four probe results; they determine:
 
 Tracked so the next @jkotas reply covers everything at once:
 
-1. **CMake musl fact inheritance** — `TARGET_LINUX_MUSL` / `CLR_CMAKE_HOST_LINUX_MUSL` kept for
+1. **CMake musl fact inheritance — RESOLVED 2026-09-02** (jkotas: "we can pretend
+   that ohos is linux flavor when compiling C/C++ code... this is a local decision
+   that can be revisited later"). The compile-level linux-flavor treatment
+   (CLR_CMAKE_HOST_OS remap + TARGET_LINUX_MUSL) is accepted; the CMake identity
+   refactor was **reverted** (commit 8b6923dbc49). The RID graph shape (ohos as its
+   own base RID, `ohos -> linux-musl` libc inheritance) is the part that stays
+   kernel-agnostic.
+2. **NativeAOT SingleEntry.targets ohos→linux mapping** (`_targetOS == 'ohos'` → `linux`) —
+   consistent with item 1's resolution: the mapping is a compile-level local decision
+   and stays as-is (musl libcFlavor preserved).
+3. **(superseded) SIGSYS→ENOSYS PAL handler — REJECTED 2026-09-02** (jkotas:
+   "hacks that are trying to leverage holes in seccomp enforcement... should be done
+   properly"). The handler (commit 70ba6f54f25) was **reverted**; seccomp-trapped
+   syscalls are handled by compile-time `TARGET_OPENHARMONY` guards (close_range,
+   inotify_init1, get_mempolicy) + existing runtime/musl fallbacks + the HarmonyOS
+   7.1 whitelist channel.
+4. **(resolved) seccomp audit** — see `2026-09-01-ohos-syscall-audit.md`; — `TARGET_LINUX_MUSL` / `CLR_CMAKE_HOST_LINUX_MUSL` kept for
    OHOS as an explicit fact (OpenHarmony libc is musl-based). Gates pushing the CMake identity
    refactor (`f924bf5824c`: OHOS keeps its own OS identity, no `CLR_CMAKE_HOST_OS=linux` remap).
 2. **NativeAOT SingleEntry.targets ohos→linux mapping** (`_targetOS == 'ohos'` → `linux`, line
