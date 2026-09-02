@@ -43,6 +43,17 @@
       <File Include="$(_ILCompilerFilesRoot)*" TargetPath="tools" Exclude="$(_ILCompilerFilesRoot)netstandard\*" />
     </ItemGroup>
 
+    <!--
+      The device (HarmonyOS) provides only LLVM libc++ (libc++_shared.so); the NativeAOT C++
+      runtime libs link GNU libstdc++.so.6 + libgcc_s.so.1 which the device lacks. Ship
+      aarch64 musl builds alongside ilc so device-side AOT works out of the box. These are
+      provided by the ohos-assets bundle (OHOS_CXXRUNTIME_DIR, default ~/sources/ohos-assets).
+    -->
+    <ItemGroup Condition="'$(PortableOS)' == 'ohos' and '$(PackageTargetRuntime)' != '' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
+      <File Include="$(OHOS_CXXRUNTIME_DIR)/libstdc++.so.6" TargetPath="tools" />
+      <File Include="$(OHOS_CXXRUNTIME_DIR)/libgcc_s.so.1" TargetPath="tools" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'linux'">
       <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
       <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
