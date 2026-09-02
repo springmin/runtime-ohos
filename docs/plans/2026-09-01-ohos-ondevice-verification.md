@@ -273,3 +273,58 @@ The three §5 rebuild items are now in the **re-released** `v11.0.0-rc.1.26451.1
       If ilc still can't load: `export LD_LIBRARY_PATH=$INSTALL_DIR/lib` (or /lib).
 - [ ] **Direct-executed published app** (not SDK-launched): runs with W^X off by
       default (runtime default, no env needed).
+
+---
+
+## 7. Re-verification results — executed 2026-09-02 on HarmonyOS hardware
+
+**Device:** HarmonyOS, HongMeng Kernel 1.13.0 (aarch64).
+**Artifacts:** re-released `v11.0.100-rc.1.26451.1-ohos` (sdk) /
+`v11.0.0-rc.1.26451.1-ohos` (runtime + aspnetcore, 2026-09-02 update) +
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg`.
+**Install script:** `install-dotnet-ohos.sh` — ✅ works (all three tarballs
+install, ELF signing, RID `ohos-arm64`).
+
+### Results
+
+- ❌ **W^X default off (§6 item 1): FAIL** — `dotnet run` works (SDK env
+  injection), but a **directly executed** published app without
+  `DOTNET_EnableWriteXorExecute` still SIGSEGVs; with `=0` it runs. The
+  release runtime's compiled default is still W^X=1 — the
+  `clrconfigvalues.h` default-off fix (`678ac21836c`) is **not in the release
+  build**.
+- ❌ **Named mutex / TMPDIR (§6 item 2): FAIL** — still
+  `IOException: Read-only file system : '/tmp/.dotnet'`. The TMPDIR fix
+  (projitems plural rename `4c77bcca431` + `SharedMemoryManager` TARGET_OPENHARMONY
+  path) is **not in the release build**.
+- ❌ **Device-side NativeAOT (§6 item 3): FAIL** — three blockers found in order:
+  1. `MSB4024: XML comment cannot contain '--'` — `SingleEntry.targets` comment
+     from `91572f4362c` contains `--targetos`. **Fixed** (branch commit
+     `1e5e83cb012`); the pack must be rebuilt.
+  2. SDK BundledVersions still pins preview.7 packs — worked around locally by
+     patching the installed SDK + using the full rc.1 pack set from the release.
+  3. **ilc executes (musl loader + codesign OK) but cannot load the shipped C++
+     runtime**: the bundled `libstdc++.so.6`/`libgcc_s.so.1` have
+     `DT_NEEDED libc.musl-aarch64.so.1`, which the **device's musl loader does
+     not resolve** (it only self-identifies as `libc.so`; every working dotnet
+     native lib NEEDs `libc.so`). The other machine verified the pack in qemu,
+     where its sysroot musl provides the `libc.musl` name — the real device
+     differs. Loading also fails via LD_LIBRARY_PATH (env is honored — proven
+     with a control test); the mismatch is the NEEDED SONAME, not the search path.
+- ❌ **Direct-executed published app (§6 item 4): FAIL** — same root cause as
+  item 1 (W^X default not baked into the release runtime).
+
+### Action items for the rebuild (other machine)
+
+1. **Rebuild the runtime** from the current `origin/feature/ohos-cross-runtime`
+   (includes W^X default-off `clrconfigvalues.h`, the projitems plural fix, the
+   TMPDIR chain, the SIGSYS→ENOSYS PAL handler) and re-release.
+2. **Rebuild the cxx-runtime bundle** (`OHOS_CXXRUNTIME_DIR`) with the **OHOS
+   NDK musl** so `libstdc++.so.6`/`libgcc_s.so.1` carry `DT_NEEDED libc.so`
+   (matching every working native lib on the device), not
+   `libc.musl-aarch64.so.1`; alternatively pursue the §10.1 libstdc++→libc++
+   conversion.
+3. **Rebuild the ILCompiler pack** including the `SingleEntry.targets` XML fix
+   (`1e5e83cb012`).
+4. Pack `ilc` and the runtime libs with the exec bit set and pre-sign them
+   (the new `sign-ohos-release.sh`), since the nupkg ships 0644/unsigned.
