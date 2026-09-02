@@ -195,3 +195,24 @@ builtins object `clear_cache` / aarch64 `__aarch64_sync_cache_range`), export
 unversioned like the rest, then re-release and re-verify. If further symbols
 surface after this one resolves, continue the same
 run → collect first error → add export → rebuild cycle.
+
+---
+
+## Round-5 completion (build side, 2026-09-03 07:20)
+
+`__clear_cache` added to the synthesized libgcc_s:
+
+- `clear_cache.c.o` (compiler-rt builtins) globalized + st_other hidden→default.
+- Exported as `__clear_cache@@GCC_3.0` (ilc references it as
+  `__clear_cache@GCC_3.0`, so a `GCC_3.0` version node was required, not
+  unversioned). Other symbols keep `@@LIBGCC_S_OHOS` (verified working on
+  device since round-4: emutls + pthread stubs resolve).
+- qemu load test: the `__clear_cache` relocation error is gone; the next
+  error is `arc4random` — an artifact of the old qemu rootfs musl (NDK OHOS
+  libc exports `arc4random`; the device already resolved it in round-5, which
+  is why only `__clear_cache` was reported).
+
+ILCompiler pack rebuilt with the round-5 libgcc_s (codesign applied) and
+re-released (`v11.0.0-rc.1.26451.1-ohos`, 2026-09-03).
+
+Device side: re-run runbook §8 item 3 end-to-end.
