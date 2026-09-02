@@ -43,8 +43,9 @@
     <_linuxLibcFlavor Condition="'$(_targetOS)' == 'android'">bionic</_linuxLibcFlavor>
     <!-- ohos is a standalone RID (kernel-agnostic) but uses musl libc; map it here.
          _targetOS maps to linux so ilc (which only knows linux/android/osx/...) accepts
-         --targetos; the musl libc flavor is preserved for the linker (Native.Unix.targets
-         keys off CrossCompileRid.StartsWith('ohos-') for the toolchain selection). -->
+         the targetos argument; the musl libc flavor is preserved for the linker
+         (Native.Unix.targets keys off CrossCompileRid.StartsWith('ohos-') for the
+         toolchain selection). -->
     <_linuxLibcFlavor Condition="'$(_targetOS)' == 'ohos'">musl</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
     <_targetOS Condition="'$(_targetOS)' == 'ohos'">linux</_targetOS>
