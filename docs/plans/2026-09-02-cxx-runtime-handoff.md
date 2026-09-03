@@ -839,3 +839,23 @@ inside the pack matches the repo before release).
   independized but the Platforms-pack source graph was not. Sync it for
   consistency (Microsoft.NETCore.Platforms consumers otherwise regenerate
   the old inheritance).
+
+---
+
+## Round-10 residual fix (build side, 2026-09-03)
+
+Device round-10 completion (bf28b18afbb) PASSed but flagged two residuals;
+both fixed here:
+
+1. **Platforms source graph**: `src/libraries/Microsoft.NETCore.Platforms/
+   src/runtime.json` still had `ohos → #import [linux-musl]`. Independized
+   (ohos = {}, ohos-arm64 = #import [ohos]) to match the SDK-side override
+   graphs (df902a3e75).
+2. **Host-neutral ILCompiler pack missing the ohos→linux remap**: the r10
+   `Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg` (asset 11:39:42Z)
+   carried a SingleEntry.targets without the `_targetOS ohos→linux` line →
+   `Target OS 'ohos' is not supported` with the stock pack. Repacked from the
+   current runtime-ohos source (SingleEntry.targets with remap + Unix.targets
+   with the round-10 `_originalTargetOS` fix), uploaded as the replacement
+   asset. Device: refresh the pack from the local feed; the copy-over
+   workaround is no longer needed.
