@@ -296,3 +296,44 @@ Self-check on the produced ilc:
 llvm-objdump -d tools/ilc | grep -c "mov.*w0, #236"   # expect 0
 llvm-objdump -d tools/ilc | grep -c "mov.*w0, #237"   # expect 0 (get_mempolicy also guarded)
 ```
+
+---
+
+## Round-7 root-cause fix (build side, 2026-09-03 13:00)
+
+The `__clear_cache` and subsequent rounds fixed symbol resolution, but ilc still
+crashed on device with SIGSYS on the GC NUMA probe (`syscall(236)` =
+`get_mempolicy` on arm64; round-7 mislabeled it `set_mempolicy`). Root cause was
+**not** a missing symbol — it was the ilc build using a **stale AOT cache**.
+
+### Findings
+
+- OHOS ilc is a **NativeAOT-compiled single-file** (7.8MB apphost + managed
+  bundle). Its GC runtime comes from `IlcSdkPath` = bootstrap `ohos-arm64`
+  aotsdk, which **is** TARGET_OPENHARMONY-guarded (numasupport.cpp compiles to
+  empty stubs — verified). But the ilc binary still contained the full NUMA
+  probe (`/sys/devices/system/node` string present) because the AOT compile
+  output (`singlefilehost`) was **cached by the managed `ilc.dll` hash** and
+  reused across publishes — including the original un-guarded linux-arm64 build
+  (same BuildID 5176e571 as `linux.arm64.Release/ilc-published/ilc`).
+- Fix: delete the cached `singlefilehost` + `*.Up2Date` and touch the managed
+  `ilc.dll` to force the AOT recompile. The rebuilt ilc (BuildID 7981b2d5) has
+  **zero** `mov w0,#236`, zero `/sys/devices/system/node`, and `NEEDED` only
+  `libc.musl` — matching the official linux-musl ilc shape (no libstdc++ /
+  libgcc_s dependency).
+
+### Second bug found: selfsign truncated SingleFile bundles
+
+Signing the 7.8MB single-file ilc shrank it to 39KB: `InjectCodesignSection`
+computed the codesign offset from the section-header-table end and discarded
+anything past it. .NET single-file apphosts store their managed bundle after the
+section table (not covered by any section). Fixed in the SDK repo
+(`documentation/ohos-install/selfsign.cs`, commit c4f00640f0): the codesign
+offset now accounts for the real end of file, preserving the bundle.
+
+### Released
+
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg`
+re-uploaded (v8): guard ilc 7.8MB, codesign applied, bundle intact, no NUMA
+probe. Device side: re-run runbook §8 item 3 (`dotnet publish -r ohos-arm64
+-p:PublishAot=true`) — the ilc on device should no longer SIGSYS at startup.
