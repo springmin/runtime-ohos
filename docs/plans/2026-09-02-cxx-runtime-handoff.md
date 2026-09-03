@@ -522,3 +522,65 @@ then **reverted** to the v8 pack original: the v8 ilc itself is broken
 cannot validate the swap yet. Keep the artifact at
 `/data/storage/el2/base/tmp/opencode/libstdcxx-build/src/.libs/libstdc++.so.6`
 and re-swap when a working ilc pack (round-9) lands.
+
+---
+
+## Round-9 diagnosis (device side, 2026-09-03) — v9 ilc is STILL truncated (39 KB)
+
+Downloaded the re-released pack (`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.
+11.0.0-rc.1.26451.1.nupkg`, asset updated 2026-09-03T09:38:47Z, 16,743,121
+bytes — differs from v8's 11,255,928) and ran the round-8 fix-list self-check
+on `tools/ilc` **before** installing it. **FAIL — the truncation bug is still
+present in the release artifact**, despite the sdk-ohos fixes
+(e4961e6168 / bf5121c673, recorded in the previous section).
+
+### Evidence (released v9 ilc)
+
+```sh
+stat -c %s tools/ilc                          # 38984 bytes  ← NOT 7.8 MB
+llvm-readelf -h tools/ilc                      # BuildID 7981b2d5 (same guard
+                                               #   build as v8), shoff=37128, 29×64B
+                                               # 37128 + 29*64 = 38984 = file size EXACTLY
+                                               #   → file ends at the section-header-table end
+llvm-readelf -l tools/ilc | grep LOAD          # mapped image ≈ 27 KB (R/RX/RW), same
+                                               #   header-only shape as v8 — NO bundle overlay
+xxd -p tools/ilc | tr -d '\n' | grep -c 8b1202f96b7b344eb58b2e3e4d5f6a7b   # 0
+tail -c 16 tools/ilc | xxd                     # all zeros — no single-file bundle signature
+./tools/ilc                                    # "The application to execute does not exist:
+                                               #   .../ilc.dll" (apphost finds no bundle)
+```
+
+Sizes across rounds for comparison:
+
+| pack | file size | bundle present | exec result |
+|---|---|---|---|
+| v8 (05:01Z) | 7,845,960 = shoff+29×64 | footer cut at shoff | hostpolicy fatal (131) |
+| v9 (09:38Z) | **38,984 = shoff+29×64** | **entire bundle gone** | `ilc.dll does not exist` |
+
+The v9 artifact is the same "**truncated to 39 KB**" outcome the round-7
+notes already described for the pre-fix signer — i.e. the released ilc was
+signed/repackaged by a path that still discards everything past the section
+header table. The `singlefilehost` bundle (7.8 MB) never made it into the
+published file at all this time (v8 at least carried the 7.8 MB blob with a
+cut footer; v9 is header-only).
+
+### Fix list (build side, round 9)
+
+1. The released artifact must be **byte-identical to the signed local
+   `singlefilehost` output** — verify BEFORE upload with the round-8 self-check
+   (file size ≈ 7.8 MB, GUID ≥ 1, `tail -c 16` non-zero). A 39 KB or
+   7,845,960-byte `tools/ilc` means the sign/package step truncated it again.
+2. Audit the **release/upload pipeline** (not just selfsign.cs /
+   OpenHarmonyCodesign.cs): the v9 file was produced after both fixes landed,
+   so the truncating step is elsewhere (pack repack? codesign re-run after
+   SingleFile publish? strip?). Reproduce the exact release command chain
+   locally and diff `tools/ilc` against the pre-sign `singlefilehost`.
+3. Publish in the **native (non-single-file) shape** (round-6 option, ~18 MB
+   real NativeAOT ELF, NEEDED libc.so/libstdc++.so.6/libgcc_s.so.1) as the
+   robust fallback — single-file apphosts keep hitting this sign/package bug.
+
+Device side: nothing more to do until a pack whose `tools/ilc` passes the
+round-8 self-check is released. Test app + local feed are still in place
+(`/data/storage/el2/base/tmp/opencode/aot-verify/`); the v9 nupkg download is
+kept at `~/Download/runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg.v9`
+for reference.
