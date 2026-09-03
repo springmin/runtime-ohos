@@ -450,3 +450,75 @@ Why Mach-O has no such bug: it represents the signature with an
 the bundle before signing, so the signer always hashes the complete file. The
 ELF signer originally assumed file contents == sections, which is false for
 SingleFile apphosts.
+
+---
+
+## Device-side local libstdc++ self-build (2026-09-03, device)
+
+Independent workstream: build `libstdc++.so.6` **on the device itself** from
+GCC 13.3.0 source, so the device no longer depends on the build side's
+cxx-runtime release cycle (each ilc-pack round-trip cost a day). Status:
+**build + ELF verification PASSED**; end-to-end ilc test pending a working
+(non-truncated) ilc pack (round-8 fix, above).
+
+### Recipe (all on device)
+
+Source: `~/springsources/gcc-ohos/gcc-13.3.0` (GCC 13.3.0, Tsinghua mirror).
+Build dir (writable tmpfs, NOT hmdfs): `/data/storage/el2/base/tmp/opencode/libstdcxx-build/`.
+
+```sh
+NDK=~/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_1/native
+# libgcc build dir normally provides gthr-default.h; standalone libstdc++
+# builds lack it -> the configure gthreads check fails without this symlink:
+mkdir -p /data/storage/el2/base/tmp/opencode/libgcc
+ln -sf .../gthr-posix-patched.h /data/storage/el2/base/tmp/opencode/libgcc/gthr-default.h
+#   (gthr-posix-patched.h = gthr-posix.h + __OHOS_FAMILY__ treated like
+#    __BIONIC__: skip __gthrw(pthread_cancel), GTHR_ACTIVE_PROXY=pthread_create;
+#    OHOS musl declares no pthread_cancel at all)
+
+env -u CPPFLAGS -u LDFLAGS \        # CRITICAL: leaked harmonybrew
+ CC=$NDK/llvm/bin/aarch64-unknown-linux-ohos-clang \
+ CXX="$NDK/llvm/bin/aarch64-unknown-linux-ohos-clang++ -std=gnu++17 -fsized-deallocation -nostdinc++ -nostdlib++" \
+ ~/springsources/gcc-ohos/gcc-13.3.0/libstdc++-v3/configure \
+   --host=aarch64-unknown-linux-musl --build=aarch64-unknown-linux-musl \
+   --disable-multilib --enable-shared --disable-static \
+   --prefix=/data/storage/el2/base/tmp/opencode/libstdcxx-install
+# post-configure patches (Makefiles regenerate each configure):
+sed -i 's/ -gno-as-loc-support//g' src/c++11/Makefile   # clang-15 unknown flag
+printf '// stub\n' > src/c++20/tzdb.cc                  # clang-15 ranges incompat
+make -j20
+```
+
+Notes:
+- `-std=gnu++17 -fsized-deallocation` must sit in **CXX** (driver), not
+  CXXFLAGS: per-dir `AM_CXXFLAGS` (`-std=gnu++98/11/17/20`) must stay the last
+  `-std` on the command line; clang-15 otherwise defaults to gnu++14 and
+  libsupc++/C++17 sources fail (`string_view` missing, `operator delete`
+  sized variants missing).
+- `-nostdinc++ -nostdlib++` in CXX prevents the NDK driver's default libc++
+  headers from leaking into the libstdc++ build (abs/stdlib.h conflicts).
+- The gthreads configure test needs `SUPPORTS_WEAK`-era gthr machinery that
+  only exists in a libgcc build dir → symlink above; without it
+  `_GLIBCXX_HAS_GTHREADS` stays undefined and **72 thread/future/pmr symbols
+  are silently dropped** from the .so.
+
+### Resulting artifact
+
+`libstdcxx-build/src/.libs/libstdc++.so.6.0.32` → SONAME `libstdc++.so.6`,
+3,353,088 bytes. Verified on device:
+- `.note.ohos.ident` ✓ (NDK clang 15 emits it; section content inside a LOAD)
+- `.codesign` section ✓
+- `NEEDED` = `libc.so` only ✓ (clean env ⇒ no libiconv.so.2 / no RUNPATH)
+- Export diff vs the pack's reference libstdc++.so.6: **0 missing**,
+  25 extra (`_Unwind_*`, `__unw_*`, `unw_local_addr_space` — NDK driver
+  linked the sysroot libunwind in; harmless, self-contained unwinding).
+
+### Device-side usage note
+
+Replacing `~/.nuget/.../runtime.ohos-arm64.Microsoft.DotNet.ILCompiler/
+11.0.0-rc.1.26451.1/tools/libstdc++.so.6` with this artifact was tested and
+then **reverted** to the v8 pack original: the v8 ilc itself is broken
+(truncated single-file apphost, round-8 above), so an ilc end-to-end run
+cannot validate the swap yet. Keep the artifact at
+`/data/storage/el2/base/tmp/opencode/libstdcxx-build/src/.libs/libstdc++.so.6`
+and re-swap when a working ilc pack (round-9) lands.
