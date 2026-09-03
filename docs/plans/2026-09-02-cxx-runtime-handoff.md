@@ -789,3 +789,53 @@ Rebuilt `Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg` (host-neutral,
 contains build/Microsoft.NETCore.Native.Unix.targets) with the fixed targets.
 Device: drop the Directory.Build.targets workaround, refresh this pack from the
 local feed, re-run §8 item 3.
+
+---
+
+## Round-10 completion (device side, 2026-09-03) — same-RID fix + RID independence verified ✅
+
+Re-ran per round-10 build-side instructions; also verified the SDK RID-graph
+independence (df902a3e75 / 1eeee0420e).
+
+### What was verified
+
+1. **SDK RID graph synced on device**: copied the sdk-ohos
+   `eng/{RuntimeIdentifierGraph,PortableRuntimeIdentifierGraph}.ohos.json`
+   over `.dotnet/sdk/11.0.100-rc.1.26451.1/` (old copies still had
+   `ohos → #import [linux-musl]`; only the 4 ohos entries differ, all other
+   798 RIDs identical — backups kept).
+2. **Same-RID ohos publish works with NO workaround**:
+   dropped `Directory.Build.targets` + `-p:LinkerFlavor=lld`; plain
+   `dotnet publish -r ohos-arm64 -p:PublishAot=true` completes (exit 0) and
+   the app runs (`AOT-verify: 2,4,6,8,10`). The `_originalTargetOS == 'ohos'`
+   fix (4db69a897e4) drives lld + Net.Security.Native exclusion correctly.
+3. **RID independence verified end-to-end**:
+   - fallback chain of `ohos-arm64` in the updated graph = `[ohos-arm64, ohos]`
+     (no `linux-musl-arm64`);
+   - publish assets contain **zero** linux-musl artifacts (only the ohos
+     ILCompiler/NativeAOT packs);
+   - with the ohos NativeAOT pack temporarily removed, restore fails with
+     **NU1101 `Microsoft.NETCore.App.Runtime.NativeAOT.ohos-arm64`** — an
+     explicit error, no silent linux-musl fallback (old graph would have
+     resolved a non-OHOS artifact that fails at dlopen).
+
+### Issue found: r10 host-neutral pack is missing the ohos→linux remap
+
+The released `Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg`
+(asset 11:39:42Z) contains `Microsoft.DotNet.ILCompiler.SingleEntry.targets`
+**without** the `<_targetOS Condition="'$(_targetOS)' == 'ohos'">linux`
+line that exists in the runtime repo (since 91572f4362c) — it only has the
+musl-flavor line. Publishing with the stock pack fails:
+`EXEC: Target OS 'ohos' is not supported` (ilc receives `--targetos ohos`).
+Device-side workaround used for this verification: copied the repo's
+SingleEntry.targets over the pack copy. Build side: rebuild the host-neutral
+pack from the current runtime-ohos source (or verify SingleEntry.targets
+inside the pack matches the repo before release).
+
+### Residual (build side)
+
+- runtime repo `src/libraries/Microsoft.NETCore.Platforms/src/runtime.json`
+  still has `ohos → #import [linux-musl]` — the SDK-side graphs were
+  independized but the Platforms-pack source graph was not. Sync it for
+  consistency (Microsoft.NETCore.Platforms consumers otherwise regenerate
+  the old inheritance).
