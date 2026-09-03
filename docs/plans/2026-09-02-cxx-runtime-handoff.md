@@ -692,3 +692,27 @@ dotnet publish -r ohos-arm64 -p:PublishAot=true
 If `cd tools && ./ilc --help` still fails, capture `COREHOST_TRACE=1` output
 and post it — that distinguishes hostfxr-load failure from managed-load
 failure.
+
+---
+
+## Round-9 verification (build side, 2026-09-03) — v9 CONFIRMED WORKING (qemu)
+
+Local qemu smoke of the exact released v9 layout (ilc-published/ = pack tools/):
+
+```sh
+cd artifacts/bin/coreclr/ohos.arm64.Release/ilc-published
+qemu-aarch64 -L /tmp/ohos-qemu-root -E LD_PRELOAD=/lib/libarc4random_shim.so ./ilc --help
+# → prints full usage (12,675 B); EXIT=0
+```
+
+Loader chain fully exercised: apphost exec → libhostfxr → libhostpolicy →
+libcoreclr (dlopen, note+codesign OK) → managed ilc.dll → usage output. The
+only qemu-only gap was `arc4random_buf` (old rootfs musl; NDK/device libc
+exports it — same as round-6's `arc4random` note).
+
+**Conclusion**: the v9 split-layout ilc is functional. The device-side
+"truncated" verdict applied single-file criteria (bundle GUID/7.8MB) to a
+split-layout apphost, and the `./tools/ilc` exec test ran from the pack root
+(apphost resolves its app path next to itself). Correct device test:
+`cd tools && ./ilc --help` (or just re-run §8 item 3, since the SDK invokes
+ilc from its own directory).
