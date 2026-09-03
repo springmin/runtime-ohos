@@ -522,3 +522,72 @@ then **reverted** to the v8 pack original: the v8 ilc itself is broken
 cannot validate the swap yet. Keep the artifact at
 `/data/storage/el2/base/tmp/opencode/libstdcxx-build/src/.libs/libstdc++.so.6`
 and re-swap when a working ilc pack (round-9) lands.
+
+---
+
+## Round-9 (build side, 2026-09-03) — CoreCLR split-layout ilc (方案 C)
+
+### Decision
+
+User chose option C over the earlier "native AOT / arm64-host" and
+"single-file self-contained" options after investigation showed:
+
+- Official ILCompiler packs (linux-x64/linux-musl-arm64) are **NativeAOT**
+  (~15MB self-contained + universal JIT) — NOT CoreCLR split. The "official
+  ohos 43KB CoreCLR pack" seen in the NuGet cache is a **linux-arm64 glibc
+  misproduct** (NEEDED libc.so.6/ld-linux-aarch64, no `.note.ohos.ident`) —
+  unrelated residue, cannot dlopen on device.
+- v8 death root cause (round-8): released ilc was a **CoreCLR single-file
+  apphost** whose bundle was truncated by the (pre-fix) selfsign → FD
+  fallback → `ilc.runtimeconfig.json` missing → hostpolicy abort.
+- Option C (CoreCLR **split** layout) is fully buildable on x64 host for
+  ohos-arm64: it is just a normal **self-contained publish with
+  `PublishSingleFile=false`**.
+
+### Build
+
+`eng/toolAot.targets:17` forces `PublishSingleFile=true` whenever
+`UseNativeAotForComponents != true` (OHOS excluded at `eng/Subsets.props:59`).
+Overriding with `-p:PublishSingleFile=false` on ILCompiler_publish produces a
+**CoreCLR split layout** (ilc apphost 39KB + libhostfxr/libhostpolicy/
+libcoreclr + ilc.dll + managed deps + universal JIT + runtimeconfig with
+`includedFrameworks` = self-contained).
+
+```sh
+./.dotnet/dotnet build src/coreclr/tools/aot/ILCompiler/ILCompiler_publish.csproj \
+  -c Release -r ohos-arm64 -t:Publish -p:TargetOS=ohos -p:TargetArchitecture=arm64 \
+  -p:PortableOS=ohos -p:UseBootstrap=true -p:PublishSingleFile=false \
+  /p:RuntimeIdentifierGraphPath="$(pwd)/.dotnet/sdk/11.0.100-preview.6.26359.118/RuntimeIdentifierGraph.json" \
+  /p:IncludeSymbols=false
+```
+
+### New dependency discovered
+
+All NDK-clang-built runtime `.so` (libhostpolicy/libcoreclr/libhostfxr/
+libclrjit/libSystem.*/universal JIT) NEED **`libc++_shared.so`** (not
+libstdc++/libgcc_s — those were for the round-3..6 native ilc). Device must
+load it. NDK provides `aarch64-linux-ohos` libc++_shared.so (has
+`.note.ohos.ident`, no codesign → selfsign applied). Added to pack tools/.
+
+### Pack contents (v9)
+
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg`
+(16,743,121 B) tools/ = 64 files: ilc apphost (39KB, codesigned) +
+ilc.runtimeconfig.json (`includedFrameworks` self-contained) + ilc.deps.json +
+ilc.dll + 6 ILCompiler.*.dll + System.* managed deps + 20 .so (all
+note+codesign: libhostfxr/libhostpolicy/libcoreclr/libclrjit*/libSystem.*/
+libc++_shared/libjitinterface/libmscordaccore/libmscordbi) + createdump.
+Published 2026-09-03T09:38:47Z (v9).
+
+### Device-side notes for round-9 verification
+
+1. ilc apphost exec needs no `.note.ohos.ident` (v8 single-file apphost exec'd
+   on device as precedent); its runtime `.so` all have note+codesign → dlopen
+   OK.
+2. **libc++_shared.so is required both for ilc AND for the published app**
+   (app's runtime .so from the runtime pack also NEED libc++_shared.so, which
+   is NOT in the runtime pack). Place it where the loader finds it
+   (`~/.harmonybrew/lib/libc++_shared.so` + ld path), or next to the app.
+3. Device-side GCC-built libstdc++.so.6 (commit 9df49b40c2f) is for the
+   native-ilc shape only — CoreCLR split uses libc++_shared instead. Keep it
+   for later native experiments.
