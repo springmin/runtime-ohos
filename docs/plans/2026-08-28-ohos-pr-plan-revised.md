@@ -572,3 +572,98 @@ Tracked so the next @jkotas reply covers everything at once:
 3. **(resolved) seccomp audit** — 7 trapped syscalls, close_range/inotify_init1 guarded
    (see `2026-09-01-ohos-syscall-audit.md`); HarmonyOS 7.1 relaxes 3 of 4 bun-negotiated
    syscalls; `inotify_init1` needs a .NET-specific whitelist request or fallback.
+
+---
+
+## 12. PR plan re-review (2026-09-03)
+
+Re-examined the plan against the actual PR state + review evolution. Net:
+**the 4-PR runtime split has collapsed to 2 PRs (of 3); the RID-graph PR is
+largely folded into the infra PR; one new review-driven item (ohos RID
+independence) is now part of #132953.**
+
+### 12.1 Actual state vs plan
+
+| Planned | Actual (2026-09-03) |
+|---|---|
+| #132827 — sandbox (6 files) | OPEN, in review; waiting on jkoritzinsky naming reply (ohos vs OpenHarmony, am11 09-01) |
+| PR-R2 — build infra (16 files) | **#132953 OPEN (11 files)**: build.sh, RuntimeIdentifier.props, Subsets.props, build-commons.sh, configureplatform/compiler/tools.cmake, gen-buildsys.sh, System.Native/CMakeLists.txt, build-native.sh, **+ runtime.json** (R4 leak) |
+| PR-R3 — sysroot + NativeAOT (13 files) | **NOT submitted**; content lives on feature branch (review-adjusted) |
+| PR-R4 — RID graph + packs (4 files) | runtime.json **folded into #132953**; targetingpacks.targets + ds-portable-rid.c + sfxproj still on feature |
+| SDK PR-S1/S2 | **NOT submitted**; RID override graphs, OpenHarmonyCodesign, BundledVersions on `feature/ohos-cross-sdk` |
+
+### 12.2 Review-driven changes since the plan (all landed on feature, mirrored into PRs where the reviewer asked)
+
+1. **RID identity settled (3 revisions):** `linux-ohos` → `ohos` (jkoritzinsky,
+   kernel-agnostic) → **`ohos` independent, NO `linux-musl` #import** (jkotas
+   09-03: "should NOT import linux-musl - to avoid pretending to be Linux").
+   runtime.json (`ohos={}`, `ohos-{arm,arm64,x64}=#import[ohos]`) pushed to
+   #132953 (57ec5e393f4). SDK override graphs + Platforms source in sync.
+2. **build.sh simplified** to the freebsd/haiku model — no `__PortableTargetOS=ohos`
+   (jkotas 09-03); PortableOS derives from TargetOS=ohos directly.
+3. **TargetOS is natively `ohos`** (155df040d43 on #132953) — not a linux flavor
+   at the MSBuild identity level; TargetsLinux stays true (compile-level facts
+   only). `TargetsOpenHarmony` drives the runtime-specific bits.
+4. **Compile-level linux remap kept** (jkotas 09-02): configureplatform.cmake
+   `CMAKE_SYSTEM_NAME=OHOS` → linux+musl; `_targetOS ohos→linux` in
+   SingleEntry.targets. SIGSYS handler **rejected** → compile-time
+   TARGET_OPENHARMONY guards instead.
+5. **New runtime facts (device-verified, round 3-11):** ilc ships as a CoreCLR
+   split-layout apphost (not single-file) with `libc++_shared.so` alongside;
+   same-RID publish needs `_originalTargetOS`-keyed ohos exclusions in
+   Native.Unix.targets (lld + no Net.Security.Native). These belong to R3/SDK.
+
+### 12.3 Adjusted plan
+
+1. **#132827** (sandbox) — unchanged; resolve the naming Q with jkoritzinsky
+   (may need a rename pass if he picks OpenHarmony over ohos).
+2. **#132953** (infra + RID graph core) — close jkotas's 2 threads (replied
+   09-03); await am11 re-review. runtime.json inclusion makes the standalone
+   R4 unnecessary for the runtime graph; **only `targetingpacks.targets`,
+   `ds-portable-rid.c`, `sfxproj` remain** as a tiny follow-up (can fold into
+   R3 or ship as a 3-file PR).
+3. **Runtime R3** (next): sysroot compile fixes (clrfeatures.cmake,
+   pal/src/{configure,CMakeLists}, zstd.cmake, libs/CMakeLists.txt,
+   extra_libs.cmake, pal_interfaceaddresses.c, apphost/static,
+   clrconfigvalues.h W^X default, pal close_range/inotify guards) +
+   **NativeAOT BuildIntegration** (SingleEntry.targets remap,
+   Native.Unix.targets `_originalTargetOS`/lld/Net.Security) + ILCompiler pack
+   (libstdc++/libgcc_s, pkgproj). Use the **review-adjusted** feature-branch
+   versions (guards, not the rejected SIGSYS handler).
+4. **SDK PR-S1** (new, replaces old S1+S2): RID override graphs (independent
+   ohos) + GenerateBundledVersions ohos RIDs + OpenHarmonyCodesign +
+   OpenHarmonyEnvironmentDefaults + redist runtimeconfig + dotnet-aot
+   exclusion. NativeAOT-publish support is already proven device-side; S2
+   folds in as validation evidence.
+5. **Validation evidence**: round 1-11 on-device (NativeAOT publish E2E PASS,
+   app runs) supersedes the qemu-only check in §4 — cite in PR descriptions.
+
+### 12.4 Open review items to track
+
+- #132827 naming: ohos vs OpenHarmony (am11 leaning OpenHarmony full name) —
+  affects RID strings repo-wide if changed again.
+- Whether OpenHarmonyCodesign (HarmonyOS-commercial-only enforcement) belongs
+  in upstream SDK or stays a downstream patch (§8: OpenHarmony does not
+  enforce) — needs a reviewer call before SDK PR-S1.
+
+### 12.5 Decision: no full "mac-style" OHOS branch-out (2026-09-03)
+
+Reviewed whether OHOS should become a full independent branch like macOS
+(ilc `TargetOS.OHOS` enum, `_targetOS` passthrough, `_IsOHOS` property face,
+CMake decoupling — see `2026-09-03-nativeaot-platform-analysis.md` §7).
+**Decision: not doing it — current state is sufficient.**
+
+Rationale (owner-confirmed):
+- The value of independence concentrates in the RID + MSBuild judgment plane,
+  both already done: ohos is an independent RID (no linux-musl import,
+  jkotas 09-03) and Native.Unix.targets keys off `_originalTargetOS`
+  (round-10 fix).
+- ilc has **no behavior split to make**: its OS logic is a Linux/Apple
+  dichotomy and ohos matches linux on every point (analysis §3.2); a
+  `TargetOS.OHOS` enum would be an empty dispatch + pure maintenance cost.
+- jkotas 09-02 already accepted compile-level linux treatment — a mac-style
+  `_targetOS` passthrough / CMake decouple would reopen that settled boundary
+  without reviewer demand.
+- Keep the compile-level linux remap + `TARGET_OPENHARMONY` guard hybrid
+  (Android-style middle ground); revisit only if a real OHOS-specific ilc or
+  runtime behavior appears.
