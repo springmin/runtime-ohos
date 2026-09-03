@@ -859,3 +859,29 @@ both fixed here:
    with the round-10 `_originalTargetOS` fix), uploaded as the replacement
    asset. Device: refresh the pack from the local feed; the copy-over
    workaround is no longer needed.
+
+---
+
+## Round-11 completion (device side, 2026-09-03) — residual fixes verified ✅
+
+Re-verified per the round-10 residual fix (0299593e8b1): both residuals are
+resolved with the **stock packs** — no device-side copy-over or workaround.
+
+### What was verified
+
+1. **Platforms source graph independized**: `src/libraries/
+   Microsoft.NETCore.Platforms/src/runtime.json` now has `ohos = {}` and
+   `ohos-arm64 = {"#import": ["ohos"]}` — matches the SDK override graphs
+   (df902a3e75).
+2. **Repacked host-neutral ILCompiler** (asset 13:39:19Z, 70,455 B) contains
+   both fixes: the `_targetOS ohos→linux` remap in SingleEntry.targets (1×)
+   and the round-10 `_originalTargetOS == 'ohos'` exclusions in
+   Unix.targets (2×). Installed from the release; the manual copy-over from
+   round-10 is gone.
+3. **§8 item 3 re-run with stock packs**: `dotnet publish -r ohos-arm64
+   -p:PublishAot=true` (no Directory.Build.targets, no LinkerFlavor override)
+   → exit 0, link line shows `-fuse-ld=lld`, zero `Net.Security.Native.a`
+   references, app runs (`AOT-verify: 2,4,6,8,10`, `GC: True`).
+
+Residual status: clean — both round-10 device findings are closed by the
+build side; no open device-side items for the NativeAOT publish path.
