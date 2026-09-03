@@ -265,3 +265,34 @@ ILCompiler pack rebuilt with the round-6 libgcc_s (codesign) and re-released
 (`v11.0.0-rc.1.26451.1-ohos`, 2026-09-03).
 
 Device side: re-run runbook §8 item 3 end-to-end.
+
+---
+
+## Round-7 diagnosis (device side, 2026-09-03)
+
+Round-6 pack: ilc **loads completely** (all relocations resolve). New failure:
+ilc **runs** but a startup NUMA probe calls `syscall(236)` = `set_mempolicy`
+(all-zero args probe, same pattern as CoreCLR's guarded
+`numasupport.cpp` get_mempolicy probe) → seccomp SIGSYS → process death.
+
+Evidence (device):
+- LD_PRELOAD SIGSYS capture: `si_syscall=236`; SVC pc inside the device musl's
+  generic `syscall()`; LR in ilc.
+- ilc disassembly: **four** call sites `mov w0, #236; x1=x2=0; w3=w4=w5=0;
+  bl syscall@plt` (vaddrs 0x4438ec, 0x616e98, 0x64b3d4, 0x764e90) — the AOT
+  runtime GC NUMA probe compiled into ilc.
+- The current feature-branch source has **no** `set_mempolicy`/syscall(236)
+  caller (only the TARGET_OPENHARMONY-guarded `get_mempolicy`/`mbind` in
+  `numasupport.cpp`) → **the ilc build used a stale/unguarded source state**
+  (consistent with earlier rounds where release builds lagged the branch).
+
+### Fix (build side, round 7)
+
+Rebuild ilc from the **current feature-branch source** (where the OHOS NUMA
+guards are present), and verify the build defines `TARGET_OPENHARMONY` for the
+GC/runtime compile (the guard in `numasupport.cpp` is inert without it).
+Self-check on the produced ilc:
+```sh
+llvm-objdump -d tools/ilc | grep -c "mov.*w0, #236"   # expect 0
+llvm-objdump -d tools/ilc | grep -c "mov.*w0, #237"   # expect 0 (get_mempolicy also guarded)
+```
