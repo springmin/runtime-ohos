@@ -427,3 +427,26 @@ local folder feed (`/p:RestoreAdditionalProjectSources=`). Test app:
 (MSBuild falls back to in-proc because the SDK's `libdotnet-aot.so` is an
 x86-64 glibc binary that cannot load on the device — pre-existing,
 non-fatal).
+## Round-8: signature hardening mirroring Mach-O (build side, 2026-09-03 14:00)
+
+Aligned the OHOS ELF signer (selfsign.cs + OpenHarmonyCodesign.cs) with the
+macOS Mach-O signer (Microsoft.NET.HostModel/MachO/MachObjectFile.cs):
+
+1. **Bundle-preserving codesign offset** (done in round 7, commits
+   c4f00640f0/e4961e6168): `InjectCodesignSection` now computes the codesign
+   offset from the real end of file (not the section-header-table end), so
+   .NET SingleFile bundles (which live after the section table and are not
+   covered by any section) survive signing. Verified: re-signing a 7.8MB
+   SingleFile ilc keeps the bundle (was truncated to 39KB before).
+2. **Post-sign validation** (commit bf5121c673): mirrors Mach-O
+   `MachObjectFile.Validate()` — after building the signature, re-parse the
+   signed ELF to verify the .codesign payload fits, the section is present and
+   parseable, and the codesign offset is in bounds. Catches layout corruption
+   at signing time instead of on device.
+
+Why Mach-O has no such bug: it represents the signature with an
+`LC_CODE_SIGNATURE` load command pointing at the real file end, and
+`TryAdjustHeadersForBundle` explicitly grows the __LINKEDIT segment to include
+the bundle before signing, so the signer always hashes the complete file. The
+ELF signer originally assumed file contents == sections, which is false for
+SingleFile apphosts.
