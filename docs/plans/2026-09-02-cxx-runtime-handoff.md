@@ -337,3 +337,93 @@ offset now accounts for the real end of file, preserving the bundle.
 re-uploaded (v8): guard ilc 7.8MB, codesign applied, bundle intact, no NUMA
 probe. Device side: re-run runbook §8 item 3 (`dotnet publish -r ohos-arm64
 -p:PublishAot=true`) — the ilc on device should no longer SIGSYS at startup.
+
+---
+
+## Round-8 diagnosis (device side, 2026-09-03) — v8 ilc is a truncated single-file apphost
+
+Runbook §8 item 3 re-run with the released v8 pack (downloaded from the
+release 2026-09-03T05:01:16Z, sha512-verified against the API asset size;
+installed into the NuGet cache via a local folder feed). **FAIL — new failure
+point, before any SIGSYS.**
+
+`dotnet publish -r ohos-arm64 -p:PublishAot=true` now:
+- restore resolves the rc.1.26451.1 packs ✓ (local feed needed: the NuGet
+  cache alone is not enough for a fresh restore of this pack id — NU1101
+  unless a feed provides the nupkg; the cache install also requires the
+  `.nupkg.sha512` marker)
+- pipeline reaches ilc and executes it ✓ (no loader errors, no note/SONAME
+  issues — the round-3..6 fixes hold)
+- ilc dies in the **host layer**:
+  `MSB3073: .../tools/ilc @app.ilc.rsp exited with code 131`, preceded by:
+  `A fatal error was encountered. The library 'libhostpolicy.so' required to
+  execute the application was not found in '/storage/Users/currentUser/.dotnet'.
+  Failed to run as a self-contained app. - The application was run as a
+  self-contained app because '.../tools/ilc.runtimeconfig.json' was not found.`
+
+### Evidence (on the released v8 ilc, `llvm-*` from harmonybrew)
+
+```sh
+llvm-readelf -n tools/ilc | grep "Build ID"   # 7981b2d5be8e218cdb09bd716eddfe9ed8bd43c0 (guard build ✓)
+llvm-readelf -h tools/ilc                      # Type: DYN, AArch64
+llvm-readelf -l tools/ilc | grep LOAD          # R 0x2e30 / RX 0x3b20 / RW 0x3a0 + 2 small RW
+                                               #   -> mapped image ≈ 27 KB ONLY; the 7.8 MB
+                                               #   trailing data is in NO LOAD segment
+xxd -p tools/ilc | tr -d '\n' | grep -c 8b1202f96b7b344eb58b2e3e4d5f6a7b   # 0
+tail -c 16 tools/ilc | xxd                     # all zeros — no single-file bundle signature at EOF
+llvm-readelf -h tools/ilc | grep -E "section headers"  # shoff=7844104, 29×64B
+stat -c %s tools/ilc                           # 7845960 = 7844104 + 29*64 EXACTLY
+                                               #   -> file ends exactly at the section-header-table end
+llvm-readelf -S tools/ilc | tail -4            # .codesign @0x77a000 sz 0x1000, .shstrtab @0x77b000:
+                                               #   both run past EOF (content truncated / absent)
+./tools/ilc                                     # direct exec reproduces the hostpolicy fatal error
+```
+
+### Root cause
+
+The released v8 ilc is a **CoreCLR single-file apphost** (not the native ELF
+shape the round-7 text describes: "NEEDED libc.musl, matching the official
+linux-musl ilc shape" — a native ilc has no hostpolicy/bundle logic). Its
+7.8 MB trailing overlay is the single-file bundle, and the **bundle footer /
+signature is missing**: the file was cut at the section-header-table end.
+`.codesign` content is truncated (2,120 of 4,096 bytes present) and
+`.shstrtab` content is past EOF. The apphost therefore cannot locate its
+bundle, falls back to framework-dependent mode, finds no
+`ilc.runtimeconfig.json`, and aborts.
+
+This is the **same truncation bug class as round-7's "Second bug"
+(selfsign/sign-ohos-release.sh discarding content past the section-header
+table)**. The c4f00640f0 fix did not take effect on this artifact — the v8
+pack was still signed/truncated by the buggy path (or the fix is incomplete:
+it preserved the bundle content but the appended `.codesign` + rebuilt
+section table still end up truncating the file tail).
+
+### Fix list (build side, round 8)
+
+1. Sign/package the single-file ilc **without truncating the file tail**.
+   After signing, ALL of these must hold (add to the release self-check):
+   ```sh
+   tail -c 16 tools/ilc | xxd        # last bytes NOT zero; single-file bundle
+                                     # signature present at EOF
+   xxd -p tools/ilc | tr -d '\n' | grep -c 8b1202f96b7b344eb58b2e3e4d5f6a7b  # ≥ 1
+   stat -c %s tools/ilc              # file must extend past shoff + 29*64
+   ./tools/ilc --help                # exec smoke test on the SIGNED artifact
+                                     # (qemu w/ device-musl rootfs); must print usage
+   ```
+2. Alternatively/additionally, publish the OHOS ilc in the **native
+   (non-single-file) shape** that round-6 used (real NativeAOT ELF, ~18 MB,
+   NEEDED libc.so/libstdc++.so.6/libgcc_s.so.1, guard build = BuildID
+   7981b2d5 source state) — it executed on device through the loader and only
+   died on the NUMA probe; with the guards it should run. Single-file
+   apphosts + an append-at-EOF codesign step are inherently fragile.
+3. Verify the released pack with a **runtime smoke test, not just readelf**
+   (the round-7 self-check only inspected sections/NEEDED — insufficient for
+   single-file apphosts).
+
+Device-side note: the NuGet cache now holds the v8 pack with a valid
+`.nupkg.sha512`; restore works when the pack nupkg is also offered from a
+local folder feed (`/p:RestoreAdditionalProjectSources=`). Test app:
+`dotnet new console` + `dotnet publish -r ohos-arm64 -p:PublishAot=true`
+(MSBuild falls back to in-proc because the SDK's `libdotnet-aot.so` is an
+x86-64 glibc binary that cannot load on the device — pre-existing,
+non-fatal).
