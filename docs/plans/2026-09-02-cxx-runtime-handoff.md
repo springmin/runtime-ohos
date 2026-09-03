@@ -716,3 +716,53 @@ split-layout apphost, and the `./tools/ilc` exec test ran from the pack root
 (apphost resolves its app path next to itself). Correct device test:
 `cd tools && ./ilc --help` (or just re-run §8 item 3, since the SDK invokes
 ilc from its own directory).
+
+---
+
+## Round-9 completion (device side, 2026-09-03) — §8 item 3 PASS ✅
+
+The released **v9 split-layout pack** works end-to-end on device. Runbook
+§8 item 3 (`dotnet publish -r ohos-arm64 -p:PublishAot=true`) **completes**;
+the published app executes.
+
+### What was verified
+
+1. `cd tools && ./ilc --help` on the released v9 pack → full usage, exit 0
+   (split-layout apphost: ilc.dll + runtimeconfig + 20 .so all present in
+   tools/, each with `.note.ohos.ident` + codesign).
+2. Full publish with the v9 pack (installed into the NuGet cache from the
+   local folder feed after removing the stale v8 cache entry) reaches ilc,
+   compiles app.o, links with `-fuse-ld=lld`, and produces
+   `bin/.../publish/app` (1.65 MB stripped ELF + app.dbg).
+3. The published app **runs on device**:
+   ```
+   AOT-verify: 2,4,6,8,10
+   RID check done. GC: True
+   ```
+
+### Device-side workaround required (same-RID ohos publish gap)
+
+Two `Microsoft.NETCore.Native.Unix.targets` ohos exclusions key off
+`$(CrossCompileRid).StartsWith('ohos-')` (lines 30 & 167), but
+`CrossCompileRid` is only set when host ≠ target — **on-device publish
+(host == target == ohos-arm64) leaves it empty**, so:
+
+- `LinkerFlavor` falls through to the linux default `bfd`; OHOS NDK has only
+  lld → `-fuse-ld=bfd` fails. (Cross builds set `-p:LinkerFlavor=lld`… no —
+  cross builds set CrossCompileRid=ohos-* and get lld automatically.)
+- `System.Net.Security.Native` is wrongly linked; OHOS does not build that
+  library (no krb5/gssapi, `src/native/libs/CMakeLists.txt`). The .a is
+  absent from the ohos runtime pack → link error.
+
+Workaround used on device (test app only, `Directory.Build.targets`):
+`-p:LinkerFlavor=lld` + removing `System.Net.Security.Native` from
+`NetCoreAppNativeLibrary`/`DirectPInvoke`/`NativeLibrary`/`LinkerArg` before
+`LinkNative`. No app code change; the app does not use SslStream.
+
+**Fix (build side)**: change both conditions to also cover same-RID ohos
+publishes, e.g. key off `'$(_originalTargetOS)' == 'ohos'` (or
+`$(_linuxLibcFlavor) == 'musl'` + `RuntimeIdentifier.StartsWith('ohos-')`)
+in addition to the CrossCompileRid check. Repo change belongs in
+dotnet/runtime `src/coreclr/nativeaot/BuildIntegration/` (the source of
+Microsoft.NETCore.Native.Unix.targets), then the fix flows into the ILCompiler
+pack on the next rebuild — no device workaround needed afterwards.
