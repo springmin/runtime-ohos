@@ -766,3 +766,26 @@ in addition to the CrossCompileRid check. Repo change belongs in
 dotnet/runtime `src/coreclr/nativeaot/BuildIntegration/` (the source of
 Microsoft.NETCore.Native.Unix.targets), then the fix flows into the ILCompiler
 pack on the next rebuild — no device workaround needed afterwards.
+
+---
+
+## Round-10 (build side, 2026-09-03) — same-RID ohos publish fix
+
+Device round-9 completion (c9626c0623a) PASSed §8 item 3 but needed a
+workaround: `Microsoft.NETCore.Native.Unix.targets` ohos exclusions keyed off
+`$(CrossCompileRid).StartsWith('ohos-')`, which is **empty when host == target**
+(on-device publish). Fixed both sites to key off `$(_originalTargetOS)` (the
+RID-derived, non-remapped OS — `_targetOS` is remapped ohos→linux):
+
+- L30 `LinkerFlavor` → `'$(_originalTargetOS)' == 'ohos'` → lld (was falling
+  through to the linux default bfd; OHOS NDK has lld only)
+- L167 `System.Net.Security.Native` → `'$(_originalTargetOS)' != 'ohos'` →
+  excluded (OHOS builds no krb5/gssapi lib)
+
+L59 `CrossCompileAbi` left as-is (cross-only; same-RID compiles natively,
+device verified default abi works).
+
+Rebuilt `Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.1.nupkg` (host-neutral,
+contains build/Microsoft.NETCore.Native.Unix.targets) with the fixed targets.
+Device: drop the Directory.Build.targets workaround, refresh this pack from the
+local feed, re-run §8 item 3.
