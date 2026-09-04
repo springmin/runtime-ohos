@@ -56,8 +56,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileAbi>gnu</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android24</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
-      <!-- The ABI token stays 'ohos' (NDK triple contract: clang --target=<arch>-linux-ohos)
-           even though the RID is now openharmony. -->
+      <!-- The ABI token stays 'ohos' even though the RID is now openharmony: the
+           CrossCompileAbi values are clang-triple dialect tokens decoupled from the
+           RID OS segment, per upstream convention - linux-bionic/android RIDs map
+           to 'android24', Apple RIDs to 'macho'/'macabi'/'simulator'. 'ohos' is the
+           official NDK triple name: clang --target=<arch>-linux-ohos. -->
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('openharmony-'))">ohos</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi24</CrossCompileAbi>

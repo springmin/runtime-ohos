@@ -174,3 +174,48 @@ Pattern totals: `\bohos` 23 files/688 occ (incl. 172 `linux-ohos`, all in docs);
 - openharmony standalone root vs import linux (determines whether compile-level remap
   shims remain)
 - whether `ohos` is kept as a RID alias (transition path)
+
+## 7. Post-execution revision (2026-09-04): final state of the 4 decision points
+
+The rename branch (feature/openharmony-rename, commits d90f0865d92, dd832a937a7,
+de047d661c1) executed the string layer and then re-audited the four retained-`ohos`
+points against upstream dotnet/runtime conventions (files compared against the
+upstream main copies). Final disposition:
+
+| # | Point | Upstream convention | Final disposition |
+|---|---|---|---|
+| 1 | `eng/native/configureplatform.cmake:16` `STREQUAL ohos` | Each OS gets its own independent if-block on lowercased `CMAKE_SYSTEM_NAME`; NDK toolchain hardcodes `CMAKE_SYSTEM_NAME=OHOS` (ohos.toolchain.cmake:47) and will not rename with the .NET RID | **Keep** — detection must mirror the NDK contract, orthogonal to the RID. Comment added explaining 'ohos' = NDK contract, not the RID |
+| 2 | `src/native/eventpipe/ds-portable-rid.c` `PORTABLE_RID_OS` | **PORTABLE_RID_OS = RID-graph OS segment** (upstream precedent: `TARGET_ANDROID` → `"linux-bionic"`, because android's RID OS segment is linux-bionic) | **Changed to `"openharmony"`** — the earlier "keep as diagnostics contract" analysis was wrong; the string must follow the RID segment |
+| 3 | `Unix.targets` `CrossCompileAbi=ohos` | triple is built from three independent variables (arch / OS token / ABI token); ABI tokens are toolchain-dialect names decoupled from the RID segment: `android24` for linux-bionic/android RIDs, `musl`, and Apple's `macho`/`macabi`/`simulator`; Apple OS tokens also diverge from RID segments (maccatalyst → `ios...-macabi`, iossimulator → `ios...-simulator`) | **Keep `ohos`** — same pattern as `macabi`/`android24`: a clang-triple dialect token (`aarch64-linux-ohos` = official NDK wrapper name). Comment cites the ABI-token precedent |
+| 4 | `eng/targetingpacks.targets` Mono-labelled RID list | Mono list declares platforms Mono actually ships packs for (android/ios/tvos/browser/wasi...) | **Removed the openharmony RIDs** — no `Microsoft.NETCore.App.Runtime.Mono.openharmony-*` packs exist (OHOS is CoreCLR+NativeAOT only, Subsets.props, per jkotas review 270212d2ba7); dangling declarations are harmful. Comment documents how to add back if Mono-on-OHOS is ever enabled |
+
+### macOS/Apple as the reference for decision point 3
+
+Upstream builds every non-linux triple from independent variables; Apple is the
+clearest proof that RID segment ≠ triple token:
+
+| RID | CrossCompileArch | triple OS token | triple ABI token |
+|---|---|---|---|
+| osx-x64 / osx-arm64 | x86_64 / arm64 | `macos14.0` (≠ RID `osx`) | — |
+| ios-arm64 | arm64 | `ios13.0` | `macho` |
+| iossimulator-arm64 | arm64 | `ios13.0` (≠ RID) | `simulator` |
+| maccatalyst-arm64 | arm64 | `ios17.0` (≠ RID) | `macabi` |
+| linux-bionic-arm64 | aarch64 | `linux` | `android24` |
+| **openharmony-arm64** | aarch64 | `linux` | **`ohos`** (kept) |
+
+`CrossCompileAbi=ohos` is the same kind of toolchain-dialect token as `macabi`,
+`macho`, `simulator`, `android24` — the clang `--target` contract
+(`aarch64-linux-ohos`) — and is independent of the RID rename. Linux-ABI
+platforms use the generic `$(arch)-linux-$(abi)` triple construction with an ABI
+token; OHOS correctly follows that family (like bionic/android), it does not need
+an Apple-style override block.
+
+### Post-execution residual audit (independent, not agent-reported)
+
+- runtime-ohos: `rg '\bohos'` in src/+eng/ → only NDK-contract remnants remain:
+  `configureplatform.cmake:16` (NDK detection), `build-commons.sh` ohosToolchainFile
+  + ohos.toolchain.cmake (NDK filename), `Unix.targets:59` ABI token + its comment.
+  Zero `"ohos"` string literals remain in src/. sdk-ohos and aspnetcore-ohos:
+  zero code-layer remnants.
+- Mono/CoreCLR/NativeAOT pack lists verified: openharmony present in CoreCLR list
+  (3 arch) and NativeAOT list (arm64/x64), absent from Mono list.
