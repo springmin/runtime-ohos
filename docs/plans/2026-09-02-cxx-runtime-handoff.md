@@ -917,3 +917,25 @@ System.Private.CoreLib R2R **deterministically hangs** (99.9% CPU, RSS ~16MB).
   the merged window (e.g. f0b01ad7f0e "Fix SIMD primitive zero
   initialization", 454d2ab85c3 WIP try-catch-fault) — bisect those next.
 - 26451.1 (pre-merge) produced R2R CoreLib fine; the merge introduced the hang.
+
+### Round-12bis — crossgen2 R2R hang: JIT bisect excluded (2026-09-04)
+
+Extended exclusion trail:
+- 65c1f69d9fe (variance) excluded — `--type-validation:SkipTypeValidation` still hangs.
+- 36ef18696f8 (unboxing stubs) excluded — `git revert` still hangs.
+- f0b01ad7f0e (SIMD) excluded — revert + RyuJIT rebuild still hangs.
+- **Full JIT revert** (checkout 42bb941f928 `src/coreclr/jit/`, rebuilt libclrjit)
+  **still hangs** → JIT commits NOT the cause.
+- PGO mibc excluded (stripped `-m ... --embed-pgo-data` — still hangs).
+- Host runtime R2R image excluded: minimal R2R-published app calling
+  AdvSimd.IsSupported + UTF8 runs fine on the same .dotnet runtime.
+- crossgen2 binary is a 17MB R2R x86-64 host app; dotnet-dump main-thread
+  stack: `AdvSimd.get_IsSupported ← Utf16Utility.GetPointerToFirstInvalidChar
+  ← Statics.MetadataForString ← EventSource.InitializeProviderMetadata ←
+  NativeRuntimeEventSource..cctor` (99.9% CPU, RSS ~16MB, deterministic).
+
+Remaining hypothesis: the hang is inside the **crossgen2 process** while
+initializing its own EventSource path (Utf16Utility handling some string the
+minimal app does not) — NOT crossgen2 source commits, NOT JIT, NOT host
+runtime. Next: finer dump (per-thread stacks over time / GC heap state) or
+accept pure-IL CoreLib (already released as 26451.109) and revisit later.
