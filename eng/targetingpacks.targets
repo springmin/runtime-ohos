@@ -50,12 +50,17 @@
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
                              Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
+    <!-- Mono-labelled runtime packs cover the platforms Mono actually ships for.
+         OpenHarmony is CoreCLR+NativeAOT only (see eng/Subsets.props TargetsOpenHarmony
+         DefaultSubsets) - no Microsoft.NETCore.App.Runtime.Mono.openharmony-* packs exist,
+         so openharmony RIDs must NOT be listed here. If Mono-on-OHOS is ever enabled,
+         add the RIDs back together with the Mono pack output (and Subsets change). -->
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.Mono.**RID**"
-                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;openharmony-arm;openharmony-arm64;openharmony-x64;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
+                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
                       RuntimePackLabels="Mono"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or '@(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'Mono')->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true')" />
     <!-- always add wasi-wasm as it is never added by the sdk -->

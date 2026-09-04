@@ -13,10 +13,9 @@
 #if defined(TARGET_ANDROID)
 #define PORTABLE_RID_OS "linux-bionic"
 #elif defined(TARGET_OPENHARMONY)
-/* 'ohos' is the diagnostic IPC contract value (parsed by dotnet-diagnostics /
-   dotnet-trace tooling), not the .NET RID ('openharmony'). Rename in lockstep
-   with the diagnostics tooling before changing this string. */
-#define PORTABLE_RID_OS "ohos"
+/* Follows the RID-graph OS segment (like android -> 'linux-bionic' above):
+   OpenHarmony's RID OS segment is 'openharmony'. */
+#define PORTABLE_RID_OS "openharmony"
 #elif defined(TARGET_LINUX_MUSL)
 #define PORTABLE_RID_OS "linux-musl"
 #elif defined(TARGET_LINUX)
