@@ -885,3 +885,35 @@ resolved with the **stock packs** — no device-side copy-over or workaround.
 
 Residual status: clean — both round-10 device findings are closed by the
 build side; no open device-side items for the NativeAOT publish path.
+
+---
+
+## Round-12 (2026-09-04) — 26451.109 release + crossgen2 R2R hang root-cause trail
+
+### Released (accepting pure-IL CoreLib; R2R noted as issue)
+- runtime-ohos / aspnetcore-ohos `v11.0.0-rc.1.26451.109-ohos`; sdk-ohos
+  `v11.0.100-rc.1.26451.109-ohos` (SDK marked INCOMPLETE — redist MSBuild not
+  assembled; package-production loop extremely slow).
+- 26451.109 = 26451.1 + 48 upstream commits + ohos build fixes (crossgen-corelib
+  R2R off, shims unix TFM). CoreLib is pure-IL (26451.1 had an inconsistent
+  R2R CoreLib despite the pack disabling R2R).
+
+### crossgen2 R2R hang root-cause trail (NOT yet root-caused)
+Symptom: runtime in-build crossgen2 (host x64) compiling ohos-arm64
+System.Private.CoreLib R2R **deterministically hangs** (99.9% CPU, RSS ~16MB).
+- Excluded: SDK R2R whitelist (NETSDK1095 — ohos not supported), upstream
+  crossgen2 commits (only 4 enter crossgen2: 36ef18696f8 unboxing-stubs,
+  65c1f69d9fe variance, 5eca6e4b82a loadability, f540517cb0b stringtable).
+  `--type-validation:SkipTypeValidation` still hangs (65c1 excluded);
+  `git revert 36ef18696f8` still hangs (36ef excluded).
+- dotnet-dump stack (main thread): `AdvSimd.get_IsSupported() ←
+  Utf16Utility.GetPointerToFirstInvalidChar ← Statics.MetadataForString ←
+  EventSource.InitializeProviderMetadata ← NativeRuntimeEventSource..cctor`.
+- Minimal JIT app calling AdvSimd.IsSupported on the same host runtime: **OK**
+  (fast false). `DOTNET_ReadyToRun=0` (JIT crossgen2) still hangs.
+- Working hypothesis: the hang is RyuJIT **compiling** an arm64 method that
+  pulls the AdvSimd/intrinsics path (the clrstack frame is the compile query),
+  not host-side execution. Suspect: one of the **8 upstream JIT commits** in
+  the merged window (e.g. f0b01ad7f0e "Fix SIMD primitive zero
+  initialization", 454d2ab85c3 WIP try-catch-fault) — bisect those next.
+- 26451.1 (pre-merge) produced R2R CoreLib fine; the merge introduced the hang.
