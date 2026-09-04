@@ -60,7 +60,7 @@ The .NET Foundation licenses this file to you under the MIT license.
            CrossCompileAbi values are clang-triple dialect tokens decoupled from the
            RID OS segment, per upstream convention - linux-bionic/android RIDs map
            to 'android24', Apple RIDs to 'macho'/'macabi'/'simulator'. 'ohos' is the
-           official NDK triple name: clang --target=<arch>-linux-ohos. -->
+           official NDK triple name (clang target aarch64-linux-ohos). -->
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('openharmony-'))">ohos</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi24</CrossCompileAbi>
