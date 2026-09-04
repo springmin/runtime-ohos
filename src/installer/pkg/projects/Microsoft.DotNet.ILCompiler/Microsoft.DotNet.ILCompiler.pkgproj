@@ -44,7 +44,7 @@
     </ItemGroup>
 
     <!--
-      The device (HarmonyOS) provides only LLVM libc++ (libc++_shared.so); the NativeAOT C++
+      The device (OpenHarmony) provides only LLVM libc++ (libc++_shared.so); the NativeAOT C++
       runtime libs link GNU libstdc++.so.6 + libgcc_s.so.1 which the device lacks. Ship
       aarch64 musl builds alongside ilc so device-side AOT works out of the box. These are
       provided by the ohos-assets bundle (OHOS_CXXRUNTIME_DIR, default ~/sources/ohos-assets).
