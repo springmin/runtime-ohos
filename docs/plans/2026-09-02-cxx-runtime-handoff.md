@@ -1010,3 +1010,37 @@ default output.
 round-11/12 PASS was the 26451.1 split ilc). NativeAOT ilc runs with
 NEEDED libc.musl only — no libc++_shared needed for ilc itself (JIT .so in
 tools/ load by path).
+
+---
+
+## Round-14b (build side, 2026-09-04) — pre-signing moved into the build script
+
+Install-dotnet-ohos.sh's sign_all() (device-side signing at install time) was
+moved to **pre-package time on the build host**, so every released artifact is
+signed before upload:
+
+- `ohos-build/sign-ohos-pre.py`: signs every ELF in dirs / .nupkg / .tar.gz,
+  idempotent (.codesign present -> skip). selfsign built once from the SDK repo
+  (`documentation/ohos-install`, linux-x64 AOT).
+- `build-ohos-all.sh` now signs before feeding downstream:
+  - stage1: every ohos-arm64 nupkg (Runtime/NativeAOT/Host/Crossgen2/
+    ILCompiler) + runtime tarballs — THEN copies into the local feed (feed is
+    the aspnetcore/sdk restore source, so it must already carry .codesign)
+  - stage3: aspnetcore App.Runtime nupkg + aspnetcore-runtime tarball
+  - stage4: the SDK redist tarball
+- The earlier ILCompiler-only sign was replaced by the full-product signing.
+
+### Releases updated (all ELF pre-signed, verified)
+
+- **runtime-ohos** `v11.0.0-rc.1.26451.109-ohos`: Runtime.ohos-arm64
+  -PureIL (5.8MB CoreLib) + -R2R-PGO (18.97MB R2R/PGO) — 13 ELF each;
+  NativeAOT (10) / Host (3) / Crossgen2 (8) / ILCompiler NativeAOT (9);
+  tarballs: dotnet-runtime (53), apphost-pack (12), crossgen2 (8), nethost (1)
+- **aspnetcore-ohos**: aspnetcore-runtime tarball (53 ELF)
+- **sdk-ohos** `v11.0.100-rc.1.26451.109-ohos`: dotnet-sdk tarball (75 ELF)
+
+The device install script still works unchanged (its sign_all is idempotent
+and now finds everything already signed).
+
+Note: python 3.14 tarfile `add(filter="data")` is removed — repack without the
+filter arg.
