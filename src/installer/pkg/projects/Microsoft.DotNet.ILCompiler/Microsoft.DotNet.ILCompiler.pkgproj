@@ -49,7 +49,7 @@
       aarch64 musl builds alongside ilc so device-side AOT works out of the box. These are
       provided by the ohos-assets bundle (OHOS_CXXRUNTIME_DIR, default ~/sources/ohos-assets).
     -->
-    <ItemGroup Condition="'$(PortableOS)' == 'ohos' and '$(PackageTargetRuntime)' != '' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
+    <ItemGroup Condition="'$(PortableOS)' == 'openharmony' and '$(PackageTargetRuntime)' != '' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libstdc++.so.6" TargetPath="tools" />
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libgcc_s.so.1" TargetPath="tools" />
     </ItemGroup>

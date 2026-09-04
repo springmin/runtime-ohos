@@ -41,14 +41,14 @@
     <_linuxToken>linux-</_linuxToken>
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
     <_linuxLibcFlavor Condition="'$(_targetOS)' == 'android'">bionic</_linuxLibcFlavor>
-    <!-- ohos is a standalone RID (kernel-agnostic) but uses musl libc; map it here.
+    <!-- openharmony is a standalone RID (kernel-agnostic) but uses musl libc; map it here.
          _targetOS maps to linux so ilc (which only knows linux/android/osx/...) accepts
          the targetos argument; the musl libc flavor is preserved for the linker
-         (Native.Unix.targets keys off CrossCompileRid.StartsWith('ohos-') for the
+         (Native.Unix.targets keys off CrossCompileRid.StartsWith('openharmony-') for the
          toolchain selection). -->
-    <_linuxLibcFlavor Condition="'$(_targetOS)' == 'ohos'">musl</_linuxLibcFlavor>
+    <_linuxLibcFlavor Condition="'$(_targetOS)' == 'openharmony'">musl</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
-    <_targetOS Condition="'$(_targetOS)' == 'ohos'">linux</_targetOS>
+    <_targetOS Condition="'$(_targetOS)' == 'openharmony'">linux</_targetOS>
 
     <!-- linux-bionic on ARM uses armel (softfp) ABI -->
     <_targetArchitectureWithAbi>$(_targetArchitecture)</_targetArchitectureWithAbi>

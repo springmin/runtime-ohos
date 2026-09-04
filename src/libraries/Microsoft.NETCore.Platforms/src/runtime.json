@@ -2159,20 +2159,20 @@
         "linux-x86"
       ]
     },
-    "ohos": {},
-    "ohos-arm": {
+    "openharmony": {},
+    "openharmony-arm": {
       "#import": [
-        "ohos"
+        "openharmony"
       ]
     },
-    "ohos-arm64": {
+    "openharmony-arm64": {
       "#import": [
-        "ohos"
+        "openharmony"
       ]
     },
-    "ohos-x64": {
+    "openharmony-x64": {
       "#import": [
-        "ohos"
+        "openharmony"
       ]
     },
     "linux-ppc64le": {

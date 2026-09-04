@@ -151,12 +151,12 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <!-- crossgen2's TargetOS whitelist only knows base OS names; OpenHarmony R2R images
-         are Linux ELF (musl ABI, JIT-runtime compatible), so remap ohos to linux at
-         compile level, consistent with the NativeAOT SingleEntry ohos->_targetOS=linux
+         are Linux ELF (musl ABI, JIT-runtime compatible), so remap openharmony to linux at
+         compile level, consistent with the NativeAOT SingleEntry openharmony->_targetOS=linux
          mapping and the sfxproj PublishReadyToRun linux treatment. -->
     <PropertyGroup>
       <_CrossGenTargetOS>$(TargetOS)</_CrossGenTargetOS>
-      <_CrossGenTargetOS Condition="'$(TargetOS)' == 'ohos'">linux</_CrossGenTargetOS>
+      <_CrossGenTargetOS Condition="'$(TargetOS)' == 'openharmony'">linux</_CrossGenTargetOS>
     </PropertyGroup>
 
     <PropertyGroup>
