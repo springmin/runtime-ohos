@@ -1044,3 +1044,50 @@ and now finds everything already signed).
 
 Note: python 3.14 tarfile `add(filter="data")` is removed — repack without the
 filter arg.
+
+---
+
+## Round-14c (build side, 2026-09-04) — script audit: runnability + CI alignment
+
+Reviewed build-ohos-all.sh for (1) from-scratch runnability and (2) alignment
+with official CI legs (runtime.yml AllSubsets_CoreCLR*, aspnetcore VMR shape,
+sdk-job-matrix). Oracle unavailable (agent no-op) — audit done directly.
+
+### Blocker fixes applied
+- `STOCK_CROSSGEN2_DIR` was expanded before `WORK=` was assigned (WORK default
+  later) → `/stock-crossgen2/...`; moved the HOME_DIR/WORK/FEED/ASSETS/LOG block
+  above it.
+- crossgen2 download URL was api.nuget.org → **404** (26427.131 is an internal
+  dev build). Resolution order now: repo-bundled nupkg
+  (ohos-build/third-party/, copied from cache) → NuGet cache → dnceng dotnet12
+  feed. Bundled the nupkg so the build works offline.
+- stage4/stage5 `find -maxdepth 3` missed the sdk tarball
+  (artifacts/packages/Release/Shipping/ = depth 4) → sdk redist was never
+  signed; bumped to maxdepth 5.
+- stage2 now starts the asset http server (:8000) itself when not already
+  listening (PublicBaseURL dependency was an external manual step).
+- `die()` `>&2 | tee` piped nothing → `| tee -a "$LOG" >&2`.
+- Signing glob dropped `runtime.*Microsoft.DotNet.ILCompiler.*` (matched the
+  linux-x64 host pack, wasteful); `*$RID*` already covers the ohos ILCompiler.
+
+### CI alignment applied (per explore audit of eng/pipelines + fork plan docs)
+- runtime subset `clr+libs+packs` → **`clr+libs+host+packs`** (official
+  runtime.yml legs + fork plan decision line ~150).
+- NativeAOT/ILCompiler production → fork **C.7** shape: `clr.aot+packs` subset
+  (ILCompiler packs) + explicit `Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj`
+  (replacing `DotNetBuildAllRuntimePacks=true` which triggers Mono cross-AOT).
+
+### Confirmed / intentional deviations (documented in script header)
+- R2R: official R2Rs inside CoreCLR.sfxproj packaging (PGO mibc); ohos uses the
+  stock NuGet crossgen2 for CoreLib only + pack swap (fork crossgen2 hang).
+- aspnetcore PublishReadyToRun=false / NativeAotSupported=false (no PGO/krb5);
+  os-name=ohos passes through (no whitelist); PublicBaseURL local server +
+  version overrides replace darc feed flow.
+- sdk: no -pack (SDK assemblies stay IL), IncludeAspNetCoreRuntime=false
+  (aspnetcore ships separately) — =true full-support variant in sdk plan 12.4.
+- RID graphs: runtime/aspnetcore preview.6 SDK graphs and sdk eng/ override
+  JSONs all carry ohos (verified 4 entries) — injection is a manual prereq.
+
+### Not run end-to-end after edits
+Runnable from scratch given: OHOS_NDK_HOME/OPENSSL_DIR/ICU_DIR, RID-graphs
+injected, and a clean checkout. Crossgen2 bundle ships in ohos-build/third-party.
