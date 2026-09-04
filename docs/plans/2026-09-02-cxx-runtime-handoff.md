@@ -961,3 +961,52 @@ fallback assets to the runtime release.
 
 Note: official 26451.109 crossgen2 is not on nuget.org (darc/internal feed
 only, 404 without auth). 26427.131 is the newest nuget.org-official available.
+
+---
+
+## Round-14 (build side, 2026-09-04) — 26451.109 ILCompiler = NativeAOT (recovered), signed
+
+### Discovery (product comparison 26451.1 vs 26451.109)
+
+**26451.109 ILCompiler pack is ALREADY NativeAOT single-file** — the earlier
+"15-file vs 70-file" comparison was read backwards:
+
+| pack | tools/ilc | shape |
+|---|---|---|
+| 26451.1 (v9, round-9 split) | 38,984B (39KB apphost) | CoreCLR **split** (ilc.dll + ILCompiler.*.dll external) |
+| 26451.109 (post-upstream-merge) | **7,848,181B** | **NativeAOT single-file** (NEEDED libc.musl only — official linux-musl shape; ILCompiler managed inlined, hence 15 files) |
+
+The upstream merge flipped ILCompiler_publish back to NativeAOT (UseNativeAot
+ForComponents conditions). The round-9 `-p:PublishSingleFile=false` split
+override was NOT carried into the 26451.109 build. The 7.8MB ilc verified
+clean: 0 × `mov w0,#236/#237` (NUMA), 0 × `/sys/devices/system/node`.
+
+### Signing (fixed selfsign)
+
+All 9 ELF in the pack signed with the SDK-repo fixed selfsign
+(`documentation/ohos-install`, commits c4f00640f0/bf5121c673 on sdk HEAD):
+- ilc 7,848,181 → 7,858,248B (+10KB .codesign — **bundle preserved**, was 39KB
+  pre-fix); `ilc.deps.json` bundle marker present
+- descriptor head matches round-9 reference format
+  (`01000000 20010000 01010c00 20000000 <fileSize>`) with exact fileSize
+- libc++_shared.so + 7 libclrjit_*/libjitinterface all signed
+- post-sign validation (bf5121c673) passed at signing time
+
+### Script fix
+
+`build-ohos-all.sh` stage1 now ends with: build selfsign (SDK repo,
+`-p:PublishAot=true -r linux-x64`) + `sign_nupkg()` (signs every ELF in the
+ILCompiler nupkg in place, idempotent) → device-ready pack is the build
+default output.
+
+### Released
+
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.109.nupkg`
+(signed, 9MB) uploaded to `v11.0.0-rc.1.26451.109-ohos` (notes updated).
+
+### Device side (pending)
+
+§8 item 3 E2E on the **NativeAOT** ilc (26451.109 — never device-verified;
+round-11/12 PASS was the 26451.1 split ilc). NativeAOT ilc runs with
+NEEDED libc.musl only — no libc++_shared needed for ilc itself (JIT .so in
+tools/ load by path).
