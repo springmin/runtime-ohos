@@ -22,6 +22,9 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- OpenHarmony ships no PGO data; the runtime pack disables ReadyToRun (see the
+         CoreCLR.sfxproj TargetsOpenHarmony condition) — keep the CoreLib image IL-only too. -->
+    <PublishReadyToRun Condition="'$(TargetsOpenHarmony)' == 'true'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
