@@ -939,3 +939,25 @@ initializing its own EventSource path (Utf16Utility handling some string the
 minimal app does not) — NOT crossgen2 source commits, NOT JIT, NOT host
 runtime. Next: finer dump (per-thread stacks over time / GC heap state) or
 accept pure-IL CoreLib (already released as 26451.109) and revisit later.
+
+### Round-13 — R2R restored via official crossgen2 (root cause: fork crossgen2 embedded CoreLib)
+
+**Root cause (final)**: our fork-built crossgen2 is a **self-contained single-file**
+(17MB, embeds a fork-built CoreLib). Its embedded CoreLib's
+`AdvSimd.get_IsSupported` (self-recursive `get => IsSupported`, must be JIT
+const-folded) fails intrinsic folding at process startup (EventSource
+initialization path) → tail-recursive spin under tiering-off (crossgen2
+AotCompilerCommon.props TieredCompilation=false). Verified: TieredCompilation=1
+→ stack overflow (134); =0 → spin (124); `crossgen2 --help` alone spins.
+Minimal JIT/R2R apps on the same .dotnet runtime are fine (stock CoreLib).
+
+**Fix**: use the OFFICIAL crossgen2 from
+`microsoft.netcore.app.crossgen2.linux-x64` NuGet (11.0.0-rc.1.26427.131,
+13.3MB split layout, embedded stock CoreLib). It compiles the ohos-arm64
+CoreLib R2R fine (17.45MB, READYTORUN minor 27.0; our 26451.109 runtime is
+27.1 post-36ef — backward-compat pending on-device check). Replaced the
+Runtime pack CoreLib (PureIL → R2R) and uploaded both `-R2R` and `-PureIL`
+fallback assets to the runtime release.
+
+Note: official 26451.109 crossgen2 is not on nuget.org (darc/internal feed
+only, 404 without auth). 26427.131 is the newest nuget.org-official available.
