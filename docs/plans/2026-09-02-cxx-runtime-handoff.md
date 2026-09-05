@@ -1367,3 +1367,37 @@ real in 26451.1).
   Windows-only) — Unix-expected ones to check if a CLI verb touches them.
 - PR-R3 content (revised-plan 568 MSBuild-layer mapping) now landed on the
   feature branch — sync into the PR branch at the review stage.
+
+---
+
+## Round-20 (2026-09-05) — AOT restore blockers: ILLink.Tasks + AspNetCore pack published
+
+Device round-19 verify: SDK CLI works (Console/Cryptography + Process real via
+the linux-group pack — the 5 previously-stubbed libs were fixed by
+2aff77173c2, device re-verify pending). New blockers for stock-SDK AOT
+publish restore:
+- NU1102: Microsoft.NET.ILLink.Tasks 11.0.0-rc.1.26451.109 not found — SDK's
+  KnownILLinkPack ILLinkPackVersion = MicrosoftNETCoreAppRuntimePackageVersion
+  (our 26451.109 runtime override), but the actual ILLink.Tasks (darc
+  MicrosoftNETILLinkTasksPackageVersion = 26452.110) lives on the dnceng
+  internal feed only (not nuget.org).
+- NU1101: Microsoft.AspNetCore.App.Runtime.ohos-arm64 26451.109 not in the
+  local feed.
+
+Published to the runtime-ohos v11.0.0-rc.1.26451.109-ohos release (single
+source for the device feed):
+- Microsoft.NET.ILLink.Tasks.11.0.0-rc.1.26451.109.nupkg — official
+  26452.110 content re-versioned to 26451.109 (restore-key match; linker is
+  version-independent of the runtime it links).
+- Microsoft.AspNetCore.App.Runtime.ohos-arm64.11.0.0-rc.1.26451.109.nupkg —
+  from the aspnetcore-ohos release (4.5MB, 143 files).
+
+Device: download both into the device NuGet feed, retry stock-SDK AOT publish.
+Longer-term: either publish ILLink.Tasks at the runtime version properly, or
+stop coupling KnownILLinkPack's ILLinkPackVersion to the runtime override in
+the SDK build.
+
+Note: the linux-group fix (2aff77173c2) was pushed before the round-19 verify
+merge; the currently uploaded runtime pack (82MB, signed, 29/29 ELF) already
+carries the 5 previously-stubbed libs real (Process/Watcher/NetInfo/Quic/
+Security = 26451.1 sizes) — device re-verify with THAT pack.
