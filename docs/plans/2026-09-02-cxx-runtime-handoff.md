@@ -1141,3 +1141,30 @@ Stage 1 (runtime clr+libs+packs, clr.aot+packs, NativeAOT) -> Stage 2-4
 - shims TFM alignment so facades build inside the normal libs.sfx traversal.
 - CoreCLR.sfxproj packaging emitting empty nupkg on ohos.
 - PGO mibc production on clean builds.
+
+---
+
+## Round-15 (2026-09-05) — ilc device startup: hostpolicy reachability fix (方案 A)
+
+Device verification of 26451.109 (merged from fork, commit 9172204692e) PASSED
+R2R-PGO/PureIL runtime stacks but the NativeAOT/CoreCLR single-file ilc FAILED
+at startup (exit 131, libhostpolicy.so not found under DOTNET_ROOT).
+
+### Root cause (macOS-pattern study + round-8/9 evidence)
+- toolAot.targets: UseNativeAotForComponents==true -> PublishAot (NativeAOT
+  tool); OHOS excluded (Subsets.props:59 TargetsOpenHarmony) + linux-x64 host
+  never satisfies TargetOS==HostOS -> PublishSingleFile (CoreCLR single-file).
+- macOS tools are NativeAOT only because osx builds satisfy TargetOS==HostOS
+  (even osx-x64->osx-arm64 cross) — not a fixable pattern for a linux->ohos
+  cross toolchain, and round-14 evidence shows the single-file ilc fails
+  REGARDLESS of compiler shape: the failure is host/framework resolution
+  (CoreCLR host needs libhostpolicy reachable), not the AOT-vs-CoreCLR choice.
+- round-9 CoreCLR split-layout remains the only device-PASSED ilc shape; the
+  single-file (round-14) fails at libhostpolicy lookup.
+
+### Fix (方案 A — device hostpolicy reachable, mirrors Linux SDK behavior)
+install-dotnet-ohos.sh (sdk repo) now deploys libhostpolicy.so from the
+installed shared/Microsoft.NETCore.App/<ver>/ to the DOTNET_ROOT root
+($INSTALL_DIR/libhostpolicy.so), so runtimeconfig-less CoreCLR tools
+(single-file ilc) resolve it as self-contained apps do on Linux. sdk commit on
+feature/ohos-cross-sdk.
