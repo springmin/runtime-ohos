@@ -1421,3 +1421,18 @@ Published to runtime-ohos v11.0.0-rc.1.26451.109-ohos:
 Device: download + retry stock-SDK AOT publish. Longer-term: build aspnetcore
 at the SDK-expected version (darc-aligned) or stop the SDK from coupling the
 aspnetcore KnownFrameworkReference to a version we don't publish.
+
+---
+
+## Round-22 (2026-09-05) — SDK redist real runtime + milestone
+
+SDK redist re-uploaded (dotnet-sdk...26451.109-ohos-arm64.tar.gz, real-runtime
+build): shared/Microsoft.NETCore.App/11.0.0-rc.1.26451.109/ replaced with the
+verified runtime pack's real libraries (192 files — Console 87KB unix pal,
+Cryptography 1.09MB, Process/Net.Security 26451.1 sizes), 64 ELF signed.
+
+Milestone (device, d12da3f5507): 26451.109 SDK full standard loop PASS —
+dotnet new/build/run + stock-SDK `dotnet publish -r ohos-arm64
+-p:PublishAot=true` (local feed only) exit 0, signed executable runs. All
+round-18..21 fixes collective (Console unix pal, linux-group libs incl. the 5
+stubs, ILLink.Tasks publish, aspnetcore 26452.110 re-version).
