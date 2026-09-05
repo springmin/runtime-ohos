@@ -1294,3 +1294,42 @@ Remaining: device re-verify with the FULL app (not just minimal) publish+run
 on the finalized standard-name packages; then consider upstreaming the 36ef
 revert/fix separately from the OHOS PRs (the bug may affect ios/wasm — 36ef's
 target platforms — and deserves an upstream issue).
+
+---
+
+## Round-18 (2026-09-05) — Console PNSE regression on ohos (device fresh-install)
+
+Device fresh-install verification (6af798fee6a) found: 26451.1 Console works
+on-device (enc=utf-8, WriteLine OK) but 26451.109 throws
+PlatformNotSupportedException on Console.get_OutputEncoding — the SDK CLI host
+dies at startup (AutomaticEncodingRestorer), blocking CLI-driven verification.
+
+### Root cause (device + build side)
+- NOT PureIL-vs-R2R, NOT tty. System.Console source identical between 26451.1
+  and 26451.109.
+- 26451.1 build.sh: `ohos -> os="linux"` -> managed libs built the unix group
+  -> Console compiled the unix ConsolePal (87KB).
+- 26451.109 (post RID-independence review: `os="ohos"`, TargetOS native,
+  per-review dcf9e98521b/bbd8a7ceece): managed-lib TFM for ohos has an EMPTY
+  platform id -> System.Console.csproj's
+  `GeneratePlatformNotSupportedAssemblyMessage` (TargetPlatformIdentifier=='')
+  produced the PNSE stub (34KB). Native has the CMake compile-level linux remap
+  the review keeps; the managed-lib TFM mapping is the missing MSBuild-layer
+  equivalent (planned PR-R3, revised-plan 568).
+
+### Fix (this round — feature branch)
+System.Console.csproj: when `TargetsOpenHarmony`, do not generate the PNSE
+stub, compile the Console implementation + unix ConsolePal (mirrors the
+compile-level linux remap), and suppress CA1416 (analyzer lacks an ohos
+platform and mis-flags the unix pal's ios API annotations). Verified: net11.0
+build -> System.Console.dll 87,552B (Unix pal — matches 26451.1). Runtime pack
+Console swapped stub->Unix and re-uploaded to the 26451.109 release.
+commit c5daa0a8899.
+
+### Follow-ups
+- Formal MSBuild-layer ohos->unix TFM mapping (PR-R3 scope, revised 568) so all
+  48 GeneratePNSE libraries (System.Diagnostics.Process etc.) get the unix
+  implementation instead of stubs — currently only Console is patched (SDK CLI
+  blocker); others surface per-use on device.
+- Device: re-install 26451.109 runtime pack, verify SDK CLI (dotnet --info /
+  new / build) works again.
