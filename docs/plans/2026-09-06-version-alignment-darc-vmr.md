@@ -123,3 +123,56 @@ skew to zero at the source. Requires discipline: record the synced VMR Sha
   from the VMR build itself).
 - aspnetcore: eng/Version.Details.props MicrosoftNETCoreAppRefPackageVersion
   drives which runtime ref it builds against.
+
+---
+
+## 7. Review + supplement (build side, 2026-09-06)
+
+Reviewed against the SDK's actual override surface. Key finding: **Option B
+can avoid the re-version hack entirely for the SDK side.**
+
+### 7.1 SDK aspnetcore override point (better than re-versioning)
+
+The SDK's aspnetcore KnownFrameworkReference chain is overridable:
+- eng/Version.Details.props: `MicrosoftAspNetCoreAppRefPackageVersion`
+  (= 26452.110, darc) -> `MicrosoftAspNetCoreAppRuntimePackageVersion`
+  (defaults to Ref when empty — Directory.Build.props `== ''` guard).
+- GenerateBundledVersions.targets: `KnownAspNetCorePack
+  AspNetCorePackVersion="$(MicrosoftAspNetCoreAppRuntimePackageVersion)"`.
+
+=> Passing `/p:MicrosoftAspNetCoreAppRuntimePackageVersion=$rtver` (26451.109)
+to the SDK build makes the SDK's restore resolve OUR published aspnetcore
+(26451.109, uploaded round-20) — no 26452.110 re-version needed. The round-21
+nupkg re-versioning remains only as a fallback if the override is insufficient
+(covered by the =='' guard it is not).
+
+Applied to build-ohos-all.sh stage4 (sdk) alongside the existing
+Host/Runtime overrides.
+
+### 7.2 Scripted nupkg re-versioning (round-21 fallback, automated)
+
+`reversion-nupkg.py <in.nupkg> <old-version> <new-version>` — rewrites nuspec +
+nupkg.metadata versions and repacks (used for the ILLink.Tasks and aspnetcore
+26452.110 uploads). Kept for edge cases the SDK override cannot cover.
+
+### 7.3 Option C concretization (medium term)
+
+Record a single dotnet/dotnet Sha per build cycle across the three forks
+(mirror of VMR source-manifest.json). Mechanism:
+- Pick the dotnet/dotnet commit to sync (release/main).
+- Merge it into runtime-ohos first; record Sha in a per-fork marker
+  (e.g. eng/ohos-vmr-sha.txt).
+- Merge the SAME Sha into aspnetcore-ohos + sdk-ohos within the cycle so
+  Version.Details.xml values are mutually consistent (aspnetcore/runtime deps
+  and SDK's aspnetcore/runtime pins all derive from one VMR state).
+- Release after all three merged the same Sha — version skew goes to zero at
+  the source; no overrides/re-versioning needed.
+
+### 7.4 Remaining review notes
+- Runtime/aspnetcore override in the script already pins the runtime dep;
+  the new aspnetcore override closes the SDK side. The script's fixed order
+  (runtime -> aspnetcore -> sdk) is Option B's formalized build order.
+- Risk: `MicrosoftAspNetCoreAppRuntimePackageVersion` also drives the SDK's
+  own bundled aspnetcore assets when IncludeAspNetCoreRuntime=true — we build
+  with =false, so overriding it only affects the KnownFrameworkReference
+  restore key (desired). Document if we ever flip IncludeAspNetCoreRuntime.
