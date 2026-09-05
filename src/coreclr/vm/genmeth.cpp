@@ -854,7 +854,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     // - we don't need instantiating stubs for these.
     if (    methodInst.IsEmpty()
         && (allowInstParam || !pMDescInCanonMT->RequiresInstArg())
-        && (static_cast<bool>(forceBoxedEntryPoint) == pMDescInCanonMT->IsUnboxingStub())
+        && (forceBoxedEntryPoint == pMDescInCanonMT->IsUnboxingStub())
         && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations())
         && (pMDescInCanonMT->MatchesAsyncVariantLookup(asyncVariantLookup)))
     {

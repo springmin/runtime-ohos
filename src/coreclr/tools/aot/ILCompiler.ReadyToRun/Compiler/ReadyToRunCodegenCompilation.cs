@@ -244,33 +244,20 @@ namespace ILCompiler
                 _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
-            private void AddCompilationRootHelper(IMethodNode methodEntryPoint, bool rootMinimalDependencies, string reason)
-            {
-                if (rootMinimalDependencies)
-                {
-                    _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
-                }
-                else
-                {
-                    _rootAdder(methodEntryPoint, reason);
-                }
-            }
-
             public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
                     IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
-                    AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
-                    // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
-                    // and GVMDependenciesNode are meant to deal with methods that have some of the type args instantiated
-                    // with valuetypes.
-                    if (_factory.NeedsUnboxingStub(canonMethod))
+                    if (rootMinimalDependencies)
                     {
-                        IMethodNode unboxingStub = _factory.UnboxingStub(canonMethod);
-                        AddCompilationRootHelper(unboxingStub, rootMinimalDependencies, reason);
+                        _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
+                    }
+                    else
+                    {
+                        _rootAdder(methodEntryPoint, reason);
                     }
                 }
             }
@@ -765,8 +752,8 @@ namespace ILCompiler
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
 
-                        if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
-                            EnsureGeneratedILTokensAreAvailable(method);
+                        if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
+                            EnsureAsyncThunkTokensAreAvailable(method);
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                             EnsureInstantiationReferencesArePresentForExternalMethod(method);
@@ -805,9 +792,9 @@ namespace ILCompiler
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
-            void EnsureGeneratedILTokensAreAvailable(MethodDesc method)
+            void EnsureAsyncThunkTokensAreAvailable(MethodDesc method)
             {
-                if (!method.IsCompilerGeneratedILBodyForAsync() && !((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
+                if (!method.IsCompilerGeneratedILBodyForAsync())
                     return;
                 MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
                 if (il is null)

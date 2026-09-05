@@ -1233,3 +1233,32 @@ publish the minimal app with IlcToolsPath pointing at this mix's tools/.
 
 Device previously observed: 109 ilc.dll + BOTH 26451.1 and 109 packs crash —
 so a clean result here (mix runs) pins ilc.dll 109 as the root cause.
+
+---
+
+## Round-17b (2026-09-05) — R2R 27.1 revert experiment (36ef) packaged
+
+Root-cause hypothesis: R2R 27.1 (upstream 36ef #132787, unboxing stubs in R2R
+images, merged 2026-09-02) changed the NativeAOT module metadata format;
+26451.1 (27.0) ilc output runs on device, 26451.109 (27.1) output crashes at
+TypeManager::GetModuleSection (null module ptr). A/B bisect via ilc.dll mix was
+blocked (mix ilc.dll was a self-contained-build that cannot run in the split
+layout).
+
+Experiment (R2R 27.0 rebuild):
+- `git revert --no-commit 36ef18696f8` (readytorun.h MINOR 0x1->0x0, removes
+  BoxedTypes.cs unboxing-stub support) — clean, no conflicts.
+- Rebuilt: ILCompiler_publish split (ilc.dll 86016B sha e6031ad03f),
+  clr.nativeaotruntime (libRuntime*.a), clr.nativeaotlibs
+  (System.Private.CoreLib.dll sha 5347d7c08e).
+- Packaged + signed (22/22 ELF) + uploaded to
+  v11.0.0-rc.1.26451.109-ohos:
+  - runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.26451.109-split-r2r27.nupkg
+  - Microsoft.NETCore.App.Runtime.NativeAOT.ohos-arm64.26451.109-r2r27.nupkg
+    (libRuntime* + CoreLib swapped to 27.0)
+- Working tree carries the revert (uncommitted) — do NOT commit yet (experiment
+  pending device result).
+
+Device test: publish minimal app with IlcToolsPath -> split-r2r27 tools/ and
+NativeAOT pack = r2r27 (local NuGet swap or feed). Expect exit 0 (app runs) if
+36ef/27.1 is the cause.
