@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- OHOS keeps its own TargetOS (RID-independence review) but the managed
+         libs must compile in the unix group (dotnet has no -ohos TFM; linux
+         family compiles net11.0-unix). Compile-level mapping the review keeps
+         for configureplatform.cmake — the MSBuild-layer equivalent (PR-R3). -->
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-unix</TargetFramework>
     <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
   </PropertyGroup>
 
