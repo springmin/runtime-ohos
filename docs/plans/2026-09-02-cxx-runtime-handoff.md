@@ -1333,3 +1333,37 @@ commit c5daa0a8899.
   blocker); others surface per-use on device.
 - Device: re-install 26451.109 runtime pack, verify SDK CLI (dotnet --info /
   new / build) works again.
+
+---
+
+## Round-19 (2026-09-05) — ohos managed libs compile in the unix group (方案 A, PR-R3 MSBuild mapping)
+
+Device (87c8fd738ea) confirmed round-18 Console fix and found the next
+blocker: System.Security.Cryptography SHA256 PNSE in CLI telemetry — the other
+GeneratePNSE libraries shipped PNSE stubs (Cryptography 295KB stub vs 1.09MB
+real in 26451.1).
+
+### Decision: unix group (not linux-musl)
+- dotnet has no -ohos or -linux-musl TFM; the linux family (incl. ohos)
+  compiles net11.0-unix. 26451.1 (os=linux) libs were unix-group outputs
+  (Console 87KB / Cryptography 1.09MB — verified from the 26451.1 pack).
+  musl/glibc is a native-layer (CMake) flag, not a managed TFM group.
+
+### Fix (方案 A — MSBuild-layer ohos->unix mapping, PR-R3)
+- src/libraries/sfx.proj / sfx-src.proj / sfx-finish.proj: when
+  TargetsOpenHarmony, TargetFramework = $(NetCoreAppCurrent)-unix (libs then
+  select the unix flavor instead of the empty net11.0 PNSE path).
+- src/libraries/Directory.Build.targets: LibrariesBinPlaceTfm mirrors the
+  mapping so net11.0-unix outputs binplace into the runtime-pack layout.
+- Round-18's System.Console.csproj special-case reverted (方案 A covers it
+  generically). Verified: Console 87KB unix pal, Cryptography 1.09MB real;
+  166/180 layout libs real (14 remaining = Windows/JS-only stubs by design).
+- commit 11c8aefbf50; Runtime pack re-uploaded (82MB); notes updated.
+
+### Follow-ups
+- Device: re-verify SDK CLI (dotnet --info/new/build) with the new pack.
+- Remaining 14 stubs (FileVersionInfo/Brotli/Watcher/IsolatedStorage/
+  MemoryMappedFiles/Net.NetworkInformation/Net.Quic/WebSockets.Client +
+  Windows-only) — Unix-expected ones to check if a CLI verb touches them.
+- PR-R3 content (revised-plan 568 MSBuild-layer mapping) now landed on the
+  feature branch — sync into the PR branch at the review stage.
