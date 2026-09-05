@@ -1168,3 +1168,30 @@ installed shared/Microsoft.NETCore.App/<ver>/ to the DOTNET_ROOT root
 ($INSTALL_DIR/libhostpolicy.so), so runtimeconfig-less CoreCLR tools
 (single-file ilc) resolve it as self-contained apps do on Linux. sdk commit on
 feature/ohos-cross-sdk.
+
+---
+
+## Round-16 (2026-09-05) — ILCompiler reverts to split layout (device-PASSED shape)
+
+Device verified the 方案 A hostpolicy fix partially: exit 131 -> 137
+("Failed to bind to CoreCLR at ''", HRESULT 0x80008088) — the 109 single-file
+ilc nupkg ships only ilc + JITs + libc++_shared; libcoreclr.so/libhostfxr.so/
+managed payload are missing, so hostpolicy deployment alone cannot start it.
+
+Per user decision (方案 2 first, 方案 1 later): rebuilt the ILCompiler pack in
+the **round-9 CoreCLR split-layout** shape — `ILCompiler_publish.csproj
+-p:PublishSingleFile=false` (overrides toolAot.targets:17) -> 31KB apphost +
+ilc.dll + ilc.deps.json + ilc.runtimeconfig.json (includedFrameworks
+self-contained) + 6 ILCompiler.*.dll + System.* managed deps + 19 .so
+(libhostfxr/libhostpolicy/libcoreclr/libclrjit*/libSystem.*/libjitinterface/
+libmscordaccore/libmscordbi/libclrgc*) + NDK libc++_shared.so. 64 tools/ files,
+16.7MB. All 22 ELF .codesign-signed.
+
+Uploaded to runtime-ohos v11.0.0-rc.1.26451.109-ohos (replaced the single-file
+asset). This is the only ilc shape verified PASS end-to-end on device
+(round-9, 26451.1).
+
+### 方案 1 (todo — after split confirmed on device)
+Ship the full CoreCLR single-file publish output in the nupkg (libcoreclr.so +
+libhostfxr.so + managed payload) so a single-file ilc has the complete
+self-contained runtime set — experiment later against the split baseline.
