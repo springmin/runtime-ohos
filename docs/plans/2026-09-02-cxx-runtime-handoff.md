@@ -1401,3 +1401,23 @@ Note: the linux-group fix (2aff77173c2) was pushed before the round-19 verify
 merge; the currently uploaded runtime pack (82MB, signed, 29/29 ELF) already
 carries the 5 previously-stubbed libs real (Process/Watcher/NetInfo/Quic/
 Security = 26451.1 sizes) — device re-verify with THAT pack.
+
+---
+
+## Round-21 (2026-09-05) — AOT restore: aspnetcore version-skew pack published
+
+Device round-20 verify (2345e588cbac): 5-lib linux fix CONFIRMED (Process/
+Watcher/NetInfo/Quic/Net.Security = 26451.1 sizes) + native .so signed; SDK CLI
+fully PASS (--info/new/build/run) with stock 109 SDK. AOT publish still blocked:
+the 109 SDK's net11.0 aspnetcore KnownFrameworkReference pins
+11.0.0-rc.1.26452.110 (aspnetcore darc version at SDK build time), while
+aspnetcore-ohos published only 26451.109.
+
+Published to runtime-ohos v11.0.0-rc.1.26451.109-ohos:
+- Microsoft.AspNetCore.App.Runtime.ohos-arm64.11.0.0-rc.1.26452.110.nupkg —
+  the 26451.109 pack re-versioned to 26452.110 (SDK restore-key match; content
+  is the same 26451.109 build, runtime 26451.109 inside).
+
+Device: download + retry stock-SDK AOT publish. Longer-term: build aspnetcore
+at the SDK-expected version (darc-aligned) or stop the SDK from coupling the
+aspnetcore KnownFrameworkReference to a version we don't publish.
