@@ -8,7 +8,11 @@
          libs must compile in the unix group (dotnet has no -ohos TFM; linux
          family compiles net11.0-unix). Compile-level mapping the review keeps
          for configureplatform.cmake — the MSBuild-layer equivalent (PR-R3). -->
-    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-unix</TargetFramework>
+    <!-- OHOS compiles in the linux group (TargetsLinux incl. ohos; dotnet has
+         no -ohos TFM). unix-group-only libs (Console, ...) resolve via the
+         unix flavor; -linux/-osx libs (Process, FileSystemWatcher, ...) pick
+         their exact flavor — same as a linux build (26451.1 os=linux). -->
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</TargetFramework>
     <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->

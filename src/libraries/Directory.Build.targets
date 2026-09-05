@@ -91,7 +91,7 @@
 
   <PropertyGroup>
     <LibrariesBinPlaceTfm>$(LibrariesBinPlaceTfm)</LibrariesBinPlaceTfm>
-    <LibrariesBinPlaceTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-unix</LibrariesBinPlaceTfm>
+    <LibrariesBinPlaceTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesBinPlaceTfm>
   </PropertyGroup>
 
   <ItemGroup>
