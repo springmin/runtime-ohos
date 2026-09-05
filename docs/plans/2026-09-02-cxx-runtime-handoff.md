@@ -1091,3 +1091,53 @@ sdk-job-matrix). Oracle unavailable (agent no-op) — audit done directly.
 ### Not run end-to-end after edits
 Runnable from scratch given: OHOS_NDK_HOME/OPENSSL_DIR/ICU_DIR, RID-graphs
 injected, and a clean checkout. Crossgen2 bundle ships in ohos-build/third-party.
+
+---
+
+## Round-14d — full clean-build verification of build-ohos-all.sh
+
+Ran the script end-to-end from a CLEAN runtime artifacts tree
+(artifacts/bin+obj+packages wiped; bootstrap/.dotnet kept). Full result:
+Stage 1 (runtime clr+libs+packs, clr.aot+packs, NativeAOT) -> Stage 2-4
+(aspnetcore, sdk) -> Stage 5 collect: **completed with 0 errors**.
+
+### Runtime clean-build issues found & fixed (fork + script)
+1. **shims (facades) never compiled on clean ohos build** — fork commit
+   3be872dbb06 maps shims to TFM `net11.0-unix`, but ordinary libs build as
+   plain `net11.0`; sfx-src's `OmitIncompatibleProjectReferences` filters the
+   unix shims out, so System.dll/mscorlib/netstandard etc. were missing from
+   the shared-framework layout (sfx-finish failed). Workaround for now:
+   compile all 60 shims (they build fine as net11.0-unix) and copy the
+   facades into the layout. Real fix (shims TFM == lib TFM while keeping the
+   Compression-internal references resolvable) still TODO.
+2. **Runtime pack nupkg emitted EMPTY (22 bytes)** by the sfxproj pack step on
+   the clean ohos build ("Successfully created package" but 0 files).
+   Workaround: `pack-runtime.py` reassembles the nupkg from the layout +
+   reference metadata (480 files, 80MB), then replace-pack-corelib.py swaps in
+   the R2R CoreLib. Real cause (CoreCLR.sfxproj packaging item collection on
+   ohos) still TODO.
+3. **MSBuild node processes outlive build.sh** and clobber the layout / pack
+   afterwards — script now waits for `MSBuild.*nodem` to idle and kills
+   stragglers before the R2R/pack steps.
+4. **replace-pack-corelib.py read/wrote the same nupkg** (the writer truncated
+   the reader) — now writes to a temp file and os.replace().
+5. **No PGO mibc on clean build** (StandardOptimizationData.mibc is a
+   leftover-dependent artifact) — R2R step now runs without PGO when the mibc
+   is absent (CoreLib 17.45MB vs 18.97MB PGO).
+6. bootstrap-host apphost sync (bin corehost -> bootstrap/.../host), RT_VERSION
+   pipefail-safe derivation, stage2 tarball selection by actual RT_VERSION,
+   feed/asset collection with cp -f (stale unsigned copies were left behind by
+   cp -n).
+
+### Verified final artifacts (all 11.0.0-rc.1.26451.109)
+- Runtime pack: 480 files / 80.8MB, CoreLib R2R 17.45MB (no PGO), libcoreclr
+  .codesign present.
+- Runtime tarball (Shipping): 14/14 ELF signed.
+- aspnetcore App.Runtime nupkg: 143 files, versions file 11.0.0-rc.1.26451.109.
+- sdk redist tarball: 261MB.
+- aspnetcore-runtime tarball 26451.109 present.
+
+### Remaining TODO (runtime fork, not script)
+- shims TFM alignment so facades build inside the normal libs.sfx traversal.
+- CoreCLR.sfxproj packaging emitting empty nupkg on ohos.
+- PGO mibc production on clean builds.
