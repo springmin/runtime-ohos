@@ -1262,3 +1262,35 @@ Experiment (R2R 27.0 rebuild):
 Device test: publish minimal app with IlcToolsPath -> split-r2r27 tools/ and
 NativeAOT pack = r2r27 (local NuGet swap or feed). Expect exit 0 (app runs) if
 36ef/27.1 is the cause.
+
+---
+
+## Round-17c (2026-09-05) — R2R 27.0 confirmed, release finalized
+
+Device (merged 3c09238cbcb) confirmed the hypothesis with a 3x3 matrix on the
+minimal write(2) app:
+
+| ilc | NativeAOT pack | result |
+|---|---|---|
+| 109 split (27.1) | 109 (27.1) | SIGSEGV exit 139 |
+| r2r27 ilc (27.0) | 26451.1 pack | exit 0 |
+| r2r27 ilc (27.0) | r2r27 pack (27.0) | **exit 0, stable 3/3** |
+
+=> upstream `36ef` (#132787, R2R 27.1 precompiled unboxing stubs, merged
+2026-09-02) is the root cause of the device SIGSEGV at
+TypeManager::GetModuleSection (null module ptr) in NativeAOT app startup.
+Output delta -57KB consistent with removing BoxedTypes.cs unboxing-stub
+support.
+
+The 36ef revert is already in the branch history (commit 3ce37954ecc — the
+`git revert --no-commit` working-tree/index changes were swept into that
+record commit and pushed; HEAD readytorun.h = 27.0, BoxedTypes.cs absent).
+
+Release v11.0.0-rc.1.26451.109-ohos finalized (standard names, experiment
+assets removed): ILCompiler split 27.0 (15MB) + NativeAOT 27.0 (22MB) +
+R2R-PGO/PureIL runtime packs. Notes updated.
+
+Remaining: device re-verify with the FULL app (not just minimal) publish+run
+on the finalized standard-name packages; then consider upstreaming the 36ef
+revert/fix separately from the OHOS PRs (the bug may affect ios/wasm — 36ef's
+target platforms — and deserves an upstream issue).
