@@ -1195,3 +1195,41 @@ asset). This is the only ilc shape verified PASS end-to-end on device
 Ship the full CoreCLR single-file publish output in the nupkg (libcoreclr.so +
 libhostfxr.so + managed payload) so a single-file ilc has the complete
 self-contained runtime set — experiment later against the split baseline.
+
+---
+
+## Round-17 (2026-09-05) — 109-ilc AOT app SIGSEGV: root-cause bisect
+
+Device (merged cf220445b18): 109 split ilc RUNS and AOT publish succeeds, but
+the published app crashes at startup (exit 139 SIGSEGV), deterministic 100% on
+the minimal libc-write app. Control (26451.1 stock ilc) runs fine. 109 output
+~1.03MB vs 26451.1 ~973KB (+60KB init/module-metadata region).
+
+### Faulting frame (device-captured, LD_PRELOAD SIGSEGV handler)
+- si_addr=0x8 (ldr x10,[x0,#8] with x0==NULL)
+- _start_c -> main -> StartupCodeHelpers::InitializeModules ->
+  TypeManager::GetModuleSection(ReadyToRunSectionType, int*)  (faulting)
+- InitializeModules passes a NULL TypeManager/module ptr in the 109-compiled
+  app; identical source via 26451.1 ilc passes a valid one.
+
+### Build-side analysis
+- NativeAOT runtime pack (ohos-arm64 26451.109 clean build) is structurally
+  complete (27 native files match 26451.1 layout; size deltas are upstream
+  source updates) — pack not the cause.
+- Upstream-merge ilc/r2r-image commits in the 26451.1->26451.109 window:
+  36ef18696f8 (unboxing stubs in r2r images — reverted for crossgen2 hang in
+  round-13 but NOT tested for app-compile crash), c4f641ca9b8 (R2R fixup via
+  method) — prime suspects for the module-metadata/TypeManager skew.
+- Local cannot reproduce (no OHOS musl loader for qemu; qemu NativeAOT
+  membarrier limits).
+
+### Bisect in progress (device)
+Uploaded to runtime-ohos v11.0.0-rc.1.26451.109-ohos:
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.26451.109-ilc51-mix.nupkg` =
+**26451.1 ilc.dll + 109 toolchain/pack** (tools/ilc.dll cb474f5919). Device:
+publish the minimal app with IlcToolsPath pointing at this mix's tools/.
+- app OK  -> 109 ilc.dll compile logic is the cause (revert/bisect 36ef/c4f6...)
+- crash   -> 109 companion (libRuntime etc.) metadata mismatch with ilc.
+
+Device previously observed: 109 ilc.dll + BOTH 26451.1 and 109 packs crash —
+so a clean result here (mix runs) pins ilc.dll 109 as the root cause.
