@@ -80,3 +80,32 @@ Classification by content (sampled): most guards are **plain POSIX/musl behavior
 - 7 syscalls trapped by seccomp; 2 are real crash risks (`close_range`, `inotify_init1`) → both get `TARGET_OPENHARMONY` guards.
 - `/proc`/`/sys` surface verified usable; `/etc/os-release` absent (handled).
 - Approach: audit-driven, targeted `TARGET_OPENHARMONY` handling (same pattern as the NUMA fix), not blanket `TARGET_LINUX` inheritance.
+
+---
+
+## Addendum (2026-09-06): syscall table verified = Linux asm-generic; verify tool fixed
+
+Follow-up device verification (exchanges/ci-test/ohos-syscall-verify.c, dotnet
+section added):
+
+1. **OHOS aarch64 syscall table == Linux asm-generic** (301 syscalls, verified
+   against NDK sysroot `aarch64-linux-ohos/bits/syscall.h` and on-device SIGSYS
+   numbers). The earlier "numbers may differ" caveat is resolved for the
+   tested kernel: no offsets exist. Full table:
+   `exchanges/ci-test/syscall-table-ohos-aarch64.txt` +
+   `ohos-syscall-table-verification.md`.
+2. **verify.c Bun-section had 3 wrong numbers** (x86-64 values on aarch64):
+   `statx 332→291`, `setgroups 158→159` (158 is getgroups on aarch64!),
+   `membarrier 176→283`. Corrected so the Bun section tests the intended
+   syscalls.
+3. **New [dotnet] section** (separate from Bun) verifies .NET runtime syscalls
+   with the runtime's actual arguments:
+   - SIGSYS (runtime guards justified): close_range(3,UINT_MAX,CLOEXEC) = 436,
+     get_mempolicy probe = 236.
+   - OK: futex _PRIVATE variants, memfd_create CLOEXEC|ALLOW_SEALING, mbind,
+     membarrier QUERY, sched_getaffinity, mprotect RW→RX (JIT W^X allowed),
+     clock_gettime, madvise MADV_FREE, tgkill, pipe2(O_CLOEXEC), dup3,
+     epoll_pwait, signalfd4, rt_sigprocmask.
+   - 17/17 dotnet items pass; runtime hardcoded __NR_ values (copy_file_range
+     285, close_range 436, numasupport/minipal via sys/syscall.h) all compile
+     to correct aarch64 numbers - no runtime change needed.
