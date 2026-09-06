@@ -21,6 +21,27 @@ macro(set_cache_value)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
 endmacro()
 
+# Linux-family defaults written unconditionally so cross try_run always has
+# cached EXITCODE answers regardless of which platform branch runs below
+# (some cmake versions do not apply the later else() block for toolchain
+# cross builds; OpenHarmony is a linux/musl-like target).
+set_cache_value(HAVE_CLOCK_MONOTONIC_COARSE_EXITCODE 0)
+set_cache_value(HAVE_CLOCK_REALTIME_EXITCODE 0)
+set_cache_value(HAVE_CLOCK_THREAD_CPUTIME_EXITCODE 0)
+set_cache_value(HAVE_MMAP_DEV_ZERO_EXITCODE 0)
+set_cache_value(HAVE_PROCFS_CTL_EXITCODE 1)
+set_cache_value(HAVE_PROCFS_STAT_EXITCODE 0)
+set_cache_value(HAVE_PROCFS_STATM_EXITCODE 0)
+set_cache_value(HAVE_SCHED_GETCPU_EXITCODE 0)
+set_cache_value(HAVE_SCHED_GET_PRIORITY_EXITCODE 0)
+set_cache_value(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0)
+set_cache_value(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0)
+set_cache_value(ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS_EXITCODE 1)
+set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
+set_cache_value(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP_EXITCODE 0)
+set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
+set_cache_value(HAVE_BROKEN_FIFO_SELECT_EXITCODE 1)
+
 file(GLOB OPENBSD_PROBE "${CROSS_ROOTFS}/etc/signify/openbsd-*.pub")
 
 if(NOT DEFINED ANDROID_BUILD)

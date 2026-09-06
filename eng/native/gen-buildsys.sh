@@ -61,6 +61,7 @@ for i in "${@:6}"; do
 done
 
 cmake_extra_defines=
+tryrun_cache=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
     platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
     # OSX doesn't use rootfs; OpenHarmony uses its NDK toolchain
@@ -72,7 +73,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     TARGET_BUILD_ARCH="$host_arch"
     export TARGET_BUILD_ARCH
 
-    cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
+    tryrun_cache="-C $scriptroot/tryrun.cmake"
 
     if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
@@ -127,6 +128,7 @@ if [[ "$host_arch" == "wasm" ]]; then
 fi
 
 $cmake_command \
+  $tryrun_cache \
   --no-warn-unused-cli \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
