@@ -3,6 +3,7 @@
 
 #include "pal_err.h"
 #include "pal_utilities.h"
+#include <pthread.h>
 
 void CryptoNative_ErrClearError(void)
 {
