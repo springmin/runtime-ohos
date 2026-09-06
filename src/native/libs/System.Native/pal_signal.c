@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include <minipal/thread.h>
+#include <pthread.h>
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
