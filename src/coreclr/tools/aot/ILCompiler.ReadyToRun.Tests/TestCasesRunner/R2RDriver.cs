@@ -33,7 +33,6 @@ internal enum Crossgen2Option
     HotColdSplitting,
     Optimize,
     StripILBodies,
-    GenerateUnboxingStubs,
 }
 
 internal static class Crossgen2OptionsExtensions
@@ -60,7 +59,6 @@ internal static class Crossgen2OptionsExtensions
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
         Crossgen2Option.StripILBodies => $"--strip-il-bodies",
-        Crossgen2Option.GenerateUnboxingStubs => $"--generate-unboxing-stubs",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }

@@ -4,6 +4,9 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- ohos compiles as a linux/unix flavor (musl libc); no net11.0-ohos TFM
+         platform exists, so shims target the unix variant like linux does. -->
+    <TargetFramework Condition="'$(TargetOS)' == 'ohos'">$(NetCoreAppCurrent)-unix</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>

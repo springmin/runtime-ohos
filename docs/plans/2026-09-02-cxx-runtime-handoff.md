@@ -885,3 +885,554 @@ resolved with the **stock packs** — no device-side copy-over or workaround.
 
 Residual status: clean — both round-10 device findings are closed by the
 build side; no open device-side items for the NativeAOT publish path.
+
+---
+
+## Round-12 (2026-09-04) — 26451.109 release + crossgen2 R2R hang root-cause trail
+
+### Released (accepting pure-IL CoreLib; R2R noted as issue)
+- runtime-ohos / aspnetcore-ohos `v11.0.0-rc.1.26451.109-ohos`; sdk-ohos
+  `v11.0.100-rc.1.26451.109-ohos` (SDK marked INCOMPLETE — redist MSBuild not
+  assembled; package-production loop extremely slow).
+- 26451.109 = 26451.1 + 48 upstream commits + ohos build fixes (crossgen-corelib
+  R2R off, shims unix TFM). CoreLib is pure-IL (26451.1 had an inconsistent
+  R2R CoreLib despite the pack disabling R2R).
+
+### crossgen2 R2R hang root-cause trail (NOT yet root-caused)
+Symptom: runtime in-build crossgen2 (host x64) compiling ohos-arm64
+System.Private.CoreLib R2R **deterministically hangs** (99.9% CPU, RSS ~16MB).
+- Excluded: SDK R2R whitelist (NETSDK1095 — ohos not supported), upstream
+  crossgen2 commits (only 4 enter crossgen2: 36ef18696f8 unboxing-stubs,
+  65c1f69d9fe variance, 5eca6e4b82a loadability, f540517cb0b stringtable).
+  `--type-validation:SkipTypeValidation` still hangs (65c1 excluded);
+  `git revert 36ef18696f8` still hangs (36ef excluded).
+- dotnet-dump stack (main thread): `AdvSimd.get_IsSupported() ←
+  Utf16Utility.GetPointerToFirstInvalidChar ← Statics.MetadataForString ←
+  EventSource.InitializeProviderMetadata ← NativeRuntimeEventSource..cctor`.
+- Minimal JIT app calling AdvSimd.IsSupported on the same host runtime: **OK**
+  (fast false). `DOTNET_ReadyToRun=0` (JIT crossgen2) still hangs.
+- Working hypothesis: the hang is RyuJIT **compiling** an arm64 method that
+  pulls the AdvSimd/intrinsics path (the clrstack frame is the compile query),
+  not host-side execution. Suspect: one of the **8 upstream JIT commits** in
+  the merged window (e.g. f0b01ad7f0e "Fix SIMD primitive zero
+  initialization", 454d2ab85c3 WIP try-catch-fault) — bisect those next.
+- 26451.1 (pre-merge) produced R2R CoreLib fine; the merge introduced the hang.
+
+### Round-12bis — crossgen2 R2R hang: JIT bisect excluded (2026-09-04)
+
+Extended exclusion trail:
+- 65c1f69d9fe (variance) excluded — `--type-validation:SkipTypeValidation` still hangs.
+- 36ef18696f8 (unboxing stubs) excluded — `git revert` still hangs.
+- f0b01ad7f0e (SIMD) excluded — revert + RyuJIT rebuild still hangs.
+- **Full JIT revert** (checkout 42bb941f928 `src/coreclr/jit/`, rebuilt libclrjit)
+  **still hangs** → JIT commits NOT the cause.
+- PGO mibc excluded (stripped `-m ... --embed-pgo-data` — still hangs).
+- Host runtime R2R image excluded: minimal R2R-published app calling
+  AdvSimd.IsSupported + UTF8 runs fine on the same .dotnet runtime.
+- crossgen2 binary is a 17MB R2R x86-64 host app; dotnet-dump main-thread
+  stack: `AdvSimd.get_IsSupported ← Utf16Utility.GetPointerToFirstInvalidChar
+  ← Statics.MetadataForString ← EventSource.InitializeProviderMetadata ←
+  NativeRuntimeEventSource..cctor` (99.9% CPU, RSS ~16MB, deterministic).
+
+Remaining hypothesis: the hang is inside the **crossgen2 process** while
+initializing its own EventSource path (Utf16Utility handling some string the
+minimal app does not) — NOT crossgen2 source commits, NOT JIT, NOT host
+runtime. Next: finer dump (per-thread stacks over time / GC heap state) or
+accept pure-IL CoreLib (already released as 26451.109) and revisit later.
+
+### Round-13 — R2R restored via official crossgen2 (root cause: fork crossgen2 embedded CoreLib)
+
+**Root cause (final)**: our fork-built crossgen2 is a **self-contained single-file**
+(17MB, embeds a fork-built CoreLib). Its embedded CoreLib's
+`AdvSimd.get_IsSupported` (self-recursive `get => IsSupported`, must be JIT
+const-folded) fails intrinsic folding at process startup (EventSource
+initialization path) → tail-recursive spin under tiering-off (crossgen2
+AotCompilerCommon.props TieredCompilation=false). Verified: TieredCompilation=1
+→ stack overflow (134); =0 → spin (124); `crossgen2 --help` alone spins.
+Minimal JIT/R2R apps on the same .dotnet runtime are fine (stock CoreLib).
+
+**Fix**: use the OFFICIAL crossgen2 from
+`microsoft.netcore.app.crossgen2.linux-x64` NuGet (11.0.0-rc.1.26427.131,
+13.3MB split layout, embedded stock CoreLib). It compiles the ohos-arm64
+CoreLib R2R fine (17.45MB, READYTORUN minor 27.0; our 26451.109 runtime is
+27.1 post-36ef — backward-compat pending on-device check). Replaced the
+Runtime pack CoreLib (PureIL → R2R) and uploaded both `-R2R` and `-PureIL`
+fallback assets to the runtime release.
+
+Note: official 26451.109 crossgen2 is not on nuget.org (darc/internal feed
+only, 404 without auth). 26427.131 is the newest nuget.org-official available.
+
+---
+
+## Round-14 (build side, 2026-09-04) — 26451.109 ILCompiler = NativeAOT (recovered), signed
+
+### Discovery (product comparison 26451.1 vs 26451.109)
+
+**26451.109 ILCompiler pack is ALREADY NativeAOT single-file** — the earlier
+"15-file vs 70-file" comparison was read backwards:
+
+| pack | tools/ilc | shape |
+|---|---|---|
+| 26451.1 (v9, round-9 split) | 38,984B (39KB apphost) | CoreCLR **split** (ilc.dll + ILCompiler.*.dll external) |
+| 26451.109 (post-upstream-merge) | **7,848,181B** | **NativeAOT single-file** (NEEDED libc.musl only — official linux-musl shape; ILCompiler managed inlined, hence 15 files) |
+
+The upstream merge flipped ILCompiler_publish back to NativeAOT (UseNativeAot
+ForComponents conditions). The round-9 `-p:PublishSingleFile=false` split
+override was NOT carried into the 26451.109 build. The 7.8MB ilc verified
+clean: 0 × `mov w0,#236/#237` (NUMA), 0 × `/sys/devices/system/node`.
+
+### Signing (fixed selfsign)
+
+All 9 ELF in the pack signed with the SDK-repo fixed selfsign
+(`documentation/ohos-install`, commits c4f00640f0/bf5121c673 on sdk HEAD):
+- ilc 7,848,181 → 7,858,248B (+10KB .codesign — **bundle preserved**, was 39KB
+  pre-fix); `ilc.deps.json` bundle marker present
+- descriptor head matches round-9 reference format
+  (`01000000 20010000 01010c00 20000000 <fileSize>`) with exact fileSize
+- libc++_shared.so + 7 libclrjit_*/libjitinterface all signed
+- post-sign validation (bf5121c673) passed at signing time
+
+### Script fix
+
+`build-ohos-all.sh` stage1 now ends with: build selfsign (SDK repo,
+`-p:PublishAot=true -r linux-x64`) + `sign_nupkg()` (signs every ELF in the
+ILCompiler nupkg in place, idempotent) → device-ready pack is the build
+default output.
+
+### Released
+
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.1.26451.109.nupkg`
+(signed, 9MB) uploaded to `v11.0.0-rc.1.26451.109-ohos` (notes updated).
+
+### Device side (pending)
+
+§8 item 3 E2E on the **NativeAOT** ilc (26451.109 — never device-verified;
+round-11/12 PASS was the 26451.1 split ilc). NativeAOT ilc runs with
+NEEDED libc.musl only — no libc++_shared needed for ilc itself (JIT .so in
+tools/ load by path).
+
+---
+
+## Round-14b (build side, 2026-09-04) — pre-signing moved into the build script
+
+Install-dotnet-ohos.sh's sign_all() (device-side signing at install time) was
+moved to **pre-package time on the build host**, so every released artifact is
+signed before upload:
+
+- `ohos-build/sign-ohos-pre.py`: signs every ELF in dirs / .nupkg / .tar.gz,
+  idempotent (.codesign present -> skip). selfsign built once from the SDK repo
+  (`documentation/ohos-install`, linux-x64 AOT).
+- `build-ohos-all.sh` now signs before feeding downstream:
+  - stage1: every ohos-arm64 nupkg (Runtime/NativeAOT/Host/Crossgen2/
+    ILCompiler) + runtime tarballs — THEN copies into the local feed (feed is
+    the aspnetcore/sdk restore source, so it must already carry .codesign)
+  - stage3: aspnetcore App.Runtime nupkg + aspnetcore-runtime tarball
+  - stage4: the SDK redist tarball
+- The earlier ILCompiler-only sign was replaced by the full-product signing.
+
+### Releases updated (all ELF pre-signed, verified)
+
+- **runtime-ohos** `v11.0.0-rc.1.26451.109-ohos`: Runtime.ohos-arm64
+  -PureIL (5.8MB CoreLib) + -R2R-PGO (18.97MB R2R/PGO) — 13 ELF each;
+  NativeAOT (10) / Host (3) / Crossgen2 (8) / ILCompiler NativeAOT (9);
+  tarballs: dotnet-runtime (53), apphost-pack (12), crossgen2 (8), nethost (1)
+- **aspnetcore-ohos**: aspnetcore-runtime tarball (53 ELF)
+- **sdk-ohos** `v11.0.100-rc.1.26451.109-ohos`: dotnet-sdk tarball (75 ELF)
+
+The device install script still works unchanged (its sign_all is idempotent
+and now finds everything already signed).
+
+Note: python 3.14 tarfile `add(filter="data")` is removed — repack without the
+filter arg.
+
+---
+
+## Round-14c (build side, 2026-09-04) — script audit: runnability + CI alignment
+
+Reviewed build-ohos-all.sh for (1) from-scratch runnability and (2) alignment
+with official CI legs (runtime.yml AllSubsets_CoreCLR*, aspnetcore VMR shape,
+sdk-job-matrix). Oracle unavailable (agent no-op) — audit done directly.
+
+### Blocker fixes applied
+- `STOCK_CROSSGEN2_DIR` was expanded before `WORK=` was assigned (WORK default
+  later) → `/stock-crossgen2/...`; moved the HOME_DIR/WORK/FEED/ASSETS/LOG block
+  above it.
+- crossgen2 download URL was api.nuget.org → **404** (26427.131 is an internal
+  dev build). Resolution order now: repo-bundled nupkg
+  (ohos-build/third-party/, copied from cache) → NuGet cache → dnceng dotnet12
+  feed. Bundled the nupkg so the build works offline.
+- stage4/stage5 `find -maxdepth 3` missed the sdk tarball
+  (artifacts/packages/Release/Shipping/ = depth 4) → sdk redist was never
+  signed; bumped to maxdepth 5.
+- stage2 now starts the asset http server (:8000) itself when not already
+  listening (PublicBaseURL dependency was an external manual step).
+- `die()` `>&2 | tee` piped nothing → `| tee -a "$LOG" >&2`.
+- Signing glob dropped `runtime.*Microsoft.DotNet.ILCompiler.*` (matched the
+  linux-x64 host pack, wasteful); `*$RID*` already covers the ohos ILCompiler.
+
+### CI alignment applied (per explore audit of eng/pipelines + fork plan docs)
+- runtime subset `clr+libs+packs` → **`clr+libs+host+packs`** (official
+  runtime.yml legs + fork plan decision line ~150).
+- NativeAOT/ILCompiler production → fork **C.7** shape: `clr.aot+packs` subset
+  (ILCompiler packs) + explicit `Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj`
+  (replacing `DotNetBuildAllRuntimePacks=true` which triggers Mono cross-AOT).
+
+### Confirmed / intentional deviations (documented in script header)
+- R2R: official R2Rs inside CoreCLR.sfxproj packaging (PGO mibc); ohos uses the
+  stock NuGet crossgen2 for CoreLib only + pack swap (fork crossgen2 hang).
+- aspnetcore PublishReadyToRun=false / NativeAotSupported=false (no PGO/krb5);
+  os-name=ohos passes through (no whitelist); PublicBaseURL local server +
+  version overrides replace darc feed flow.
+- sdk: no -pack (SDK assemblies stay IL), IncludeAspNetCoreRuntime=false
+  (aspnetcore ships separately) — =true full-support variant in sdk plan 12.4.
+- RID graphs: runtime/aspnetcore preview.6 SDK graphs and sdk eng/ override
+  JSONs all carry ohos (verified 4 entries) — injection is a manual prereq.
+
+### Not run end-to-end after edits
+Runnable from scratch given: OHOS_NDK_HOME/OPENSSL_DIR/ICU_DIR, RID-graphs
+injected, and a clean checkout. Crossgen2 bundle ships in ohos-build/third-party.
+
+---
+
+## Round-14d — full clean-build verification of build-ohos-all.sh
+
+Ran the script end-to-end from a CLEAN runtime artifacts tree
+(artifacts/bin+obj+packages wiped; bootstrap/.dotnet kept). Full result:
+Stage 1 (runtime clr+libs+packs, clr.aot+packs, NativeAOT) -> Stage 2-4
+(aspnetcore, sdk) -> Stage 5 collect: **completed with 0 errors**.
+
+### Runtime clean-build issues found & fixed (fork + script)
+1. **shims (facades) never compiled on clean ohos build** — fork commit
+   3be872dbb06 maps shims to TFM `net11.0-unix`, but ordinary libs build as
+   plain `net11.0`; sfx-src's `OmitIncompatibleProjectReferences` filters the
+   unix shims out, so System.dll/mscorlib/netstandard etc. were missing from
+   the shared-framework layout (sfx-finish failed). Workaround for now:
+   compile all 60 shims (they build fine as net11.0-unix) and copy the
+   facades into the layout. Real fix (shims TFM == lib TFM while keeping the
+   Compression-internal references resolvable) still TODO.
+2. **Runtime pack nupkg emitted EMPTY (22 bytes)** by the sfxproj pack step on
+   the clean ohos build ("Successfully created package" but 0 files).
+   Workaround: `pack-runtime.py` reassembles the nupkg from the layout +
+   reference metadata (480 files, 80MB), then replace-pack-corelib.py swaps in
+   the R2R CoreLib. Real cause (CoreCLR.sfxproj packaging item collection on
+   ohos) still TODO.
+3. **MSBuild node processes outlive build.sh** and clobber the layout / pack
+   afterwards — script now waits for `MSBuild.*nodem` to idle and kills
+   stragglers before the R2R/pack steps.
+4. **replace-pack-corelib.py read/wrote the same nupkg** (the writer truncated
+   the reader) — now writes to a temp file and os.replace().
+5. **No PGO mibc on clean build** (StandardOptimizationData.mibc is a
+   leftover-dependent artifact) — R2R step now runs without PGO when the mibc
+   is absent (CoreLib 17.45MB vs 18.97MB PGO).
+6. bootstrap-host apphost sync (bin corehost -> bootstrap/.../host), RT_VERSION
+   pipefail-safe derivation, stage2 tarball selection by actual RT_VERSION,
+   feed/asset collection with cp -f (stale unsigned copies were left behind by
+   cp -n).
+
+### Verified final artifacts (all 11.0.0-rc.1.26451.109)
+- Runtime pack: 480 files / 80.8MB, CoreLib R2R 17.45MB (no PGO), libcoreclr
+  .codesign present.
+- Runtime tarball (Shipping): 14/14 ELF signed.
+- aspnetcore App.Runtime nupkg: 143 files, versions file 11.0.0-rc.1.26451.109.
+- sdk redist tarball: 261MB.
+- aspnetcore-runtime tarball 26451.109 present.
+
+### Remaining TODO (runtime fork, not script)
+- shims TFM alignment so facades build inside the normal libs.sfx traversal.
+- CoreCLR.sfxproj packaging emitting empty nupkg on ohos.
+- PGO mibc production on clean builds.
+
+---
+
+## Round-15 (2026-09-05) — ilc device startup: hostpolicy reachability fix (方案 A)
+
+Device verification of 26451.109 (merged from fork, commit 9172204692e) PASSED
+R2R-PGO/PureIL runtime stacks but the NativeAOT/CoreCLR single-file ilc FAILED
+at startup (exit 131, libhostpolicy.so not found under DOTNET_ROOT).
+
+### Root cause (macOS-pattern study + round-8/9 evidence)
+- toolAot.targets: UseNativeAotForComponents==true -> PublishAot (NativeAOT
+  tool); OHOS excluded (Subsets.props:59 TargetsOpenHarmony) + linux-x64 host
+  never satisfies TargetOS==HostOS -> PublishSingleFile (CoreCLR single-file).
+- macOS tools are NativeAOT only because osx builds satisfy TargetOS==HostOS
+  (even osx-x64->osx-arm64 cross) — not a fixable pattern for a linux->ohos
+  cross toolchain, and round-14 evidence shows the single-file ilc fails
+  REGARDLESS of compiler shape: the failure is host/framework resolution
+  (CoreCLR host needs libhostpolicy reachable), not the AOT-vs-CoreCLR choice.
+- round-9 CoreCLR split-layout remains the only device-PASSED ilc shape; the
+  single-file (round-14) fails at libhostpolicy lookup.
+
+### Fix (方案 A — device hostpolicy reachable, mirrors Linux SDK behavior)
+install-dotnet-ohos.sh (sdk repo) now deploys libhostpolicy.so from the
+installed shared/Microsoft.NETCore.App/<ver>/ to the DOTNET_ROOT root
+($INSTALL_DIR/libhostpolicy.so), so runtimeconfig-less CoreCLR tools
+(single-file ilc) resolve it as self-contained apps do on Linux. sdk commit on
+feature/ohos-cross-sdk.
+
+---
+
+## Round-16 (2026-09-05) — ILCompiler reverts to split layout (device-PASSED shape)
+
+Device verified the 方案 A hostpolicy fix partially: exit 131 -> 137
+("Failed to bind to CoreCLR at ''", HRESULT 0x80008088) — the 109 single-file
+ilc nupkg ships only ilc + JITs + libc++_shared; libcoreclr.so/libhostfxr.so/
+managed payload are missing, so hostpolicy deployment alone cannot start it.
+
+Per user decision (方案 2 first, 方案 1 later): rebuilt the ILCompiler pack in
+the **round-9 CoreCLR split-layout** shape — `ILCompiler_publish.csproj
+-p:PublishSingleFile=false` (overrides toolAot.targets:17) -> 31KB apphost +
+ilc.dll + ilc.deps.json + ilc.runtimeconfig.json (includedFrameworks
+self-contained) + 6 ILCompiler.*.dll + System.* managed deps + 19 .so
+(libhostfxr/libhostpolicy/libcoreclr/libclrjit*/libSystem.*/libjitinterface/
+libmscordaccore/libmscordbi/libclrgc*) + NDK libc++_shared.so. 64 tools/ files,
+16.7MB. All 22 ELF .codesign-signed.
+
+Uploaded to runtime-ohos v11.0.0-rc.1.26451.109-ohos (replaced the single-file
+asset). This is the only ilc shape verified PASS end-to-end on device
+(round-9, 26451.1).
+
+### 方案 1 (todo — after split confirmed on device)
+Ship the full CoreCLR single-file publish output in the nupkg (libcoreclr.so +
+libhostfxr.so + managed payload) so a single-file ilc has the complete
+self-contained runtime set — experiment later against the split baseline.
+
+---
+
+## Round-17 (2026-09-05) — 109-ilc AOT app SIGSEGV: root-cause bisect
+
+Device (merged cf220445b18): 109 split ilc RUNS and AOT publish succeeds, but
+the published app crashes at startup (exit 139 SIGSEGV), deterministic 100% on
+the minimal libc-write app. Control (26451.1 stock ilc) runs fine. 109 output
+~1.03MB vs 26451.1 ~973KB (+60KB init/module-metadata region).
+
+### Faulting frame (device-captured, LD_PRELOAD SIGSEGV handler)
+- si_addr=0x8 (ldr x10,[x0,#8] with x0==NULL)
+- _start_c -> main -> StartupCodeHelpers::InitializeModules ->
+  TypeManager::GetModuleSection(ReadyToRunSectionType, int*)  (faulting)
+- InitializeModules passes a NULL TypeManager/module ptr in the 109-compiled
+  app; identical source via 26451.1 ilc passes a valid one.
+
+### Build-side analysis
+- NativeAOT runtime pack (ohos-arm64 26451.109 clean build) is structurally
+  complete (27 native files match 26451.1 layout; size deltas are upstream
+  source updates) — pack not the cause.
+- Upstream-merge ilc/r2r-image commits in the 26451.1->26451.109 window:
+  36ef18696f8 (unboxing stubs in r2r images — reverted for crossgen2 hang in
+  round-13 but NOT tested for app-compile crash), c4f641ca9b8 (R2R fixup via
+  method) — prime suspects for the module-metadata/TypeManager skew.
+- Local cannot reproduce (no OHOS musl loader for qemu; qemu NativeAOT
+  membarrier limits).
+
+### Bisect in progress (device)
+Uploaded to runtime-ohos v11.0.0-rc.1.26451.109-ohos:
+`runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.26451.109-ilc51-mix.nupkg` =
+**26451.1 ilc.dll + 109 toolchain/pack** (tools/ilc.dll cb474f5919). Device:
+publish the minimal app with IlcToolsPath pointing at this mix's tools/.
+- app OK  -> 109 ilc.dll compile logic is the cause (revert/bisect 36ef/c4f6...)
+- crash   -> 109 companion (libRuntime etc.) metadata mismatch with ilc.
+
+Device previously observed: 109 ilc.dll + BOTH 26451.1 and 109 packs crash —
+so a clean result here (mix runs) pins ilc.dll 109 as the root cause.
+
+---
+
+## Round-17b (2026-09-05) — R2R 27.1 revert experiment (36ef) packaged
+
+Root-cause hypothesis: R2R 27.1 (upstream 36ef #132787, unboxing stubs in R2R
+images, merged 2026-09-02) changed the NativeAOT module metadata format;
+26451.1 (27.0) ilc output runs on device, 26451.109 (27.1) output crashes at
+TypeManager::GetModuleSection (null module ptr). A/B bisect via ilc.dll mix was
+blocked (mix ilc.dll was a self-contained-build that cannot run in the split
+layout).
+
+Experiment (R2R 27.0 rebuild):
+- `git revert --no-commit 36ef18696f8` (readytorun.h MINOR 0x1->0x0, removes
+  BoxedTypes.cs unboxing-stub support) — clean, no conflicts.
+- Rebuilt: ILCompiler_publish split (ilc.dll 86016B sha e6031ad03f),
+  clr.nativeaotruntime (libRuntime*.a), clr.nativeaotlibs
+  (System.Private.CoreLib.dll sha 5347d7c08e).
+- Packaged + signed (22/22 ELF) + uploaded to
+  v11.0.0-rc.1.26451.109-ohos:
+  - runtime.ohos-arm64.Microsoft.DotNet.ILCompiler.26451.109-split-r2r27.nupkg
+  - Microsoft.NETCore.App.Runtime.NativeAOT.ohos-arm64.26451.109-r2r27.nupkg
+    (libRuntime* + CoreLib swapped to 27.0)
+- Working tree carries the revert (uncommitted) — do NOT commit yet (experiment
+  pending device result).
+
+Device test: publish minimal app with IlcToolsPath -> split-r2r27 tools/ and
+NativeAOT pack = r2r27 (local NuGet swap or feed). Expect exit 0 (app runs) if
+36ef/27.1 is the cause.
+
+---
+
+## Round-17c (2026-09-05) — R2R 27.0 confirmed, release finalized
+
+Device (merged 3c09238cbcb) confirmed the hypothesis with a 3x3 matrix on the
+minimal write(2) app:
+
+| ilc | NativeAOT pack | result |
+|---|---|---|
+| 109 split (27.1) | 109 (27.1) | SIGSEGV exit 139 |
+| r2r27 ilc (27.0) | 26451.1 pack | exit 0 |
+| r2r27 ilc (27.0) | r2r27 pack (27.0) | **exit 0, stable 3/3** |
+
+=> upstream `36ef` (#132787, R2R 27.1 precompiled unboxing stubs, merged
+2026-09-02) is the root cause of the device SIGSEGV at
+TypeManager::GetModuleSection (null module ptr) in NativeAOT app startup.
+Output delta -57KB consistent with removing BoxedTypes.cs unboxing-stub
+support.
+
+The 36ef revert is already in the branch history (commit 3ce37954ecc — the
+`git revert --no-commit` working-tree/index changes were swept into that
+record commit and pushed; HEAD readytorun.h = 27.0, BoxedTypes.cs absent).
+
+Release v11.0.0-rc.1.26451.109-ohos finalized (standard names, experiment
+assets removed): ILCompiler split 27.0 (15MB) + NativeAOT 27.0 (22MB) +
+R2R-PGO/PureIL runtime packs. Notes updated.
+
+Remaining: device re-verify with the FULL app (not just minimal) publish+run
+on the finalized standard-name packages; then consider upstreaming the 36ef
+revert/fix separately from the OHOS PRs (the bug may affect ios/wasm — 36ef's
+target platforms — and deserves an upstream issue).
+
+---
+
+## Round-18 (2026-09-05) — Console PNSE regression on ohos (device fresh-install)
+
+Device fresh-install verification (6af798fee6a) found: 26451.1 Console works
+on-device (enc=utf-8, WriteLine OK) but 26451.109 throws
+PlatformNotSupportedException on Console.get_OutputEncoding — the SDK CLI host
+dies at startup (AutomaticEncodingRestorer), blocking CLI-driven verification.
+
+### Root cause (device + build side)
+- NOT PureIL-vs-R2R, NOT tty. System.Console source identical between 26451.1
+  and 26451.109.
+- 26451.1 build.sh: `ohos -> os="linux"` -> managed libs built the unix group
+  -> Console compiled the unix ConsolePal (87KB).
+- 26451.109 (post RID-independence review: `os="ohos"`, TargetOS native,
+  per-review dcf9e98521b/bbd8a7ceece): managed-lib TFM for ohos has an EMPTY
+  platform id -> System.Console.csproj's
+  `GeneratePlatformNotSupportedAssemblyMessage` (TargetPlatformIdentifier=='')
+  produced the PNSE stub (34KB). Native has the CMake compile-level linux remap
+  the review keeps; the managed-lib TFM mapping is the missing MSBuild-layer
+  equivalent (planned PR-R3, revised-plan 568).
+
+### Fix (this round — feature branch)
+System.Console.csproj: when `TargetsOpenHarmony`, do not generate the PNSE
+stub, compile the Console implementation + unix ConsolePal (mirrors the
+compile-level linux remap), and suppress CA1416 (analyzer lacks an ohos
+platform and mis-flags the unix pal's ios API annotations). Verified: net11.0
+build -> System.Console.dll 87,552B (Unix pal — matches 26451.1). Runtime pack
+Console swapped stub->Unix and re-uploaded to the 26451.109 release.
+commit c5daa0a8899.
+
+### Follow-ups
+- Formal MSBuild-layer ohos->unix TFM mapping (PR-R3 scope, revised 568) so all
+  48 GeneratePNSE libraries (System.Diagnostics.Process etc.) get the unix
+  implementation instead of stubs — currently only Console is patched (SDK CLI
+  blocker); others surface per-use on device.
+- Device: re-install 26451.109 runtime pack, verify SDK CLI (dotnet --info /
+  new / build) works again.
+
+---
+
+## Round-19 (2026-09-05) — ohos managed libs compile in the unix group (方案 A, PR-R3 MSBuild mapping)
+
+Device (87c8fd738ea) confirmed round-18 Console fix and found the next
+blocker: System.Security.Cryptography SHA256 PNSE in CLI telemetry — the other
+GeneratePNSE libraries shipped PNSE stubs (Cryptography 295KB stub vs 1.09MB
+real in 26451.1).
+
+### Decision: unix group (not linux-musl)
+- dotnet has no -ohos or -linux-musl TFM; the linux family (incl. ohos)
+  compiles net11.0-unix. 26451.1 (os=linux) libs were unix-group outputs
+  (Console 87KB / Cryptography 1.09MB — verified from the 26451.1 pack).
+  musl/glibc is a native-layer (CMake) flag, not a managed TFM group.
+
+### Fix (方案 A — MSBuild-layer ohos->unix mapping, PR-R3)
+- src/libraries/sfx.proj / sfx-src.proj / sfx-finish.proj: when
+  TargetsOpenHarmony, TargetFramework = $(NetCoreAppCurrent)-unix (libs then
+  select the unix flavor instead of the empty net11.0 PNSE path).
+- src/libraries/Directory.Build.targets: LibrariesBinPlaceTfm mirrors the
+  mapping so net11.0-unix outputs binplace into the runtime-pack layout.
+- Round-18's System.Console.csproj special-case reverted (方案 A covers it
+  generically). Verified: Console 87KB unix pal, Cryptography 1.09MB real;
+  166/180 layout libs real (14 remaining = Windows/JS-only stubs by design).
+- commit 11c8aefbf50; Runtime pack re-uploaded (82MB); notes updated.
+
+### Follow-ups
+- Device: re-verify SDK CLI (dotnet --info/new/build) with the new pack.
+- Remaining 14 stubs (FileVersionInfo/Brotli/Watcher/IsolatedStorage/
+  MemoryMappedFiles/Net.NetworkInformation/Net.Quic/WebSockets.Client +
+  Windows-only) — Unix-expected ones to check if a CLI verb touches them.
+- PR-R3 content (revised-plan 568 MSBuild-layer mapping) now landed on the
+  feature branch — sync into the PR branch at the review stage.
+
+---
+
+## Round-20 (2026-09-05) — AOT restore blockers: ILLink.Tasks + AspNetCore pack published
+
+Device round-19 verify: SDK CLI works (Console/Cryptography + Process real via
+the linux-group pack — the 5 previously-stubbed libs were fixed by
+2aff77173c2, device re-verify pending). New blockers for stock-SDK AOT
+publish restore:
+- NU1102: Microsoft.NET.ILLink.Tasks 11.0.0-rc.1.26451.109 not found — SDK's
+  KnownILLinkPack ILLinkPackVersion = MicrosoftNETCoreAppRuntimePackageVersion
+  (our 26451.109 runtime override), but the actual ILLink.Tasks (darc
+  MicrosoftNETILLinkTasksPackageVersion = 26452.110) lives on the dnceng
+  internal feed only (not nuget.org).
+- NU1101: Microsoft.AspNetCore.App.Runtime.ohos-arm64 26451.109 not in the
+  local feed.
+
+Published to the runtime-ohos v11.0.0-rc.1.26451.109-ohos release (single
+source for the device feed):
+- Microsoft.NET.ILLink.Tasks.11.0.0-rc.1.26451.109.nupkg — official
+  26452.110 content re-versioned to 26451.109 (restore-key match; linker is
+  version-independent of the runtime it links).
+- Microsoft.AspNetCore.App.Runtime.ohos-arm64.11.0.0-rc.1.26451.109.nupkg —
+  from the aspnetcore-ohos release (4.5MB, 143 files).
+
+Device: download both into the device NuGet feed, retry stock-SDK AOT publish.
+Longer-term: either publish ILLink.Tasks at the runtime version properly, or
+stop coupling KnownILLinkPack's ILLinkPackVersion to the runtime override in
+the SDK build.
+
+Note: the linux-group fix (2aff77173c2) was pushed before the round-19 verify
+merge; the currently uploaded runtime pack (82MB, signed, 29/29 ELF) already
+carries the 5 previously-stubbed libs real (Process/Watcher/NetInfo/Quic/
+Security = 26451.1 sizes) — device re-verify with THAT pack.
+
+---
+
+## Round-21 (2026-09-05) — AOT restore: aspnetcore version-skew pack published
+
+Device round-20 verify (2345e588cbac): 5-lib linux fix CONFIRMED (Process/
+Watcher/NetInfo/Quic/Net.Security = 26451.1 sizes) + native .so signed; SDK CLI
+fully PASS (--info/new/build/run) with stock 109 SDK. AOT publish still blocked:
+the 109 SDK's net11.0 aspnetcore KnownFrameworkReference pins
+11.0.0-rc.1.26452.110 (aspnetcore darc version at SDK build time), while
+aspnetcore-ohos published only 26451.109.
+
+Published to runtime-ohos v11.0.0-rc.1.26451.109-ohos:
+- Microsoft.AspNetCore.App.Runtime.ohos-arm64.11.0.0-rc.1.26452.110.nupkg —
+  the 26451.109 pack re-versioned to 26452.110 (SDK restore-key match; content
+  is the same 26451.109 build, runtime 26451.109 inside).
+
+Device: download + retry stock-SDK AOT publish. Longer-term: build aspnetcore
+at the SDK-expected version (darc-aligned) or stop the SDK from coupling the
+aspnetcore KnownFrameworkReference to a version we don't publish.
+
+---
+
+## Round-22 (2026-09-05) — SDK redist real runtime + milestone
+
+SDK redist re-uploaded (dotnet-sdk...26451.109-ohos-arm64.tar.gz, real-runtime
+build): shared/Microsoft.NETCore.App/11.0.0-rc.1.26451.109/ replaced with the
+verified runtime pack's real libraries (192 files — Console 87KB unix pal,
+Cryptography 1.09MB, Process/Net.Security 26451.1 sizes), 64 ELF signed.
+
+Milestone (device, d12da3f5507): 26451.109 SDK full standard loop PASS —
+dotnet new/build/run + stock-SDK `dotnet publish -r ohos-arm64
+-p:PublishAot=true` (local feed only) exit 0, signed executable runs. All
+round-18..21 fixes collective (Console unix pal, linux-group libs incl. the 5
+stubs, ILLink.Tasks publish, aspnetcore 26452.110 re-version).

@@ -667,3 +667,54 @@ Rationale (owner-confirmed):
 - Keep the compile-level linux remap + `TARGET_OPENHARMONY` guard hybrid
   (Android-style middle ground); revisit only if a real OHOS-specific ilc or
   runtime behavior appears.
+
+---
+
+## 13. Full PR plan per am11's review model (2026-09-03) — for reviewer discussion
+
+am11's model (OpenBSD port): infra+coreclr in one PR, each library change in a
+separate PR, sequential + stacked. Audited every feature-branch file vs the two
+open PRs; below is the complete OHOS upstream PR inventory.
+
+### Runtime inventory (42 files vs main; 18 already submitted, 24 remain)
+
+Submitted: #132827 (6: sandbox/libraries — am11's flagged exception) +
+#132953 (11: infra+coreclr-build+RID; runtime.json/Subsets.props ohos content
+already in, base differs only by the not-yet-rebased upstream).
+
+### Proposed runtime PRs (stacked, sequential)
+
+| # | PR | Area | Files | Depends on | Verified |
+|---|---|---|---|---|---|
+| P1 | #132827 sandbox | libraries + gc | numasupport.cpp, CoreLib{projitems,SharedMemoryManager,OperatingSystem,NamedMutex}, MutexTests | — | device (SIGSYS fix) |
+| P2 | #132953 infra | eng/ + coreclr-build + RID | 8 eng + runtime.json + System.Native/CMakeLists + build-native.sh | — | cross-build; RID independence |
+| P3 | **R-AOTtoolchain** | coreclr/nativeaot + tools | SingleEntry.targets, Unix.targets, illink Microsoft.NET.ILLink.targets | P2 (TargetOS=ohos/_originalTargetOS) | **round-9-11 device: same-RID publish E2E** |
+| P4 | **R-coreclr-sysroot** | coreclr runtime | clrfeatures.cmake, clrconfigvalues.h (W^X), pal/{configure,CMakeLists}, crossgen-corelib.proj | P2 | device rounds |
+| P5 | **R-packs** | installer + eng | ILCompiler.pkgproj, sfxproj, targetingpacks.targets, ds-portable-rid.c | P3 (pack layout) | round-11 stock-pack publish |
+| P6 | **R-native-System.Native** | per-library | pal_io.c, pal_process.c, pal_interfaceaddresses.c | P2 | device syscall audit |
+| P7 | **R-native-sysroot** | native libs (misc) | libs/CMakeLists.txt, extra_libs.cmake, zstd.cmake, apphost/static/CMakeLists, build-local-linux.sh | P2 | device rounds |
+
+Runtime total: **7 PRs** (P1-P7). P6/P7 are per-library sysroot fixes — if
+reviewers want finer granularity, zstd / Net.Security(extra_libs) / corehost
+split further (am11: "each library in a separate PR").
+
+### SDK (springmin/sdk-ohos feature/ohos-cross-sdk vs main, 31 files, minus installonohos deploy artifacts)
+
+| PR | Content (~15 files) | Open question |
+|---|---|---|
+| S1 | eng RID override graphs (independent ohos), GenerateBundledVersions ohos RIDs, OpenHarmonyEnvironmentDefaults+Program.cs, Layout/redist (redist.csproj, Crossgen/GenerateLayout targets), dotnet-aot/dn ohos exclusion | **OpenHarmonyCodesign upstream?** (HarmonyOS-commercial-only enforcement; OpenHarmony ignores) — needs reviewer call; default: keep downstream |
+
+### aspnetcore (springmin/aspnetcore-ohos vs main, ~5 real files)
+
+| PR | Content |
+|---|---|
+| A1 (tiny) | NativeAOT-for-ohos disable (Directory.Build.props), Dependencies.props ohos runtime RIDs, App.Ref/Runtime suppressions — or fold into SDK/version-aligned PR |
+
+### Grand total: ~9 PRs (7 runtime + 1 SDK + 1 aspnetcore), 2 runtime already open.
+
+### Reviewer discussion points
+1. Is P3's inclusion of illink acceptable, or does tools/ stay separate?
+2. P6/P7 granularity: per-library split vs one "native libs sysroot" PR?
+3. OpenHarmonyCodesign upstream or downstream (SDK)?
+4. Stacked-PR branch chain vs sequential merge — am11 recommended stacked.
+5. Posting this inventory to tracking issue dotnet/runtime#132866 for review sign-off.
