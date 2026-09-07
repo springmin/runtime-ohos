@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
   <PropertyGroup>
+    <RestoreSources>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet10/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet10-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet12/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet12-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-diagnostics-tests/nuget/v3/index.json;https://data.nuget.org/v3/index.json;/tmp/hostfeed</RestoreSources>
+  </PropertyGroup>
+  <PropertyGroup>
     <CrossHostArch Condition="'$(_BuildAnyCrossArch)' == 'true'">$(BuildArchitecture)</CrossHostArch>
     <_IsPublishing>true</_IsPublishing>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
