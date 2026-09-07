@@ -11,7 +11,8 @@
     <!-- OHOS CI: self-contained host publish needs the host runtime pack, which
          clean CI hosts cannot download (NETSDK1112); use the SDK runtime. -->
     <PublishTrimmed>false</PublishTrimmed>
-    <EnableRuntimePackDownload>true</EnableRuntimePackDownload>
+    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
+    <!-- resolve from .dotnet/packs (installed) or folder feed; do not download -->
     <!-- host linux-x64 pack resolves from the /tmp/hostfeed NuGet.config folder source (OHOS CI) -->
     <PublishSingleFile>true</PublishSingleFile>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
