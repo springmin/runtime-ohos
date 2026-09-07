@@ -1,20 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
   <PropertyGroup>
-    <RestoreSources>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-eng/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet10/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet10-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet12/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet12-transport/nuget/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-diagnostics-tests/nuget/v3/index.json;https://data.nuget.org/v3/index.json;/tmp/hostfeed</RestoreSources>
-  </PropertyGroup>
-  <PropertyGroup>
     <CrossHostArch Condition="'$(_BuildAnyCrossArch)' == 'true'">$(BuildArchitecture)</CrossHostArch>
     <_IsPublishing>true</_IsPublishing>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/ilc/</PublishDir>
-    <SelfContained>false</SelfContained>
-    <!-- OHOS CI: self-contained host (linux-x64) publish needs the host runtime
-         pack, which the SDK cannot download on clean CI hosts (NETSDK1112);
-         framework-dependent uses the bootstrap SDK runtime instead. -->
-    <PublishTrimmed>false</PublishTrimmed>
-    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
-    <!-- resolve from .dotnet/packs (installed) or folder feed; do not download -->
-    <!-- host linux-x64 pack resolves from the /tmp/hostfeed NuGet.config folder source (OHOS CI) -->
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
     <PublishSingleFile>true</PublishSingleFile>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
