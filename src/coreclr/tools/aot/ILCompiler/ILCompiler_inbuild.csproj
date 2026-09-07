@@ -9,7 +9,8 @@
          pack, which the SDK cannot download on clean CI hosts (NETSDK1112);
          framework-dependent uses the bootstrap SDK runtime instead. -->
     <PublishTrimmed>false</PublishTrimmed>
-    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
+    <EnableRuntimePackDownload>true</EnableRuntimePackDownload>
+    <!-- host linux-x64 pack resolves from the /tmp/hostfeed NuGet.config folder source (OHOS CI) -->
     <PublishSingleFile>true</PublishSingleFile>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
