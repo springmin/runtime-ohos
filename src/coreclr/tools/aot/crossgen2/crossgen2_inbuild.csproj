@@ -4,8 +4,10 @@
     <_IsPublishing>true</_IsPublishing>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/crossgen2/</PublishDir>
-    <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
+    <SelfContained>false</SelfContained>
+    <!-- OHOS CI: self-contained host publish needs the host runtime pack, which
+         clean CI hosts cannot download (NETSDK1112); use the SDK runtime. -->
+    <PublishTrimmed>false</PublishTrimmed>
     <PublishSingleFile>true</PublishSingleFile>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
