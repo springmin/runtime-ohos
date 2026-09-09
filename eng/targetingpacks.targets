@@ -123,7 +123,7 @@
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <!-- Only override the runtime pack for the target RID (ohos) with the
+      <!-- Only override the runtime pack for the target RID (openharmony) with the
            local/bootstrap build. Host tools (linux-x64 etc.) must resolve the
            host runtime pack from NuGet (SDK version) instead of the OHOS
            bootstrap lib dir, which does not exist on clean hosts. -->
