@@ -123,9 +123,14 @@
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+      <!-- Only override the runtime pack for the target RID (ohos) with the
+           local/bootstrap build. Host tools (linux-x64 etc.) must resolve the
+           host runtime pack from NuGet (SDK version) instead of the OHOS
+           bootstrap lib dir, which does not exist on clean hosts. -->
       <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
                            Condition="'$(LocalRuntimePackDir)' != '' and
-                                      '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+                                      '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)' and
+                                      '%(ResolvedRuntimePack.RuntimeIdentifier)' == '$(TargetRid)'" />
       <ResolvedFrameworkReference TargetingPackPath="$(LocalRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
                                   Condition="'%(Identity)' == '$(LocalFrameworkOverrideName)'">
