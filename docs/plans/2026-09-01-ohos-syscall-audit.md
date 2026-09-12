@@ -51,33 +51,34 @@
 
 Classification by content (sampled): most guards are **plain POSIX/musl behavior** (libc-level, valid on OHOS since its libc is musl-based — factual inheritance), **not** Linux-syscall or Linux-path specific. Deep per-guard review continues for the remaining files (will publish as follow-up).
 
-## D. Seccomp whitelist audit — **7 syscalls trapped (SIGSYS)** on-device
+## D. Seccomp whitelist audit — **6 syscalls trapped (SIGSYS)** on-device
+(2026-09-12: `inotify_init1` removed — it was a false positive, see Addendum 2.)
 
 | Syscall | Runtime usage | On-device | Handling | 7.1 policy* |
 |---|---|---|---|---|
 | `get_mempolicy` (237) | GC NUMA probe | SIGSYS | ✅ fixed (numasupport.cpp) | relaxed |
 | `close_range` (436) | fork/exec cloexec sweep (`pal_process.c`) | SIGSYS | 🔴 **crash if reached** (masked by posix_spawn today) | relaxed |
-| `inotify_init1` (294) | **FileSystemWatcher backend** (`pal_io.c:1602`) | SIGSYS | 🔴 **crash when used** | **not in bun's list — needs request or fallback** |
+| ~~`inotify_init1` (294)~~ **corrected 2026-09-12** — not trapped; aarch64 #26 (294 = `kexec_file_load`) | **FileSystemWatcher backend** (`pal_io.c`) | **allowed** (init/add_watch/events verified) | ✅ guard removed; no fallback needed | — |
 | `rseq` (293) | TLS acceleration | SIGSYS | ✅ graceful (apps run) | **stays blocked** |
 | `clone3` (435) | thread creation | SIGSYS | ✅ musl falls back to `clone` | relaxed |
 | `openat2` (437) | not used by runtime | SIGSYS | ✅ harmless | — |
 | `signalfd4` (289) | not used by runtime | SIGSYS | ✅ harmless | — |
 
-\* HarmonyOS 7.1 relaxation agreed with the HarmonyOS team during the **Bun port** covers `clone3`, `get_mempolicy`, `close_range` (everything except `rseq`). **`inotify_init1` is a .NET-specific gap** — Bun doesn't use inotify, so it wasn't in the 7.1 list.
+\* HarmonyOS 7.1 relaxation agreed with the HarmonyOS team during the **Bun port** covers `clone3`, `get_mempolicy`, `close_range` (everything except `rseq`). ~~**`inotify_init1` is a .NET-specific gap**~~ **2026-09-12 correction:** `inotify_init1` is allowed — the earlier entry used the x86-64 number (294 = `kexec_file_load` on aarch64). See Addendum 2.
 
 **Other syscalls verified allowed** (not SIGSYS): statx, pidfd_open, timerfd_create, eventfd2, getdents64, readlinkat, renameat2, epoll_create1, pipe2, dup3, gettid, set_robust_list, madvise, clock_gettime, nanosleep, wait4, rt_sigaction, ioctl, fcntl, socket, connect, accept4, recvmsg, sendmsg, mmap, munmap, openat, read, write, close, dup, rt_sigprocmask, memfd_create, copy_file_range, membarrier, futex, prctl, tgkill, epoll_pwait, ptrace, mprotect, mremap.
 
 ## Required fixes (runtime)
 
 1. **`close_range`** (`pal_process.c`): add `TARGET_OPENHARMONY` guard → skip syscall, use `SetCloexecForAllFdsFallback()`. Revisit after 7.1.
-2. **`inotify_init1`** (`pal_io.c`): `TARGET_OPENHARMONY` guard → return `ENOTSUP` (managed `FileSystemWatcher` reports unsupported; polling fallback can be added later). Also request `inotify_init1` addition to the HarmonyOS whitelist.
+2. **`inotify_init1`** (`pal_io.c`): **no guard needed** — the syscall is allowed (Addendum 2). The `TARGET_OPENHARMONY` guard was removed 2026-09-12. No whitelist request required.
 3. **`rseq`**: keep the graceful-degradation path permanently (7.1 keeps it blocked).
 4. No other changes required from this audit; remaining C-category guard review is informational.
 
 ## Conclusion
 
 - Syscall numbers match Linux today (empirical, not contractual).
-- 7 syscalls trapped by seccomp; 2 are real crash risks (`close_range`, `inotify_init1`) → both get `TARGET_OPENHARMONY` guards.
+- 6 syscalls trapped by seccomp; 1 is a real crash risk (`close_range`) → guarded. (`inotify_init1` was a false positive — Addendum 2.)
 - `/proc`/`/sys` surface verified usable; `/etc/os-release` absent (handled).
 - Approach: audit-driven, targeted `TARGET_OPENHARMONY` handling (same pattern as the NUMA fix), not blanket `TARGET_LINUX` inheritance.
 
@@ -109,3 +110,32 @@ section added):
    - 17/17 dotnet items pass; runtime hardcoded __NR_ values (copy_file_range
      285, close_range 436, numasupport/minipal via sys/syscall.h) all compile
      to correct aarch64 numbers - no runtime change needed.
+
+---
+
+## Addendum 2 (2026-09-12): `inotify_init1` misattribution corrected — guard removed
+
+The §D entry claiming `inotify_init1` is trapped was a **syscall-number mix-up**:
+
+1. aarch64/asm-generic `inotify_init1 = 26` (`exchanges/ci-test/syscall-table-ohos-aarch64.txt`,
+   NDK `bits/syscall.h`). The number written in §D was the **x86-64** value `294`.
+2. On aarch64, **294 = `kexec_file_load`** (privileged) — its SIGSYS was misattributed
+   to inotify. (The 2026-09-06 addendum already fixed 3 other x86-64 numbers in the
+   verify tool; the audit-table entry was missed.)
+3. On-device probes (2026-09-12, same shell context as the runtime):
+   `syscall(294)` → SIGSYS; libc `inotify_init1` (#26) → fd OK; `inotify_add_watch`
+   (#27) → wd OK; events delivered (`IN_CREATE` + `IN_MODIFY`).
+4. All shipped `libSystem.Native.so` (26451.1, 26451.109 legacy + openharmony)
+   contain the guard returning ENOTSUP **without calling the syscall** — the
+   `FileSystemWatcher` "Not supported" came from the guard, not the kernel.
+
+**Action (2026-09-12):** the `TARGET_OPENHARMONY` guard in `pal_io.c` is removed;
+`FileSystemWatcher` uses inotify again. No whitelist request needed. `close_range`
+(436, verified SIGSYS) and the NUMA guard (`get_mempolicy` 236, verified SIGSYS)
+remain.
+
+**Local end-to-end note:** HarmonyOS enforces ELF `.codesign` on load — a patched
+`libSystem.Native.so` is rejected (`Permission denied`), so the final acceptance
+test needs a rebuilt (signed) runtime: device check = default ASP.NET app starts
+without `DOTNET_hostBuilder:reloadConfigOnChange=false` and reloads appsettings on
+the inotify event.

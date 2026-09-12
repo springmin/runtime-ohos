@@ -56,8 +56,8 @@ verification-era fixes stay on the dev branch and ship with R3 (NOT folded into
 #132827):
 
 - `clrconfigvalues.h` W^X default off (`678ac21836c`)
-- `pal_process.c` close_range guard + `pal_io.c` inotify_init1 guard
-  (`e8a1fe38fd7`)
+- `pal_process.c` close_range guard (`e8a1fe38fd7`); the `pal_io.c` inotify_init1
+  half was removed 2026-09-12 (not trapped — audit Addendum 2)
 - ILCompiler pack libstdc++/libgcc_s (`cb2ffa742b4`) + `SingleEntry.targets` XML
   fix (`1e5e83cb012`) + nativeaot `IntermediatesDir` cleanup
 
@@ -559,8 +559,9 @@ Tracked so the next @jkotas reply covers everything at once:
    "hacks that are trying to leverage holes in seccomp enforcement... should be done
    properly"). The handler (commit 70ba6f54f25) was **reverted**; seccomp-trapped
    syscalls are handled by compile-time `TARGET_OPENHARMONY` guards (close_range,
-   inotify_init1, get_mempolicy) + existing runtime/musl fallbacks + the HarmonyOS
-   7.1 whitelist channel.
+   get_mempolicy) + existing runtime/musl fallbacks + the HarmonyOS
+   7.1 whitelist channel. (2026-09-12: `inotify_init1` removed from this list —
+   it was never trapped; see audit Addendum 2.)
 4. **(resolved) seccomp audit** — see `2026-09-01-ohos-syscall-audit.md`; — `TARGET_LINUX_MUSL` / `CLR_CMAKE_HOST_LINUX_MUSL` kept for
    OHOS as an explicit fact (OpenHarmony libc is musl-based). Gates pushing the CMake identity
    refactor (`f924bf5824c`: OHOS keeps its own OS identity, no `CLR_CMAKE_HOST_OS=linux` remap).
@@ -569,9 +570,10 @@ Tracked so the next @jkotas reply covers everything at once:
    Consistent with item 1, this should become explicit identity + musl inheritance as well
    (ILC-side changes, PR-R3 scope). Raise together with item 1 so the principle is applied
    uniformly across the CMake and MSBuild layers.
-3. **(resolved) seccomp audit** — 7 trapped syscalls, close_range/inotify_init1 guarded
-   (see `2026-09-01-ohos-syscall-audit.md`); HarmonyOS 7.1 relaxes 3 of 4 bun-negotiated
-   syscalls; `inotify_init1` needs a .NET-specific whitelist request or fallback.
+3. **(resolved) seccomp audit** — 6 trapped syscalls, `close_range` guarded
+   (see `2026-09-01-ohos-syscall-audit.md` + Addendum 2); HarmonyOS 7.1 relaxes 3 of 4
+   bun-negotiated syscalls; `inotify_init1` is **not** trapped (2026-09-12 correction) —
+   no whitelist request needed.
 
 ---
 
@@ -625,7 +627,7 @@ independence) is now part of #132953.**
 3. **Runtime R3** (next): sysroot compile fixes (clrfeatures.cmake,
    pal/src/{configure,CMakeLists}, zstd.cmake, libs/CMakeLists.txt,
    extra_libs.cmake, pal_interfaceaddresses.c, apphost/static,
-   clrconfigvalues.h W^X default, pal close_range/inotify guards) +
+   clrconfigvalues.h W^X default, pal close_range guard) +
    **NativeAOT BuildIntegration** (SingleEntry.targets remap,
    Native.Unix.targets `_originalTargetOS`/lld/Net.Security) + ILCompiler pack
    (libstdc++/libgcc_s, pkgproj). Use the **review-adjusted** feature-branch

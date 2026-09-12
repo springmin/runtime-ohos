@@ -99,7 +99,7 @@ Pattern totals: `\bohos` 23 files/688 occ (incl. 172 `linux-ohos`, all in docs);
   inference never mentions OHOS; only apphost static CMakeLists guard)
 - CoreCLR C++ uses `TARGET_OPENHARMONY` macros exclusively (e.g. clrfeatures.cmake:40,
   pal configure.cmake:627-628, numasupport.cpp, clrconfigvalues.h:637-644,
-  zstd.cmake:46-47, libs CMakeLists:164-166, pal_io.c:1601-1604 inotify seccomp,
+  zstd.cmake:46-47, libs CMakeLists:164-166,
   pal_process.c:294-305 close_range, extra_libs.cmake:27-28 no krb5)
 - CI: .github/workflows, .azuredevops, eng/pipelines all exist but **zero** ohos refs;
   es-metadata.yml zero — OHOS CI/packaging driven outside repo

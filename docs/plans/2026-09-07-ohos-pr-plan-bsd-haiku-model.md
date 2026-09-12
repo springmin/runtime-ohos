@@ -110,7 +110,7 @@ SDK S1 (≈15 files), aspnetcore A1 (≈5 files).
 | N3 | **R-native-sysroot-zstd** | part of P7 | `zstd.cmake` (C90 qsort) | #125546 (gssapi) | 1 file |
 | N4 | **R-native-sysroot-libs** | part of P7 | `libs/CMakeLists.txt` + `extra_libs.cmake` (Crypto.Native via OpenSSL, no Net.Security) | #125562 (libs.native subset) | 2 files |
 | N5 | **R-native-sysroot-apphost** | part of P7 | `apphost/static/CMakeLists.txt` (skip NATIVE_LIBS_EMBEDDED/Net.Security-Static, WHOLE_ARCHIVE guard) | single-concern | 1 file |
-| N6 | **R-native-System.Native-pal_io** | part of P6 | `pal_io.c` (inotify_init1 guard) | #124992 | 1 file |
+| N6 | ~~**R-native-System.Native-pal_io**~~ **canceled 2026-09-12** | — | `inotify_init1` is not trapped (audit Addendum 2) — no PR needed; guard removed on the feature branch | — | — |
 | N7 | **R-native-System.Native-pal_process** | part of P6 | `pal_process.c` (close_range guard) | #124992 | 1 file |
 | N8 | **R-native-System.Native-ifaddrs** | part of P6 | `pal_interfaceaddresses.c` (ecmd.speed) | #124992 | 1 file |
 | N9 | **R-coreclr-W^X-default** | part of P4 | `clrconfigvalues.h` (W^X default off) | #125902 (cgroups) | 1 file |
