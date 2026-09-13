@@ -46,10 +46,12 @@
     <!--
       The device (OpenHarmony) provides only LLVM libc++ (libc++_shared.so); the NativeAOT C++
       runtime libs link GNU libstdc++.so.6 + libgcc_s.so.1 which the device lacks. Ship
-      aarch64 musl builds alongside ilc so device-side AOT works out of the box. These are
-      provided by the ohos-assets bundle (OHOS_CXXRUNTIME_DIR, default ~/sources/ohos-assets).
+      the aarch64 musl builds alongside ilc so device-side AOT works out of the box. These
+      are provided by the ohos-assets bundle (OHOS_CXXRUNTIME_DIR, default ~/sources/ohos-assets);
+      when the bundle is unavailable the files are omitted and the device-side C++ runtime has
+      to come from the app's own packaging.
     -->
-    <ItemGroup Condition="'$(PortableOS)' == 'openharmony' and '$(PackageTargetRuntime)' != '' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
+    <ItemGroup Condition="'$(PortableOS)' == 'openharmony' and '$(PackageTargetRuntime)' == 'openharmony-arm64' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libstdc++.so.6" TargetPath="tools" />
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libgcc_s.so.1" TargetPath="tools" />
     </ItemGroup>

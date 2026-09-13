@@ -172,14 +172,14 @@
   </Target>
 
   <!--
-    OpenHarmony (and other PublishReadyToRun=false platforms) keeps IL pdb files under
-    $(CoreCLRArtifactsPath)\IL. _SymbolFilesToPackage derives pdb paths from ReferenceCopyLocalPaths,
+    OpenHarmony keeps IL pdb files under $(CoreCLRArtifactsPath)\IL because its runtime pack
+    is not ReadyToRun. _SymbolFilesToPackage derives pdb paths from ReferenceCopyLocalPaths,
     which can yield an IL pdb whose FileName already exists in FilesToPackage (as a runtime pack asset
     under runtimes/<rid>/lib). Drop the IL-directory duplicates so NuGet Pack does not raise NU5118.
   -->
   <Target Name="RemoveDuplicateSymbolFiles"
           AfterTargets="_FindSymbolFilesForSharedFrameworkFiles"
-          Condition="'$(PublishReadyToRun)' != 'true'">
+          Condition="'$(PublishReadyToRun)' != 'true' and '$(TargetsOpenHarmony)' == 'true'">
     <ItemGroup>
       <_SymbolFilesToPackage Remove="@(_SymbolFilesToPackage)"
                              Condition="'%(_SymbolFilesToPackage.Extension)' == '.pdb'
