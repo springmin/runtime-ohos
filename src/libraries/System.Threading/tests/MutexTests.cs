@@ -1044,11 +1044,9 @@ namespace System.Threading.Tests
         // on OpenHarmony, where it honors TMPDIR. Mirror the runtime's derivation so these tests
         // always target the same directory the runtime uses.
         private static string GlobalSharedMemoryDirectory =>
-#if TARGET_OPENHARMONY
-            Path.Combine(Path.GetTempPath(), ".dotnet", "shm", "global");
-#else
-            "/tmp/.dotnet/shm/global";
-#endif
+            RuntimeInformation.RuntimeIdentifier.StartsWith("openharmony", StringComparison.Ordinal)
+                ? Path.Combine(Path.GetTempPath(), ".dotnet", "shm", "global")
+                : "/tmp/.dotnet/shm/global";
         private const UnixFileMode AllUsersRwx =
             UnixFileMode.UserRead
             | UnixFileMode.UserWrite
