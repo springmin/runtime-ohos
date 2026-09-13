@@ -6,6 +6,11 @@ Haiku ports were actually landed upstream. Built from the merged-PR history of
 `label:os-openbsd` (37 PRs, 2026-02→08) and `label:os-haiku` (16 PRs,
 2023-05→2026-08), with file-level diffs for the model PRs.
 
+**Update (2026-09-13):** RID naming **resolved as `openharmony`**; both open PR
+branches and all three forks already carry the rename (see §5.1). Remaining
+gates: #132953 re-review, the S1c codesign reviewer call, and the upstream
+36ef/#133296 R2R-image fix.
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -86,9 +91,8 @@ single-concern PRs dominate; infra and CI wiring are separate.
 
 Open PRs (dotnet/runtime):
 
-- **#132827** sandbox fixes (6 files, libraries+gc) — in review; blocked on
-  RID-naming decision (`ohos` vs `openharmony`, jkotas 09-04 leans
-  `openharmony`).
+- **#132827** sandbox fixes (6 files, libraries+gc) — in review; RID-naming
+  **resolved 2026-09-13: `openharmony`** (rename already on the PR branch).
 - **#132953** infra + RID graph (11 files, eng/+coreclr+RID; +133/-18) —
   jkotas's threads all answered 09-03; awaiting re-review; CI red on runtime
   leg.
@@ -170,9 +174,13 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
 
 ## 5. Open decision points
 
-1. **RID naming** (`ohos` vs `openharmony`) — blocks #132827 and #132953, and
-   every file below carries the string. jkotas leaned `openharmony` 09-04;
-   am11 argued `ohos` 09-01. No reply since 09-04.
+1. **RID naming — RESOLVED 2026-09-13: `openharmony`.** Both open PR branches
+   carry the rename (`pr/ohos-infra` `runtime.json` `"openharmony"` + arch
+   RIDs; `pr/ohos-sandbox-fixes` tip `cece42439a1`, rename commit
+   `6f124bf2fb7`), and the three forks are in sync (`runtime-ohos`
+   `d90f0865d92`, `aspnetcore-ohos` `5a6202d929`, sdk-ohos override graphs).
+   Historical note: jkotas leaned `openharmony` 09-04; am11 argued `ohos`
+   09-01.
 2. **illink file** (was P3) — tools/ PR now or later, or fold into N12?
 3. **OpenHarmonyCodesign upstream or downstream** — default downstream; needs
    one reviewer statement.
