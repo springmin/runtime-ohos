@@ -57,7 +57,7 @@ Classification by content (sampled): most guards are **plain POSIX/musl behavior
 | Syscall | Runtime usage | On-device | Handling | 7.1 policy* |
 |---|---|---|---|---|
 | `get_mempolicy` (237) | GC NUMA probe | SIGSYS | ✅ fixed (numasupport.cpp) | relaxed |
-| `close_range` (436) | fork/exec cloexec sweep (`pal_process.c`) | SIGSYS | 🔴 **crash if reached** (masked by posix_spawn today) | relaxed |
+| `close_range` (436) | fork/exec cloexec sweep (`pal_process.c`) | SIGSYS | ✅ compile-time guard; fallback = per-fd sweep (only when `InheritedHandles` is used) — Addendum 3 | relaxed |
 | ~~`inotify_init1` (294)~~ **corrected 2026-09-12** — not trapped; aarch64 #26 (294 = `kexec_file_load`) | **FileSystemWatcher backend** (`pal_io.c`) | **allowed** (init/add_watch/events verified) | ✅ guard removed; no fallback needed | — |
 | `rseq` (293) | TLS acceleration | SIGSYS | ✅ graceful (apps run) | **stays blocked** |
 | `clone3` (435) | thread creation | SIGSYS | ✅ musl falls back to `clone` | relaxed |
@@ -145,3 +145,24 @@ the inotify event.
 device: default ASP.NET app starts without the `reloadConfigOnChange` workaround
 and appsettings.json reloads sub-second (inotify event, not polling). Evidence:
 `final-evidence/inotify-fix-acceptance.txt`.
+
+## Addendum 3 (2026-09-13): `close_range` fallback cost; the posix_spawn note was wrong
+
+The "masked by posix_spawn today" note in the table above is incorrect: the
+`posix_spawn` fast path in `pal_process.c` is macOS/MacCatalyst-only. What keeps
+the fallback off the hot path is that managed passes `inheritedFdCount = -1`
+unless `ProcessStartInfo.InheritedHandles` is used, so the guard's fallback
+(`SetCloexecForAllFdsFallback`, a per-fd `fcntl` sweep bounded by
+`RLIMIT_NOFILE` — 1,048,576 on our HarmonyOS test device) runs only for apps
+that opt into fd inheritance.
+
+Two further facts recorded here so they are not re-litigated:
+
+- An errno-based "try the syscall, fall back on EPERM/ENOSYS" is **impossible**
+  on OHOS: seccomp uses `SCMP_ACT_TRAP` (SIGSYS), so a trapped `close_range`
+  never returns an errno. The compile-time guard is the correct shape (same
+  reasoning as `numasupport.cpp`).
+- The remaining fallback cost is a platform-neutral issue, not an OHOS PR
+  concern; a capability probe or a `getdents64` enumeration of
+  `/proc/self/fd` are tracked as separate follow-ups, not part of the OHOS
+  guard PR.
