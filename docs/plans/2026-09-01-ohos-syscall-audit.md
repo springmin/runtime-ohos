@@ -139,3 +139,9 @@ remain.
 test needs a rebuilt (signed) runtime: device check = default ASP.NET app starts
 without `DOTNET_hostBuilder:reloadConfigOnChange=false` and reloads appsettings on
 the inotify event.
+
+**Device acceptance (2026-09-13):** rebuilt runtime from CI (sdk-ohos
+`ohos-full-build` run 34722073037, `runtime_ref=feature/openharmony`) verified on
+device: default ASP.NET app starts without the `reloadConfigOnChange` workaround
+and appsettings.json reloads sub-second (inotify event, not polling). Evidence:
+`final-evidence/inotify-fix-acceptance.txt`.
