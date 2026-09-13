@@ -22,9 +22,11 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- OpenHarmony ships no PGO data and crossgen2 hangs on OpenHarmony
-         CoreLib R2R (see round-12 trail) — keep the CoreLib image IL-only
-         like the pack. -->
+    <!-- OpenHarmony: CoreLib stays IL-only in this fork; the R2R image is
+         produced out-of-tree (sdk-ohos stock-crossgen2 overlay). The in-build
+         crossgen2 is not a technical blocker: an official-shape host probe
+         compiled this CoreLib successfully (sdk-ohos probe, 2026-09-13), so
+         enabling this switch is a policy decision, not a hang fix. -->
     <PublishReadyToRun Condition="'$(TargetsOpenHarmony)' == 'true'">false</PublishReadyToRun>
 
 
