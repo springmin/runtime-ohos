@@ -141,10 +141,14 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 #132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
 (N16's TFM semantics depend on it).
 
-**Prepared (hold until #132953 merges):** `pr/ohos-ifaddrs` — N8, based on
-`pr/ohos-infra`; the branch diff vs upstream is the single ethtool hunk
-(`TARGET_OPENHARMONY` added to the existing `TARGET_ANDROID` fast path + the
-inlined `ethtool_cmd_speed()`). PR text will be drafted at submission.
+**Prepared (hold until #132953 merges):** four single-commit branches, all
+based on `pr/ohos-infra`:
+`pr/ohos-ifaddrs` — N8, ethtool hunk (4+/2-; `TARGET_OPENHARMONY` added to the
+existing `TARGET_ANDROID` fast path + inlined `ethtool_cmd_speed()`);
+`pr/ohos-tryrun` — N14, OHOS-scoped FIFO answers (9+);
+`pr/ohos-pal-process` — N7, `close_range` guard (5+/2-);
+`pr/ohos-wx-default` — N9, `EnableWriteXorExecute=0` for OHOS (7+/2-).
+PR texts will be drafted at submission.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
