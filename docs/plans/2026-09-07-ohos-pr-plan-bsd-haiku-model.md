@@ -188,3 +188,34 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    the same rather than adding a leg to #132953.
 5. Post this plan to tracking issue dotnet/runtime#132866 for reviewer
    sign-off (am11 requested stacked-PR visibility).
+
+## 6. Post-merge cleanups (deferred while PRs are in review)
+
+1. **TLS: drop the no-op `-ftls-model=global-dynamic`** — `eng/native/configurecompiler.cmake:667`
+   (the file is inside #132953). Keep `-fno-emulated-tls` (line 666) globally: the arm64 asm helpers
+   and the JIT hardcode TLSDESC (`vm/arm64/asmhelpers.S:621-630`,
+   `pal/inc/unixasmmacrosarm64.inc:424-443`, `jit/codegenarmarch.cpp:3422-3425`,
+   `jit/helperexpansion.cpp:940`), so the model must not diverge per TU, and `initial-exec` is not an
+   option (faster 2-instruction GOT load, but breaks the contract and risks static-TLS exhaustion).
+   Measured with the OHOS NDK clang 15.0.4 (`--target=aarch64-linux-ohos -O2 -fPIC`):
+
+   | flags | generated TLS access |
+   |---|---|
+   | (default) | `__emutls_v.x` + `bl __emutls_get_address` (emulated) |
+   | `-fno-emulated-tls` | TLSDESC (`adrp :tlsdesc:` / `ldr` / `blr`) = global-dynamic |
+   | `-fno-emulated-tls -ftls-model=global-dynamic` | byte-identical to the previous row (no-op) |
+
+   Action after #132953 merges: one-line delete (own commit or a small flags-cleanup PR; Haiku
+   precedents #126701/#127392/#127502/#131700). If a reviewer touches these flags during the
+   #132953 review, fold the deletion into the review response instead.
+
+2. **TFM-scoped `KnownAppHostPack` replacement** — `eng/targetingpacks.targets:94`. The broad
+   `Remove` deletes same-identity entries for every target framework. Evaluation-time metadata
+   conditions are rejected (MSB4190) and a target-based replacement does not run under static-graph
+   restore (verified 2026-09-13, CI run 34756598482), so the broad Remove stays until a design that
+   survives both restore modes exists.
+
+3. **SDK RID-graph overrides re-check** — `eng/RuntimeIdentifierGraph.openharmony.json` /
+   `eng/PortableRuntimeIdentifierGraph.openharmony.json`. These are local bootstrap injections;
+   drop them once the upstream Platforms package carries the openharmony RID (inclusion-audit open
+   item 1).
