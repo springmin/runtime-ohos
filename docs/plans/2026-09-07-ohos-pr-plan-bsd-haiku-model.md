@@ -146,12 +146,13 @@ based on `pr/ohos-infra` (N16 stacked on N15): N1 `pr/ohos-clrfeatures` (1+/1-),
 N2 `pr/ohos-pal` (4+/4-), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
 (7+), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process` (5+/2-),
 N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (7+/2-),
-N10 `pr/ohos-crossgen-corelib` (17+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
+N10 `pr/ohos-crossgen-corelib` (16+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
 N12 `pr/ohos-aot-singleentry` (7+), N13 `pr/ohos-packs` (61+/5-),
 N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (28+/3-),
 N16 `pr/ohos-console` (7+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
-`IgnoreStandardErrorWarningFormat` attribute. All 15 rebase-verified
+`IgnoreStandardErrorWarningFormat` attribute; N10's comment is neutralized
+for upstream. All 15 rebase-verified
 (N13 against the post-#132953 sfxproj state; see
 `final-evidence/preflight-rebase-20260914.txt`). Submission-ready PR texts
 (title/body/test): `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
