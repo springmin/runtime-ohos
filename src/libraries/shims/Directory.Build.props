@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- No -openharmony TFM: compile in the unix group (LibrariesOpenHarmonyShimsTfm). -->
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(LibrariesOpenHarmonyShimsTfm)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
