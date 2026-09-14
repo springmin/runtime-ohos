@@ -141,8 +141,12 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 #132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
 (N16's TFM semantics depend on it).
 
-**Prepared (hold until #132953 merges):** fifteen single-concern branches, all
-based on `pr/ohos-infra` (N16 stacked on N15): N1 `pr/ohos-clrfeatures` (1+/1-),
+**Prepared (hold until #132953 merges):** fifteen single-concern branches;
+fourteen are based on `pr/ohos-infra` (N16 stacked on N15) and **N13 is based
+on latest `upstream/main`** (its sfxproj patch context had to track upstream's
+WASM R2R refactor — conflict pre-solved: evidence
+`final-evidence/post132953-rebase-rehearsal.txt` +
+`n13-rebase-resolution.patch`): N1 `pr/ohos-clrfeatures` (1+/1-),
 N2 `pr/ohos-pal` (4+/4-), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
 (7+), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process` (5+/2-),
 N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (7+/2-),
@@ -152,9 +156,9 @@ N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (28+/3-),
 N16 `pr/ohos-console` (7+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
 `IgnoreStandardErrorWarningFormat` attribute; N10's comment is neutralized
-for upstream. All 15 rebase-verified
-(N13 against the post-#132953 sfxproj state; see
-`final-evidence/preflight-rebase-20260914.txt`). Submission-ready PR texts
+for upstream. The fourteen `pr/ohos-infra`-based branches are rebase-verified
+clean onto the post-#132953 state
+(`final-evidence/preflight-rebase-20260914.txt`). Submission-ready PR texts
 (title/body/test): `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
