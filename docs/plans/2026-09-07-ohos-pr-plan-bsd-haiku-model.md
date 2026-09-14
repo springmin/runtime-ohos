@@ -11,6 +11,13 @@ branches and all three forks already carry the rename (see §5.1). Remaining
 gates: #132953 re-review, the S1c codesign reviewer call, and the upstream
 36ef/#133296 R2R-image fix.
 
+**Update (2026-09-14):** re-reviewed against the current feature branch: added
+N14-N16 for files that had no PR slot (`tryrun.cmake`, the libraries TFM
+mapping, System.Console), marked the `OpenHarmonyInTreeR2R` gate and the
+`dotnet selfsign` CLI as fork-local-only (never in PRs), and refreshed the
+#132827/#132953 status in §2. The 36ef/#133296 item is resolved on the fork
+(decision-table item 5: 27.1 + untrimmed split layout).
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -93,13 +100,17 @@ Open PRs (dotnet/runtime):
 
 - **#132827** sandbox fixes (6 files, libraries+gc) — in review; RID-naming
   **resolved 2026-09-13: `openharmony`** (rename already on the PR branch).
+  Follow-up commit `a250da4de6e` (F1/F2 comment fixes + MutexTests shm path)
+  pushed 2026-09-13 and the status comment posted
+  (`#issuecomment-5653459155`); awaiting @jkoritzinsky re-review.
 - **#132953** infra + RID graph (11 files, eng/+coreclr+RID; +133/-18) —
-  jkotas's threads all answered 09-03; awaiting re-review; CI red on runtime
-  leg.
+  **@jkotas 2026-09-10 APPROVED**; awaiting maintainer merge. The failing leg
+  is Helix test-infrastructure (non-applicable), not this PR; the
+  ohos→openharmony rename is already on the branch.
 
 Remaining feature-branch inventory (from plan §13 + inclusion audit
-`2026-09-03-ohos-pr-inclusion-audit.md`): runtime P3-P7 (≈18 files),
-SDK S1 (≈15 files), aspnetcore A1 (≈5 files).
+`2026-09-03-ohos-pr-inclusion-audit.md`, refreshed 2026-09-14): runtime N1-N16
+(≈26 files), SDK S1 (≈15 files), aspnetcore A1 (≈5 files).
 
 ---
 
@@ -116,12 +127,24 @@ SDK S1 (≈15 files), aspnetcore A1 (≈5 files).
 | N5 | **R-native-sysroot-apphost** | part of P7 | `apphost/static/CMakeLists.txt` (skip NATIVE_LIBS_EMBEDDED/Net.Security-Static, WHOLE_ARCHIVE guard) | single-concern | 1 file |
 | N6 | ~~**R-native-System.Native-pal_io**~~ **canceled 2026-09-12** | — | `inotify_init1` is not trapped (audit Addendum 2) — no PR needed; guard removed on the feature branch | — | — |
 | N7 | **R-native-System.Native-pal_process** | part of P6 | `pal_process.c` (close_range guard) | #124992 | 1 file |
-| N8 | **R-native-System.Native-ifaddrs** | part of P6 | `pal_interfaceaddresses.c` (ecmd.speed) | #124992 | 1 file |
-| N9 | **R-coreclr-W^X-default** | part of P4 | `clrconfigvalues.h` (W^X default off) | #125902 (cgroups) | 1 file |
+| N8 | **R-native-System.Native-ifaddrs** | part of P6 | `pal_interfaceaddresses.c` (full ethtool speed: `speed_hi` + unknown normalisation) | #124992 | 1 file |
+| N9 | **R-coreclr-W^X-default** | part of P4 | `clrconfigvalues.h` (W^X default off; rationale device-verified 2026-09-14) | #125902 (cgroups) | 1 file |
 | N10 | **R-crossgen-corelib-proj** | part of P4 | `crossgen-corelib.proj` | single-concern | 1 file |
 | N11 | **R-AOT-Unix.targets** | P3 slice | `Microsoft.NETCore.Native.Unix.targets` (lld/Net.Security off, `_originalTargetOS`) | **#129906** (1-file NativeAOT) | 1 file |
 | N12 | **R-AOT-SingleEntry** | P3 slice | `Microsoft.DotNet.ILCompiler.SingleEntry.targets` (libcFlavor) | #129906 | 1 file |
-| N13 | **R-packs** | P5 | `targetingpacks.targets`, `ds-portable-rid.c`, sfxproj (R2R off), ILCompiler.pkgproj | #125088's data slice, kept separate | 3-4 files |
+| N13 | **R-packs** | P5 | `targetingpacks.targets`, `ds-portable-rid.c`, sfxproj (R2R off; submit **without** the `OpenHarmonyInTreeR2R` A/B gate), ILCompiler.pkgproj | #125088's data slice, kept separate | 3-4 files |
+| N14 | **R-native-tryrun** | (new — not in #132953) | `eng/native/tryrun.cmake` (FIFO cross answers; consolidated 2026-09-14) | infra follow-up, #124992-style | 1 file |
+| N15 | **R-libs-tfm-mapping** | old "PR-R3" slice | `libraries/Directory.Build.{props,targets}`, `sfx.proj`, `sfx-src.proj`, `sfx-finish.proj`, `shims/Directory.Build.props` (openharmony→linux/unix TFM) | #125562 (build mapping) | 6 files |
+| N16 | **R-libs-console** | old "PR-R3" slice | `System.Console.csproj` (unix ConsolePal for OHOS + self-eliminating CA1416) | per-library port | 1 file |
+
+**Positioning for the new slots:** N14 goes with the infra group (right after
+#132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
+(N16's TFM semantics depend on it).
+
+**Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
+sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
+`dotnet selfsign` CLI (see the SDK section), the stock-crossgen2 overlay/PGO CI
+scripts, and the fork docs/scripts excluded by the inclusion audit.
 
 **Dropped from runtime:** `build-local-linux.sh`, `AGENTS.md` (audit: never
 upstream). illink `Microsoft.NET.ILLink.targets` (was in P3) is held out — it
@@ -136,6 +159,13 @@ belongs to a tools/ concern and OpenBSD never mixed tools/ into platform PRs
 | S1b (second) | OpenHarmonyEnvironmentDefaults + Program.cs; Layout/redist runtimeconfig baking; dotnet-aot/dn ohos exclusion | Runtime-behavior half |
 | S1c (third, **reviewer-gated**) | OpenHarmonyCodesign + selfsign + SDK.targets auto-sign | HarmonyOS-commercial-only; default **downstream** until reviewer call |
 
+**Fork-local (not in any S1):** the `dotnet selfsign` CLI added 2026-09-14
+(`src/Cli/dotnet/Commands/SelfSign/*`, the `Commands/SelfSign` Definitions class
+with the `DotNetCommandDefinition`/`Parser` wiring, the `ElfSigner.cs` compile
+include and `IsElf64` visibility) — it shares the S1c signer source but the CLI
+surface is not proposed upstream; revisit only if S1c lands upstream. The
+CI overlay/PGO/in-tree-A/B scripts are fork-local as well.
+
 ### aspnetcore — unchanged
 
 | PR | Content |
@@ -144,7 +174,7 @@ belongs to a tools/ concern and OpenBSD never mixed tools/ into platform PRs
 
 ### CI leg — LAST (OpenBSD rule 6)
 
-A `runtime (Build linux-ohos-arm64 ...)` leg is planned only after N1-N13 are
+A `runtime (Build linux-ohos-arm64 ...)` leg is planned only after N1-N16 are
 in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
 
 ---
@@ -160,7 +190,7 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
 | P5 packs (4 files) | N13 kept together (data coherence) | exception to per-file; matches #125088's data inclusion |
 | SDK S1 one-shot 15 files | S1a/S1b/S1c split by layer, codesign last | reviewer gate on codesign upstream-vs-downstream |
 | — (CI leg absent from plan) | CI leg explicitly LAST | OpenBSD #130761 at +5 months |
-| Total runtime PRs: P3-P7 = 5 | N1-N13 = **13** | granularity to the OpenBSD norm (median ≈15 lines/PR) |
+| Total runtime PRs: P3-P7 = 5 | N1-N16 = **16** | granularity to the OpenBSD norm (median ≈15 lines/PR) |
 
 **Kept from the old plan:**
 - #132827 and #132953 stay as-is (already open; am11 acknowledged the
