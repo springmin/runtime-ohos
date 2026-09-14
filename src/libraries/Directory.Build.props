@@ -11,6 +11,14 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
+  <!-- OpenHarmony keeps its own TargetOS (RID-independence review) but has no -openharmony TFM:
+       managed libraries compile in the linux/unix groups (the MSBuild-layer equivalent of the
+       compile-level linux remap in configureplatform.cmake; formal mapping tracked as PR-R3). -->
+  <PropertyGroup>
+    <LibrariesOpenHarmonySfxTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesOpenHarmonySfxTfm>
+    <LibrariesOpenHarmonyShimsTfm Condition="'$(TargetOS)' == 'openharmony'">$(NetCoreAppCurrent)-unix</LibrariesOpenHarmonyShimsTfm>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
     <UseBootstrapLayout>true</UseBootstrapLayout>
   </PropertyGroup>
