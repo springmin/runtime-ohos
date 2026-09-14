@@ -133,13 +133,18 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 | N11 | **R-AOT-Unix.targets** | P3 slice | `Microsoft.NETCore.Native.Unix.targets` (lld/Net.Security off, `_originalTargetOS`) | **#129906** (1-file NativeAOT) | 1 file |
 | N12 | **R-AOT-SingleEntry** | P3 slice | `Microsoft.DotNet.ILCompiler.SingleEntry.targets` (libcFlavor) | #129906 | 1 file |
 | N13 | **R-packs** | P5 | `targetingpacks.targets`, `ds-portable-rid.c`, sfxproj (R2R off; submit **without** the `OpenHarmonyInTreeR2R` A/B gate), ILCompiler.pkgproj | #125088's data slice, kept separate | 3-4 files |
-| N14 | **R-native-tryrun** | (new — not in #132953) | `eng/native/tryrun.cmake` (FIFO cross answers; consolidated 2026-09-14) | infra follow-up, #124992-style | 1 file |
+| N14 | **R-native-tryrun** | (new — not in #132953) | `eng/native/tryrun.cmake` (FIFO cross answers; consolidated 2026-09-14; upstream form **scoped to OHOS** via `CMAKE_SYSTEM_NAME STREQUAL OHOS`) | infra follow-up, #124992-style | 1 file |
 | N15 | **R-libs-tfm-mapping** | old "PR-R3" slice | `libraries/Directory.Build.{props,targets}`, `sfx.proj`, `sfx-src.proj`, `sfx-finish.proj`, `shims/Directory.Build.props` (openharmony→linux/unix TFM) | #125562 (build mapping) | 6 files |
 | N16 | **R-libs-console** | old "PR-R3" slice | `System.Console.csproj` (unix ConsolePal for OHOS + self-eliminating CA1416) | per-library port | 1 file |
 
 **Positioning for the new slots:** N14 goes with the infra group (right after
 #132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
 (N16's TFM semantics depend on it).
+
+**Prepared (hold until #132953 merges):** `pr/ohos-ifaddrs` — N8, based on
+`pr/ohos-infra`; the branch diff vs upstream is the single ethtool hunk
+(`TARGET_OPENHARMONY` added to the existing `TARGET_ANDROID` fast path + the
+inlined `ethtool_cmd_speed()`). PR text will be drafted at submission.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
