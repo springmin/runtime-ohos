@@ -120,7 +120,7 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 
 | # | PR (new) | Old name | Files | Modeled on | Size target |
 |---|---|---|---|---|---|
-| N1 | **R-coreclr-sysroot-clrfeatures** | part of P4 | `clrfeatures.cmake` + `clr.featuredefines.props` (LTTng off) | #124991-style single concern | 1-2 files |
+| N1 | **R-coreclr-sysroot-clrfeatures** | part of P4 | `clrfeatures.cmake` (LTTng off; `clr.featuredefines.props` needs no change) | #124991-style single concern | 1 file |
 | N2 | **R-coreclr-sysroot-pal** | part of P4 | `pal/src/configure.cmake` + `pal/src/CMakeLists.txt` (no LTTng fatal, skip gcc_s/pthread/rt) | #124992 (pal_io.c) | 2 files |
 | N3 | **R-native-sysroot-zstd** | part of P7 | `zstd.cmake` (C90 qsort) | #125546 (gssapi) | 1 file |
 | N4 | **R-native-sysroot-libs** | part of P7 | `libs/CMakeLists.txt` + `extra_libs.cmake` (Crypto.Native via OpenSSL, no Net.Security) | #125562 (libs.native subset) | 2 files |
@@ -141,14 +141,13 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 #132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
 (N16's TFM semantics depend on it).
 
-**Prepared (hold until #132953 merges):** four single-commit branches, all
-based on `pr/ohos-infra`:
-`pr/ohos-ifaddrs` — N8, ethtool hunk (4+/2-; `TARGET_OPENHARMONY` added to the
-existing `TARGET_ANDROID` fast path + inlined `ethtool_cmd_speed()`);
-`pr/ohos-tryrun` — N14, OHOS-scoped FIFO answers (9+);
-`pr/ohos-pal-process` — N7, `close_range` guard (5+/2-);
-`pr/ohos-wx-default` — N9, `EnableWriteXorExecute=0` for OHOS (7+/2-).
-PR texts will be drafted at submission.
+**Prepared (hold until #132953 merges):** nine single-concern branches, all
+based on `pr/ohos-infra`: N1 `pr/ohos-clrfeatures` (1+/1-), N2 `pr/ohos-pal`
+(4+/4- over 2 files), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
+(7+ over 2 files), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process`
+(5+/2-), N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (7+/2-),
+N14 `pr/ohos-tryrun` (9+). Submission-ready PR texts (title/body/test) for
+all nine: `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
