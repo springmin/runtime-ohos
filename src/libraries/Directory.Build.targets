@@ -90,7 +90,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibrariesBinPlaceTfm>$(LibrariesBinPlaceTfm)</LibrariesBinPlaceTfm>
     <LibrariesBinPlaceTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesBinPlaceTfm>
   </PropertyGroup>
 
