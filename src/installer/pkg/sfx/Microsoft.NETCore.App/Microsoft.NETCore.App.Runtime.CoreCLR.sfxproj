@@ -28,6 +28,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- OpenHarmony runtime packs stay IL-only; the R2R image is produced by the SDK build. -->
+    <PublishReadyToRun Condition="'$(TargetsOpenHarmony)' == 'true'">false</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
     <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
@@ -58,12 +60,15 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+      <!-- crossgen2 has no openharmony TargetOS; OHOS R2R images are Linux ABI. -->
+      <_CrossGen2TargetOS>$(TargetOS)</_CrossGen2TargetOS>
+      <_CrossGen2TargetOS Condition="'$(TargetOS)' == 'openharmony'">linux</_CrossGen2TargetOS>
     </PropertyGroup>
 
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(TargetArchitecture)"
-                     TargetOS="$(TargetOS)"
+                     TargetOS="$(_CrossGen2TargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
 
@@ -171,6 +176,18 @@
       </CoreCLRCrossTargetFiles>
 
       <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- With OpenHarmony runtime packs staying IL-only, _SymbolFilesToPackage can yield an IL
+       pdb that collides with the runtimes/<rid>/lib pdb (NU5118); drop the IL duplicates. -->
+  <Target Name="_RemoveDuplicateSymbolFiles"
+          AfterTargets="_FindSymbolFilesForSharedFrameworkFiles"
+          Condition="'$(PublishReadyToRun)' != 'true' and '$(TargetsOpenHarmony)' == 'true'">
+    <ItemGroup>
+      <_SymbolFilesToPackage Remove="@(_SymbolFilesToPackage)"
+                             Condition="'%(_SymbolFilesToPackage.Extension)' == '.pdb'
+                                        and $([System.String]::new('%(_SymbolFilesToPackage.RootDir)%(_SymbolFilesToPackage.Directory)').Replace('\\', '/').EndsWith('IL/'))" />
     </ItemGroup>
   </Target>
 </Project>
