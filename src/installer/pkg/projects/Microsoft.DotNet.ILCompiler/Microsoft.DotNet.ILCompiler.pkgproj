@@ -43,6 +43,13 @@
       <File Include="$(_ILCompilerFilesRoot)*" TargetPath="tools" Exclude="$(_ILCompilerFilesRoot)netstandard\*" />
     </ItemGroup>
 
+    <!-- The device ships LLVM libc++ only, but the NativeAOT runtime links libstdc++/libgcc_s;
+         ship the aarch64 musl builds alongside ilc when OHOS_CXXRUNTIME_DIR is provided. -->
+    <ItemGroup Condition="'$(TargetsOpenHarmony)' == 'true' and '$(PackageTargetRuntime)' == 'openharmony-arm64' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
+      <File Include="$(OHOS_CXXRUNTIME_DIR)/libstdc++.so.6" TargetPath="tools" />
+      <File Include="$(OHOS_CXXRUNTIME_DIR)/libgcc_s.so.1" TargetPath="tools" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'linux'">
       <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
       <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
