@@ -25,6 +25,9 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- OpenHarmony CoreLib stays IL-only in the runtime build; the R2R image is produced
+         by the SDK build. The default is overridable from the command line. -->
+    <PublishReadyToRun Condition="'$(TargetsOpenHarmony)' == 'true'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
@@ -155,6 +158,13 @@
     <Message Importance="High"
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
+    <!-- crossgen2 only knows base OS names; OpenHarmony R2R images are Linux ELF, so pass
+         the linux token (same mapping as the NativeAOT SingleEntry targets and the sfxproj). -->
+    <PropertyGroup>
+      <_CrossGenTargetOS>$(TargetOS)</_CrossGenTargetOS>
+      <_CrossGenTargetOS Condition="'$(TargetOS)' == 'openharmony'">linux</_CrossGenTargetOS>
+    </PropertyGroup>
+
     <PropertyGroup>
       <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
@@ -167,7 +177,7 @@
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(_CrossGenTargetOS)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
