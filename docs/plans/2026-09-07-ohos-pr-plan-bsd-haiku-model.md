@@ -217,7 +217,9 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
 4. **CI leg timing** — OpenBSD waited until feature-complete; confirm we do
    the same rather than adding a leg to #132953.
 5. Post this plan to tracking issue dotnet/runtime#132866 for reviewer
-   sign-off (am11 requested stacked-PR visibility).
+   sign-off (am11 requested stacked-PR visibility). **DONE 2026-09-14** —
+   posted as `#issuecomment-5658511943` (N1-N16 inventory + the three open
+   reviewer questions).
 
 ## 6. Post-merge cleanups (deferred while PRs are in review)
 
