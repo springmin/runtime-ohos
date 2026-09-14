@@ -21,6 +21,15 @@ macro(set_cache_value)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
 endmacro()
 
+# OpenHarmony cross builds cannot run the FIFO probes. Pin the two answers here;
+# the remaining linux-family answers come from the branch below. CMAKE_SYSTEM_NAME
+# is passed on the CMake command line (`-DCMAKE_SYSTEM_NAME=OHOS` for cross
+# builds), which the initial-cache script can read.
+if(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+  set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
+  set_cache_value(HAVE_BROKEN_FIFO_SELECT_EXITCODE 1)
+endif()
+
 file(GLOB OPENBSD_PROBE "${CROSS_ROOTFS}/etc/signify/openbsd-*.pub")
 
 if(NOT DEFINED ANDROID_BUILD)
