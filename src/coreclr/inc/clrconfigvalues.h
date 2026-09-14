@@ -638,6 +638,8 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_LTTngConfig, W("LTTngConfig"), "Configuration
 // TARGET_OPENHARMONY: the OpenHarmony kernel denies PROT_EXEC on file-backed
 // (memfd/shm) mappings, which the W^X double-mapping allocator depends on;
 // anonymous executable memory is allowed, so default to the RWX allocator.
+// Device-verified 2026-09-14: memfd mprotect(RX)/mmap(PROT_EXEC) -> EACCES;
+// anonymous RW->RX and execution OK.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 1, "Enable W^X for executable memory.");

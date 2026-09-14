@@ -344,6 +344,22 @@ tested hardware.
   OpenHarmony with prctl wrapping; QEMU TCG JIT works
 - Our verification: `dotnet --info` (CoreCLR+JIT) on OHOS musl rootfs (qemu)
 
+### 9.5 Addendum (2026-09-14): file-backed PROT_EXEC is denied — W^X default 0 is correct
+
+A dedicated on-device probe (C# P/Invoke; evidence
+`final-evidence/wx-memfd-probe.txt`) settles the open question from §10.5:
+
+- anonymous memory: `mprotect(RW->RX)` OK and executing the written stub works;
+- file-backed (memfd): both `mmap(..., PROT_EXEC, MAP_SHARED, fd)` and
+  `mprotect(RX)` fail with **EACCES (errno 13)**.
+
+The W^X double-mapping allocator depends on executable file-backed mappings, so it
+cannot work on this device and `clrconfigvalues.h`'s
+`TARGET_OPENHARMONY -> EnableWriteXorExecute=0` (plus its comment) is correct and
+now device-verified. The §10.5 recommendation ("default W^X-compliant =1") was
+based on anonymous-memory probes only and is superseded. A runtime capability probe
+would also disable W^X here and remains an optional platform-neutral enhancement.
+
 ---
 
 ## 10. Port classification: OpenHarmony shared / HarmonyOS-only / OpenHarmony-only + unified-binary design (2026-08-31)
