@@ -209,6 +209,13 @@ CI overlay/PGO/in-tree-A/B scripts are fork-local as well.
 (on other platforms) with an OpenHarmony exemption; `OpenHarmonyCodesign` and the
 `selfsign` CLI guard directory enumeration (read-only sandbox directories).
 
+**Platform identity (2026-09-15):** S1b uses
+`OperatingSystem.IsOSPlatform("openharmony")` plus
+`<SupportedPlatform Include="openharmony" />` (CA1418 workaround until OHOS is a
+known platform); decision record:
+`docs/plans/2026-09-15-ohos-platform-identity.md`. The `TMPDIR` default still
+needs a decision (hardcoded sandbox path).
+
 ### aspnetcore — unchanged
 
 | PR | Content |
