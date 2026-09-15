@@ -64,7 +64,7 @@ Classification by content (sampled): most guards are **plain POSIX/musl behavior
 | `openat2` (437) | not used by runtime | SIGSYS | ✅ harmless | — |
 | `signalfd4` (289) | not used by runtime | SIGSYS | ✅ harmless | — |
 
-\* HarmonyOS 7.1 relaxation agreed with the HarmonyOS team during the **Bun port** covers `clone3`, `get_mempolicy`, `close_range` (everything except `rseq`). ~~**`inotify_init1` is a .NET-specific gap**~~ **2026-09-12 correction:** `inotify_init1` is allowed — the earlier entry used the x86-64 number (294 = `kexec_file_load` on aarch64). See Addendum 2.
+\* HarmonyOS 7.1 relaxation agreed with the HarmonyOS team covers `clone3`, `get_mempolicy`, `close_range` (everything except `rseq`). ~~**`inotify_init1` is a .NET-specific gap**~~ **2026-09-12 correction:** `inotify_init1` is allowed — the earlier entry used the x86-64 number (294 = `kexec_file_load` on aarch64). See Addendum 2.
 
 **Other syscalls verified allowed** (not SIGSYS): statx, pidfd_open, timerfd_create, eventfd2, getdents64, readlinkat, renameat2, epoll_create1, pipe2, dup3, gettid, set_robust_list, madvise, clock_gettime, nanosleep, wait4, rt_sigaction, ioctl, fcntl, socket, connect, accept4, recvmsg, sendmsg, mmap, munmap, openat, read, write, close, dup, rt_sigprocmask, memfd_create, copy_file_range, membarrier, futex, prctl, tgkill, epoll_pwait, ptrace, mprotect, mremap.
 
@@ -95,11 +95,10 @@ section added):
    tested kernel: no offsets exist. Full table:
    `exchanges/ci-test/syscall-table-ohos-aarch64.txt` +
    `ohos-syscall-table-verification.md`.
-2. **verify.c Bun-section had 3 wrong numbers** (x86-64 values on aarch64):
+2. **verify.c had 3 wrong numbers** (x86-64 values on aarch64):
    `statx 332→291`, `setgroups 158→159` (158 is getgroups on aarch64!),
-   `membarrier 176→283`. Corrected so the Bun section tests the intended
-   syscalls.
-3. **New [dotnet] section** (separate from Bun) verifies .NET runtime syscalls
+   `membarrier 176→283`. Corrected so the probe tests the intended syscalls.
+3. **New [dotnet] section** verifies .NET runtime syscalls
    with the runtime's actual arguments:
    - SIGSYS (runtime guards justified): close_range(3,UINT_MAX,CLOEXEC) = 436,
      get_mempolicy probe = 236.
