@@ -141,6 +141,16 @@ Remaining feature-branch inventory (from plan §13 + inclusion audit
 #132953, alongside N1-N5); N15/N16 belong to the libraries phase with N15 first
 (N16's TFM semantics depend on it).
 
+**Review pass (2026-09-15, A/B):** six fixes and seven cleanups applied to the
+branches and the fork after re-reading the review threads and the repo
+conventions: the dead `extra_libs.cmake` openharmony clause and the redundant
+`configure.cmake` exemption were dropped, the ethtool speed fix is scoped to
+OHOS (Android untouched), the crossgen/LTTng/version comments were rewritten,
+`PR-R3` references removed, the SDK comments tightened, `OpenHarmonyCodesign`
+errors moved to `Strings.resx` (NETSDK1247/1248 + 13 xlf), and the signer field
+renamed to `s_codesignName`. Tips updated below; evidence
+`final-evidence/ab-review-pass-20260915.txt`.
+
 **Prepared (hold until #132953 merges):** fifteen single-concern branches;
 fourteen are based on `pr/ohos-infra` (N16 stacked on N15) and **N13 is based
 on latest `upstream/main`** (its sfxproj patch context had to track upstream's
@@ -260,6 +270,15 @@ dropped from `SupportedRuntimeIdentifiers` (the port ships x64/arm64 only) and
 upstream's `fc95d7417c` NativeAotTestApp `DotNetBuild` line is preserved. The
 fork's `feature/openharmony` applies the same arm removal and comment sync
 (`4faef6a691`). Draft in `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
+
+**Branch tips after the A/B review pass (2026-09-15):** N1 `d9428292318`,
+N2 `0f9fcf089c4`, N3 `83dae1c2849`, N4 `cf57653fef5`, N5 `934173210f1`,
+N7 `c5e1dc3e4aa`, N8 `3eb1ab8f51c`, N9 `bb7e8e69e76`, N10 `169c072d07c`,
+N11 `91a2e8e5a62`, N12 `da4dc098a4a`, N13 `4edf42b932c`, N14 `c2a5e90db55`,
+N15 `01667c2c6d5`, N16 `94f72514835`; `pr/ohos-infra` `cece42439a1` (under
+review), `pr/ohos-sandbox-fixes` `6ed2f9ab9a6` (under review). sdk S1a
+`pr/ohos-sdk-rids` `3c147cedbc`, S1b `pr/ohos-sdk-sandbox` `d97231e55c`;
+aspnetcore A1 `pr/ohos-aspnet-rids` `b7070c3748`.
 
 ### CI leg — LAST (OpenBSD rule 6)
 
