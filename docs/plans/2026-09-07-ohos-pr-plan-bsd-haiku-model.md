@@ -146,11 +146,11 @@ fourteen are based on `pr/ohos-infra` (N16 stacked on N15) and **N13 is based
 on latest `upstream/main`** (its sfxproj patch context had to track upstream's
 WASM R2R refactor — conflict pre-solved: evidence
 `final-evidence/post132953-rebase-rehearsal.txt` +
-`n13-rebase-resolution.patch`): N1 `pr/ohos-clrfeatures` (1+/1-),
+`n13-rebase-resolution.patch`): N1 `pr/ohos-clrfeatures` (4+/3-),
 N2 `pr/ohos-pal` (4+/4-), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
 (7+), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process` (5+/2-),
-N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (7+/2-),
-N10 `pr/ohos-crossgen-corelib` (16+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
+N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (5+/2-),
+N10 `pr/ohos-crossgen-corelib` (14+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
 N12 `pr/ohos-aot-singleentry` (7+), N13 `pr/ohos-packs` (62+/6-),
 N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (29+/3-),
 N16 `pr/ohos-console` (7+/3-). N13 ships without the fork-local
@@ -166,6 +166,12 @@ clean onto the post-#132953 state
 items; N13's runtime-pack override is scoped to `TargetsOpenHarmony` and the
 ILCompiler package comment/predicate are corrected. N15 re-verified CLEAN onto
 latest `upstream/main` (`22b309484bf`).
+
+**Cleanup pass (2026-09-15, P2):** N9's comment drops the dated lab note, N10's
+CoreLib R2R comment is neutralized (branch and fork now agree), N1's LTTng guard
+comment mentions OpenHarmony; the S1c `ElfSigner` is hardened (EI_DATA check,
+`SHA256.HashData`, size guard), the dead `ohos` RID mapping is removed, and the
+aspnetcore knowledge base is refreshed.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
