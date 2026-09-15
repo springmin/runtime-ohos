@@ -43,13 +43,8 @@
       <File Include="$(_ILCompilerFilesRoot)*" TargetPath="tools" Exclude="$(_ILCompilerFilesRoot)netstandard\*" />
     </ItemGroup>
 
-    <!--
-      The device (OpenHarmony) provides only LLVM libc++ (libc++_shared.so); the NativeAOT C++
-      runtime libs link GNU libstdc++.so.6 + libgcc_s.so.1, which the device lacks. When the
-      OHOS_CXXRUNTIME_DIR bundle (aarch64 musl builds of those libs) is provided, ship them
-      alongside ilc so device-side AOT works out of the box; otherwise the files are omitted
-      and the device-side C++ runtime has to come from the app's own packaging.
-    -->
+    <!-- The device ships LLVM libc++ only, but the NativeAOT runtime links libstdc++/libgcc_s;
+         ship the aarch64 musl builds alongside ilc when OHOS_CXXRUNTIME_DIR is provided. -->
     <ItemGroup Condition="'$(TargetsOpenHarmony)' == 'true' and '$(PackageTargetRuntime)' == 'openharmony-arm64' and '$(OHOS_CXXRUNTIME_DIR)' != ''">
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libstdc++.so.6" TargetPath="tools" />
       <File Include="$(OHOS_CXXRUNTIME_DIR)/libgcc_s.so.1" TargetPath="tools" />

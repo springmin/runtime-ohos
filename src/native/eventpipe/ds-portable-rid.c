@@ -13,8 +13,7 @@
 #if defined(TARGET_ANDROID)
 #define PORTABLE_RID_OS "linux-bionic"
 #elif defined(TARGET_OPENHARMONY)
-/* Follows the RID-graph OS segment (like android -> 'linux-bionic' above):
-   OpenHarmony's RID OS segment is 'openharmony'. */
+/* Follows the RID-graph OS segment (like android -> 'linux-bionic' above). */
 #define PORTABLE_RID_OS "openharmony"
 #elif defined(TARGET_LINUX_MUSL)
 #define PORTABLE_RID_OS "linux-musl"

@@ -55,8 +55,7 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
       <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
-      <!-- crossgen2's TargetOS whitelist has no openharmony; OHOS R2R images are
-           Linux ABI, so remap at compile level (same as crossgen-corelib.proj). -->
+      <!-- crossgen2 has no openharmony TargetOS; OHOS R2R images are Linux ABI. -->
       <_CrossGen2TargetOS>$(TargetOS)</_CrossGen2TargetOS>
       <_CrossGen2TargetOS Condition="'$(TargetOS)' == 'openharmony'">linux</_CrossGen2TargetOS>
     </PropertyGroup>
@@ -174,12 +173,8 @@
     </ItemGroup>
   </Target>
 
-  <!--
-    OpenHarmony keeps IL pdb files under $(CoreCLRArtifactsPath)\IL because its runtime pack
-    is not ReadyToRun. _SymbolFilesToPackage derives pdb paths from ReferenceCopyLocalPaths,
-    which can yield an IL pdb whose FileName already exists in FilesToPackage (as a runtime pack asset
-    under runtimes/<rid>/lib). Drop the IL-directory duplicates so NuGet Pack does not raise NU5118.
-  -->
+  <!-- With OpenHarmony runtime packs staying IL-only, _SymbolFilesToPackage can yield an IL
+       pdb that collides with the runtimes/<rid>/lib pdb (NU5118); drop the IL duplicates. -->
   <Target Name="RemoveDuplicateSymbolFiles"
           AfterTargets="_FindSymbolFilesForSharedFrameworkFiles"
           Condition="'$(PublishReadyToRun)' != 'true' and '$(TargetsOpenHarmony)' == 'true'">

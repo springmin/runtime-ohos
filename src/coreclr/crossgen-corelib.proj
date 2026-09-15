@@ -22,9 +22,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- OpenHarmony: keep the in-tree CoreLib IL-only for now; the R2R image is
-         produced by the SDK build pipeline outside the runtime build. The in-build
-         crossgen2 handles this target, so this default can be revisited. -->
+    <!-- OpenHarmony CoreLib stays IL-only in the runtime build; the R2R image is produced
+         by the SDK build. The default is overridable from the command line. -->
     <PublishReadyToRun Condition="'$(TargetsOpenHarmony)' == 'true'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
@@ -154,10 +153,8 @@
     <Message Importance="High"
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
-    <!-- crossgen2's TargetOS whitelist only knows base OS names; OpenHarmony R2R images
-         are Linux ELF (musl ABI, JIT-runtime compatible), so remap openharmony to linux at
-         compile level, consistent with the NativeAOT SingleEntry openharmony->_targetOS=linux
-         mapping and the sfxproj PublishReadyToRun linux treatment. -->
+    <!-- crossgen2 only knows base OS names; OpenHarmony R2R images are Linux ELF, so pass
+         the linux token (same mapping as the NativeAOT SingleEntry targets and the sfxproj). -->
     <PropertyGroup>
       <_CrossGenTargetOS>$(TargetOS)</_CrossGenTargetOS>
       <_CrossGenTargetOS Condition="'$(TargetOS)' == 'openharmony'">linux</_CrossGenTargetOS>

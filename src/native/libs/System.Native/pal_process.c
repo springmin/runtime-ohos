@@ -294,7 +294,7 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
 #if HAVE_CLOSE_RANGE && !defined(TARGET_OPENHARMONY)
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     // TARGET_OPENHARMONY: the OpenHarmony seccomp policy traps close_range (SIGSYS);
-    // OpenHarmony 7.1 is expected to relax it — revisit then. Use the fallback meanwhile.
+    // use the fallback until the syscall is allowed.
     if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
     {
         SetCloexecForAllFdsFallback();

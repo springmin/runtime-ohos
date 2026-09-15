@@ -294,11 +294,9 @@ target_link_libraries(
     ${NATIVE_LIBS}
 )
 
-# Force the whole runtimeinfo archive into the link. CMake's WHOLE_ARCHIVE
-# generator expression is the cross-platform way (Windows -> /WHOLEARCHIVE,
-# Apple -> -force_load, GNU/lld -> --whole-archive). The OpenHarmony NDK ships a
-# linker (lld 15) that CMake 4.x rejects for the CXX link language, so OHOS uses
-# the traditional --whole-archive flag instead.
+# Force the whole runtimeinfo archive into the link. CMake's WHOLE_ARCHIVE generator
+# expression rejects the OpenHarmony NDK linker (lld 15), so use the traditional
+# --whole-archive flag there instead.
 if(CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
 else()

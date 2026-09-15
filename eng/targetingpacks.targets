@@ -50,11 +50,8 @@
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
                              Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
-    <!-- Mono-labelled runtime packs cover the platforms Mono actually ships for.
-         OpenHarmony is CoreCLR+NativeAOT only (see eng/Subsets.props TargetsOpenHarmony
-         DefaultSubsets) - no Microsoft.NETCore.App.Runtime.Mono.openharmony-* packs exist,
-         so openharmony RIDs must NOT be listed here. If Mono-on-OHOS is ever enabled,
-         add the RIDs back together with the Mono pack output (and Subsets change). -->
+    <!-- OpenHarmony is CoreCLR+NativeAOT only, so openharmony RIDs must not be listed on
+         the Mono-labelled runtime pack. -->
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
@@ -87,10 +84,8 @@
                         Crossgen2PackVersion="$(ProductVersion)"
                         Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
                         Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
-    <!-- SDK-shipped KnownAppHostPack for this TFM lists only official RIDs
-         (openharmony is runtime-specific); replace it with the local one below
-         so openharmony-* apphost resolution works on clean restores. The
-         local list carries every official RID plus openharmony. -->
+    <!-- The SDK-shipped apphost pack lists only official RIDs; replace it with the local
+         list (official RIDs plus openharmony) so clean restores resolve openharmony. -->
     <KnownAppHostPack Remove="$(LocalFrameworkOverrideName)"
                       Condition="'$(UseLocalAppHostPack)' == 'true'" />
     <KnownAppHostPack Include="$(LocalFrameworkOverrideName)"
@@ -123,10 +118,9 @@
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <!-- OpenHarmony only: override the runtime pack for the target RID with the local
-           bootstrap build. Host tools (linux-x64 etc.) must resolve the host runtime
-           pack from NuGet (SDK version) instead of the OHOS bootstrap lib dir, which
-           does not exist on clean hosts. -->
+      <!-- OpenHarmony only: use the local runtime pack for the target RID; host tools
+           resolve their pack from NuGet (the OHOS bootstrap lib dir does not exist on
+           clean hosts). -->
       <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
                            Condition="'$(TargetsOpenHarmony)' == 'true' and
                                       '$(LocalRuntimePackDir)' != '' and

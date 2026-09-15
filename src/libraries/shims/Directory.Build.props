@@ -4,9 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
-    <!-- openharmony compiles as a linux/unix flavor (musl libc); no
-         net11.0-openharmony TFM platform exists. Mapping: see
-         src/libraries/Directory.Build.props (LibrariesOpenHarmonyShimsTfm). -->
+    <!-- No -openharmony TFM: compile in the unix group (LibrariesOpenHarmonyShimsTfm). -->
     <TargetFramework Condition="'$(TargetOS)' == 'openharmony'">$(LibrariesOpenHarmonyShimsTfm)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- By default make shims compile against reference assemblies. -->
