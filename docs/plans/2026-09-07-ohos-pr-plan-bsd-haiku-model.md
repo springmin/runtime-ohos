@@ -180,6 +180,12 @@ and the strip/re-sign paths.
 `upload_release=false`) succeeded end to end, confirming the net472 signer fix
 and the P0/P1/P2 changes build cleanly.
 
+**CI failure + fix (2026-09-15):** run `34943908275` failed CA1418 in
+`test/dotnet-aot.Tests` (it imports the dotnet-aot source list, so it compiles
+`OpenHarmonyEnvironmentDefaults.cs`, but lacked the `SupportedPlatform` item);
+fixed in sdk `ff67bd67bc` and folded into the S1b branch
+(`pr/ohos-sdk-sandbox` `7ac75024d3`); re-run `35030612240`.
+
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
 `dotnet selfsign` CLI (see the SDK section), the stock-crossgen2 overlay/PGO CI
