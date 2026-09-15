@@ -175,7 +175,7 @@
 
   <!-- With OpenHarmony runtime packs staying IL-only, _SymbolFilesToPackage can yield an IL
        pdb that collides with the runtimes/<rid>/lib pdb (NU5118); drop the IL duplicates. -->
-  <Target Name="RemoveDuplicateSymbolFiles"
+  <Target Name="_RemoveDuplicateSymbolFiles"
           AfterTargets="_FindSymbolFilesForSharedFrameworkFiles"
           Condition="'$(PublishReadyToRun)' != 'true' and '$(TargetsOpenHarmony)' == 'true'">
     <ItemGroup>
