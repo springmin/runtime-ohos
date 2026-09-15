@@ -172,7 +172,9 @@ CoreLib R2R comment is neutralized (branch and fork now agree), N1's LTTng guard
 comment mentions OpenHarmony; the S1c `ElfSigner` is hardened (EI_DATA check,
 size guard — `SHA256.HashData` was reverted for the net472 leg), the dead `ohos`
 RID mapping is removed, and the
-aspnetcore knowledge base is refreshed.
+aspnetcore knowledge base is refreshed. Byte-level `GivenAElfSigner` tests now
+cover the descriptor layout, the signature digest, trailing-data preservation
+and the strip/re-sign paths.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
