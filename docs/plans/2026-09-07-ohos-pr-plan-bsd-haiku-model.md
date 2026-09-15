@@ -217,6 +217,20 @@ known platform); decision record:
 contract: the SDK does not set it; the install script persists a writable
 default in the shell profiles.
 
+**Prepared (2026-09-15):** S1a `pr/ohos-sdk-rids` `39b9eaa403` (5 files
++5192/-4, based on `upstream/main` `530aaa51fa`): the two
+`eng/*.openharmony.json` graph snapshots, the `RidGraphOverride*` hook in
+`PublishRuntimeIdentifierGraphFiles`, the `GenerateBundledVersions` openharmony
+RID lists and the `ResolveReadyToRunCompilers` openharmony→linux mapping. The
+`RidGraphOverride*` hook is part of S1a (generic hook + data), not fork-local.
+S1b `pr/ohos-sdk-sandbox` `2464f1a835` + `4e1f331c99` (17 files +198/-15) is
+stacked on S1a: the sandbox defaults (`OpenHarmonyEnvironmentDefaults`, redist
+runtimeconfig baking, tests) and the SDK-build half (layout/installers/workloads/
+NativeAOT, package-version overrides). Fork-local bits are excluded (the
+`dotnet selfsign` CLI including the `dotnet.csproj` ElfSigner compile include,
+docs/scripts/CI); S1c (the signer) stays reviewer-gated. Drafts:
+`/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
+
 ### aspnetcore — unchanged
 
 | PR | Content |
