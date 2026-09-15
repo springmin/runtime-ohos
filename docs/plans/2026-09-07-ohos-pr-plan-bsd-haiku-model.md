@@ -202,6 +202,10 @@ fixed in sdk `ff67bd67bc` and folded into the S1b branch
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
 `dotnet selfsign` CLI (see the SDK section), the stock-crossgen2 overlay/PGO CI
 scripts, and the fork docs/scripts excluded by the inclusion audit.
+Fork-private paths were normalized on 2026-09-15: the sdk tooling now lives in
+`eng/ohos-install/` (docs in `documentation/ohos-install/`, the legacy shim in
+`eng/ohos-install/legacy/`) and the top-level `installonohos/` directory is gone
+(evidence `final-evidence/fork-local-migration-20260915.txt`).
 
 **Dropped from runtime:** `build-local-linux.sh`, `AGENTS.md` (audit: never
 upstream). illink `Microsoft.NET.ILLink.targets` (was in P3) is held out — it
