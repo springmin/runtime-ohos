@@ -51,6 +51,11 @@ Applied to S1b (`OpenHarmonyEnvironmentDefaults`); the item goes into the CLI
 projects that compile it (the SDK has no OHOS TFM, so the analyzer layer is
 handled by the item rather than by a TFM).
 
+**TMPDIR** is not set by the CLI either: the runtime reads it through
+`Path.GetTempPath()` and the sandbox host provides a writable value (the fork's
+install script persists it in the shell profiles), matching the Android
+app-host model (dotnet/android#9889).
+
 **方案 B — macOS-parity follow-up (after the platform is accepted upstream).**
 Add a public `OperatingSystem.IsOpenHarmony()` (implementation under
 `#if TARGET_OPENHARMONY`, ref registration in
@@ -85,8 +90,11 @@ does not trigger CA1418; use only where adding the item is impossible.
 2. Add `<SupportedPlatform Include="openharmony" />` to the CLI projects that
    compile the file (`src/Cli/dotnet`, `src/Cli/dotnet-aot`; shared
    `src/Cli/Directory.Build.props` if it exists).
-3. Resolve the `TMPDIR` default (hardcoded sandbox path must not go upstream —
-   decide between fork-local wrapper export vs a derived writable path).
+3. `TMPDIR`: the SDK does not set it. The runtime contract applies
+   (`Path.GetTempPath()` reads the host-provided `TMPDIR`, falling back to
+   `/tmp`), so the fork's install script persists a writable default in the
+   shell profiles; hardcoded sandbox paths stay out of the CLI (Android
+   precedent: the app host sets `TMPDIR`, dotnet/android#9889).
 4. Neutralize fork-context wording in the class summary ("the wrapper script
    previously exported these").
 5. Tests: make the platform decision injectable and add a unit test for the

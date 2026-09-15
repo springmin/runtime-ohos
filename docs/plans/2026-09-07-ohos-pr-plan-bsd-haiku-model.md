@@ -213,8 +213,9 @@ CI overlay/PGO/in-tree-A/B scripts are fork-local as well.
 `OperatingSystem.IsOSPlatform("openharmony")` plus
 `<SupportedPlatform Include="openharmony" />` (CA1418 workaround until OHOS is a
 known platform); decision record:
-`docs/plans/2026-09-15-ohos-platform-identity.md`. The `TMPDIR` default still
-needs a decision (hardcoded sandbox path).
+`docs/plans/2026-09-15-ohos-platform-identity.md`. TMPDIR follows the runtime
+contract: the SDK does not set it; the install script persists a writable
+default in the shell profiles.
 
 ### aspnetcore — unchanged
 
