@@ -151,8 +151,8 @@ N2 `pr/ohos-pal` (4+/4-), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
 (7+), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process` (5+/2-),
 N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (7+/2-),
 N10 `pr/ohos-crossgen-corelib` (16+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
-N12 `pr/ohos-aot-singleentry` (7+), N13 `pr/ohos-packs` (61+/5-),
-N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (28+/3-),
+N12 `pr/ohos-aot-singleentry` (7+), N13 `pr/ohos-packs` (62+/6-),
+N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (29+/3-),
 N16 `pr/ohos-console` (7+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
 `IgnoreStandardErrorWarningFormat` attribute; N10's comment is neutralized
@@ -160,6 +160,12 @@ for upstream. The fourteen `pr/ohos-infra`-based branches are rebase-verified
 clean onto the post-#132953 state
 (`final-evidence/preflight-rebase-20260914.txt`). Submission-ready PR texts
 (title/body/test): `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
+
+**Review-fix pass (2026-09-15):** N15 now defaults `LibrariesBinPlaceTfm` to
+`$(NetCoreAppCurrent)-$(TargetOS)` so non-OHOS platforms keep their binplace
+items; N13's runtime-pack override is scoped to `TargetsOpenHarmony` and the
+ILCompiler package comment/predicate are corrected. N15 re-verified CLEAN onto
+latest `upstream/main` (`22b309484bf`).
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
@@ -186,11 +192,15 @@ include and `IsElf64` visibility) — it shares the S1c signer source but the CL
 surface is not proposed upstream; revisit only if S1c lands upstream. The
 CI overlay/PGO/in-tree-A/B scripts are fork-local as well.
 
+**Review-fix pass (2026-09-15):** the layout workload-manifest guard stays live
+(on other platforms) with an OpenHarmony exemption; `OpenHarmonyCodesign` and the
+`selfsign` CLI guard directory enumeration (read-only sandbox directories).
+
 ### aspnetcore — unchanged
 
 | PR | Content |
 |---|---|
-| A1 | NativeAOT-for-ohos disable (Directory.Build.props), Dependencies.props ohos RIDs, App.Ref/Runtime suppressions (~5 files) |
+| A1 | NativeAOT-for-ohos disable keyed on the RID (Directory.Build.props), openharmony RID lists (`Dependencies.props` + BundledTool lists, arm64/x64), E2E `PublishAot` guards (NativeAotTestApp, PackageConsumer.App) — 5 files |
 
 ### CI leg — LAST (OpenBSD rule 6)
 
