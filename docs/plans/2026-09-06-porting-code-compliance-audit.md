@@ -64,6 +64,7 @@ The `UsePThreadMutexes` chain documents WHY each platform is excluded (macOS Ros
 
 ### 6. Docs / scripts / misc
 - Fork-local docs (docs/plans, documentation/ohos-install, installonohos) sit outside the conventional doc layout in sdk (FILE_MAP + update-docs skill expectations) — acceptable for fork-private material; would need index/memory sync only if merged into sdk upstream (not planned).
+- Resolved 2026-09-15: fork tooling moved to `eng/ohos-install/` (docs stay in `documentation/ohos-install/`; legacy shim in `eng/ohos-install/legacy/`) and the top-level `installonohos/` directory was removed; evidence `final-evidence/fork-local-migration-20260915.txt`.
 - Stale fork AGENTS.md files claim "zero OHOS code" (sdk root + aspnetcore root) — now misleading; recommend updating or annotating.
 - Scripts use `#!/usr/bin/env bash` + LF, matching repo style; no license headers needed on scripts.
 
