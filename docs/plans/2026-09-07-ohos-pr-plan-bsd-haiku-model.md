@@ -176,6 +176,10 @@ aspnetcore knowledge base is refreshed. Byte-level `GivenAElfSigner` tests now
 cover the descriptor layout, the signature digest, trailing-data preservation
 and the strip/re-sign paths.
 
+**CI verification (2026-09-15):** run `34933398693` (runtime+aspnetcore+sdk,
+`upload_release=false`) succeeded end to end, confirming the net472 signer fix
+and the P0/P1/P2 changes build cleanly.
+
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
 sdk `OHOS_IN_TREE_R2R` CI mode (in-tree R2R A/B, archived 2026-09-14), the
 `dotnet selfsign` CLI (see the SDK section), the stock-crossgen2 overlay/PGO CI
