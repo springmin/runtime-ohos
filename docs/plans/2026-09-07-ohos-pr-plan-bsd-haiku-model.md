@@ -170,7 +170,8 @@ latest `upstream/main` (`22b309484bf`).
 **Cleanup pass (2026-09-15, P2):** N9's comment drops the dated lab note, N10's
 CoreLib R2R comment is neutralized (branch and fork now agree), N1's LTTng guard
 comment mentions OpenHarmony; the S1c `ElfSigner` is hardened (EI_DATA check,
-`SHA256.HashData`, size guard), the dead `ohos` RID mapping is removed, and the
+size guard — `SHA256.HashData` was reverted for the net472 leg), the dead `ohos`
+RID mapping is removed, and the
 aspnetcore knowledge base is refreshed.
 
 **Fork-local, never in PRs:** the `OpenHarmonyInTreeR2R` sfxproj gate and the
