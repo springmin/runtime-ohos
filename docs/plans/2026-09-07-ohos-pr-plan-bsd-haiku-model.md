@@ -223,6 +223,13 @@ default in the shell profiles.
 |---|---|
 | A1 | NativeAOT-for-ohos disable keyed on the RID (Directory.Build.props), openharmony RID lists (`Dependencies.props` + BundledTool lists, arm64/x64), E2E `PublishAot` guards (NativeAotTestApp, PackageConsumer.App) — 5 files |
 
+**Prepared (2026-09-15):** A1 `pr/ohos-aspnet-rids` `b7070c3748`, based on
+latest `upstream/main` (`7b520eb5d3`), 5 files +21/-4. `openharmony-arm` is
+dropped from `SupportedRuntimeIdentifiers` (the port ships x64/arm64 only) and
+upstream's `fc95d7417c` NativeAotTestApp `DotNetBuild` line is preserved. The
+fork's `feature/openharmony` applies the same arm removal and comment sync
+(`4faef6a691`). Draft in `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
+
 ### CI leg — LAST (OpenBSD rule 6)
 
 A `runtime (Build linux-ohos-arm64 ...)` leg is planned only after N1-N16 are
