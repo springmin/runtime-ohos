@@ -231,6 +231,17 @@ NativeAOT, package-version overrides). Fork-local bits are excluded (the
 docs/scripts/CI); S1c (the signer) stays reviewer-gated. Drafts:
 `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
 
+**Branch audit + rehearsal (2026-09-15):** all 17 prepared branches are pushed
+and match the recorded tips; the contamination scan is clean. `upstream/main`
+moved to `8f610270d37` during the audit; #132953's diff still applies CLEAN onto
+it and all 15 held branches rebase CLEAN onto the simulated post-merge main
+(N16 onto the rebased N15, N13 from the old upstream tip); evidence
+`final-evidence/post-merge-rebase-rehearsal-20260915.txt` +
+`pr-branches-audit-20260915.txt`. The sdk S1a/S1b branches rehearse CLEAN onto
+`aeb6acf36a`. Finding: #132953's title still says "linux-ohos" while the body
+and code use the final `openharmony` naming (retitle recommended; title edits
+do not reset the approval).
+
 ### aspnetcore — unchanged
 
 | PR | Content |
