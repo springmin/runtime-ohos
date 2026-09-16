@@ -3,7 +3,9 @@
 W6 packages the workload for delivery and wires it into the fork's SDK install/build flow.
 
 ## Workload bundle
-- `ohos-workload/scripts/pack-workload-bundle.sh` -> `dist/ohos-workload-<version>.tar.gz`
+- `ohos-workload/scripts/pack-workload-bundle.sh` -> `dist/openharmony-workload-<version>.tar.gz`
+  (post-rename token, matching `dotnet-sdk-*-openharmony-arm64.tar.gz`; the legacy
+  `ohos-workload-*.tar.gz` name is still accepted by the installers)
   containing the manifest, `feed/*.nupkg` (six packs, ~26 MB) and
   `templates/install-ohos-workload.sh`.
 - The bundle installer derives the SDK feature band from the installed SDK
