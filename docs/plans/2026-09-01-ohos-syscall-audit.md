@@ -165,3 +165,34 @@ Two further facts recorded here so they are not re-litigated:
   concern; a capability probe or a `getdents64` enumeration of
   `/proc/self/fd` are tracked as separate follow-ups, not part of the OHOS
   guard PR.
+
+## Addendum 4 (2026-09-16): MAUI-stack syscall probe (device-verified)
+
+Probe: `/data/storage/el2/base/tmp/opencode/syscall-probe/maui-syscall-probe.c`
+(fork-per-syscall; SIGSYS = trapped by seccomp, EPERM = blocked by policy; run in the
+device shell sandbox, i.e. the environment the .NET runtime currently runs in).
+Raw output: `final-evidence/maui-ohos-syscall-probe-20260916.txt`.
+
+| class | syscalls |
+|---|---|
+| ALLOWED | `timerfd_create`, `eventfd2`, `epoll_create1`, `pidfd_open`, `process_vm_readv`, `setpriority`, `mincore`, `madvise(DONTNEED)`, `fallocate(memfd)`, `ftruncate(memfd)`, `msync`, `faccessat2`, `getrandom`, `socket(AF_UNIX)`, `socket(AF_NETLINK)`, `inotify_init1`, `prlimit64`, `open(/dev/binder)`, `open(/proc/self/maps)`, `open(/proc/net/dev)`, `open(/sys/devices/system/cpu)` |
+| TRAPPED (SIGSYS) | `get_mempolicy`, `close_range`, `rseq`, `openat2`, `epoll_pwait2` |
+| EPERM (blocked) | `signalfd4`, `io_uring_setup`, `pidfd_getfd`, `ptrace(TRACEME)`, `perf_event_open`, `sched_setaffinity`, `sched_getaffinity`, `mlock`, `statx`, `socket(AF_VSOCK)`, `sendmmsg`, `getcpu`, `open(/dev/vsync)`, `open(/dev/mali0)`, `open(/dev/dma_heap/system)`, `open(/dev/dri/renderD128)`, `open(/sys/class/net)` |
+
+Notes for the MAUI port:
+- The .NET side (JIT/BCL/net/io) needs **no new syscall**: `rseq`/`clone3`/`openat2`/
+  `signalfd4`/`epoll_pwait2`/`io_uring_setup` all have musl/runtime fallbacks, and
+  `get_mempolicy`/`close_range` are already handled (Addenda 1-3).
+- Graphics/window nodes (`/dev/dri/*`, `/dev/dma_heap/*`, `/dev/mali0`, `/dev/vsync`)
+  are blocked in the *shell* sandbox but are normal app capabilities: the UI host must
+  run **inside an OHOS app process (NAPI module)**, which is the planned MAUI host
+  model; re-verify these inside the app in P0.
+- Optional relaxations to request from the OHOS side, by actual MAUI impact:
+  1. `sendmmsg` (EPERM) — batched UDP sends; verify whether .NET sockets hit it.
+  2. `sched_getaffinity` (EPERM) — `Environment.ProcessorCount` precision; verify the
+     runtime fallback on device.
+  3. `mlock` (EPERM) — only for locked/GC hard-limit features.
+  4. `ptrace` (+ `pidfd_getfd`, `perf_event_open`) — debugger/diagnostics only;
+     live-reload/`dotnet-watch` do not need it.
+- `open(/sys/class/net)` is EPERM but `AF_NETLINK` and `/proc/net/dev` work, so
+  `getifaddrs`/interface enumeration stays functional.
