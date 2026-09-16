@@ -196,3 +196,30 @@ Notes for the MAUI port:
      live-reload/`dotnet-watch` do not need it.
 - `open(/sys/class/net)` is EPERM but `AF_NETLINK` and `/proc/net/dev` work, so
   `getifaddrs`/interface enumeration stays functional.
+
+## Addendum 5 (2026-09-16): authoritative app-domain seccomp policy vs the shell probe
+
+Source: OpenHarmony `startup_init` `base/startup/init/services/modules/seccomp/seccomp_policy/`
+(`openharmony/startup_init@master`; copies in
+`final-evidence/openharmony-app*.seccomp.policy`). The policy applies to **all application
+processes** (`app.seccomp.policy`, default action `TRAP`, plus the app baseline blocklist).
+
+| our shell-domain probe said | app-domain policy says |
+|---|---|
+| EPERM: `sendmmsg`, `sched_getaffinity`/`setaffinity`, `mlock`, `signalfd4`, `getcpu`, `statx`, `ptrace`, `process_vm_readv`, `perf_event_open`, `io_uring_setup` | **ALLOWED** in `@allowList` (except `io_uring_setup`, which is absent) |
+| TRAPPED: `get_mempolicy`, `close_range`, `rseq`, `openat2`, `epoll_pwait2` | absent from the allowlist as well (`get_mempolicy`/`close_range` already handled; the rest have musl/runtime fallbacks) |
+
+Consequences:
+- The .NET/MAUI syscall surface needs **no relaxation requests**: every syscall MAUI's .NET
+  side or UI stack needs is in the app allowlist (`ioctl`/`futex` are even `@priority`,
+  covering the graphics stack), and the app baseline blocklist only contains
+  mount/module/uid/hostname/reboot-style calls.
+- The device probe's EPERM/TRAP results reflect the **shell domain** (`u:r:hishell_hap:s0`,
+  read from `/proc/self/attr/current`), which is more restrictive than the app domain —
+  shell results must not be used to conclude app-process restrictions.
+- `/dev/dri/*`, `/dev/dma_heap/*`, `/dev/mali0`, `/dev/vsync` access is a SELinux-domain
+  (app capability) matter, not seccomp; P0 must re-verify inside a real hap.
+- Device-side hap verification is currently blocked here: `hdc list targets` returns
+  `Operation restricted by the organization` (MDM policy) and the on-device SDK ships no
+  `app_packing_tool`/`es2abc`, so a test hap cannot be built/installed locally. Needs an
+  unrestricted device or a host-side DevEco/full-SDK build.

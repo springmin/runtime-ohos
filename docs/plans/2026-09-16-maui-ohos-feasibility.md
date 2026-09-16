@@ -131,3 +131,28 @@ Tizen 切片的分布：`src/Controls/src/Core` 99、`src/Core/src/Platform` 60�
 - fork CI 的 OpenHarmony SDK 来源：`repo.huaweicloud.com/openharmony/os/6.0.0.1-Release`
   （`eng/ohos-install/build/ohos-ci-env.sh`）；
 - 已有底座：runtime-ohos（CoreCLR/SDK）、apphost、R2R/AOT、ELF 签名与 release 流水线。
+
+## 7. 附：syscall 与沙箱实测（2026-09-16）
+
+- **设备侧探针**（fork-per-syscall，自签后运行；源码/原始输出见
+  `final-evidence/maui-ohos-syscall-probe-20260916.{c,txt}`）：
+  shell 域（`u:r:hishell_hap:s0`）下 `timerfd/eventfd/epoll/pidfd/inotify/AF_UNIX/AF_NETLINK/
+  memfd/mmap/madvise/getrandom/...` 可用；`get_mempolicy/close_range/rseq/openat2/
+  epoll_pwait2` 被 trap；`signalfd4/io_uring/sched_affinity/mlock/statx/getcpu/sendmmsg/
+  ptrace/process_vm_readv/perf_event_open` 及图形设备节点（`/dev/dri`、`/dev/dma_heap`、
+  `/dev/mali0`、`/dev/vsync`）EPERM。
+- **权威对照**：OpenHarmony `app.seccomp.policy`（对所有应用进程生效，默认 TRAP）的
+  `@allowList` **包含**上述全部 EPERM 项（`ioctl`/`futex` 为 `@priority`；`sendmmsg`/
+  `sched_affinity`/`mlock`/`signalfd4`/`getcpu`/`statx`/`ptrace`/`process_vm_readv`/
+  `perf_event_open` 均列名），app 基线黑名单只有 mount/module/uid/hostname/reboot 类。
+  ⇒ **MAUI 托管侧与 UI 侧都不需要申请任何 syscall 放宽**；shell 探针的 EPERM 不代表
+  app 域（详见 `2026-09-01-ohos-syscall-audit.md` Addendum 4/5）。
+- **.NET 功能实测**（设备 `~/.dotnet` SDK）：`ProcessorCount=20`（与内核 0-19 一致）、
+  `GetCurrentProcessorId` 正常、UDP 同步/异步 1500 包与 TCP loopback 全通；运行时源码
+  `src/` 中**无 `sendmmsg` 使用** ⇒ `sendmmsg`/`sched_getaffinity` 无需放宽。
+- **UI 设备节点**：属 SELinux 域能力（每个 OHOS 应用都能渲染），须在**真实 hap 的 app
+  进程内**复验；本次设备上受限：`hdc list targets` 返回
+  `Operation restricted by the organization`（组织策略），且本机 SDK 无
+  `app_packing_tool`/`es2abc`，无法本地构建/安装测试 hap。
+  P0 复验前置条件：可安装应用的设备（或 OpenHarmony 开发板）+ 完整 OHOS SDK 工具链
+  （打包工具 + ArkTS 编译器）；签名可用 `hap-sign-tool` 自签 profile（工具已具备）。
