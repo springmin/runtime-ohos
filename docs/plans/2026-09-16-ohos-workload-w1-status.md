@@ -38,6 +38,15 @@ scripts/env.sh                   exports DOTNETSDK_WORKLOAD_MANIFEST_ROOTS / _PA
 ## Verified
 - **First successful platform-TFM build** (device SDK untouched, env-root mounting only):
   `dotnet build` → `hello-lib -> bin/Debug/net11.0-openharmony20.0/hello-lib.dll` (Build succeeded).
+- **`dotnet publish -r openharmony-arm64`** succeeds for both API levels (20.0 and 26.0):
+  197 files (183 managed DLLs, 12 native `.so`, no apphost, `Microsoft.OpenHarmony.dll`
+  included); runtimeconfig lists `includedFrameworks = [Microsoft.NETCore.App,
+  Microsoft.OpenHarmony]`.
+- **End-to-end run on device**: the published self-contained app executes on the
+  OpenHarmony device (CoreCLR starts, BCL + the platform assembly load, exit 0). It
+  writes its results to a file because `System.Console` is not supported on OpenHarmony.
+  The device runtime is the pre-rename `-ohos` build, so it reports `RID=ohos-arm64`
+  and `IsOpenHarmony=False`; the `-openharmony` refresh will flip both.
 - Both band forms (`11.0.100` for release SDKs, `11.0.100-rc.1` for the preview SDK) are present;
   the band directory name must match the SDK feature band.
 
@@ -49,11 +58,14 @@ scripts/env.sh                   exports DOTNETSDK_WORKLOAD_MANIFEST_ROOTS / _PA
 | NETSDK1140 | the platform pack must declare `SdkSupportedTargetPlatformVersion` items | pack `Sdk/Sdk.targets` |
 | MSB4018 (NRE in `ResolveTargetingPackAssets`) | targeting pack requires `data/FrameworkList.xml`; every `<File>` needs `AssemblyName`, `PublicKeyToken` (non-null; empty for unsigned), `AssemblyVersion`, `FileVersion` | ref pack |
 | — | `KnownFrameworkReference` with a version-only `TargetFramework` and platform-gated definition resolves the ref/runtime packs for the platform TFM | pack `Sdk/Sdk.targets` |
+| NETSDK1083 | the SDK's bundled RID graph has no openharmony RIDs yet; the workload ships its own graphs (from the fork) and sets `RuntimeIdentifierGraphPath` | pack `Sdk/Sdk.targets` + `ridgraph/` |
+| NETSDK1082 | the built-in `Microsoft.NETCore.App` KFR lists `ohos-arm64` but not `openharmony-arm64`; the platform KFR `Update` adds the RID and the workload alias `Microsoft.NETCore.App.Runtime.openharmony-arm64` provides the BCL runtime pack | `Sdk.targets` + manifest |
+| NETSDK1067 | self-contained Exe without apphost: add openharmony to the apphost-less RID set via `_RuntimeIdentifierUsesAppHost=false` (the .hap host replaces the apphost) | `Sdk/Sdk.targets` |
+| — | runtime packs need `data/RuntimeList.xml`; the platform runtime pack carries only the platform assembly, the BCL pack carries the runtime | both runtime packs |
 
 ## In progress / next
-- `dotnet publish -r openharmony-arm64` validation: the released runtime pack is being
-  fetched (resumable + sha256 `b9fff88a…`, background `w1-finish.sh`), then laid out and
-  the publish output inspected.
+- Pack binaries are laid out on demand by `scripts/prepare-packs.sh` (sha256-verified
+  download of the released runtime pack), consistent with the fork's artifact hygiene.
 - **W2**: NAPI host (hostfxr/CoreCLR), ArkTS shell template, and the MSBuild
   `publish → .hap` target (reusing the validated `ohos_packing_tool` + `hap-sign-tool` chain
   and the `maui-ohos-p0` probe project as the template).
