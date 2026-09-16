@@ -42,7 +42,25 @@ package itself keeps using `hap-sign-tool` with the OpenHarmony test material
   host library; `verify-app` success. Installation/launch validation is still pending an
   install-eligible device path.
 
-## Next (W4)
+## W4 progress (MAUI wiring, UI page path, NAPI fixes)
+- **MAUI wiring**: `maui-openharmony` now extends `[ "maui-blazor", "openharmony" ]`
+  (`WorkloadManifest.in.json`), matching the `maui-android`/`maui-ios` pattern;
+  `OpenHarmonyTargetFrameworkVersion` follows the build SDK's API level (26.0 default,
+  CI override 20.0). The platform pack gained `Sdk/AutoImport.props`, which is what the
+  MAUI repo's install detection probes for. Validated by staging both manifests into a
+  temporary manifest root and restoring a real project: the SDK resolves the workload
+  graph (`maui-openharmony` -> `openharmony`) and restores an OHOS project; the MAUI SDK
+  pack import only fails because the MAUI packs themselves are not installed yet.
+- **UI page path**: `templates/ets/pages/Index.ets` (ArkTS declarative + `ContentSlot`)
+  and `templates/ets/pages/README.md` document the split between the headless shell
+  (es2abc, works today) and the UI build (ets-loader/hvigor or DevEco). The SDK on the
+  device does ship `ets-loader` (webpack-based) and `es2abc`, but driving the webpack
+  pipeline standalone is out of scope for now.
+- **NAPI fixes**: `startApp` now stores the app handle (lifecycle/node calls were
+  previously no-ops) and `setNodeContent` converts the ArkTS `NodeContent` through
+  `OH_ArkUI_GetNodeContentFromNapiValue` (the ArkUI NDK) instead of expecting a number.
+
+## Next (W5)
 - ArkUI page with `ContentSlot` (native nodes attached from the managed side) — the page
   source is ready in `templates/`, but the ArkTS declarative syntax needs the ets-loader
   toolchain (or DevEco) rather than `es2abc`.
