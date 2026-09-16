@@ -49,8 +49,17 @@
 
 ## 3. 关键决策点（建议值）
 
-1. **平台版本语义**：建议 `openharmony<API level>`（如 `openharmony14.0`），对齐 iOS 用 Xcode 版本的做法；
-   `SupportedOSPlatformVersion` 表示最低支持 API level。
+1. **平台版本语义（已核实数据，2026-09-16）**：采用 `openharmony<API level>`，对齐 iOS 的 Xcode 版本语义：
+   - **本机设备/SDK：API 26** — 设备 `const.ohos.apiversion=26`、`OpenHarmony-7.0.0.105`
+     （产品 HAD-W24/W32）；本机 SDK `ohos-sdk 26.0.0.18`（Beta），
+     `native/oh-uni-package.json`: `apiVersion "26" / platformVersion "26.0.0"`。
+   - **CI 构建用 NDK：API 20** — `ohos-ci-env.sh` 下载 `os/6.0.0.1-Release` 的
+     Public SDK `6.0.0.48 (API Version 20 Release)`（release notes），只提取 `native/`。
+   - 规则：`TargetPlatformVersion` = **编译用 SDK 的 API level**（iOS 同义），
+     `SupportedOSPlatformVersion` = 最低可运行 API level（暂定 20，随验证下探）；
+     设备（API 26）可运行 API 20 目标的应用。
+   - 版本带：`net11.0-openharmony20.0`（CI 公共 SDK）与 `net11.0-openharmony26.0`
+     （设备 Beta SDK）可并存，用 pack 名 + `alias-to` 承载（iOS 多版本带做法）。
 2. **绑定策略**：**NDK-first 薄 ref + 逐步生成绑定**。MAUI slice 用 NDK C API + NAPI 桥即可跑通，
    无需先绑定全量 ArkTS API；但 Ref 一旦公开就应"完整或明确标注子集+计划"（W3 的版本校验与 API diff 兜底）。
 3. **AOT/运行时**：CoreCLR（JIT + R2R）先行（现状），`PublishAot` 走 NativeAOT-for-OHOS（已有 ilc pack）；
