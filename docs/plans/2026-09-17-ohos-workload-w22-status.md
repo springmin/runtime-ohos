@@ -190,7 +190,38 @@ after arrange: root={0,48,1080,1872} page={0,48,1080,1872} nav={0,0,1080,1920}
 
 The demo hap gained a 30-item CollectionView above the scrollable list.
 
-## Next (W22-5)
+## W22-5 shapes, border, stepper, radio button, search bar
+
+| Handler | Notes |
+|---|---|
+| `OpenHarmonyShapeHandler` | one handler for every `IShapeView`: draws `IShape.PathForBounds(frame)` filled with `Fill` and stroked with `Stroke`, so `Rectangle`/`Ellipse`/`Line`/`Path`/`Polygon`/`Polyline`/`RoundRectangle` are all covered |
+| `OpenHarmonyBorderHandler` | strokes the border shape and arranges the content inside the padding (`Border.PresentedContent` reports the border itself, so the concrete `Content` is used) |
+| `OpenHarmonyStepperHandler` | drawn -/+ control; tapping a half steps the value by `Interval` |
+| `OpenHarmonyRadioButtonHandler` | drawn circle + dot with the button's content text |
+| `OpenHarmonySearchBarHandler` | entry-shaped search control sharing the soft-keyboard bridge |
+
+Also fixed on the way:
+- the content-arrange helper must not call `PlatformArrange` explicitly (MAUI calls it from
+  `Arrange`, and handlers that arrange their own content recursed through it);
+- the handler connector is null-safe;
+- hosting caches a failed native text-metrics probe, so layout outside a device never throws.
+
+Verification (headless):
+
+```
+[verify] shape Rectangle frame={24,688,60x60} pathPoints=4  fill=#FF4500
+[verify] shape Ellipse   frame={96,688,60x60} pathPoints=13 fill=#3CB371
+[verify] shape Line      frame={168,688,40x60} pathPoints=2 fill=null
+[verify] border frame={24,764,1032x35} inner={34,774,1012x15} text='inside border'
+[verify] stepper after +/+/- value=2 (virtual)
+[verify] radio after tap checked=True
+[verify] searchbar text='hello search' placeholder='search...'
+```
+
+The demo hap gained the shape row, a bordered label and a stepper/radio/search row
+(preview.12).
+
+## Next (W22-6)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
