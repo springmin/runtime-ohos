@@ -221,7 +221,31 @@ Verification (headless):
 The demo hap gained the shape row, a bordered label and a stepper/radio/search row
 (preview.12).
 
-## Next (W22-6)
+## W22-6 gestures, selection, transforms
+
+- `OpenHarmonyGestures` dispatches recognizers directly (`TapGestureRecognizer.SendTapped`,
+  `IPanGestureController` for pan) because MAUI's platform gesture managers are not part of
+  this slice; the renderer resolves the deepest gesture target on press and reports pan
+  started/running/completed.
+- Collection view items are tappable: tapping an item selects it (`SelectedItem` +
+  `SelectionChanged`) when the collection allows selection; item frames are arranged in the
+  collection's own coordinates.
+- View transforms are honoured while drawing (`Opacity`, `TranslationX/Y`, `Scale`,
+  `Rotation`), so MAUI animations become visible; `Describe()` reports them.
+- Touch slop (8px): a drag never counts as a tap, so scrolling/panning no longer fires
+  clicks or selection.
+
+Verification (headless):
+
+```
+[verify] tap gesture count=1
+[verify] pan gesture started=True totalY=50 completed=True
+[verify] collection tap selected='item 2'  (itemFrame={24,1123,1032x35})
+[verify] collection drag handled=True/True offset=220   (no selection during the drag)
+[verify] transform=(opacity=0.5 t=(0,12) scale=1.1 rot=10)
+```
+
+## Next (W22-7)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
