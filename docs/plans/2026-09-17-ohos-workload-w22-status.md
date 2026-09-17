@@ -115,7 +115,41 @@ ProgressBar ... progress=0.25        ActivityIndicator ... running=True
 The demo hap was rebuilt with the value-control row (checkbox/switch/slider/spinner +
 progress bar) next to the entry and the scrollable list.
 
-## Next (W22-3)
+## W22-3 navigation
+
+- `OpenHarmonyNavigationPageHandler` (`NavigationPage`): navigation bar (title from
+  `CurrentPage.Title`, back chevron when the stack is deeper than one page) and MAUI's
+  navigation pipeline (`INavigationPageController.PushRequested`/`PopRequested`/
+  `PopToRootRequested` -> `IStackNavigation.NavigationFinished(...)`), refreshing the bar and
+  requesting a redraw on `Pushed`/`Popped`.
+- `OpenHarmonyPageHandler` (`Page`, matched for all page subclasses): pages draw nothing, but
+  they must exist as handlers so MAUI arranges their content; the handler measures/arranges
+  `IContentView.PresentedContent` at the page frame.
+- `MauiOpenHarmonyExtensions.SliceHandlers`: explicit slice registry, because MAUI registers
+  its own platform-partial handlers for the same types; the host resolves exact type ->
+  interfaces -> base types.
+- Renderer: touches are offered to every platform view (the navigation bar owns the back
+  region), `ChildrenOf` yields a navigation page's current page, `Describe()` reports
+  `nav='<title>' back=<bool>`.
+
+Verification (headless, real Controls):
+
+```
+nav initial: NavigationPage frame=0,0,1080x1920 nav='' back=False
+  ContentPage frame=0,48,1080x1872        (page content below the bar)
+after push: NavigationPage ... nav='Page Two' back=True   stack=/Page Two
+nav down handled=True canGoBack=True inBack=True pressed=True
+back tap handled=True                    stack popped back to the root page
+```
+
+Fixed on the way: the touch walk only called `OnTouch` for views with a `Tap` callback, so
+the navigation bar's back button never received its touch.
+
+Known gap: `await PushAsync/PopAsync` does not complete on this slice yet - MAUI's stock
+pipeline also waits for a platform `NavigationView` handler to report its own completion. The
+navigation itself happens (stack, bar, rendered page); tracked for the navigation phase.
+
+## Next (W22-4)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
