@@ -274,7 +274,28 @@ Verification (headless):
 
 The demo hap is a TabbedPage: tab 1 keeps the component showcase, tab 2 runs the animations.
 
-## Next (W22-8)
+## W22-8 DatePicker and TimePicker
+
+- `OpenHarmonyDatePickerHandler`: the field opens an inline dropdown of the current date
+  +/- a week; selecting a row sets `DatePicker.Date`. (A calendar-style picker is a later
+  iteration; the dropdown machinery is shared with `Picker`.)
+- `OpenHarmonyTimePickerHandler`: half-hour slots; selecting sets `TimePicker.Time`.
+- Renderer fix: an open dropdown is re-resolved from the tree whenever the remembered one is
+  no longer visible, so consecutive dropdowns (list, date, time) each receive their touches.
+
+Verification (headless):
+
+```
+[verify] picker     popup visible=True items=3 -> selected index=2 text='gamma'
+[verify] datepicker open=True items=15 text='9/17/2026'
+[verify] datepicker after select date=2026-09-19 text='9/19/2026'   (row 9 = today + 2)
+[verify] timepicker time=15:00 text='15:00:00' popup=False          (row 30 = 15:00)
+```
+
+48 verification items run green in the harness; the demo hap shows a list picker, a date
+picker and a time picker in its value row.
+
+## Next (W22-9)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
