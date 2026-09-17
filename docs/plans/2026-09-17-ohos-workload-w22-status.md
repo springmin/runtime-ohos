@@ -84,7 +84,38 @@ not app- or slice-specific.
 - `hello-maui-app.hap` — 20.3 MB, `verify-app success`, built against preview.10 with the new
   ArkTS shell (`modules.ui.abc`, 14 716 bytes, official hvigor toolchain).
 
-## Next (W22-2)
+## W22-2 value controls
+
+Five handlers added, all drawn by the slice (no platform widgets needed):
+
+| Handler | Interaction |
+|---|---|
+| `OpenHarmonyCheckBoxHandler` | tap toggles `ICheckBox.IsChecked` -> `CheckedChanged` |
+| `OpenHarmonySwitchHandler` | tap toggles `ISwitch.IsOn` -> `Toggled`; track/thumb colours mapped |
+| `OpenHarmonySliderHandler` | drag sets the value through the Controls `Slider` (`DragStarted`/`DragCompleted`, min/max track + thumb colours) |
+| `OpenHarmonyProgressBarHandler` | track + progress fill |
+| `OpenHarmonyActivityIndicatorHandler` | rotating arc; the host advances a shared angle on platform frames while `NeedsAnimation` is true |
+
+Renderer: slider drag target (down/move/up), `HasAnimations(root)` driving the host frame loop,
+and `Describe()` now reports `checked`/`on`/`slider`/`progress`/`running`.
+
+Verification (headless, real Controls):
+
+```
+CheckBox frame=24,520,28x40 checked=False
+Switch frame=64,520,51x40 on=False
+Slider frame=127,520,220x40 slider=50/0-100
+ProgressBar ... progress=0.25        ActivityIndicator ... running=True
+[verify] checkbox CheckedChanged=True  -> checked=True (virtual=True)
+[verify] switch Toggled=True           -> on=True (virtual=True)
+[verify] slider DragCompleted value=100 -> virtual=100, platform=100
+[verify] indicator running=True needsAnimation=True
+```
+
+The demo hap was rebuilt with the value-control row (checkbox/switch/slider/spinner +
+progress bar) next to the entry and the scrollable list.
+
+## Next (W22-3)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
