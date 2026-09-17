@@ -245,7 +245,36 @@ Verification (headless):
 [verify] transform=(opacity=0.5 t=(0,12) scale=1.1 rot=10)
 ```
 
-## Next (W22-7)
+## W22-7 animations, Picker, TabbedPage
+
+- `OpenHarmonyTicker` + registered `IAnimationManager`: MAUI animations (`FadeTo`,
+  `TranslateTo`, `RotateTo`, ...) now run end to end (the renderer already applies the
+  resulting transforms).
+- `OpenHarmonyDispatcherProvider` is installed by the app host
+  (`DispatcherProvider.SetCurrent`): MAUI resolves a dispatcher for bindable objects created
+  outside the service scope, and `TabbedPage`/`MultiPage` constructors threw without it - a
+  real app-breaking bug on device, not just in tests.
+- `OpenHarmonyPickerHandler`: a field that opens an inline dropdown, drawn as an overlay by
+  the renderer and hit-tested before the rest of the tree; tapping a row sets `SelectedIndex`.
+- `OpenHarmonyTabbedPageHandler`: bottom tab bar with page titles; taps switch `CurrentPage`
+  and the newly selected page is connected and arranged immediately.
+- The content-arrange helper connects handlers for the chain it arranges, so pages that appear
+  later (tab switches, navigation pushes) are wired automatically.
+
+Verification (headless):
+
+```
+[verify] FadeTo completed opacity=0.25
+[verify] picker popup visible=True items=3
+[verify] picker selected index=2 text='gamma' popup=False
+[verify] tabbed titles=[One,Two] selected=0 current='One'
+[verify] tabbed after tap selected=1 current='Two'
+[verify] tabbed content frame={0,0,1080x1864}   (page above the 56px tab bar)
+```
+
+The demo hap is a TabbedPage: tab 1 keeps the component showcase, tab 2 runs the animations.
+
+## Next (W22-8)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
