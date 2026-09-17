@@ -149,7 +149,48 @@ Known gap: `await PushAsync/PopAsync` does not complete on this slice yet - MAUI
 pipeline also waits for a platform `NavigationView` handler to report its own completion. The
 navigation itself happens (stack, bar, rendered page); tracked for the navigation phase.
 
-## Next (W22-4)
+## W22-4 navigation completion + CollectionView
+
+### Navigation pipeline completed
+`NavigationPage` on non-iOS platforms routes pushes/pops through `MauiNavigationImpl` ->
+`SendHandlerUpdateAsync` -> `Handler.Invoke(nameof(IStackNavigation.RequestNavigation),
+NavigationRequest)` and only completes when the platform calls
+`IStackNavigation.NavigationFinished(newStack)`. The handler now does exactly that, so
+`await PushAsync(...)`/`await PopAsync(...)` complete (verified: `PushAsync completed`, the bar
+switches to "Page Two", the back tap pops back to the root).
+
+### Content arrangement for pages
+Pages and navigation pages have no platform layout, so arranging them is a no-op; previously
+the window content chain was arranged only because the host descended to the first view with a
+handler (a layout). With page handlers that shortcut broke (the layout never got a frame).
+`OpenHarmonyContentArrange` now walks the window content chain explicitly, subtracting the
+navigation bar and giving containers a frame of their own (hit-testing walks the parent
+chain), and `OpenHarmonyLayoutHandler` re-measures children whose desired size is still empty
+(handlers connected after the last measure pass).
+
+### CollectionView
+`OpenHarmonyCollectionViewHandler` materializes every `ItemTemplate` item into the platform
+view's `ViewChildren`, stacks them vertically and reuses the scroll machinery (clip/translate/
+drag) for the viewport; `OpenHarmonyHandlerConnector` (shared with the app host) wires the
+materialized views' handlers. Virtualization is not implemented yet (all items are created).
+
+Verification (headless, real Controls, page hosted in a NavigationPage):
+
+```
+after arrange: root={0,48,1080,1872} page={0,48,1080,1872} nav={0,0,1080,1920}
+[verify] entry tap handled(down=True, up=True) platformFocused=True virtualFocused=True
+[verify] scroll drag handled(down=True, move1=True, move2=True) -> offsetY=70
+[verify] collection children=20 first='item 0' last='item 19' content=822
+[verify] collection drag handled=True/True offset=220
+[verify] PushAsync completed
+[verify] after push: nav='Page Two' back=True    stack=/Page Two
+[verify] back tap handled=True                   stack popped to the root page
+[verify] checkbox CheckedChanged=True  switch Toggled=True  slider value=100
+```
+
+The demo hap gained a 30-item CollectionView above the scrollable list.
+
+## Next (W22-5)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
