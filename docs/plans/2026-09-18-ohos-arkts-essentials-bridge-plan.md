@@ -293,6 +293,23 @@ D: WebView on the ArkWeb NDK
 Note: the low-level `OH_Drawing_TextBlob` font API has no family setter, so the supported path is
 a loaded typeface (file-based) rather than a family name.
 
+## Batch C-1 verdict (2026-09-18): not implementable through this NDK
+
+Checked the installed SDK headers directly:
+
+* `inputmethod/inputmethod_controller_capi.h` exposes only
+  `OH_InputMethodController_Detach` - **no `Attach`** and no text-editor proxy registration in this
+  NDK, so an NDK-only soft-keyboard integration is not possible; the ArkTS input-method API (or
+  the shell TextInput bridge we already ship) remains the path for real typing.
+* `window_manager/oh_window.h` exposes window state APIs (status/navigation bar toggles, shown,
+  touchable, focusable, brightness, ...) but **no avoid-area / safe-inset query**, so safe-area
+  handling has to come from the ArkTS window API (`getWindowAvoidArea`).
+
+Conclusion: batches **C-2 (pickers) and D (WebView)** remain the only paths for those
+capabilities, and both require extending the ArkTS shell (a `Picker`/`Web` component exposed to
+the managed side through NAPI). Batch A (vibration/connectivity/permissions) and batch B
+(geolocation/fonts) are shipped and installed (preview.17).
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
