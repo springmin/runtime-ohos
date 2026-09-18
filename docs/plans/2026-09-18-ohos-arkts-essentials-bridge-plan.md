@@ -84,7 +84,24 @@ instance* hvigor actually runs rather than at the import syntax. Next step: comp
 loader/plugin versions used by a DevEco-generated project with this minimal project's
 `node_modules/@ohos/hvigor*`, then pin the same versions in `hvigorfile`/`hvigor-config`.
 
-## Verified working (2026-09-18, against the SDK)
+## Correction (2026-09-18, later the same day)
+
+The earlier "manual build resolves the modules" conclusion was **invalid**: the manual command
+pointed `DEVECO_SDK_HOME` at `~/arkts-build/26.0.0`, which does not exist, so hvigor fell back
+to its own default and the modules never resolved. Re-running with the real SDK root (and with
+the script's staged root, which *does* symlink `ets`, `js`, `native`, `previewer`, `toolchains`)
+reproduces the same `Cannot find name/namespace` errors, now together with the ArkTS strictness
+errors (`arkts-no-noninferrable-arr-literals`, `arkts-no-untyped-obj-literals`,
+`arkts-no-implicit-return-types`) that the strict forms must satisfy.
+
+So the current state is: **the source has been rewritten to satisfy ArkTS strict rules and to use
+the direct `@ohos.*` forms, but this toolchain does not surface the SDK declaration sets to the
+project's compilation**, which is an environment/toolchain issue rather than a source issue.
+Next investigation: instrument the loader's module resolution (or compare a
+DevEco-generated project's `hvigor-config.json5`/plugin pinning) - everything else in the port
+is independent of it.
+
+## Verified working (2026-09-18, against the SDK) - superseded
 
 Building the same page with the **project's own hvigor CLI** compiles the direct module forms:
 
