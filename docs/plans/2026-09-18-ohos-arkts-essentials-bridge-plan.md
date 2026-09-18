@@ -405,6 +405,16 @@ Gap item 1 is therefore complete: DisplayAlert, action sheets, prompts, swipe ge
 items, SwipeView and RefreshView all work and are covered by the harness. Remaining known limits
 are recorded above (Pointer hover internals, pinch multi-touch bridge, SwipeItem.Invoked).
 
+Gap item 2 has begun with the sensor kit: the host subscribes through the NDK sensor API
+(OH_Sensor_GetInfos/CreateInfos/Subscribe/Unsubscribe, sampling interval in nanoseconds) and
+forwards one reading per event to OpenHarmonyAccelerometer/OpenHarmonyGyroscope, which implement
+the MAUI Essentials interfaces (G units for the accelerometer, rad/s for the gyroscope, SensorSpeed
+mapped to intervals, ShakeDetected above 2.5g with a one second debounce). Install() replaces the
+Essentials defaults through their backing fields. Verified headlessly: the defaults are our types,
+IsSupported and Start/Stop run without throwing when the host library is missing; 114 checks.
+Readings require device hardware (validation checklist). The Notification Kit part of item 2 and
+the camera capture of item 3 remain.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
