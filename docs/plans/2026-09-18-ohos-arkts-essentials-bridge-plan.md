@@ -350,6 +350,18 @@ Remaining for the "everything" goal:
 * D WebView: a `Web` component inside the shell (ArkWeb) exposed through NAPI;
 * safe-area and accessibility: ArkTS window/accessibility APIs only (this NDK has neither).
 
+## Items 3 and 4 shipped (preview.21 / preview.22, 2026-09-18)
+
+* **WebView (preview.21)**: the shell embeds a hidden ArkWeb `Web` component; the managed
+  `OpenHarmonyWebViewHandler` drives it with show/hide/load/data/back commands and mirrors page
+  start into `IWebView.Navigating` (the Controls `Navigated` event is internal, logged).
+* **Safe area (preview.22)**: the shell reports `window.getWindowAvoidArea` through
+  `host.notifyAvoidArea`; the app host insets the arranged content so pages stay clear of system
+  bars. Accessibility semantics remain ArkUI-node-bound and stay documented as a limitation.
+
+Every remaining capability from the audit now has an implementation path: batches A/B/C-1 were
+native (NDK), and C-2/D/4 use the ArkTS shell through the same NAPI bridge pattern.
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
