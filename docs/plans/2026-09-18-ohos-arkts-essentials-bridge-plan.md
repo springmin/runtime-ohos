@@ -270,6 +270,19 @@ Genuinely ArkTS-only (still blocked without a DevEco toolchain or the ArkTS kit 
 implemented as **NDK-backed bridge calls** (host exports + managed wrappers), not as ArkTS kit
 imports. That removes the toolchain blocker from every item except ability-start.
 
+## Batch A shipped (preview.16, 2026-09-18)
+
+| Capability | Implementation |
+|---|---|
+| Vibration | `OH_Vibrator_PlayVibration` via `ohos_host_vibrate`; `IsSupported` = `OH_AT_CheckSelfPermission("ohos.permission.VIBRATE")` |
+| Connectivity | `OH_NetConn_HasDefaultNet` / `GetDefaultNet` / `GetNetCapabilities` -> None/Local/Internet/Unknown |
+| Permissions | `OH_AT_CheckSelfPermission` with a MAUI-permission -> OpenHarmony-name map (camera, microphone, location, storage, photos, vibrate, network state) |
+
+Remaining batches (same NDK approach, no ArkTS):
+B: Geolocation (`OH_Location_*`), custom fonts (`OH_Drawing_FontMgr*` + register-font + `IFontManager`)
+C: file/media pickers (`media_access_helper`), IME (`inputmethod_controller`), window insets (`oh_window`), accessibility (`native_interface_accessibility`)
+D: WebView on the ArkWeb NDK
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
