@@ -594,6 +594,22 @@ green while the investigation continues from these facts.
 PIXEL ASSERTIONS PASSED
 ```
 
+## W22-25 disabled-dim defect pinned to the canvas alpha path
+
+Frame diagnostics and probes settle both findings:
+
+* every child's virtual and platform frames agree and never overlap; the two buttons do **not**
+  share a platform view; the disabled button's platform view really points at the disabled
+  virtual view;
+* the renderer decides correctly: `enabled=False ve=False` is seen and its dim branch runs
+  (`Alpha` set to 0.5 before `Draw`), yet the painted colour is still the full `#3CB371`.
+
+So the renderer side is sound and the defect is in the **canvas alpha propagation** (substitute
+canvas / backend `ClearEffects` interaction) - the next, now very targeted, investigation step.
+The paint map (`y=180..370` at x=530) also shows the pressed colour persisting after the
+release because no render runs afterwards, which is expected for a compositor that only redraws
+on request.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
