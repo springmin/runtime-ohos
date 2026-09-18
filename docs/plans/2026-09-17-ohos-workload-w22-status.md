@@ -459,6 +459,18 @@ Verified headlessly: a press at the end of "abcdefghij" moves the caret to index
 extension of the harness assertion stays at length 0 (test-side signal ordering) and is
 tracked as a polish item.
 
+## W22-18 render canvas factory + selection highlight (partial)
+
+- `OpenHarmonyWindowRenderer.CanvasFactory` allows substituting the canvas; the
+  `Microsoft.OpenHarmony.Maui.Graphics` backend's primitives are virtual and its colour
+  properties readable so a managed rasterizer can capture the compositor's output. This is the
+  foundation for headless **pixel** assertions (the replacement for device rendering checks).
+- `CollectionView` tints the selected row (DodgerBlue 35% behind the item) and clears the
+  others; selection flows through both the mapper and the item tap.
+- WIP: the managed rasterizer (`test/headless-render`) is not finished (it needs the remaining
+  backend getters) and is gitignored until it builds; the harness assertion for the selection
+  highlight landed in the grid block (which has no selection mode) and needs moving.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
