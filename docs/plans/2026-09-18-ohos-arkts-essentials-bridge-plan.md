@@ -395,6 +395,16 @@ platform and ISwipeView, tap -> Clicked raised and row closed; 109 checks. Known
 SwipeItem.Invoked is not raised by that activation (Clicked/Command are); raising it needs the
 internal invoked hook. RefreshView remains from item 1d.
 
+RefreshView is implemented as well: the handler arranges its content like a content view and a
+downward pull past 60px (the renderer's Swipe track) flips the platform IsRefreshing and notifies
+the virtual view, so MAUI raises Refreshing and runs Command; a spinner arc is drawn while
+refreshing and clearing IsRefreshing stops it. Verified: pull -> platform/virtual True with exactly
+one command run, reset -> False; 112 checks.
+
+Gap item 1 is therefore complete: DisplayAlert, action sheets, prompts, swipe gestures, toolbar
+items, SwipeView and RefreshView all work and are covered by the harness. Remaining known limits
+are recorded above (Pointer hover internals, pinch multi-touch bridge, SwipeItem.Invoked).
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
