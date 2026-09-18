@@ -62,6 +62,28 @@ enabled (module `dependencies`/`syscap` + the SDK's kit index) - that is the fir
 every bridge below, and the reason the ArkTS sinks currently answer "unavailable" while the
 managed side already degrades deterministically.
 
+## SDK-level findings (2026-09-18)
+
+Checked directly against the installed SDK (`~/.harmonybrew/.../26.0.0.18_2`):
+
+* `ets/kits/@kit.SensorServiceKit.d.ts` does `import vibrator from '@ohos.vibrator';
+  export { sensor, vibrator };` and `ets/kits/@kit.UniversalKeystoreKit.d.ts` re-exports `huks`
+  - so the official kit import forms used here are correct;
+* `ets/build-tools/ets-loader/kit_configs/@kit.SensorServiceKit.json` maps `vibrator` to
+  `@ohos.vibrator.d.ts` with `bindings: default` (same for the keystore kit), i.e. the SDK
+  declares exactly the symbols the bridge uses;
+* `ets/build-tools/ets-loader/main.js` pushes `<sdk>/ets/api`, `<sdk>/ets/arkts` and
+  `<sdk>/ets/kits` into the compiler's system module paths, so the declarations are meant to be
+  in scope automatically;
+* the shell build now also exports `externalApiPaths` (api:arkts:kits) next to
+  `DEVECO_SDK_HOME`.
+
+Even so the compiler reports `Cannot find name 'vibrator'` / `Cannot find name 'huks'` at the
+usage sites (the import statements themselves do not error), which points at the *loader
+instance* hvigor actually runs rather than at the import syntax. Next step: compare the
+loader/plugin versions used by a DevEco-generated project with this minimal project's
+`node_modules/@ohos/hvigor*`, then pin the same versions in `hvigorfile`/`hvigor-config`.
+
 **Shipped while blocked:** the bridge shape for vibration
 (`ohos_host_request_vibration`/`registerVibrationSink`) plus honest managed implementations for
 permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
