@@ -173,6 +173,21 @@ had no handler (they rendered as nothing): **BoxView**, **IndicatorView**, **Fra
 compiles through the MAUI source generator in this workload and lays out its controls
 (`label='from XAML'`, button, BoxView all arranged).
 
+### Second audit pass (type-driven, reflection over Microsoft.Maui.Controls)
+
+Enumerating every public `View`/`Page` and checking it against the slice registry found four more
+gaps, now **fixed**:
+
+| Control | Was | Now |
+|---|---|---|
+| `GraphicsView` | no handler (nothing drawn) | `IGraphicsView` handler: the `IDrawable` paints through the compositor canvas; taps forward to `StartInteraction`/`EndInteraction`; pixel assertion passes (Magenta) |
+| `ContentView`/`TemplatedView` | no handler (content never arranged) | content measured/arranged in the frame |
+| `ImageButton` | rendered as a text button (source ignored) | `IImageSourcePart.Source` mapped, image bytes blitted |
+| Modal pages (`PushModalAsync`) | not rendered (the host always used the window content) | the host renders the top of `Window.Navigation.ModalStack` and pops back cleanly |
+
+Also confirmed by enumeration: `BoxView` implements `IShapeView` (it was already covered by the
+shape handler; the dedicated handler is simply more precise).
+
 Audited and still open (documented, none blocking the slice):
 
 | Area | Status |
