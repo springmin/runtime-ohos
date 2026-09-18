@@ -65,9 +65,17 @@ The shell needs the `ohos.permission.ACCESS_HUKS`-equivalent entitlement; the de
 3. Remove the XOR path only after the HUKS path has shipped for one release and the upstream
    review confirms the permission model.
 
-## Status
+## Status (updated 2026-09-18)
 
 * [x] interface + fallback implementation (file, obfuscated), documented as not hardware-backed
-* [ ] host exports + NAPI sink
-* [ ] ArkTS HUKS calls + permission in the template `module.json`
-* [ ] migration of existing fallback data
+* [x] host exports (`set_listener`/`register_result`/`request`/`complete`) + NAPI sink
+  (`registerKeystoreSink`/`notifyKeystoreResult`) shipped in **preview.14**
+* [x] managed client (`OpenHarmonyKeystore`) with id queue, timeouts, fail-fast unavailable flag;
+  `SecureStorage` prefers the keystore (values written as `k1:<base64>`) and falls back cleanly
+* [ ] ArkTS HUKS calls: the sink is registered but answers `rc=-1` because the universal
+  keystore kit is not in the minimal shell project's `dependencies`/`syscap`; enabling it means
+  adding `@kit.UniversalKeystoreKit` to that project (and the location permission it implies)
+* [ ] migration of existing fallback data (re-encrypt on first read once the real path is on)
+
+The bridge is therefore complete and testable end to end; only the shell project's kit
+configuration blocks the hardware-backed path, and the managed side already degrades by design.
