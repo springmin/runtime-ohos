@@ -374,6 +374,13 @@ Action sheets and prompts are done as well: the sheet renders its option rows an
 chosen string, and the prompt edits through the IME bridge (append on typing, Return accepts) with
 completion ordered before hiding. Verified: sheet -> 'Beta', prompt -> 'hello!'; 103 checks.
 
+Swipe gestures are done: SwipeGestureRecognizer rides the shared drag tracking, and dispatch uses
+MAUI's two-phase contract (SendSwipe records deltas, DetectSwipe evaluates the threshold and raises
+Swiped) filtered by Direction flags. Verified by dragging left over a left|right target ->
+SwipeDirection.Left; 104 checks. Pointer hover and pinch stay open: PointerGestureRecognizer's
+dispatch is internal to Controls (the slice compiles into a harness where internals are not
+visible) and pinch needs a multi-touch bridge extension (the touch callback carries one point).
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
