@@ -357,7 +357,29 @@ Verification (headless):
 55 harness checks stay green; the abc contains `notifyTextSubmitted` and the installed host
 exports `ohos_host_register_text_submitted`.
 
-## Next (W22-12)
+## W22-12 legacy ListView, CarouselView
+
+- `OpenHarmonyItemListMaterializer`: the virtualized windowing is now shared by list controls
+  (viewport + margin materialization, view pooling, window sliding from the scroll callback).
+- `OpenHarmonyListViewHandler` renders cells (`ViewCell` content or `TextCell` text, applying
+  the cell's binding context before reading its text) and reuses that pipeline.
+- `OpenHarmonyCarouselViewHandler` shows the current item and changes `Position` on a
+  horizontal swipe (the renderer dispatches swipes to platform views that opt in).
+- Page-level handlers clamp infinite measure constraints: stack layouts measure with infinity,
+  which produced NaN frames (the carousel was invisible until this was fixed).
+
+Verification (headless):
+
+```
+[verify] listview materialized=9 of 12 first='list row 0' content=493
+[verify] listview after drag offset=140 materialized=12
+[verify] carousel position=0 item='slide A'
+[verify] carousel after swipe position=1 item='slide B'
+```
+
+59 harness checks run green; the demo hap gained the legacy list and an animated-tab carousel.
+
+## Next (W22-13)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
