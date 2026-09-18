@@ -165,6 +165,26 @@ manually; the same file fails through the pack build script, so the remaining wo
 script's project regeneration step (compare the regenerated project with the manually patched
 state). The script's hvigor invocation was already aligned with the verified working command.
 
+## Port audit (2026-09-18): what was missing and what remains
+
+A systematic review against MAUI's control/capability list found and **fixed** four controls that
+had no handler (they rendered as nothing): **BoxView**, **IndicatorView**, **Frame**, **Editor**
+(multi-line text on the soft-keyboard bridge). It also **verified XAML**: a `MauiXaml` page
+compiles through the MAUI source generator in this workload and lays out its controls
+(`label='from XAML'`, button, BoxView all arranged).
+
+Audited and still open (documented, none blocking the slice):
+
+| Area | Status |
+|---|---|
+| `SwipeView`, `RefreshView` | no handler (pull-to-refresh/swipe gestures need their own interaction model) |
+| `PinchGestureRecognizer`, `SwipeGestureRecognizer` | tap/pan dispatch exists; swipe/pinch not wired |
+| `DisplayAlert`/`DisplayActionSheet` (Page) | needs an alert overlay (like the dropdown/popup overlay) |
+| `ToolbarItem`s | not rendered in navigation/shell bars |
+| Accessibility/semantics | not mapped to platform accessibility |
+| `WebView`/`BlazorWebView` | out of scope (needs the ArkTS `Web` component + a bridge) |
+| ArkTS-bridged Essentials | blocked by the hvigor toolchain not surfacing SDK declarations (see above) |
+
 ## Official sample configuration (found 2026-09-18 on the OpenHarmony sample repo)
 
 `applications_app_samples` (branch `OpenHarmony-v6.1-Release`,
