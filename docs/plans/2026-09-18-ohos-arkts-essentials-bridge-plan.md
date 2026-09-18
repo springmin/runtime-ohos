@@ -239,6 +239,37 @@ i.e. the declarations live at `<sdk>/<version>/ets/api`, which our staged root a
 permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
 an unresolved-service exception).
 
+## NDK alternatives — the ArkTS kit blocker is largely avoidable (2026-09-18)
+
+Reading the installed SDK's **native headers** (`native/sysroot/usr/include`) shows a C API for
+almost every capability that was blocked on ArkTS kit resolution. They are ordinary NDK APIs
+(link with the same clang/CMake toolchain the host library already uses), so they can be exposed
+through the existing host/NAPI bridge **without touching ArkTS at all**:
+
+| Capability | NDK header (verified present) | Key entry points |
+|---|---|---|
+| Connectivity (real state) | `network/netmanager/net_connection.h` | `OH_NetConn_GetAllNets`, `OH_NetConn_GetConnectionProperties`, `OH_NetConn_GetDefaultHttpProxy`, `OH_NetConn_BindSocket` |
+| Vibration | `sensors/vibrator.h` | `OH_Vibrator_PlayVibration`, `OH_Vibrator_Cancel` |
+| Geolocation | `LocationKit/oh_location.h` | `OH_Location_IsLocatingEnabled`, `OH_Location_StartLocating`, `OH_Location_StopLocating`, `OH_Location_CreateRequestConfig` |
+| Permissions | `accesstoken/ability_access_control.h` | ability access control (check/request) |
+| Custom fonts | `native_drawing/drawing_font_mgr.h`, `drawing_register_font.h` | `OH_Drawing_FontMgrCreate`, `OH_Drawing_FontMgrCreateFontStyleSet`, register-font APIs |
+| Soft keyboard / text editing | `inputmethod/inputmethod_controller_capi.h` | input method controller + text editor proxy |
+| Accessibility | `arkui/native_interface_accessibility.h` | accessibility provider APIs |
+| Window insets / safe area | `window_manager/oh_window.h` | window manager APIs |
+| Media/file pickers | `multimedia/media_library/media_access_helper_capi.h` | media access helper (C API) |
+| **WebView** | `web/native_interface_arkweb.h`, `web/arkweb_interface.h` | ArkWeb NDK (the component is usable from C) |
+| Sensors | `sensors/oh_sensor.h` | `OH_Sensor_*` |
+
+Genuinely ArkTS-only (still blocked without a DevEco toolchain or the ArkTS kit wiring):
+* starting another ability (Launcher/Browser/Share) - `AbilityKit/ability_base/want.h` exists for
+  building wants, but the start-ability call itself is not in the NDK;
+* ArkUI dialogs (we implement our own overlay-based dialogs instead);
+* anything that requires the ArkTS UI shell (the shell itself we already ship).
+
+**Consequence for the plan:** the remaining Essentials/WebView/accessibility/font work should be
+implemented as **NDK-backed bridge calls** (host exports + managed wrappers), not as ArkTS kit
+imports. That removes the toolchain blocker from every item except ability-start.
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
