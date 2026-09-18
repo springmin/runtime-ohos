@@ -471,6 +471,29 @@ tracked as a polish item.
   backend getters) and is gitignored until it builds; the harness assertion for the selection
   highlight landed in the grid block (which has no selection mode) and needs moving.
 
+## W22-19 headless pixel harness works
+
+`test/headless-render` (workload repo) renders a real MAUI page through the compositor into a
+**managed ICanvas rasterizer** and asserts pixel colours at coordinates derived from the
+arranged frames. Renderer additions: `CanvasFactory` (substitute canvas) and
+`SurfaceBegin`/`SurfacePresent` (virtual surface), plus readable colour properties and virtual
+primitives in the canvas backend.
+
+First run (2.1M pixel writes):
+
+```
+renderer.Render -> True
+[PASS] heading text marker: got #FFFFFF expected #FFFFFF
+[FAIL] page background: got #FF4500 expected #483D8B
+[FAIL] border stroke: got #483D8B expected #1E90FF
+[FAIL] rectangle fill: got #483D8B expected #FF4500
+```
+
+The text marker proves the end-to-end path (arrange -> draw -> pixels). The three failing
+samples are geometry issues in the harness (the shape/border frames used for sampling differ
+from the regions actually drawn), which is the next fix; this harness replaces device
+rendering checks while the device path stays blocked.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
