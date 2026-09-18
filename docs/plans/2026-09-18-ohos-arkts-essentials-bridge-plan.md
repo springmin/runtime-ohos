@@ -387,6 +387,14 @@ geometry, and taps activate through IMenuItemController (Clicked and Command, Is
 Verified: items=1 and tapping raises the command once; 106 checks. SwipeView and RefreshView remain
 from item 1d (they need platform views beyond the chrome work already in place).
 
+SwipeView is implemented: the handler lays the row out as a content view, mirrors leading/trailing
+ISwipeItems into the platform view with IsOpen round-tripping, the compositor draws the revealed
+panel, a completed horizontal drag (the renderer's Swipe track) opens/closes it, and taps activate
+the item through IMenuItemController and close the row. Verified: items=1, drag -> open=True both
+platform and ISwipeView, tap -> Clicked raised and row closed; 109 checks. Known gap:
+SwipeItem.Invoked is not raised by that activation (Clicked/Command are); raising it needs the
+internal invoked hook. RefreshView remains from item 1d.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
