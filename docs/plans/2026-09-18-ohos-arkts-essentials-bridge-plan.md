@@ -336,6 +336,20 @@ Remaining: C-2 (pickers need a `Picker` component inside the ArkTS shell) and D 
 `Web` component in the shell exposed through NAPI). Safe-area and accessibility stay with the
 ArkTS APIs (documented above).
 
+## Batch C-1 completed (preview.19, 2026-09-18): native typing
+
+The editor proxy callbacks are registered before attaching (`OH_TextEditorProxy_SetInsertTextFunc`,
+`SetDeleteForwardFunc`, `SetDeleteBackwardFunc`, `SetGetTextConfigFunc`), UTF-16 input is
+converted to UTF-8, the host keeps the IME buffer and forwards whole-text updates through the
+existing `TextInput` bridge; `ohos_host_keyboard_set_text` (hosting `SetKeyboardText`) seeds the
+buffer with the focused Entry/Editor text so backspace edits real content. Typing therefore no
+longer depends on ArkTS at all.
+
+Remaining for the "everything" goal:
+* C-2 pickers: a `Picker`/`PhotoViewPicker` component inside the ArkTS shell exposed through NAPI;
+* D WebView: a `Web` component inside the shell (ArkWeb) exposed through NAPI;
+* safe-area and accessibility: ArkTS window/accessibility APIs only (this NDK has neither).
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
