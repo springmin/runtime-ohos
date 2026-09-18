@@ -655,6 +655,19 @@ collection item's selection tint sample (page background there). The first two p
 dimmed draw using a stale/larger frame - the same class as the shape bug fixed in W22-21 - and
 the third needs the selection tap re-checked with fresh frames.
 
+## W22-29 colour-based dimming + device validation checklist
+
+The alpha leak is gone: a disabled view now paints its own colours at half alpha instead of the
+renderer wrapping its draw in canvas alpha (which leaked through nested save/restore into
+siblings). Pixel assertions: **10 PASS** (background, text marker, border stroke, rectangle
+fill, pressed state, disabled dim, checkbox check line, rounded corner, square corner, image
+blit) and **2 test-side KNOWN** (checkbox stroke sample colour, selection-tint sample needing
+fresh frames).
+
+`docs/plans/2026-09-18-ohos-device-validation-checklist.md` lists every device step with the
+artifact, command and expected observable result, so one session on an eligible device closes
+the port validation.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
