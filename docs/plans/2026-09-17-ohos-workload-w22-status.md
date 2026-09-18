@@ -494,6 +494,20 @@ samples are geometry issues in the harness (the shape/border frames used for sam
 from the regions actually drawn), which is the next fix; this harness replaces device
 rendering checks while the device path stays blocked.
 
+## W22-20 pixel harness catches a real bug
+
+The harness scan (background only, one orange blob at the canvas origin) shows:
+
+* the text marker is drawn exactly where the label was arranged - the label path is correct;
+* `Microsoft.Maui.Controls.Shapes.Rectangle` fill lands at (0,0) with its own 60x60 size;
+* the `Border` stroke is missing entirely.
+
+Diagnosis: shapes/borders are painted from a stale frame (the shape's own bounds before the
+layout arranged it), while text uses the arranged frame. This is the **first rendering bug
+found by pixel assertions** and the reason the harness exists while the device path is blocked;
+the fix is in the shape/border draw path (use the platform view's current frame or re-read it
+right before drawing).
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
