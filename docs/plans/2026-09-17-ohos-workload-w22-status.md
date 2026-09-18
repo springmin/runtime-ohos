@@ -318,7 +318,24 @@ Verification (headless):
 The demo hap is now a FlyoutPage (drawer) whose detail is the TabbedPage (Home showcase +
 Animations), exercising every page type together.
 
-## Next (W22-10)
+## W22-10 Shell
+
+- `OpenHarmonyShellHandler` renders `Shell.CurrentPage` with a bottom bar for the shell items
+  (titles + selection, reusing the tabbed-page chrome); tapping a bar entry sets
+  `Shell.CurrentItem`.
+- Shell contents are created lazily, so the handler realises the current `ShellContent`
+  through `IShellContentController` and connects/arranges the page; property changes for
+  `CurrentItem`/`CurrentPage` refresh the bar, the tree and the redraw.
+
+Verification (headless):
+
+```
+[verify] shell titles=[First,Second] selected=0 current='First'
+[verify] shell after tab tap selected=1 current='Second'
+[verify] shell content label frame={0,0,1080x1864}   (window minus the 56px bar)
+```
+
+## Next (W22-11)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
