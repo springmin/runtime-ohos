@@ -105,6 +105,49 @@ the script's build mixing two SDK roots (the real SDK's `ets-loader` and a stage
 invocation as the working one (`node node_modules/@ohos/hvigor/bin/hvigor.js --mode module -p
 product=default assembleHap`) and/or stage the full SDK so both roots agree.
 
+## Verified snippet (drop-in once the build path is aligned)
+
+```ts
+import vibrator from '@ohos.vibrator';
+import huks from '@ohos.security.huks';
+import util from '@ohos.util';
+
+host.registerVibrationSink((durationMs: number) => {
+  vibrator.startVibration({ type: 'time', duration: durationMs > 0 ? durationMs : 100 },
+                          { id: 0, usage: 'unknown' });
+});
+
+host.registerKeystoreSink((requestId: number, op: string, alias: string, data: string) => {
+  const helper = new util.Base64Helper();
+  const options: huks.HuksOptions = {
+    properties: [
+      { tag: huks.HuksTag.HUKS_TAG_ALGORITHM, value: huks.HuksKeyAlg.HUKS_ALG_AES },
+      { tag: huks.HuksTag.HUKS_TAG_KEY_SIZE, value: huks.HuksKeySize.HUKS_AES_KEY_SIZE_256 },
+      { tag: huks.HuksTag.HUKS_TAG_PURPOSE, value: huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_ENCRYPT | huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_DECRYPT },
+      { tag: huks.HuksTag.HUKS_TAG_PADDING, value: huks.HuksKeyPadding.HUKS_PADDING_NONE },
+      { tag: huks.HuksTag.HUKS_TAG_BLOCK_MODE, value: huks.HuksCipherMode.HUKS_MODE_GCM },
+    ],
+  };
+  if (op === 'generate') {
+    huks.generateKeyItem(alias, options, (err) => host.notifyKeystoreResult(requestId, err ? -1 : 0, ''));
+  } else if (op === 'encrypt' || op === 'decrypt') {
+    const input: huks.HuksOptions = { properties: options.properties, inData: helper.decodeSync(data) };
+    const callback = (err, result) => host.notifyKeystoreResult(requestId,
+      (err || !result || !result.outData) ? -1 : 0,
+      (result && result.outData) ? helper.encodeToStringSync(result.outData) : '');
+    if (op === 'encrypt') { huks.encryptData(alias, input, callback); }
+    else { huks.decryptData(alias, input, callback); }
+  } else {
+    host.notifyKeystoreResult(requestId, -1, '');
+  }
+});
+```
+
+This snippet compiles with this SDK (CompileArkTS completes) when the project is built
+manually; the same file fails through the pack build script, so the remaining work is the
+script's project regeneration step (compare the regenerated project with the manually patched
+state). The script's hvigor invocation was already aligned with the verified working command.
+
 **Shipped while blocked:** the bridge shape for vibration
 (`ohos_host_request_vibration`/`registerVibrationSink`) plus honest managed implementations for
 permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
