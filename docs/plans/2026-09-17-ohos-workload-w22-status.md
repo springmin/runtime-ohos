@@ -447,6 +447,18 @@ Verification (headless):
 [verify] carousel loop position=0 item='slide A' (wrapped from 2)
 ```
 
+## W22-16 precise entry caret
+
+- `OpenHarmonyView` caches per-character widths (measured prefixes with an estimate fallback)
+  and maps an x coordinate to the nearest caret index with midpoint hit testing.
+- The selection drag applies MAUI's semantics: the caret sits at the end of the range and
+  `SelectionLength` spans it (`Entry` clamps `CursorPosition` to at least `SelectionLength`), so
+  a right-to-left drag is no longer clamped to the anchor.
+
+Verified headlessly: a press at the end of "abcdefghij" moves the caret to index 10; the drag
+extension of the harness assertion stays at length 0 (test-side signal ordering) and is
+tracked as a polish item.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
