@@ -335,7 +335,29 @@ Verification (headless):
 [verify] shell content label frame={0,0,1080x1864}   (window minus the 56px bar)
 ```
 
-## Next (W22-11)
+## W22-11 collection virtualization + entry submit
+
+- `OpenHarmonyCollectionViewHandler` virtualizes: only the items intersecting the viewport
+  (plus a 120px margin) are materialized, views are pooled and recycled while scrolling, and
+  the scroll-view's `ScrollOffsetChanged` callback slides the window. Uniform item height,
+  measured from the first item.
+- Return key: the ArkTS shell forwards `onSubmit` through `host.notifyTextSubmitted` ->
+  `ohos_host_notify_text_submitted` -> `OpenHarmonyBridge.TextSubmitted`; the focused Entry
+  raises `Completed` and the SearchBar raises `SearchButtonPressed`. Packs bumped to
+  **1.0.0-preview.13** (host library + UI shell abc).
+
+Verification (headless):
+
+```
+[verify] collection materialized=11 of 20 first='item 0' last='item 10' content=822
+[verify] collection drag handled=True/True offset=220 materialized=15 first='item 2'
+[verify] collection tap selected='item 2'
+```
+
+55 harness checks stay green; the abc contains `notifyTextSubmitted` and the installed host
+exports `ohos_host_register_text_submitted`.
+
+## Next (W22-12)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
