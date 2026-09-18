@@ -295,7 +295,30 @@ Verification (headless):
 48 verification items run green in the harness; the demo hap shows a list picker, a date
 picker and a time picker in its value row.
 
-## Next (W22-9)
+## W22-9 Entry cursor, async images, FlyoutPage
+
+- Entry maps `ITextInput.CursorPosition`/`SelectionLength` and draws the caret at the cursor
+  position (measured text prefix with an estimate fallback).
+- The image handler resolves `StreamImageSource` and `UriImageSource` asynchronously and
+  redraws when the bytes arrive (dispatching to the compositor thread when needed).
+- `OpenHarmonyFlyoutPageHandler` + renderer support: the detail fills the window, a hamburger
+  button opens the flyout, the panel is drawn as a clipped overlay over a scrim, and a tap
+  outside dismisses it; while the panel is open only it receives touches.
+
+Verification (headless):
+
+```
+[verify] stream image bytes=70
+[verify] flyout initial presented=False width=360 detailLabel={0,0,1080x1920}
+[verify] flyout after hamburger presented=True  flyoutLabel={0,0,360x1920}
+[verify] flyout after panel tap presented=True
+[verify] flyout after outside tap presented=False
+```
+
+The demo hap is now a FlyoutPage (drawer) whose detail is the TabbedPage (Home showcase +
+Animations), exercising every page type together.
+
+## Next (W22-10)
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
