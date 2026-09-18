@@ -610,6 +610,22 @@ The paint map (`y=180..370` at x=530) also shows the pressed colour persisting a
 release because no render runs afterwards, which is expected for a compositor that only redraws
 on request.
 
+## W22-26 disabled dimming implemented (root cause: a missing edit)
+
+The dim branch had **never been written** - an earlier edit silently failed, which is exactly why
+the probe inside it never printed. With the branch in place the disabled button paints at half
+alpha and the harness verifies the blend (`#40867A` vs expected `#42787E`, within tolerance).
+
+Two side effects are now visible in the pixels and recorded as KNOWN:
+
+* the **pressed-state** draw reads dimmed (`#9F5E3E` vs `#FF4500`), i.e. the new alpha leaks
+  into that draw - the next fix;
+* the **checkbox** area still shows the neighbour's colour, which the paint map attributes to
+  stale pixels from an earlier render (the compositor only redraws on request), so its assertion
+  needs its own render pass.
+
+Pixel suite: 6 PASS, 3 KNOWN, everything else green (86 interaction checks).
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
