@@ -550,6 +550,26 @@ rendering checks: arrange -> draw -> pixels are now asserted in CI-able form.
 PIXEL ASSERTIONS PASSED          (86 interaction checks green)
 ```
 
+## W22-23 pixel assertions extended (findings recorded)
+
+New coverage: rounded button corners (real corner rounding in the rasterizer), image blit
+geometry (`OpenHarmonyView.ImageDrawn`), disabled state and interaction painting.
+
+```
+[PASS] page background / heading text marker / border stroke / rectangle fill
+[PASS] button pressed state
+[PASS] button rounded corner      (after mapping IButtonStroke.CornerRadius)
+[PASS] image blit centred in its frame
+[FAIL] disabled button dimmed     - IsEnabled=False but painted at full colour
+[FAIL] checkbox box stroke        - the sample shows the neighbouring button's colour
+```
+
+Two concrete findings for the next pass: (a) the renderer's disabled dimming is not visible in
+the pixels even though both `IView.IsEnabled` and the Controls state report disabled, and
+(b) in pages with several children the button/checkbox painted regions do not match their
+arranged frames (the same class as the shape bug fixed in W22-21). Both are recorded with the
+exact samples so the next iteration can start from them.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
