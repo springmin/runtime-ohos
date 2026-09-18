@@ -52,6 +52,21 @@ Requirements for every feature:
 Each step ships with: host + NAPI + ArkTS changes, a pack version bump, demo wiring, a
 headless regression where possible, and a status document under `docs/plans/`.
 
+## Blocker found (2026-09-18)
+
+Importing SDK kits from this shell project fails at compile time
+(`Cannot find name 'vibrator'` / `Cannot find namespace 'huks'`) even though the project
+targets API 26: the minimal generated project's compilation set does not include the SDK kit
+declarations. Fixing it means generating/comparing against a DevEco project with the kits
+enabled (module `dependencies`/`syscap` + the SDK's kit index) - that is the first task of
+every bridge below, and the reason the ArkTS sinks currently answer "unavailable" while the
+managed side already degrades deterministically.
+
+**Shipped while blocked:** the bridge shape for vibration
+(`ohos_host_request_vibration`/`registerVibrationSink`) plus honest managed implementations for
+permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
+an unresolved-service exception).
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
