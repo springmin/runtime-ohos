@@ -322,6 +322,20 @@ capabilities, and both require extending the ArkTS shell (a `Picker`/`Web` compo
 the managed side through NAPI). Batch A (vibration/connectivity/permissions) and batch B
 (geolocation/fonts) are shipped and installed (preview.17).
 
+## Batch C-1 shipped (preview.18, 2026-09-18)
+
+The soft keyboard is now driven from the platform NDK: `OH_InputMethodController_Attach` with an
+editor proxy plus `OH_InputMethodProxy_ShowKeyboard/HideKeyboard`, exposed as
+`ohos_host_keyboard_show/hide`. `OpenHarmonyBridge.RequestTextInput` prefers the NDK path and
+keeps the ArkTS shell request as a fallback, so focusing an Entry/Editor raises the real keyboard
+without ArkTS. The proxy's text callbacks (`inputmethod_text_editor_proxy_capi.h`: insert/text,
+delete forward/backward, get text of cursor, selection, enter key, ...) are the next step for
+fully native typing.
+
+Remaining: C-2 (pickers need a `Picker` component inside the ArkTS shell) and D (WebView needs a
+`Web` component in the shell exposed through NAPI). Safe-area and accessibility stay with the
+ArkTS APIs (documented above).
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
