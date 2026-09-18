@@ -415,6 +415,13 @@ IsSupported and Start/Stop run without throwing when the host library is missing
 Readings require device hardware (validation checklist). The Notification Kit part of item 2 and
 the camera capture of item 3 remain.
 
+The notification kit part of item 2 is implemented as well: OpenHarmonyNotifications.Show calls the
+host export, which forwards to the NAPI layer, whose sink the ArkTS shell registers and publishes
+through @ohos.notificationManager (basic text content, failures logged). Missing host library or
+sink degrades to false instead of throwing - verified headlessly (False on a desktop, 115 checks).
+Regenerating the shell archive (es2abc/hvigor) so the device shell contains the sink is the
+remaining packaging step; publishing itself needs device hardware. Item 3 (camera capture) remains.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
