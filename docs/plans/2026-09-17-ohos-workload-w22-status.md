@@ -431,6 +431,22 @@ Verification (headless, 74 checks):
 [verify] selection drag cursor=10 length=0   (caret press verified; drag extension approximate)
 ```
 
+## W22-15 collection groups + carousel polish
+
+- The shared list materializer flattens grouped sources into header rows plus items: group
+  headers are not selectable, their text comes from `GroupHeaderTemplate` when the binding
+  resolves and otherwise from the group's `ToString()`; the collection handler renders headers
+  as accent labels. `CollectionView.IsGrouped` is passed through the arrange/mapper path.
+- `CarouselView` loops around the ends (position 2 + swipe wraps to 0) and draws page
+  indicator dots above the content.
+
+Verification (headless):
+
+```
+[verify] grouped rows=6 [<group>, g1-item A, g1-item B, <group>, g2-item A, g2-item B] content=230
+[verify] carousel loop position=0 item='slide A' (wrapped from 2)
+```
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
