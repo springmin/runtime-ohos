@@ -429,6 +429,15 @@ logged and returned as errors), and IsCaptureSupported reports whether the host 
 Verified headlessly: captureSupported=False and CapturePhotoAsync returns null off-device without
 throwing; 115 checks. Real capture needs device hardware and a rebuilt shell archive.
 
+Packaging status (preview.23): prepare-packs.sh needed a fix (it wrote the FrameworkList/RuntimeList
+files without creating the data directory) and now lays out the preview.23 Ref/Runtime packs; the
+host was rebuilt and self-signed into the preview.23 SDK pack (sensor and notification exports) and
+the shell templates were carried over with the notification sink and camera capture branch. Two
+blockers remain: build-arkts-shell.sh cannot refresh the UI shell archive because the hvigor 6.26.4
+tarball on the Huawei mirror returns 404 (so the archive still has no notification/camera code), and
+pack-workload-bundle.sh resolves its version from a source that still yields preview.22. Rebuilding
+the shell archive and the demo hap follows once hvigor is reachable or a local hvigor cache is used.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
