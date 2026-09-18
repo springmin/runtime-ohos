@@ -422,6 +422,13 @@ sink degrades to false instead of throwing - verified headlessly (False on a des
 Regenerating the shell archive (es2abc/hvigor) so the device shell contains the sink is the
 remaining packaging step; publishing itself needs device hardware. Item 3 (camera capture) remains.
 
+Gap item 3 (camera capture) is implemented by reusing the picker pipeline: CapturePhotoAsync and
+CaptureVideoAsync send request kinds 3/4, the shell's picker sink runs cameraPicker.pick with the
+back camera and returns the captured file base64 encoded through notifyPickerResult (failures are
+logged and returned as errors), and IsCaptureSupported reports whether the host library is loadable.
+Verified headlessly: captureSupported=False and CapturePhotoAsync returns null off-device without
+throwing; 115 checks. Real capture needs device hardware and a rebuilt shell archive.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
