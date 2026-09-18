@@ -370,6 +370,10 @@ Accept/Cancel) with taps resolving `AlertArguments`. Verified end to end (shown/
 result=True). Action sheets and prompts remain simple (logged / null) pending list and text-input
 overlays.
 
+Action sheets and prompts are done as well: the sheet renders its option rows and resolves the
+chosen string, and the prompt edits through the IME bridge (append on typing, Return accepts) with
+completion ordered before hiding. Verified: sheet -> 'Beta', prompt -> 'hello!'; 103 checks.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
