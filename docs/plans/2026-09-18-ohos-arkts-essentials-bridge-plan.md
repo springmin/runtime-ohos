@@ -362,6 +362,17 @@ Remaining for the "everything" goal:
 Every remaining capability from the audit now has an implementation path: batches A/B/C-1 were
 native (NDK), and C-2/D/4 use the ArkTS shell through the same NAPI bridge pattern.
 
+## Gap item 1 progress (2026-09-18): DisplayAlert overlay
+
+`DisplayAlert` now works: `OpenHarmonyAlertManager` (the Controls `IAlertManager`) captures
+requests and `OpenHarmonyAlertHost` state is drawn by the compositor (scrim, dialog box,
+Accept/Cancel) with taps resolving `AlertArguments`. Verified end to end (shown/pending -> tap ->
+result=True). Action sheets and prompts remain simple (logged / null) pending list and text-input
+overlays.
+
+Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
+SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
