@@ -530,6 +530,26 @@ PIXEL ASSERTIONS PASSED
 The 84-check interaction regression stays green. This closes the loop that replaced device
 rendering checks: arrange -> draw -> pixels are now asserted in CI-able form.
 
+## W22-22 polish + Shell routes + interaction pixels
+
+- Shell chrome honours `NavBarIsVisible`/`TabBarIsVisible` and the bottom bar hides when asked;
+  `CarouselView` respects `Loop`; `TabbedPage` resolves file-based tab icons (drawn above
+  smaller captions like the shell).
+- **`Shell.GoToAsync` route navigation works**: a route registered with
+  `Routing.RegisterRoute("verifyDetail", typeof(RoutedPage))` navigates and the chrome follows
+  (`current='Routed' chrome='Routed' back=True`).
+- Collection selection highlight is asserted on the real list
+  (`selected='item 2' highlight=True otherHighlight=False`); the harness lookup now picks the
+  legend list (not the grid) so assertions test what they claim.
+- Pixel harness gained an **interaction-state** assertion: pressing a button and re-rendering
+  shows the pressed colour exactly at the button's frame.
+
+```
+[PASS] page background / heading text marker / border stroke / rectangle fill
+[PASS] button pressed state: got #FF4500 expected #FF4500
+PIXEL ASSERTIONS PASSED          (86 interaction checks green)
+```
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
