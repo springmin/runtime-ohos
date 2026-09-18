@@ -636,6 +636,25 @@ its buffer), not a defect of the pressed draw. Remaining KNOWNs are therefore te
 being isolated per render pass; the renderer's dimming itself is verified by the disabled
 assertion.
 
+## W22-28 pass isolation + three new pinned findings
+
+The harness now resets the raster **and the drawing state** per pass (the device canvas does the
+same in `Begin`), which immediately turned previously noisy samples into exact ones:
+
+```
+[PASS] page background / heading text marker / border stroke / rectangle fill
+[PASS] button pressed state      (#FF4500 exact)
+[PASS] disabled button dimmed    (#42777E vs #42787E)
+[PASS] checkbox check line       (checked #D0CDE1 vs unchecked #483D8B)
+[PASS] button rounded corner / image blit geometry
+```
+
+Three samples still disagree and are pinned as KNOWN, all showing the **disabled button's
+dimmed fill outside its frame**: the checkbox's box edge, a square-corner button's corner, and a
+collection item's selection tint sample (page background there). The first two point at the
+dimmed draw using a stale/larger frame - the same class as the shape bug fixed in W22-21 - and
+the third needs the selection tap re-checked with fresh frames.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
