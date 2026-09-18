@@ -165,6 +165,40 @@ manually; the same file fails through the pack build script, so the remaining wo
 script's project regeneration step (compare the regenerated project with the manually patched
 state). The script's hvigor invocation was already aligned with the verified working command.
 
+## Official sample configuration (found 2026-09-18 on the OpenHarmony sample repo)
+
+`applications_app_samples` (branch `OpenHarmony-v6.1-Release`,
+`code/DocsSample/ArkTS/Start/LearningArkTs/IntroductionToArkTS/build-profile.json5`) shows two
+things this project was missing:
+
+```json5
+{
+  "app": { "products": [ {
+      "name": "default",
+      "targetSdkVersion": 23,          // numeric, not '26.0.0'
+      "compileSdkVersion": 23,
+      "compatibleSdkVersion": 20,
+      "runtimeOS": "OpenHarmony",
+      "buildOption": { "strictMode": { "caseSensitiveCheck": true, "useNormalizedOHMUrl": true } }
+  } ] },
+  "modules": [ { "name": "entry", "srcPath": "./entry", "targets": [ { "name": "default", "applyToProducts": [ "default" ] } ] } ]
+}
+```
+
+The `buildOption.strictMode` block is now emitted by the shell build script (matching the
+official sample); the numeric SDK versions - together with a staged SDK directory named after
+the numeric API level - are the next candidate, since hvigor's SDK/declaration resolution
+follows the product version. The sample's `hvigorfile.ts` also confirms how SDK knowledge is
+obtained in official projects:
+
+```ts
+const sdkInfo = appTask.getTaskService()!.getSdkInfo();
+const etsApiDir = path.resolve(sdkInfo.getSdkToolchainsDir(), '../ets/api');
+```
+
+i.e. the declarations live at `<sdk>/<version>/ets/api`, which our staged root already provides
+(522 api entries) - so the remaining difference is how the *version* is declared.
+
 **Shipped while blocked:** the bridge shape for vibration
 (`ohos_host_request_vibration`/`registerVibrationSink`) plus honest managed implementations for
 permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
