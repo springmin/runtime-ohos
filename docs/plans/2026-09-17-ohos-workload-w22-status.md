@@ -508,6 +508,28 @@ found by pixel assertions** and the reason the harness exists while the device p
 the fix is in the shape/border draw path (use the platform view's current frame or re-read it
 right before drawing).
 
+## W22-21 pixel harness green + shape painting fixed
+
+Root cause of the bug found by the pixel harness: `Shape.PathForBounds(rect)` returns geometry
+in the shape's own coordinate space (first point {0.5,0.5}) and ignores the rect for shapes with
+explicit sizes, so shapes were painted at the canvas origin with their own bounds.
+`DrawShape` now builds the path in local space and translates the canvas to the view's frame
+(save/restore); the canvas backend's `RestoreState` (MAUI's signature returns `bool`) is virtual
+so substitute canvases can restore state too.
+
+Pixel assertions (workload repo, `test/headless-render`):
+
+```
+[PASS] page background:    got #483D8B expected #483D8B
+[PASS] heading text marker: got #FFFFFF expected #FFFFFF
+[PASS] border stroke:       got #1E90FF expected #1E90FF
+[PASS] rectangle fill:      got #FF4500 expected #FF4500
+PIXEL ASSERTIONS PASSED
+```
+
+The 84-check interaction regression stays green. This closes the loop that replaced device
+rendering checks: arrange -> draw -> pixels are now asserted in CI-able form.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
