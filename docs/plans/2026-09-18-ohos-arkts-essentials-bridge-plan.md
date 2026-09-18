@@ -381,6 +381,12 @@ SwipeDirection.Left; 104 checks. Pointer hover and pinch stay open: PointerGestu
 dispatch is internal to Controls (the slice compiles into a harness where internals are not
 visible) and pinch needs a multi-touch bridge extension (the touch callback carries one point).
 
+ToolbarItem is done: the navigation page mirrors the current page's toolbar items into the bar
+(collection/property changes included), the bar draws them right-aligned with shared draw/hit
+geometry, and taps activate through IMenuItemController (Clicked and Command, IsEnabled honored).
+Verified: items=1 and tapping raises the command once; 106 checks. SwipeView and RefreshView remain
+from item 1d (they need platform views beyond the chrome work already in place).
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
