@@ -379,7 +379,30 @@ Verification (headless):
 
 59 harness checks run green; the demo hap gained the legacy list and an animated-tab carousel.
 
-## Next (W22-13)
+## W22-13 Essentials (Preferences + FileSystem)
+
+- `OpenHarmonyPreferences`: file-backed `IPreferences` (tagged values for string/bool/int/long/
+  double/float/DateTime/DateTimeOffset) stored in the ability's files directory with a temp
+  fallback; values persist across instances and `Remove`/`Clear` work per shared name.
+- `OpenHarmonyFileSystem`: `AppDataDirectory`/`CacheDirectory` from the ability context plus the
+  app package file helpers.
+- Both are registered in DI and installed into the Essentials statics. MAUI keeps
+  `Preferences.Current`/`FileSystem.Current` internal and falls back to a platform
+  implementation this slice does not ship, so `MauiOpenHarmonyExtensions.InstallEssentials`
+  assigns them reflectively (wrapped in try/catch with a status message).
+
+Verification (headless):
+
+```
+[verify] preferences int=42 text='hello' flag=True contains=True
+[verify] preferences reloaded int=42 (persisted)
+[verify] preferences after remove contains=False
+[verify] filesystem dir='.../openharmony-app' cache='...' read='essentials'
+```
+
+63 harness checks run green. The demo counter now persists through Preferences.
+
+## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
   type → `Completed`.
