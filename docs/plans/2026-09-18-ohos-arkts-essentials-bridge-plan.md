@@ -84,6 +84,27 @@ instance* hvigor actually runs rather than at the import syntax. Next step: comp
 loader/plugin versions used by a DevEco-generated project with this minimal project's
 `node_modules/@ohos/hvigor*`, then pin the same versions in `hvigorfile`/`hvigor-config`.
 
+## Verified working (2026-09-18, against the SDK)
+
+Building the same page with the **project's own hvigor CLI** compiles the direct module forms:
+
+```ts
+import vibrator from '@ohos.vibrator';
+import huks from '@ohos.security.huks';
+```
+
+including `huks.HuksOptions` type usage, the `HuksTag`/`HuksKeyAlg`/... constants and the
+callback forms (`huks.generateKeyItem/encryptData/decryptData`) - `CompileArkTS` completes with
+warnings only. The **kit** forms (`@kit.SensorServiceKit`, `@kit.UniversalKeystoreKit`) do not
+resolve in this project, so the direct forms are the ones to use.
+
+The *same* source fails when built through the pack build script, which means the script's
+hvigor invocation/environment (not the source) is the remaining difference: the debug log shows
+the script's build mixing two SDK roots (the real SDK's `ets-loader` and a staged
+`arkts-shell-build/sdk/26.0.0` for tools). Next step: run the script's build with the same
+invocation as the working one (`node node_modules/@ohos/hvigor/bin/hvigor.js --mode module -p
+product=default assembleHap`) and/or stage the full SDK so both roots agree.
+
 **Shipped while blocked:** the bridge shape for vibration
 (`ohos_host_request_vibration`/`registerVibrationSink`) plus honest managed implementations for
 permissions/geolocation/file picker/media picker (denied/false/FeatureNotSupported instead of
