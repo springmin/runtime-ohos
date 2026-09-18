@@ -293,7 +293,19 @@ D: WebView on the ArkWeb NDK
 Note: the low-level `OH_Drawing_TextBlob` font API has no family setter, so the supported path is
 a loaded typeface (file-based) rather than a family name.
 
-## Batch C-1 verdict (2026-09-18): not implementable through this NDK
+## Batch C-1 verdict (corrected, 2026-09-18)
+
+A broader grep (matching the full symbol names rather than one prefix) shows
+`OH_InputMethodController_Attach` **is** present, together with the text-editor proxy
+(`inputmethod_text_editor_proxy_capi.h`) and the input-method proxy
+(`inputmethod_inputmethod_proxy_capi.h`). So the soft keyboard **can** be driven from the NDK:
+the platform asks for an editor proxy, and the proxy's callbacks (insert/delete/get text) carry
+the typing into the managed side. That replaces the ArkTS `TextInput` bridge with a native one.
+
+`window_manager/oh_window.h` still has **no avoid-area query**, so safe-area handling stays with
+the ArkTS window API.
+
+## Batch C-1 verdict (first pass - superseded)
 
 Checked the installed SDK headers directly:
 
