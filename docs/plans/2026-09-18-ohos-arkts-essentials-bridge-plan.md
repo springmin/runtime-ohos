@@ -283,6 +283,16 @@ B: Geolocation (`OH_Location_*`), custom fonts (`OH_Drawing_FontMgr*` + register
 C: file/media pickers (`media_access_helper`), IME (`inputmethod_controller`), window insets (`oh_window`), accessibility (`native_interface_accessibility`)
 D: WebView on the ArkWeb NDK
 
+## Batch B shipped (preview.17, 2026-09-18)
+
+| Capability | Implementation |
+|---|---|
+| Geolocation | `OH_Location_CreateRequestConfig` + `OH_LocationRequestConfig_SetCallback` + `StartLocating`/`StopLocating`; `GetLocationAsync` polls the latest fix, `GetLastKnownLocationAsync` reads it, `StartListeningForegroundAsync` raises `LocationChanged`; `IsEnabled` = location permission |
+| Custom fonts | `OpenHarmonyFontManager` (`Microsoft.Maui.IFontManager`) resolves a family to a font file and the host applies `OH_Drawing_TypefaceCreateFromFile` to every text draw/measure (`ohos_host_set_font_file`) |
+
+Note: the low-level `OH_Drawing_TextBlob` font API has no family setter, so the supported path is
+a loaded typeface (file-based) rather than a family name.
+
 ## Current state
 
 * [x] pattern proven (text input, redraw, text submit)
