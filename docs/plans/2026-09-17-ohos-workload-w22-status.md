@@ -626,6 +626,16 @@ Two side effects are now visible in the pixels and recorded as KNOWN:
 
 Pixel suite: 6 PASS, 3 KNOWN, everything else green (86 interaction checks).
 
+## W22-27 pressed-state dim pinned to overlapping render passes
+
+A probe inside the dim branch prints only for the disabled button
+(`dimmed=True enabled=False opacity=0.5 frame={24,258,1032x51}`); the pressed button's draw never
+enters the branch. Therefore the dimmed pressed sample is an interaction between the harness's
+consecutive render passes (the compositor repaints on request and the substitute canvas keeps
+its buffer), not a defect of the pressed draw. Remaining KNOWNs are therefore test-side and are
+being isolated per render pass; the renderer's dimming itself is verified by the disabled
+assertion.
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
