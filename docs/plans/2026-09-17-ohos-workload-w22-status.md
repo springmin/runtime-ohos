@@ -402,6 +402,35 @@ Verification (headless):
 
 63 harness checks run green. The demo counter now persists through Preferences.
 
+## W22-14 calendar picker, Shell flyout, grid lists, Essentials extras
+
+- DatePicker opens a **month calendar** (header with `<`/`>`, weekday row, 6x7 day grid, today
+  and selection highlighting); the previous date list is gone.
+- Shell gained a **flyout**: a hamburger opens a drawer listing the shell items, selecting one
+  switches `CurrentItem`, and a tap outside dismisses it (the opening tap's release is
+  consumed).
+- `CollectionView` supports `GridItemsLayout` spans (rows/columns) through the shared
+  materializer.
+- Essentials: `OpenHarmonySecureStorage` (per-install obfuscation key; **not** hardware-backed
+  - documented), `OpenHarmonyAppInfo`, `OpenHarmonyDeviceInfo`, `OpenHarmonyVersionTracking`,
+  installed into the Essentials statics reflectively.
+- Entry text selection: pressing inside an entry sets the caret, dragging extends an
+  approximate selection (proportional metrics, highlighted behind the text).
+
+Verification (headless, 74 checks):
+
+```
+[verify] datepicker open=True month=2026-09 selected=17
+[verify] datepicker after calendar tap date=2026-10-15 text='10/15/2026' popup=False
+[verify] shell hamburger=True flyoutItems=[First,Second]
+[verify] shell after hamburger open=True
+[verify] shell after flyout item tap open=False current='Second'
+[verify] grid cells=9 span=3 first4=[24,806,338x32 368,806,338x32 712,806,338x32 24,844,338x32]
+[verify] secure storage read='s3cr3t' / after remove='<null>'
+[verify] appinfo version='1.0.0' device='Unknown/Desktop'
+[verify] selection drag cursor=10 length=0   (caret press verified; drag extension approximate)
+```
+
 ## Port status
 
 - Cursor position/selection mapping (`ITextInput.CursorPosition`/`SelectionLength`), ReturnKey
