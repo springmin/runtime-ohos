@@ -92,8 +92,12 @@ getAccessibilityNodeCursorPosition(int64_t, int32_t, int32_t*)
 转发动作监听器、ClearFocus、CursorPosition），ElementInfo 用 `AddAndGetAccessibilityElementInfo`
 + id/parent/组件类型/文本/内容/屏幕矩形（来自发布边界）/可点击/可用/可聚焦 填充；
 `accessibilityStatus` 回传附着状态。宿主构建与自签名通过 ✓。
-**剩余**：壳调用 `host.attachAccessibilityNode(<自定义节点>)`；托管侧注册动作监听器
-（`executeAccessibilityAction` 目前返回失败直到有监听器）。
+**剩余**：壳调用 `host.attachAccessibilityNode(<自定义节点>)`（唯一平台绑定步骤）。
+
+**动作与事件（已完成）**：托管侧 `SetActionHandler` 注册动作监听器，宿主
+`executeAccessibilityAction` 转发；`HandleAccessibilityAction` 把 CLICK 还原为正常触摸路径
+（节点中心点模拟点击，等价真实触摸），并已用 headless 断言验证（点 'tap me' 节点 → 触发其 Tap 手势）；
+帧差标志经 `ohos_host_accessibility_send_event` 以 `SendAccessibilityAsyncEvent` 上报。
 
 实现顺序（照抄上式）：壳传 `NodeContainer`/自定义节点的 NAPI 值 → 宿主 `GetNodeHandleFromNapiValue`
 （若节点非 `ARKUI_NODE_CUSTOM` 则先 `NodeContent_AddNode` 挂自有 CUSTOM 根）→ `GetNativeAccessibilityProvider`
