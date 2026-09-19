@@ -500,6 +500,20 @@ remains is device validation (blocked by the hdc organization policy) and the ar
 (accessibility needs an ArkUI node tree; BlazorWebView/HybridWebView and the Hot Reload overlay need
 extra runtimes or dev tooling).
 
+Architecture-level work (all four accepted) is staged in batches. Batch D1 (visual diagnostics
+overlay) is done: OpenHarmonyDiagnostics.Enabled outlines every view with its type name in the
+compositor and counts the outlines (verified: 108 outlines in one frame; 120 checks). Batch D2
+(accessibility) has its API inventory complete from the SDK: OH_ArkUI_NativeModule_GetNativeAccessibilityProvider,
+OH_ArkUI_AccessibilityProviderRegisterCallback(WithInstance), OH_ArkUI_CreateAccessibilityElementInfo /
+OH_ArkUI_AddAndGetAccessibilityElementInfo with the full ElementInfo setter surface (text, contents,
+component type, screen rect, child/parent ids, clickable/enabled/focusable/editable/checked,
+operation actions), OH_ArkUI_CreateAccessibilityEventInfo with OH_ArkUI_SendAccessibilityAsyncEvent
+and OH_ArkUI_FindAccessibilityActionArgumentByKey for action arguments. Batch D3 (BlazorWebView and
+HybridWebView) needs a JS<->.NET channel - ArkWeb provides registerJavaScriptProxy, runJavaScript and
+postMessage - plus static-asset serving and the BlazorWebView handler in the slice. Batch D4 (Hot
+Reload) depends on the dotnet-watch/HotReload agent, a device connection channel (hdc is blocked by
+policy) and runtime metadata-update (EnC) support.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
