@@ -551,6 +551,18 @@ The open question for that step is obtaining the ArkUI node handle of our XCompo
 provider call needs, and then filling element information per requested node and routing
 executeAccessibilityAction back into the managed hit/focus/scroll paths.
 
+Batch D2 provider binding: the SDK documentation settles the architecture -
+OH_ArkUI_NativeModule_GetNativeAccessibilityProvider requires a node of type ARKUI_NODE_CUSTOM
+(otherwise it returns a parameter error) and the third-party framework pattern is to receive an
+ArkTS NodeContent (OH_ArkUI_GetNodeContentFromNapiValue) and attach the framework's own node tree
+with OH_ArkUI_NodeContent_AddNode / InsertNode / RemoveNode / RegisterCallback. So the remaining
+piece is: the shell creates a NodeContent and hands it to the host, the host creates a custom root
+node for the XComponent area, obtains the provider for it, registers the seven callbacks
+(findAccessibilityNodeInfosById/ByText, findFocused/NextFocus, executeAccessibilityAction,
+clearFocused, cursor position) that read the published node table and fill element information, and
+sends events for content changes. The managed shadow tree, action masks, publish pipeline and host
+node table are already in place and verified.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
