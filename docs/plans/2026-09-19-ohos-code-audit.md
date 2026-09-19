@@ -43,3 +43,35 @@
 - 性能：**消除每帧全树发布**（最大热点）；其余为低收益项。
 - 边界：矩形填充已钳制；索引访问均有界（差分循环用 `Math.Min`，`Math.Max(1,…)` 防零除）。
 - 复现：`test/maui-platform-verify`（128 项，含无障碍快照/点击回流/未变化帧跳过断言）。
+
+
+## 5. 对照上游 MAUI / 鸿蒙 Kit 的再次盘点（2026-09-19）
+
+### 5a. 已实现（切片 handler 实测清单）
+ActivityIndicator · Border · BoxView · Button · CarouselView · CheckBox · CollectionView · ContentView ·
+DatePicker · Editor · Entry · FlyoutPage · Frame · GraphicsView · Image · IndicatorView · Label · Layout ·
+ListView · NavigationPage · Page · Picker · ProgressBar · RadioButton · RefreshView · ScrollView ·
+SearchBar · Shape · Shell · Slider · Stepper · SwipeView · Switch · TabbedPage · TimePicker · View ·
+WebView · Window（＋G/手势/指针/捏合/无障碍/诊断/Essentials 系列/选择器）
+
+### 5b. 可实现但尚未实现（按价值/成本排序，含平台能力依据）
+1. **传感器扩展**（Magnetometer/Compass/Barometer/OrientationSensor 等）— NDK `oh_sensor.h`，复用现有管线 ✅ *正在实施（后台工作流 A）*
+2. **应用启动类**（Launcher/Browser/Share）— AbilityKit start-ability（ArkTS 桥）→ 原"受限"标签可解除
+3. **拖放 + 桌面菜单**（DragGesture/DropGesture、MenuBarItem/MenuFlyout）— ArkUI
+4. **音频/视频播放**（MediaElement 等）— AudioKit / MediaKit / AVSessionKit
+5. **触感**（HapticFeedback）— vibrator NDK（已有 Vibrator）
+6. **主题/显示**（AppTheme、DeviceDisplay、屏幕常亮、文本缩放）— ArkUI 配置回调 + BasicServicesKit
+7. **BlazorWebView / HybridWebView** — ArkWeb JS 桥（配方见交接文档 §7）
+8. 地图 / 联系人 / 日历 / 打印 / 蓝牙 — MapKit / ContactsKit / CalendarKit / PrintingKit / ConnectivityKit
+
+### 5c. **SDK 门控（不可实现，实测）**
+- **TextToSpeech**：本 SDK（ohos-sdk 26.0.0.18，API 26）**既无 `@kit.CoreSpeechKit` 也无 `@ohos.ai.tts`**
+  （两次真实 hvigor 编译均报 `Cannot find module`）。工作流 B 已把**完整链路**接好并留占位：
+  托管 `SpeakAsync` → `ohos_host_tts_speak` → 壳 sink → `host.notifyTtsResult` → 结果回调；
+  壳 sink 目前如实返回 `rc=-1`（不可用），待 SDK 含语音套件时替换 sink 内实现即可。
+  另：`GetLocalesAsync` 降级为设备区域（无引擎枚举）。
+
+### 5d. 归档刷新待办（由工作流 B 引出）
+壳归档已重建（`dist/ets/modules.abc` 24,220 B，含 TTS sink 与"不可用"应答）→ 但 **preview.23 包内
+`templates/ets/modules.ui.abc` 与 `dist/SHA256SUMS` 尚未同步** ✗。需要：把新 abc 拷入包 → 重打包 →
+重发布 → 重建 hap（一条链，见第 5 节验证入口）。
