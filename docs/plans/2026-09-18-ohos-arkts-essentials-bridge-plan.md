@@ -493,6 +493,13 @@ limitations are the architectural ones (accessibility needs an ArkUI node tree, 
 WebView and the Hot Reload overlay need extra runtimes or dev tooling) and device validation, which
 is blocked by the hdc organization policy.
 
+Final state: the interaction regression is green at 119 checks, the pixel suite passes, preview.23
+was republished with the pinch host and the refreshed hosting assembly (installed packs included)
+and the demo hap was rebuilt and signed against it. Everything in the gap list is implemented; what
+remains is device validation (blocked by the hdc organization policy) and the architectural items
+(accessibility needs an ArkUI node tree; BlazorWebView/HybridWebView and the Hot Reload overlay need
+extra runtimes or dev tooling).
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
