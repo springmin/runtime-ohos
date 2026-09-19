@@ -573,6 +573,17 @@ information from the node table and executeAccessibilityAction routes back to th
 paths; events go out through OH_ArkUI_SendAccessibilityAsyncEvent. Batches D3 (Blazor JS bridge) and
 D4 (Hot Reload) follow.
 
+Accessibility provider binding is fully specified now. The two NAPI bridges exist -
+OH_ArkUI_GetNodeContentFromNapiValue and OH_ArkUI_GetNodeHandleFromNapiValue - so the shell can hand
+its ArkTS NodeContent (and/or a node) to the host, the host converts it with
+OH_ArkUI_GetNodeHandleFromNapiValue into an ArkUI node handle (which the provider call requires to be
+of type ARKUI_NODE_CUSTOM) or attaches its own nodes with OH_ArkUI_NodeContent_AddNode, and then
+calls OH_ArkUI_NativeModule_GetNativeAccessibilityProvider(node, &provider) followed by
+OH_ArkUI_AccessibilityProviderRegisterCallback. Everything below the provider is already implemented
+and verified: shadow tree with roles/text/description/hint/heading/bounds/state, per-role action
+masks, per-frame publish through ohos_host_accessibility_begin/node/commit and the host node table
+with cross-TU accessors (125 checks green).
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
