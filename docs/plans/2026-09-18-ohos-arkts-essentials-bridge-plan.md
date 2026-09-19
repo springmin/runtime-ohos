@@ -438,6 +438,16 @@ tarball on the Huawei mirror returns 404 (so the archive still has no notificati
 pack-workload-bundle.sh resolves its version from a source that still yields preview.22. Rebuilding
 the shell archive and the demo hap follows once hvigor is reachable or a local hvigor cache is used.
 
+Preview.23 is published: the workload manifest moved to 1.0.0-preview.23 and pack-workload-bundle
+plus publish-workload-release produced workload-1.0.0-preview.23 and refreshed workload-latest. The
+SDK pack contains the rebuilt and self-signed host (sensor and notification exports) and the shell
+templates with the notification sink and camera capture branch. The shell archive itself is still
+stale: build-arkts-shell.sh can now install hvigor from a local file mirror (the Huawei tarball URL
+404s) but then fails with "mkdir: '/project': Permission denied", i.e. the project base path is
+empty in that run, so modules.abc/modules.ui.abc were not regenerated and the shipped archive still
+lacks the notification and camera code. Fixing that path handling, rebuilding the archive, then
+re-packing and rebuilding hello-maui-app.hap are the remaining packaging steps.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
