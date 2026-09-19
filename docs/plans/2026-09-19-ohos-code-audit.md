@@ -239,3 +239,26 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - 仓库：`maui-ohos`（传感器 + InstallEssentials）、`ohos-workload`（宿主 + 套件 + 脚本）、`runtime-ohos`（本节）。
 - **注**：本批未触发 §8 归档刷新链（未改壳模板）；包内 `.so` 已由 `build-host.sh` 就地更新，
   `dist` 归档与 hap 内嵌副本（§14 的 `~/.dotnet/packs` 同步步骤）留待下一次释放批次统一刷新。
+
+## 16. 工作流 H（日历 + 联系人）结果、探测结论与后续
+
+- **联系人（平台扩展）**：`OpenHarmonyContacts.FindAsync(prefix, limit)` → `ohos_host_contacts_query` →
+  壳 `registerContactsSink` → 申请 `READ_CONTACTS` → `contact.queryContacts`（`@kit.ContactsKit`，**编译通过**）
+  → 前缀过滤 + 限量 → `notifyContactsResult` → 托管 Task；拒绝/异常/无 sink → 空列表且 `IsSupported=false`，不抛。
+- **日历（平台扩展）**：`OpenHarmonyCalendar.ListUpcomingAsync(days)` / `AddEventAsync(title, startIso, endIso)`
+  → `ohos_host_calendar_list/_add` → 壳 `registerCalendarSink`（op 0/1）→ `READ_CALENDAR`（+`WRITE_CALENDAR`）→
+  `calendarManager.getCalendarManager().getCalendar()` → `getEvents(EventFilter.filterByTime(...))` / `addEvent({type: EventType.NORMAL, ...})`
+  （`@kit.CalendarKit`，**编译通过、0 ArkTS 错误**）→ `notifyCalendarResult` → 托管 Task；同等降级。
+- **验证**：宿主重建 **117,664 B**（`selfsign ok`，7 个新导出已核）；套件 **163 项** 0 unhandled ✓
+  （新增：离线空结果/立即 `IsSupported=false`、模拟 sink 负载解析含畸形行丢弃）；壳归档 **40,048 B**。
+- **能力探测（本 SDK 实测）**：
+  | 模块 | 结论 |
+  |---|---|
+  | `@kit.PrintingKit` | **缺失**（`Cannot find module`）；但 `@ohos.print` 存在且可编译 → 后续批次可用 |
+  | `@kit.ConnectivityKit` | **存在且可编译**（`connection.BluetoothTransport` 通过）；注意 `connection.GattClientDevice` 未导出、`bluetooth`/`bluetoothManager` 已标记废弃 |
+  | `@kit.MapKit` | **缺失**（OpenHarmony SDK 无 MapKit） |
+- **首要后续（H 引出）**：`templates/module.json.template` **未声明权限**（READ_CONTACTS / READ_CALENDAR / WRITE_CALENDAR）
+  → 真机将如实报不可用。该模板为**所有应用共享**，故本批未改动（避免给所有应用增加安装期权限提示）；
+  建议以**可选属性**（如 `-p:OpenHarmonyExtraPermissions=...`）在打包时注入，再逐应用启用。
+- **不确定项**：联系人前缀过滤为**客户端过滤**（Kit 无前缀查询）→ 大通讯录下会先全量拉取再截断；真机侧仅"降级"被验证，
+  套件执行未真机运行。
