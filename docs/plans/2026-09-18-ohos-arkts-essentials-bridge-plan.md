@@ -563,6 +563,16 @@ clearFocused, cursor position) that read the published node table and fill eleme
 sends events for content changes. The managed shadow tree, action masks, publish pipeline and host
 node table are already in place and verified.
 
+Handover state (batch D2): the accessibility data chain is complete and verified - shadow tree with
+roles, text, SemanticProperties description and hint, heading roles, bounds, enabled/focusable flags
+and per-role action masks; the renderer publishes it每frame through ohos_host_accessibility_begin/
+node/commit and the host stores it with cross-TU accessors. The remaining provider binding needs a
+NodeContent from the shell (OH_ArkUI_GetNodeContentFromNapiValue + OH_ArkUI_NodeContent_AddNode with
+an ARKUI_NODE_CUSTOM root, which the provider call requires), then the seven callbacks fill element
+information from the node table and executeAccessibilityAction routes back to the managed hit/focus
+paths; events go out through OH_ArkUI_SendAccessibilityAsyncEvent. Batches D3 (Blazor JS bridge) and
+D4 (Hot Reload) follow.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
