@@ -514,6 +514,14 @@ postMessage - plus static-asset serving and the BlazorWebView handler in the sli
 Reload) depends on the dotnet-watch/HotReload agent, a device connection channel (hdc is blocked by
 policy) and runtime metadata-update (EnC) support.
 
+Batch D2 (accessibility) started: OpenHarmonyAccessibility builds a shadow node tree on every
+rendered frame (id/parent, role, text, SemanticProperties description, bounds, enabled/focusable),
+walking layouts, the navigation page's current page and content-view content, and the harness asserts
+it as a snapshot. The host side that publishes it through the ArkUI NDK provider
+(OH_ArkUI_NativeModule_GetNativeAccessibilityProvider, OH_ArkUI_AddAndGetAccessibilityElementInfo
+with the ElementInfo setters, OH_ArkUI_AccessibilityProviderRegisterCallback for actions and
+OH_ArkUI_SendAccessibilityAsyncEvent for events) is the next step in the batch.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
