@@ -533,6 +533,14 @@ callbacks from the XComponent context and publish the shadow tree through
 OH_ArkUI_AddAndGetAccessibilityElementInfo, then route executeAccessibilityAction back to the
 existing hit/focus/scroll paths.
 
+Batch D2 part 3: the managed publish pipeline is in place - the renderer sends the shadow tree each
+frame through ohos_host_accessibility_begin/node/commit (role, text, description, bounds, flags and
+the per-role action mask, UTF-8 marshalled) and degrades to a no-op when the host library is absent
+(verified: off-device publish reports 0 nodes without throwing; 124 checks). The host implements
+those three exports, fills ArkUI accessibility element information through
+OH_ArkUI_AddAndGetAccessibilityElementInfo and serves it from the registered provider callbacks,
+then executeAccessibilityAction routes back into the managed hit/focus/scroll paths.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
