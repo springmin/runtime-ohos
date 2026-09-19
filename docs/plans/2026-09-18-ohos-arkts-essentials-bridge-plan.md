@@ -541,6 +541,16 @@ those three exports, fills ArkUI accessibility element information through
 OH_ArkUI_AddAndGetAccessibilityElementInfo and serves it from the registered provider callbacks,
 then executeAccessibilityAction routes back into the managed hit/focus/scroll paths.
 
+Batch D2 part 4: the host stores the published node table (begin/node/commit plus count/get
+accessors that avoid sharing the struct across translation units) and was rebuilt and self-signed.
+The remaining provider binding has its signatures mapped: OH_ArkUI_NativeModule_GetNativeAccessibilityProvider
+(ArkUI_NodeHandle* node, ArkUI_AccessibilityProvider** provider, API 23+), OH_ArkUI_AccessibilityProviderRegisterCallback,
+OH_ArkUI_AddAndGetAccessibilityElementInfo(list) / OH_ArkUI_CreateAccessibilityElementInfo(),
+OH_ArkUI_SendAccessibilityAsyncEvent(provider, event, callback) and OH_ArkUI_FindAccessibilityActionArgumentByKey.
+The open question for that step is obtaining the ArkUI node handle of our XComponent, which the
+provider call needs, and then filling element information per requested node and routing
+executeAccessibilityAction back into the managed hit/focus/scroll paths.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
