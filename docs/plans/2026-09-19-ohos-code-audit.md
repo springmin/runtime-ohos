@@ -89,3 +89,32 @@ WebView · Window（＋G/手势/指针/捏合/无障碍/诊断/Essentials 系列
    真机核对后可加轴向修正表。
 4. 三者均已有**离设备单测覆盖换算逻辑**（µT 透传 / 0-90-180-270-45° / Pa→hPa / 四元数与钳制），
    宿主不可用时 `IsSupported=false` 且不抛异常 ✓。
+
+## 7. 工作流 C（Launcher/Browser/Share）结果与不确定项
+
+- **导入探测**：`@ohos.app.ability.common`（`UIAbilityContext`）与 `@ohos.app.ability.Want` **均可编译** ✓
+  （无需回退），壳归档重建为 **25,972 B**。
+- **链路**：托管 `ohos_host_ability_start(kind, uri, text)` → 宿主转发 JS sink
+  （`host.registerAbilitySink`）→ 壳 `startAbility`：kind 0 = `ohos.want.action.viewData`（Launcher/Browser/OpenFile），
+  kind 1 = `ohos.want.action.sendData`（文本），kind 2 = 可用性探测（供 `CanOpenAsync`，属扩展语义）。
+- **验证**：宿主 `selfsign ok` ✓；套件 **138 项** 0 unhandled ✓；离线降级均不抛异常 ✓。
+- **不确定项（已记录）**：
+  1. **分享文本键**：本 SDK **无 Share Kit**（`systemShare`），且 `wantConstant` 无纯文本键 →
+     暂用 `'ohos.extra.param.key.content'`（Share Kit 之前生态惯例；接收方若用新键将读不到）。
+  2. `CanOpenAsync` 语义 = **桥可用性**（OpenHarmony 无同步 handler 查询）。
+  3. `BrowserLaunchOptions` 已接收但未透传（仅外部 ability）；`ShareFileRequest`/`ShareMultipleFilesRequest`
+     为记录在案的 no-op（需 Share Kit 或 FD/URI 授权标志）；`OpenFileRequest` 以裸 `file://` 派发（未附带读权限标志）。
+  4. **既有观察（未改动）**：`MauiOpenHarmonyExtensions.InstallEssentials` 反射设置 **get-only** 的 `Current`
+     属性会在安装任何东西之前抛异常；实际默认经 MAUI 自身 builder 的 DI 与各处 `[ModuleInitializer]` 生效 →
+     该函数应清理或改为显式空操作（列为技术债）。
+
+## 8. 迭代规则（由多次归档刷新引出）
+
+任何**触碰壳模板**的批次完成后，必须执行一次"归档刷新链"，否则包内 `modules.ui.abc`、`dist/SHA256SUMS`
+与已签名 hap 会与源码不一致：
+```
+bash scripts/build-arkts-shell.sh  (HVIGOR_MIRROR=file://…/npm-mirror)
+cp dist/ets/modules.abc packs/Microsoft.OpenHarmony.Sdk/<ver>/templates/ets/modules.ui.abc   (+ modules.shell.abc)
+bash scripts/release-checksums.sh && bash scripts/pack-workload-bundle.sh && bash scripts/publish-workload-release.sh
+cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
+```
