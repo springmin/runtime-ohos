@@ -104,3 +104,38 @@ cd test/hello-maui-app && $HOME/.dotnet/dotnet publish -c Release -r openharmony
   验收清单：`docs/plans/2026-09-18-ohos-device-validation-checklist.md`。
 - **D4 Hot Reload**：需设备连接通道 + 运行时 metadata update（EnC）。
 - **无障碍**：仅剩绑定层（第 3 节配方）。
+
+## 7. D3 配方：BlazorWebView / HybridWebView
+
+已确认的 ArkWeb 能力：`registerJavaScriptProxy`、`runJavaScript`、`postMessage`
+（`@ohos.web.webview.d.ts`）。建议实施顺序：
+
+1. **壳（`templates/ets/pages/Index.ets` 的隐藏 Web 组件旁）**
+   - `controller.registerJavaScriptProxy({ invokeDotNetMethod: (assembly, methodId, argsJson) => host.notifyJsInvoke(assembly, methodId, argsJson), dispatchEvent: (name, detailJson) => host.notifyJsEvent(name, detailJson) }, 'dotnetHost', ['invokeDotNetMethod', 'dispatchEvent'])`
+   - 注入脚本：`controller.runJavaScript('window.__ohosDotNet = window.dotnetHost;')`
+   - 用 `controller.onMessage`/`postMessage` 作为回传通道的备选。
+2. **宿主 / NAPI**
+   - `ohos_host_web_eval(const char* script)` → `OhosWebEval(script)` → 壳执行 `controller.runJavaScript(script)`（回传结果经 `notifyWebEvent('evalResult', result)`）。
+   - `notifyJsInvoke` / `notifyJsEvent` → 托管回调（注册模式复用 `ohos_host_register_web_*`）。
+3. **托管切片**
+   - `OpenHarmonyWebViewHandler`：实现 `EvaluateJavaScriptAsync`（走 `ohos_host_web_eval`，结果以 TaskCompletionSource 等待 `evalResult`）。
+   - 新增 `OpenHarmonyBlazorWebViewHandler : OpenHarmonyViewHandler<IBlazorWebView>`（SliceHandlers 注册）：
+     `RootComponents` → `AddRootComponent`、`HostPage` → 载入 `app://`/`https://0.0.0.0/` + 资源服务
+     （**待核实** ArkWeb 的请求拦截 API：`onInterceptRequest`/`WebResourceRequest`；不可用时的兜底：
+     把 host page 与 `_framework` 以 `data:`/`blob:` 或本地临时文件 + `file://` 注入）。
+   - `HybridWebView`：`SendRawMessage`/`RawMessageReceived` 复用同一 JS 通道（`invokeDotNetMethod('HybridWebView', 'SendRawMessage', …)`）。
+4. **验证**
+   - 离设备：断言 handler 注册、`EvaluateJavaScriptAsync` 在无宿主时优雅降级、Blazor 组件映射（`RootComponents` 计数）；
+   - 真机：加载 Blazor 页面 → 断言 JS→.NET 往返（按钮点击触发 C# 方法）与渲染。
+5. **依赖**：`Microsoft.AspNetCore.Components.WebView.Maui`（NuGet）；`blazor.webview.js` 资源随包发布；
+   运行时使用已移植的 ASP.NET Core 组件栈（`aspnetcore-ohos`）。
+
+## 8. D4 配方：Hot Reload
+
+1. **工具链**：`dotnet watch` + `Microsoft.Extensions.HotReload`（agent）在设备侧进程内加载；
+   XAML 热重载还需 `Microsoft.Maui.Controls.Xaml` 的元数据更新钩子与文件变更通知。
+2. **连接通道**：agent 需与 `dotnet watch`（主机）通信 —— 当前依赖 `hdc`（`hdc fport` 转发）
+   **被组织策略拦截**；备选：USB/TCP 直连（同样需设备可访问）。**这是 D4 的唯一硬阻塞**。
+3. **运行时能力**：确认 CoreCLR 端口启用了 metadata update（`MetadataUpdater.IsSupported`
+   与 `Microsoft.DotNet.HotReload` 所需接口）；未启用则需在运行时侧开启 EnC 支持并随 pack 发布。
+4. **无工具链时的等价做法**：改动 → 重编译 → 重打包 hap → 重装（本仓库脚本已支持，见第 5 节）。
