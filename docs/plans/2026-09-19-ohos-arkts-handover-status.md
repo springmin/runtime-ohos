@@ -53,6 +53,45 @@
    （CLICKED / TEXT_UPDATE / PAGE_CONTENT_UPDATE / SCROLLED）。
 7. 重建壳归档与 hap；真机读屏遍历验收。
 
+### 3b. 精确签名（已从 SDK 头文件核实，实现可直接照抄）
+
+```c
+// NAPI 桥（native_node_napi.h，API 12+）
+int32_t OH_ArkUI_GetNodeHandleFromNapiValue(napi_env env, napi_value frameNode, ArkUI_NodeHandle* handle);
+int32_t OH_ArkUI_GetNodeContentFromNapiValue(napi_env env, napi_value value, ArkUI_NodeContentHandle* content);
+
+// provider 与回调（native_interface_accessibility.h，API 13+ / provider 取用 API 23+）
+int32_t OH_ArkUI_NativeModule_GetNativeAccessibilityProvider(ArkUI_NodeHandle* node, ArkUI_AccessibilityProvider** provider);
+int32_t OH_ArkUI_AccessibilityProviderRegisterCallback(ArkUI_AccessibilityProvider* provider, ArkUI_AccessibilityProviderCallbacks* callbacks);
+ArkUI_AccessibilityElementInfo* OH_ArkUI_AddAndGetAccessibilityElementInfo(ArkUI_AccessibilityElementInfoList* list);
+ArkUI_AccessibilityElementInfo* OH_ArkUI_CreateAccessibilityElementInfo(void);
+ArkUI_AccessibilityEventInfo*   OH_ArkUI_CreateAccessibilityEventInfo(void);
+void    OH_ArkUI_SendAccessibilityAsyncEvent(ArkUI_AccessibilityProvider* provider, ArkUI_AccessibilityEventInfo* eventInfo, void (*callback)(int32_t errorCode));
+int32_t OH_ArkUI_FindAccessibilityActionArgumentByKey(ArkUI_AccessibilityActionArguments* arguments, const char* key, char** value);
+
+// ElementInfo 填充（全部 int32_t，第一参数为 info）
+SetElementId(info, int32_t) · SetParentId(info, int32_t) · SetComponentType(info, const char*)
+SetAccessibilityText(info, const char*) · SetContents(info, const char*) · SetHintText(info, const char*)
+SetScreenRect(info, ArkUI_AccessibleRect*)   // {leftTopX, leftTopY, rightBottomX, rightBottomY} 均为 int32_t
+SetClickable(info, bool) · SetEnabled(info, bool) · SetFocusable(info, bool) · SetChecked(info, bool)
+SetOperationActions(info, int32_t count, ArkUI_AccessibleAction* actions)  // {actionType, description}
+
+// 回调结构体（7 项，均已测绘）
+findAccessibilityNodeInfosById(int64_t, ArkUI_AccessibilitySearchMode, int32_t, ArkUI_AccessibilityElementInfoList*)
+findAccessibilityNodeInfosByText(int64_t, const char*, int32_t, ArkUI_AccessibilityElementInfoList*)
+findFocusedAccessibilityNode(int64_t, ArkUI_AccessibilityFocusType, int32_t, ArkUI_AccessibilityElementInfo*)
+findNextFocusAccessibilityNode(int64_t, ArkUI_AccessibilityFocusMoveDirection, int32_t, ArkUI_AccessibilityElementInfo*)
+executeAccessibilityAction(int64_t, ArkUI_Accessibility_ActionType, ArkUI_AccessibilityActionArguments*, int32_t)
+clearFocusedFocusAccessibilityNode()
+getAccessibilityNodeCursorPosition(int64_t, int32_t, int32_t*)
+```
+
+实现顺序（照抄上式）：壳传 `NodeContainer`/自定义节点的 NAPI 值 → 宿主 `GetNodeHandleFromNapiValue`
+（若节点非 `ARKUI_NODE_CUSTOM` 则先 `NodeContent_AddNode` 挂自有 CUSTOM 根）→ `GetNativeAccessibilityProvider`
+→ `RegisterCallback` → 回调读 `ohos_host_accessibility_count/get` → 填充 ElementInfo →
+`executeAccessibilityAction` 回调托管（新增 `ohos_host_accessibility_set_action_listener`）→
+`PendingEventCount` 转 `SendAccessibilityAsyncEvent`。
+
 已就绪的事件源：`OpenHarmonyAccessibility.PendingEventCount`（帧间差异 → 页状态/页内容/文本更新
 标志，托管状态、宿主不可用时也计算），宿主只需把它转成 `OH_ArkUI_SendAccessibilityAsyncEvent`。
 
