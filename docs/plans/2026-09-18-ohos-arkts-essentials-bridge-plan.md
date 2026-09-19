@@ -456,6 +456,14 @@ dist/ets/modules.abc (23880 bytes) carries the notification sink and the camera 
 is stored in the preview.23 pack as modules.ui.abc, and preview.23 was re-packed and re-published
 with it. The demo hap is rebuilt from the same archive.
 
+Preview.23 is complete: the SDK pack now also carries Sdk/targets/ridgraph (without them no hap
+could be packaged), the hap target runs with -p:OpenHarmonyHapPackage=true, and hello-maui-app.hap
+(21517056 bytes, signed) was rebuilt against the freshly compiled shell archive that contains the
+notification sink and the camera capture branch. The bundle was re-packed and re-published with
+workload-latest refreshed. Structure verified: module.json, ets/modules.abc, the ABI host library
+and resources/rawfile/dotnet.zip are all present. Remaining: device validation (hdc is blocked by
+the organization policy) per the validation checklist.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
