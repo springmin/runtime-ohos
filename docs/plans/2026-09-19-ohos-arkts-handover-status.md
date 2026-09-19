@@ -97,6 +97,20 @@ cd test/hello-maui-app && $HOME/.dotnet/dotnet publish -c Release -r openharmony
   -p:OpenHarmonyHapPackage=true
 ```
 
+## 5b. 发布物形态与第三方安装（重要更正）
+
+发布的 `dist/openharmony-workload-<ver>.tar.gz` 是**一个 NuGet feed（116 个 nupkg）**，不是 `packs/` 目录：
+
+- 版本号规则：**各 pack 有独立版本**（例如 feed 中的 `Microsoft.OpenHarmony.Sdk.1.0.0-preview.1.nupkg`），
+  以 `WorkloadManifest.json` 声明的 id+version 为权威；`packs/` 是本机布局，`feed/` 是发布布局。
+- 第三方安装方式：
+  ```bash
+  dotnet workload install openharmony --source <解压后的 feed 目录>
+  ```
+- 校验脚本：`scripts/verify-clean-install.sh`（解包 → 按 manifest 逐包核对 feed → 检查 SDK 包内的
+  宿主/壳归档/hap 打包目标/签名脚本 → 打印安装命令），当前输出 **CLEAN INSTALL FEED OK** ✓。
+- 演示应用的 **hap 签名**仍需按 `2026-09-19-ohos-signing-and-udid-guide.md` 注入目标设备 UDID（9568344 的根因）。
+
 ## 6. 阻塞与外部依赖
 
 - **真机验收**：`hdc` 被组织策略拦截（"Operation restricted by the organization"）；
