@@ -139,3 +139,19 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 每完成一个批次：① 复核其提交与验证结论 → ② 合并/同步仓库内套件 → ③ **§8 归档刷新链** → ④ 记录结果与不确定项
 → ⑤ 启动下一批次。壳归档体积随批次增长（23,880 → 24,220 → 25,972 → 30,228 B），每次都必须刷新，否则
 包/校验和/hap 与源码不一致。
+
+## 11. 工作流 E（拖放）结果与不确定项
+
+- **分发 API 是公开的**（反射 dump 实证，*无需* 反射分发）：
+  `DragGestureRecognizer.SendDragStarting/SendDropCompleted`、`DropGestureRecognizer.SendDragOver/SendDragLeave/SendDrop`
+  （`SendDrop` 返回 `Task`）；事件参数构造器公开，平台参数可传 `null` ✓；所有分发均 try/catch（异步 `SendDrop` 以
+  faulted continuation 观测）→ 不会破坏帧循环。
+- **判定**：长按 **500 ms**（`Environment.TickCount64`，阈值常量可配）+ 位移 **8 px**（与渲染器既有 slop 一致）；
+  超时后首次越过 slop 的移动即从**最深**且启用的 `DragGestureRecognizer` 视图**提升**为拖拽（并接管 down 时捕获的
+  pan/swipe/slider/scroll/selection 轨道）；拖拽中命中**最深** `AllowDrop` 视图（含滚动偏移，pointer 式查找），
+  目标变化发 `DragLeave`/`DragOver`；释放发 `Drop` + `DropCompleted`；文本回退 `IText/ILabel` → `AutomationId` → 空包。
+- **验证**：0 error ✓；套件 **147 项**（基线 144 逐字未变，因在既有视图上附加识别器而非新增视图 ✓）0 unhandled；
+  断言覆盖 `starting/over/leave/drop(text)/completed`、空处释放 `success=false`、提前移动不触发 ✓。
+- **不确定项（已记录）**：`DropCompletedEventArgs.DropResult` 为 **internal 且无公开 setter** → 成功拖放亦报 `None`
+  （harness 反射读取，仅对"空处释放"断言 None；成功性由 `Drop` 带正确负载证明）；判定为**触摸专用**（未合成鼠标按键拖拽）。
+- **范围**：managed-only（**未改**宿主/NAPI/壳）→ **无需** §8 归档刷新 ✓。
