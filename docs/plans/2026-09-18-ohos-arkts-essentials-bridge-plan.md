@@ -522,6 +522,17 @@ it as a snapshot. The host side that publishes it through the ArkUI NDK provider
 with the ElementInfo setters, OH_ArkUI_AccessibilityProviderRegisterCallback for actions and
 OH_ArkUI_SendAccessibilityAsyncEvent for events) is the next step in the batch.
 
+Batch D2 continues: the provider callback contract is fully mapped from the SDK header -
+ArkUI_AccessibilityProviderCallbacks { findAccessibilityNodeInfosById, findAccessibilityNodeInfosByText,
+findFocusedAccessibilityNode, findNextFocusAccessibilityNode, executeAccessibilityAction,
+clearFocusedFocusAccessibilityNode, getAccessibilityNodeCursorPosition } registered with
+OH_ArkUI_AccessibilityProviderRegisterCallback (and a WithInstance variant for third-party
+frameworks) - and the action surface is mirrored as OpenHarmonyAccessibilityAction with
+ActionsFor(role) mapping roles to the actions the provider will advertise. Next: register the
+callbacks from the XComponent context and publish the shadow tree through
+OH_ArkUI_AddAndGetAccessibilityElementInfo, then route executeAccessibilityAction back to the
+existing hit/focus/scroll paths.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
