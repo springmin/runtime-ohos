@@ -53,6 +53,9 @@
    （CLICKED / TEXT_UPDATE / PAGE_CONTENT_UPDATE / SCROLLED）。
 7. 重建壳归档与 hap；真机读屏遍历验收。
 
+已就绪的事件源：`OpenHarmonyAccessibility.PendingEventCount`（帧间差异 → 页状态/页内容/文本更新
+标志，托管状态、宿主不可用时也计算），宿主只需把它转成 `OH_ArkUI_SendAccessibilityAsyncEvent`。
+
 ## 4. 操作规程（本机环境坑）
 
 - **shell 是 toybox**：用 `grep -E`，不要 `grep "a\|b"`；比较用 `[ ]`。
