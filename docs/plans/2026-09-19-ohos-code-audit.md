@@ -200,3 +200,42 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 `~/.dotnet/packs/...` 的已安装副本** → 曾出现 hap 内宿主为旧体积（84,896 B）而包内已是新宿主 ✗。
 **刷新链补一步**：把 `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so`
 同步到 `~/.dotnet/packs/Microsoft.OpenHarmony.Sdk/*/hosts/arm64-v8a/`，再重建 hap，并以"hap 内 `.so` 体积"作为校验点 ✓。
+
+## 15. 收尾批次：rotation-vector 取向、InstallEssentials 空操作、脚本日志辅助
+
+### 15a. 取向传感器改用 `SENSOR_TYPE_ROTATION_VECTOR (259)`（宿主 + 托管）
+- **宿主** `openharmony_host.c`：`g_sensor_listener` 签名由 `(int, float, float, float, long long)` 扩展为
+  `(int, float, float, float, float, long long)`；`OhosSensorEventCallback` 在 `length > 3` 时取 `data[3]` 作为 w，
+  否则 w 默认 `1.0`（对三轴传感器是无害的兼容值）；setter 强转同步更新。
+- **托管** `OpenHarmonySensors.cs`：`SensorCallback` 与 `OnReading` 均改为 6 参数；`OrientationType` 由
+  `256`（NDK 文档：绕 z/x/y 的欧拉角）改为 **`259`**（`SENSOR_TYPE_ROTATION_VECTOR`：data[0..2] 向量部 +
+  data[3] 标量部）；`OpenHarmonyOrientationSensor.OnReading` 改为 `(x, y, z, w)` 并**原样**构造
+  `OrientationSensorData`，删除 `w = sqrt(max(0, 1-x²-y²-z²))` 重建。Magnetometer/Compass 仍为 6、Barometer 8、
+  Accelerometer 1、Gyroscope 2。
+- **验证**：`bash scripts/build-host.sh` → **`selfsign ok`**（包内 `libopenharmonyhost.so` 113,568 B，已签名）；
+  harness 新增断言：经 6 参数 `SensorCallback` 委托（`Delegate.CreateDelegate`，同时钉住原生签名）调用托管回调，
+  断言 `type=259` 且 `(0.5, -0.25, 0.125, 0.75)` 原样到达 `OrientationSensorData.Orientation`（unchanged=True）✓。
+  对应 §6 第 2 条不确定项（取向语义）已消除。
+
+### 15b. `MauiOpenHarmonyExtensions.InstallEssentials` 技术债清理（managed-only）
+- 删除反射设置 get-only `Current`/`Default` 的循环：该循环在第一次 `SetValue` 即抛异常，**从未生效**；方法保留为
+  **显式空操作**并注明真实默认来自 `UseOpenHarmony` 的 DI 注册与各特性 `[ModuleInitializer]`（app-launching/
+  haptics/menus/TextToSpeech/theme）。**DI 注册一行未动**。对应 §7 第 4 条技术债。
+- **验证**：套件内 Preferences/FileSystem/SecureStorage/AppInfo/DeviceInfo/VersionTracking/Clipboard/Connectivity/
+  Launcher/Browser/Share 等断言与基线一致 ✓（158 项 0 unhandled，0 error）。
+
+### 15c. 脚本统一 `log()` / `warn()`（`ohos-workload/scripts`，仅本仓自有的 5 个脚本）
+- helper（时间戳前缀、`printf`）：`log()` 写 stdout `[HH:MM:SS] …`；`warn()` 写 stderr `[HH:MM:SS] WARN: …`。
+- 落地：`sign-for-device.sh`、`release-checksums.sh`、`verify-clean-install.sh`、`pack-workload-bundle.sh`、
+  `publish-workload-release.sh`（均无既有 `info()`，未重复定义）。状态行 → `log`，错误/用法行 → `warn`；
+  未改变控制流、退出码与输出流（错误仍在 stderr）。
+- **验证**：5 个脚本 `sh -n` 全部通过 ✓。
+
+### 15d. 本批验证汇总
+- 宿主：`build-host.sh` 以 `selfsign ok` 结束 ✓（签名后 113,568 B）。
+- harness（临时目录与仓库内 `test/maui-platform-verify` 同步逐字节一致）：`dotnet build` 0 error；
+  运行 **158 项 `[verify]`、0 `Unhandled`**（基线 157 → 158，新增 rotation-vector 断言）✓。
+- 脚本：`sh -n` 5/5 ✓。
+- 仓库：`maui-ohos`（传感器 + InstallEssentials）、`ohos-workload`（宿主 + 套件 + 脚本）、`runtime-ohos`（本节）。
+- **注**：本批未触发 §8 归档刷新链（未改壳模板）；包内 `.so` 已由 `build-host.sh` 就地更新，
+  `dist` 归档与 hap 内嵌副本（§14 的 `~/.dotnet/packs` 同步步骤）留待下一次释放批次统一刷新。
