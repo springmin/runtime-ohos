@@ -383,3 +383,4 @@ test:.cs
 
 # Copilot CLI local configuration
 .github/copilot/settings.local.json
+.omo/
