@@ -448,6 +448,14 @@ empty in that run, so modules.abc/modules.ui.abc were not regenerated and the sh
 lacks the notification and camera code. Fixing that path handling, rebuilding the archive, then
 re-packing and rebuilding hello-maui-app.hap are the remaining packaging steps.
 
+The shell archive blocker is resolved: build-arkts-shell.sh referenced HVIGOR_DIR one line before
+assigning it (so the project path collapsed to /project) and the camera branch used
+cameraPicker.CameraPosition, which cameraPicker does not export (it lives in
+@ohos.multimedia.camera). With hvigor served from a local file mirror the shell now compiles -
+dist/ets/modules.abc (23880 bytes) carries the notification sink and the camera capture branch and
+is stored in the preview.23 pack as modules.ui.abc, and preview.23 was re-packed and re-published
+with it. The demo hap is rebuilt from the same archive.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
