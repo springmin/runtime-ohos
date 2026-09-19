@@ -86,6 +86,15 @@ clearFocusedFocusAccessibilityNode()
 getAccessibilityNodeCursorPosition(int64_t, int32_t, int32_t*)
 ```
 
+**实现进展（2026-09-19，宿主侧已完成）**：`host_napi.cpp` 已实现 `attachAccessibilityNode`
+（`GetNodeHandleFromNapiValue` → `GetNativeAccessibilityProvider` → `RegisterCallback`）与 7 个回调
+（ById 根节点/子节点、ByText 文本或描述子串、Focused/NextFocus 首个/下一个可聚焦、ExecuteAction
+转发动作监听器、ClearFocus、CursorPosition），ElementInfo 用 `AddAndGetAccessibilityElementInfo`
++ id/parent/组件类型/文本/内容/屏幕矩形（来自发布边界）/可点击/可用/可聚焦 填充；
+`accessibilityStatus` 回传附着状态。宿主构建与自签名通过 ✓。
+**剩余**：壳调用 `host.attachAccessibilityNode(<自定义节点>)`；托管侧注册动作监听器
+（`executeAccessibilityAction` 目前返回失败直到有监听器）。
+
 实现顺序（照抄上式）：壳传 `NodeContainer`/自定义节点的 NAPI 值 → 宿主 `GetNodeHandleFromNapiValue`
 （若节点非 `ARKUI_NODE_CUSTOM` 则先 `NodeContent_AddNode` 挂自有 CUSTOM 根）→ `GetNativeAccessibilityProvider`
 → `RegisterCallback` → 回调读 `ohos_host_accessibility_count/get` → 填充 ElementInfo →
