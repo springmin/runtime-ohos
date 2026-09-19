@@ -464,6 +464,17 @@ workload-latest refreshed. Structure verified: module.json, ets/modules.abc, the
 and resources/rawfile/dotnet.zip are all present. Remaining: device validation (hdc is blocked by
 the organization policy) per the validation checklist.
 
+Limitations re-audit (2026-09-18): two of the recorded limits were liftable and are now closed.
+SwipeItem.Invoked fires because activation calls the public ISwipeItem.OnInvoked() (Invoked plus
+Clicked/Command), and pointer gestures work because OpenHarmonyPointer invokes the internal
+SendPointerEntered/Exited/Moved/Pressed/Released through cached reflection with the renderer
+dispatching enter/press on touch down and release/exit on touch up (entered/pressed/released/exited
+all verified; 117 checks). The remaining limits are precisely scoped: pinch dispatch is public
+(IPinchGestureController.SendPinchStarted/SendPinch/SendPinchEnded/Canceled) but the touch bridge
+carries one point, so multi-touch requires extending the host, NAPI and shell; true hover needs an
+onHover callback from the shell; accessibility semantics need an ArkUI node tree; and device
+validation still needs hdc access.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
