@@ -167,8 +167,11 @@ cd test/hello-maui-app && $HOME/.dotnet/dotnet publish -c Release -r openharmony
 
 - `workload-1.0.0-preview.23`（版本化 release）：**已附 `SHA256SUMS`** ✓（实测资产列表含
   `openharmony-workload-1.0.0-preview.23.tar.gz` 与 `SHA256SUMS`）。
-- `workload-latest`（滚动 release）：**尚未附** ✗ —— `publish-workload-release.sh` 中滚动资产的上传路径
-  与版本化路径不同（前两轮补丁分别命中错误占位符与仅版本化路径），需先定位其上传语句再补。
+- `workload-latest`（滚动 release）：**已附 `SHA256SUMS`** ✓（实测：`openharmony-workload-latest.tar.gz`
+  + `SHA256SUMS`）。补齐过程与事故记录：脚本用「删除再创建」刷新滚动 release，本次因 tag/目标分支
+  问题在删除后创建失败，**导致该 release 短暂消失** ✗；已手工重建并上传校验和，两个 release 现均正常 ✓。
+  **遗留加固项**：`publish-workload-release.sh` 的删除+创建流程应改为不删除（例如 create 时用
+  `--target`/先清理 tag、或改用 `gh release upload --clobber`），避免刷新失败造成发布缺失。
 - 本地 `dist/` 被 gitignore（属构建输出）：校验和文件由 `scripts/release-checksums.sh` 生成，
   随 release 附件分发，不入库。
 
