@@ -150,6 +150,15 @@ cd test/hello-maui-app && $HOME/.dotnet/dotnet publish -c Release -r openharmony
   宿主/壳归档/hap 打包目标/签名脚本 → 打印安装命令），当前输出 **CLEAN INSTALL FEED OK** ✓。
 - 演示应用的 **hap 签名**仍需按 `2026-09-19-ohos-signing-and-udid-guide.md` 注入目标设备 UDID（9568344 的根因）。
 
+## 5c. 校验和附件状态（如实记录）
+
+- `workload-1.0.0-preview.23`（版本化 release）：**已附 `SHA256SUMS`** ✓（实测资产列表含
+  `openharmony-workload-1.0.0-preview.23.tar.gz` 与 `SHA256SUMS`）。
+- `workload-latest`（滚动 release）：**尚未附** ✗ —— `publish-workload-release.sh` 中滚动资产的上传路径
+  与版本化路径不同（前两轮补丁分别命中错误占位符与仅版本化路径），需先定位其上传语句再补。
+- 本地 `dist/` 被 gitignore（属构建输出）：校验和文件由 `scripts/release-checksums.sh` 生成，
+  随 release 附件分发，不入库。
+
 ## 6. 阻塞与外部依赖
 
 - **真机验收**：`hdc` 被组织策略拦截（"Operation restricted by the organization"）；
