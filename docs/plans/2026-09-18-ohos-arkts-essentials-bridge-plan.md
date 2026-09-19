@@ -485,6 +485,14 @@ event already carries every point, so the host computes the pinch directly (dist
 calls the managed listener. No ArkTS or NAPI change was required and the host library was rebuilt
 and self-signed.
 
+Real pointer hover is done too: the NDK mouse callback arrives as a touch move, so
+HandlePointerMove tracks the hovered view and raises Exited/Entered on changes plus Moved on every
+report (verified: moving over a pointer label raises Entered, moving away raises Exited; 119
+checks). Pointer, pinch and SwipeItem.Invoked are therefore all closed; the only remaining
+limitations are the architectural ones (accessibility needs an ArkUI node tree, BlazorWebView/Hybrid
+WebView and the Hot Reload overlay need extra runtimes or dev tooling) and device validation, which
+is blocked by the hdc organization policy.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
