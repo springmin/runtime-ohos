@@ -155,3 +155,22 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - **不确定项（已记录）**：`DropCompletedEventArgs.DropResult` 为 **internal 且无公开 setter** → 成功拖放亦报 `None`
   （harness 反射读取，仅对"空处释放"断言 None；成功性由 `Drop` 带正确负载证明）；判定为**触摸专用**（未合成鼠标按键拖拽）。
 - **范围**：managed-only（**未改**宿主/NAPI/壳）→ **无需** §8 归档刷新 ✓。
+
+## 12. 工作流 F（触感 + 主题跟随）结果与不确定项
+
+- **触感（managed-only ✓）**：复用既有导出 **`ohos_host_vibrate`**（`OH_Vibrator_PlayVibration(duration, 默认属性)`）——
+  与既有 `Vibration` 同源，**未改宿主**。新文件 `OpenHarmonyHaptics.cs`：`IHapticFeedback` 默认实现经私有静态字段
+  反射 + `[ModuleInitializer]` 安装；映射 **Click → 30 ms 短振、LongPress → 300 ms 长振**（导出只接受时长，
+  **无法表达强度/类型**）；一切调用守卫，`IsSupported` = 受守卫的 `VIBRATE` 权限查询，缺宿主库即 false，`Perform` 不抛。
+- **主题跟随（shell + NAPI 桥，已实现）**：宿主新增 `notifyTheme` 与 `ohos_host_theme_set_listener`；壳用
+  `Environment.envProp('colorMode')` + `@StorageProp`/`@Watch` 上报初值/变化；托管 `OpenHarmonyTheme` 注册回调并
+  写 `Application.Current.UserAppTheme`（应用创建前到达的模式由 `Run` 中一行加性代码在 `Attach` 时补上）。
+- **证据**：ArkTS 编译通过（生成的 `Index.ts` 含 `reportTheme`/`notifyTheme`/`declareWatch`）；宿主 `selfsign ok` +
+  `llvm-nm -D` 见 `T ohos_host_theme_set_listener`；套件断言主题在暗/亮间切换并复原 ✓。
+- **验证**：宿主重建（113,568 B，已签名）；套件 **152 项** 0 unhandled ✓；壳归档重建为 **31,868 B**（未入包，
+  由 §8 刷新链统一处理 ✓）。
+- **不确定项（已记录）**：触感无强度表达（仅时长）；主题仅编译/符号/托管三层验证，**未真机运行**；在包内壳归档
+  刷新前，设备仍用旧壳（无 `notifyTheme`）→ 托管侧保持 MAUI 默认，**不会崩溃** ✓；触感 `IsSupported` 反映的是
+  VIBRATE 权限而非真实振子能力探测（NDK 导出无探测接口）。
+- **既有阻塞说明（非本批引入）**：切片 `.csproj` 在本部分树中因缺 `eng/AndroidX.targets` 无法独立构建 ✗，
+  因此 harness（编译全部切片源码）是当前有效验证载体。
