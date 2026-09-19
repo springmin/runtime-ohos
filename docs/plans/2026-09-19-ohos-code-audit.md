@@ -174,3 +174,29 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   VIBRATE 权限而非真实振子能力探测（NDK 导出无探测接口）。
 - **既有阻塞说明（非本批引入）**：切片 `.csproj` 在本部分树中因缺 `eng/AndroidX.targets` 无法独立构建 ✗，
   因此 harness（编译全部切片源码）是当前有效验证载体。
+
+## 13. 工作流 G（ArkWeb JS 桥 + HybridWebView）结果与不确定项
+
+- **链路**：壳 `registerWebEvalSink((script, requestId) => runJavaScript(...))` +
+  `registerJavaScriptProxy({postMessage}, 'dotnetHost', ['postMessage'])`（在 `onControllerAttached` 注册，
+  过早注册会触发 BusinessError 17100001）+ `onPageEnd` 重注入 `window.__ohosDotNet`；
+  宿主 NAPI `registerWebEvalSink/notifyWebEvalResult/notifyJsMessage` 与 `extern "C"` 的
+  `ohos_host_web_eval` / `ohos_host_web_js_register_result` / `ohos_host_web_js_register_message`（符号已核）；
+  托管 `OpenHarmonyWebViewHandler.EvaluateJavaScriptAsync`（按 requestId 等待 + 超时）+ `JsMessage` 事件。
+- **HybridWebView：已实现（最小）**——`IHybridWebView` 复用同一通道（`SendRawMessage`→`window.external.receiveMessage`
+  或 `HybridWebViewMessageReceived`；`RawMessageReceived`；`InvokeJavaScriptAsync` 采用标准
+  `__InvokeJavaScriptCompleted|taskId|json` 协议），并注册进 `SliceHandlers` ✓。
+- **未实现（文件头已注明）**：**资源服务**（`HybridRoot`/`DefaultFile` 需 ArkWeb `onInterceptRequest` + 流式提供
+  `wwwroot` 与 `_framework/hybridwebview.js`）→ 在其落地前 HybridWebView **不显示页面**；BlazorWebView 未尝试（同需该资源管线 + 框架文件与 IPC）。
+- **验证**：宿主 `selfsign ok` + 新符号 ✓；壳归档重建 **34,412 B**（含 `dotnetHost` 等字符串）；套件 **157 项** 0 unhandled ✓。
+- **不确定项（如实）**：① **未真机运行**——`CompleteEvalResult` 路径已接但未实测；壳 sink 从宿主回调线程调用
+  `runJavaScript`，而 ArkWeb 文档要求 UI 线程，**这是主要真机风险**（同步失败已捕获并报 `error=1`）；
+  ② JS 异常仅表现为 `null`/空，不携带异常类型；③ `registerJavaScriptProxy` **仅对下次页面加载生效**；
+  ④ 入站 JS 消息**广播**给所有 HybridWebView handler（共享单一 ArkWeb 覆盖层，与既有页面事件模型一致）。
+
+## 14. §8 刷新链的修正（本轮发现）
+
+包内 `hosts/arm64-v8a/libopenharmonyhost.so` 由 `build-host.sh` 就地更新，但 **hap 打包读取的是
+`~/.dotnet/packs/...` 的已安装副本** → 曾出现 hap 内宿主为旧体积（84,896 B）而包内已是新宿主 ✗。
+**刷新链补一步**：把 `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so`
+同步到 `~/.dotnet/packs/Microsoft.OpenHarmony.Sdk/*/hosts/arm64-v8a/`，再重建 hap，并以"hap 内 `.so` 体积"作为校验点 ✓。
