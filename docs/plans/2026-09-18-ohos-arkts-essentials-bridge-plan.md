@@ -475,6 +475,14 @@ carries one point, so multi-touch requires extending the host, NAPI and shell; t
 onHover callback from the shell; accessibility semantics need an ArkUI node tree; and device
 validation still needs hdc access.
 
+Pinch is implemented through the bridge: the shell reports phase/scale/centre with notifyPinch, the
+host stores the managed listener (ohos_host_register_pinch) and forwards it, and
+OpenHarmonyWindowRenderer.HandlePinch routes to the deepest view owning a PinchGestureRecognizer
+via the public IPinchGestureController. Verified headlessly with a synthesised gesture
+(Started:1.0 Running:1.5 Running:2.0 Completed:1.0; 118 checks). The remaining step is the shell
+side: compute the pinch from the two touch points in the touch handler and call host.notifyPinch
+(NAPI already exposes it), then rebuild the shell archive.
+
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
 
