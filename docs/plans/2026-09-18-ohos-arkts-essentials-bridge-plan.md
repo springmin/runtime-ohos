@@ -479,9 +479,11 @@ Pinch is implemented through the bridge: the shell reports phase/scale/centre wi
 host stores the managed listener (ohos_host_register_pinch) and forwards it, and
 OpenHarmonyWindowRenderer.HandlePinch routes to the deepest view owning a PinchGestureRecognizer
 via the public IPinchGestureController. Verified headlessly with a synthesised gesture
-(Started:1.0 Running:1.5 Running:2.0 Completed:1.0; 118 checks). The remaining step is the shell
-side: compute the pinch from the two touch points in the touch handler and call host.notifyPinch
-(NAPI already exposes it), then rebuild the shell archive.
+(Started:1.0 Running:1.5 Running:2.0 Completed:1.0; 118 checks). The shell side turned out to be unnecessary: the XComponent touch
+event already carries every point, so the host computes the pinch directly (distance between points
+0 and 1, scale relative to the first two-finger event, Completed when the points drop to one) and
+calls the managed listener. No ArkTS or NAPI change was required and the host library was rebuilt
+and self-signed.
 
 Still open from the gap list: Pinch/Pointer gestures (multi-touch needs a bridge extension),
 SwipeView/RefreshView, ToolbarItem, sensor/notification kits, camera capture.
