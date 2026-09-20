@@ -658,3 +658,102 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 2. 如需 CI 级回归，给 ohos-workload harness 加 `Microsoft.AspNetCore.Components.WebView.Maui` 包引用 +
    `OPENHARMONY_BLAZOR_WEBVIEW` 常量，并把 `[verify]` 期望值从 195 上调（本批未改该仓）。
 3. §8 归档刷新与 release 不受本批影响（无 hap 产物）✓。
+
+## 28. BlazorWebView 里程碑 3.0：hap 资产管线 + ArkTS bootstrap（native 模型；2026-09-20）
+
+### 🔑 关键洞察：native 模型，不是 WASM 模型
+- 宿主在**进程内**运行托管应用（CoreCLR 在 `libopenharmonyhost.so` 里），因此本平台的 MAUI Blazor 是
+  **native 模型**（与 Android/iOS 相同），不是 WebAssembly 模型：**不需要** `dotnet.wasm` /
+  `dotnet.native.js` / `_*.dll` 浏览器资产，WebView 侧只需要 `blazor.webview.js` + `window.external`
+  消息传输。
+- 反查包内唯一权威 `blazor.webview.js`（`Microsoft.AspNetCore.Components.WebView 11.0.0-preview.7.26381.103`
+  的 `staticwebassets/blazor.webview.js`，604,610 B，sha256 `713e519fcd217fa2ca56e8307a166ae89bb296008fd18f2b79f65daeaa7ae1aa`）：
+  JS→.NET 只有 `window.external.sendMessage(…)`（`__bwv:` 前缀负载）；.NET→JS 是
+  `window.external.receiveMessage(callback)` 注册 + `__dispatchMessageCallback(message)` 投递；bundle 对
+  `window.external` 的读取全部发生在 `Blazor.start()`（`jt()`）内部，页面 script 标签本身不读它。
+  **没有任何 wasm/dotnet loader 代码路径**。
+- 里程碑 2 待办第 9 条的"需独立 WASM 发布 + `MauiAsset`/内嵌资源搬运"是**被否定的假设**，不是待办；
+  本批没有搬运任何浏览器资产 ✓。
+
+### Task A：pack 资产管线（`ohos-workload 811f0d5`）
+- 新目标 `_OpenHarmonyStageBlazorAssets`（`packs/.../targets/OpenHarmony.Hap.targets`，preview.23 + 镜像
+  preview.22），挂在 `_OpenHarmonyStageHap` 的 `DependsOnTargets`：**Publish 之后、写
+  `resources/rawfile/dotnet.zip` 之前**；无 `wwwroot` 时 no-op（无 item、无 copy、无消息），payload 不变。
+- **staging 约定**：`<project>/wwwroot/**` → `<PublishDir>/wwwroot/**`；hap 里 `dotnet.zip` 由
+  `EntryAbility.bootstrap()` 解包到 `<AppDir>`（`filesDir/dotnet`），运行时路径即 `<AppDir>/wwwroot/...`
+  = 壳的 `<base>/<root>/...` **与 hybrid 的 `https://0.0.0.1/` 服务约定完全同构**（Blazor 的
+  `https://0.0.0.0/` 从这个根服务）。
+- `wwwroot/_framework/blazor.webview.js` 来源优先级：`@(StaticWebAsset)`（Razor/静态资产管线跑过时，
+  版本最匹配）→ NuGet 缓存
+  `$(NuGetPackageRoot)microsoft.aspnetcore.components.webview/*/staticwebassets/blazor.webview.js`；
+  另消费 `@(MauiAsset)` 中 `TargetPath` 以 `wwwroot/` 开头的项（本部分树缺失的 MauiAsset consumer 的替代，
+  `wwwroot/` 前缀同时防止越出内容根）。约定已写入目标文件头。
+
+### Task B：壳 bootstrap（`ohos-workload 811f0d5`；`Index.ets`，双版本）
+- 新 `blazor` web command：解析 `{origin, base, root, defaultFile}`、加上尾 `/`、注册后 load origin
+  （与 hybrid 同形；2b manager 落地后 `Navigate` 会再 load 一次，属等价重载）。
+- `onInterceptRequest`：Blazor origin 一律按 `<base>/<root>/<path>` 服务；`_framework/blazor.webview.js`
+  在 Blazor 下是普通内容根文件（不同于 hybrid 的 `_framework/hybridwebview.js` 特例）。读取逻辑抽成
+  `servePayloadFile`，`serveHybridFile`/`serveBlazorFile` 只是薄封装，**hybrid 行为逐字不变**。
+- `onPageEnd`（Blazor root 文档、`onPageBegin` 重置一次性守卫）注入包期望的序列（与 Tizen/iOS 平台实现同款）：
+  1. `window.__receiveMessageCallbacks = []`；`window.__dispatchMessageCallback(message)` fan-out；
+  2. `window.external.sendMessage` → `dotnetHost.postMessage`（复用注入的 hybrid shim）；
+  3. `window.external.receiveMessage(callback)` 改为**注册式**（只覆盖 Blazor 文档，hybrid 页面的 Event 语义不动）；
+  4. `Blazor.start()`：`typeof Blazor !== 'undefined'` 时立即调用；否则复用/注入
+     `<script src="https://0.0.0.0/_framework/blazor.webview.js" autostart="false">` 并在其 `load` 后启动；
+     另设 `window.onpageshow` persisted → reload。
+- UI 线程：注入发生在 `onPageEnd`（ArkUI 回调，UI 线程），`runJavaScript` 调用方式与既有 `injectPageBridge`
+  一致；host→壳的 `blazor` 命令继续走既有 `runOnUiThread` 路径 ✓。
+
+### Task C：切片对齐（`maui-ohos dc91e92`，注释级）
+- 只更新 `OpenHarmonyBlazorWebViewHandler.cs` 的过时 TODO 注释（文件头、`ConnectHandler`、
+  `RegisterBlazorAssets`、`NavigateCore`），说明 milestone 3 的壳/资产管线/bootstrap 已落地、bootstrap 不
+  由 handler eval；**无代码变化**，`#if OPENHARMONY_BLAZOR_WEBVIEW` 编译门未动 ✓。
+
+### 验证
+- **ArkTS 类型检查**：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror bash
+  scripts/build-arkts-shell.sh` → `Finished :entry:default@CompileArkTS`，**0 `ArkTS:ERROR`**（只有既有
+  warning：napi 未验证、蓝牙权限、`getContext` 弃用等）；新 `dist/ets/modules.abc` = **78,060 B**
+  （旧 70,392 B），**未复制进 pack**（发布刷新仍是独立步骤）✓。
+- **demo 发布**（hello-maui-app，`net11.0-openharmony26.0`；本机安装态是 preview.22 pack，发布前把其
+  `targets/OpenHarmony.Hap.targets` 同步成仓库新文件）：
+  - 无 wwwroot：publish 成功，`git status --short test/hello-maui-app` **空** ✓，`verify-app success`；
+  - 临时加 `wwwroot/index.html` + `wwwroot/css/app.css`：staging 消息出现；hap（21,905,242 B，
+    sha256 `9c736db450c07d5fa01ccb81767f5db5bd37415c3f1a45d4b233457907e8f83d`）内 `dotnet.zip` 含
+    `wwwroot/index.html`（533 B，sha256 `16a1e226…`）、`wwwroot/css/app.css`（34 B，`0bf4d668…`）、
+    `wwwroot/_framework/blazor.webview.js`（604,610 B，`713e519f…` == NuGet 缓存原件）；独立
+    `hap-sign-tool verify-app` **success** ✓；
+  - 删除 wwwroot 重发：无 staging 消息、dotnet.zip **无 wwwroot 项**（`_OpenHarmonyResetHapPublishOutputs`
+    同时清掉 stale publish）、21,725,015 B（sha256 `c3346277…`）、`verify-app success`、git status 空 ✓。
+- **bootstrap JS 冒烟**（Node vm，对从 Index.ets 抽出的模板）：14 项断言全过——fan-out、sendMessage、
+  注入 `autostart="false"`、load 后 start、已加载立即 start、二次运行 no-op、已有 script 标签等待其 load ✓。
+- **harness**（自建副本 `/data/storage/el2/base/tmp/opencode/verify-r1`，`-m:1` +
+  `UseSharedCompilation=false` + `UseMSBuildServer=false`）：exit 0，**195 `[verify]` / 0 `Unhandled` /
+  0 `assert=False`** ✓；副本 `bin/`/`obj/` 已删除。
+- `sh -n`：本批未改任何 shell 脚本 ✓。
+
+### 提交与推送
+- `ohos-workload master`：**`811f0d5`**（pack targets ×2 + Index.ets ×2）。
+- `maui-ohos feature/openharmony`：**`dc91e92`**（注释级契约对齐）。
+- 本档位于 `runtime-ohos feature/openharmony` 同步提交中（见仓库 `git log`）。
+- 推送按 `git -c http.version=HTTP/1.1 push origin <branch>`（失败重试 6 次、间隔 15s；远端前进则
+  fetch+rebase）；结果以会话报告/远端 `git ls-remote` 为准。
+
+### 不确定项
+- **真机未验**：壳的拦截/bootstrap 只过了 ArkTS 类型检查与 JS 冒烟，没有设备上 `Blazor.start()`、组件渲染、
+  JS↔.NET 往返的运行时证据；managed `WebViewManager` 实例化仍是 milestone 2b（未接 `UsePlatformHandler`），
+  所以端到端本来就是"资产 + 壳就绪、管理器待接"的状态。
+- 壳在 `blazor` 注册时会自动 load origin；2b manager 落地后 `Navigate` 会重复 load 一次（等价重载，非错误）。
+- NuGet 缓存 fallback 在多个 `microsoft.aspnetcore.components.webview` 版本共存时由文件系统枚举顺序决定
+  （`@(StaticWebAsset)` 存在时优先且唯一）；本机只有一个版本。
+- demo 发布用的是**机器已安装**的 preview.22 pack；仓库 preview.23 的 targets/Index 与 preview.22 逐字节一致，
+  但 preview.23 的 pack 没有经过一次真实 `dotnet workload install` 流程（发布刷新另步）。
+- "0 `ArkTS:ERROR`" 只覆盖编译/类型检查，不覆盖 ArkWeb 运行时；bootstrap 的 JS 行为用 Node 桩验证，
+  **不是在 ArkWeb 引擎里执行**。
+
+### 待办（并入下一轮）
+1. milestone 2b：实例化 `OpenHarmonyWebViewManager`（services/dispatcher + `UsePlatformHandler` 注册）、
+   `AddToWebViewManagerAsync`、`Navigate`、`DisconnectHandler` 的 `DisposeAsync`。
+2. 真机验证 Blazor Hybrid：首屏渲染、计数器/JS interop 往返、`blazor.webview.js` 指纹路由与
+   缓存头（本批只按非指纹 URL 服务）。
+3. release 刷新时把 78,060 B 的 `modules.abc` 装进 pack 模板并重新生成设备测试 kit。
