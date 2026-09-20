@@ -845,3 +845,72 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   未见框架文档明确。
 - §4 修复前，真机上的焦点与动作结果不可信；editable/checkable 不受影响。
 - `1px` 前沿阈值、`2:1` 垂直惩罚、平局规则都是启发式，集中在 `kA11yFocus*` 常数，可按真机调整。
+
+## 30. 无障碍发布契约 R2b：16 参统一 · range/checked · 漂移断言（host + 托管 + harness，2026-09-20）
+
+### 修复的缺陷（真机证据）
+- 托管 DllImport 声明 12 参（`hint` 第 6 个），`ohos_host_accessibility_node` 定义只有 11 参（无 `hint`）。
+  AAPCS64 下整数/指针与浮点寄存器分开编号，被调方第 10 参 `flags` 实际读到 `hint` 指针、第 11 参 `actions`
+  读到托管的 flags：发布 `(flags=3, actions=0x10)` 到达节点表为 `(flags=68151328, actions=3)`（§29 §4 实测）。
+- 后果：真机上 enabled/focusable/clickable 与操作动作列表全部错乱；R2 的方向焦点依赖 `flags & 2`，同样不可用。
+- 修法采用 §29 的方案 (b)：C 侧一次补齐 `hint` + range/checked，托管与宿主同批更新，签名只动一次。
+
+### 统一契约（16 参，单一声明源）
+- `openharmony_host.h` 新增完整声明（`begin`/`node`/`commit`/`count`/`get`/`set_action_listener`/`send_event`/
+  `provider_status`）；`openharmony_host.c` 与 `host_napi.cpp` 都包含该头 → C↔C++ 在编译期锁定，不再可能静默漂移。
+  ```c
+  int ohos_host_accessibility_node(int id, int parent_id, const char* role, const char* text,
+                                   const char* description, const char* hint,
+                                   float x, float y, float width, float height,
+                                   int flags, int actions,
+                                   double range_min, double range_max, double range_current,
+                                   int checked);
+  int ohos_host_accessibility_get(int index, int* id, int* parent_id, const char** role,
+                                  const char** text, const char** description, const char** hint,
+                                  float* x, float* y, float* width, float* height,
+                                  int* flags, int* actions,
+                                  double* range_min, double* range_max, double* range_current,
+                                  int* checked);
+  ```
+- 节点结构新增 `hint` / `range_min` / `range_max` / `range_current` / `checked`，`free` 覆盖 `hint`；`get` 出参同步。
+- 约定（头文件与 .c 都写明"参数顺序即契约"）：`hint` 可为 NULL；range 仅当 `range_min <= range_max` 时有效
+  （NaN 比较为 false）；`checked` -1 = 未知/不适用，0/1 有效。
+
+### 托管发布（每帧、无分配）
+- slider：`Minimum/Maximum/Value`；progress（`RoleOf` 新增 `IProgress` → `"progress"`）：`0/1/Progress`
+  （`IProgress.Progress` 本身就是 0..1 分数，不放大到 0..100）。
+- 其他角色 range 记为 `NaN/NaN`（宿主 `min <= max` 永不成立）；`checked`：`ISwitch.IsOn` / `ICheckBox.IsChecked`
+  → 1/0，其余 -1；`hint` 继续发布 `SemanticProperties.GetHint`。
+- `DiffFrames` 增加 hint（文本事件）与 range/checked（0x20 状态事件）比较；NaN 用 `double.Equals`（NaN 等于 NaN），
+  避免"无 range"被当成每帧变化。必要性：拖动 slider 不改文本/矩形，不比较 range 则宿主永远收不到新值。
+
+### 宿主填充（host_napi.cpp）
+- 读取统一走 `A11yNodeRecord` + `A11yReadNode`；列表查询与单节点回调共用 `A11yFillElement`，删除两份重复填充，
+  避免两条路径再次分叉。
+- `SetHintText`（hint 非空）、`SetRangeInfo`（仅 slider/progress 且 `min <= max`）、`SetChecked`（仅 0/1）；
+  R2 的 `SetEditable`/`SetCheckable` 保留。
+- `llvm-nm -D` 复核：`SetRangeInfo`/`SetChecked`/`SetHintText`/`SetEditable`/`SetCheckable` 均已引用，
+  `ohos_host_accessibility_*` 8 个导出仍在。
+
+### harness 漂移断言（本类问题不再上设备才发现）
+- 反射托管 `AccessibilityNode`（16 参）并解析 `openharmony_host.c` 的 node 定义、`openharmony_host.h` 的声明：
+  比较参数个数、归一化名字（`parent_id` ↔ `parentId`）、类型种类（`int/float/double/const char*` ↔
+  `int/float/double/string`）与每个 string 形参的 `LPUTF8Str` marshalling；`get` 断言为 17 参。
+- 负向验证（scratch，不入库）：把源码副本的 `hint` 形参删掉后断言报 `nativeArgs=15 / assert=False` 且 harness
+  非零退出，证明断言非空转。
+- 值映射断言：slider `-5/15/7.5`、progress `0/1/0.25`、switch `1`、checkBox `0`、label 无 range/checked；
+  滑块值变化（文本/矩形不变）触发 0x20 状态事件，无变化帧保持 0。
+
+### 验证
+- 宿主 `bash scripts/build-host.sh` → **selfsign ok**（仅既有 C-as-C++ 警告）；导出/引用复核如上。
+- 托管 harness（自建 scratch 副本，`-m:1`）：exit 0，**199 `[verify]` / 0 `Unhandled` / 新断言 assert=True**
+  （基线 195 + 4 项 R2b）；`test/maui-platform-verify/README.md` 与 CI 门槛同步更新为 >=195。
+- 未跑 demo 发布、未做 release 刷新（按要求）。
+
+### 不确定项
+- **真机只实证过错位症状**：修复后的整体行为（读屏播报 hint/range/checked 的措辞、ArkUI 对 `0..1` progress range
+  的呈现、`SetChecked` 对 switch/checkBox 的读法）仍需真机 + 屏幕阅读器确认。
+- 托管切片的独立 `dotnet build` 在本机 partial checkout 因缺 `eng/AndroidX.targets` 不可用（与 §29 相同的既有
+  环境限制）；托管编译由 harness（直接编译 slice 源）覆盖，未改变任何工程文件。
+- **托管与宿主必须成对发布**：旧托管 + 新宿主仍会把未初始化寄存器/哨兵当 range/checked 读；本轮按要求未发布、
+  未刷新 pack 版本（版本配对留给发布轮次）。
