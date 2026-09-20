@@ -1186,3 +1186,117 @@ fetch refspec 只含 main 而陈旧，`git ls-remote` 复核实际远端为 `f95
    未知扩展名用 `*/*`（选择器会变宽）。
 4. 多文件（>1）仍是 no-op；若后续要真支持，需要 Share Kit 或逐个 uri 的多次派发语义，
    本轮明确不做。
+
+---
+
+## 35. S 系列收官：S1 Blazor 管理器 · S2 无障碍节点数/分组层级 · S3 手电筒 · S4 文件分享 · S5 preview.24 刷新（2026-09-21）
+
+S1–S4 的能力改动分散在三个仓库（见 35.1），S5 把它们随 **workload 1.0.0-preview.24** 打包重发，并更新交付 kit
+与文档。本节记录提交、产物与真机前不确定项。
+
+### 35.1 S 系列提交总览
+
+| 批次 | 仓库 / 分支 | commit | 内容 |
+|---|---|---|---|
+| S1 | maui-ohos `feature/openharmony` | `1b4509a7` | BlazorWebView 里程碑 2b：`OpenHarmonyWebViewManager` 实例化、root components 绑定、`UsePlatformHandler` 注册入口 |
+| S2 | ohos-workload `master` | `72e7034` | `ohos_host_accessibility_node_count`（C/NAPI/头文件）+ 元素信息 `SetAccessibilityGroup(true)`/`SetAccessibilityLevel`（host-only，harness 未改） |
+| S3 | ohos-workload `master` | `a8f6456` | 壳 `registerFlashlightSink`（Camera Kit torch，0=关/1=开/2=探测）+ host 导出 `ohos_host_flashlight_set` |
+| S3 | maui-ohos `feature/openharmony` | `f95bc801` | Essentials `IFlashlight` 映射到该桥 |
+| S4 | ohos-workload `master` | `437cf52` | 壳 kind 3：隐式 `sendData` Want + `FLAG_AUTH_READ_URI_PERMISSION`（preview.22/23 模板一致） |
+| S4 | maui-ohos `feature/openharmony` | `0a88b8a1` | `Share.RequestAsync(ShareFileRequest/ShareMultipleFilesRequest)`、MIME 表、`file://` URI |
+| S4 | runtime-ohos `feature/openharmony` | `8ab824a92d8` | 审计 §34（含 4 项真机前不确定项） |
+| S5 | ohos-workload `master` | `84c184c` | preview.24 版本刷新：manifest/脚本/pack 树（Sdk+targets+ridgraph+templates，含最新壳归档）+ 演示 fixture 刷新 |
+| S5 | ohos-workload `master` | `070f92f` | `publish-workload-release.sh`：新建版本化 release 时一并上传 `SHA256SUMS`（原先只在更新分支上传）|
+| S5 | runtime-ohos `feature/openharmony` | 本 commit（§35） | 本节 + 文档同步（索引、验收说明、快速开始、签名指南、kit 说明）|
+
+### 35.2 S5 版本刷新（实际执行）
+
+1. **版本源**：`WorkloadManifest.json` 与 `scripts/{prepare-packs,build-host,build-arkts-shell}.sh` 的 `VER=` 全部
+   `1.0.0-preview.23` → `1.0.0-preview.24`；`packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/` 由 `.23` 逐目录继承
+   （`Sdk/`、`targets/`、`ridgraph/`、`templates/`），其中 `Sdk.targets` 与 `BundledVersions.props` 的
+   `KnownFrameworkReference` 版本引用同步改为 `.24`。
+2. **最新壳归档**：`dist/ets/modules.abc`（S4 typecheck 产物）**79,676** 字节、sha256
+   `cce508fc245a08f79fb300019b62960e21190e386c15f71a0577b2d66ed99fca`，复制为
+   `templates/ets/modules.ui.abc` 与 `modules.shell.abc`（两者逐字节相同；headless `modules.abc` 仍为 3,580 字节）。
+3. **宿主**：`scripts/build-host.sh` 重编 + 自签 → **"selfsign ok"**，产物 **138,144** 字节、sha256
+   `9fa7c90830c8ddbb2bbde8ce2c16e724234bb0282219e2071b6764040b70e972`（与 preview.23 的构建**逐字节相同**，说明宿主构建可复现）；
+   `llvm-nm` 确认导出含 `ohos_host_accessibility_node_count`（S2）、`ohos_host_flashlight_set`（S3）与 16 参发布函数
+   `ohos_host_accessibility_node`。
+4. **已安装 workload**：本轮把仓库 feed（`scripts/pack-local-workload.sh`）**安装进 `~/.dotnet`**（安装器等价路径：
+   manifest 复制 + `dotnet workload install openharmony --skip-manifest-update --source .feed`），`dotnet workload list`
+   显示 **1.0.0-preview.24**；安装把 preview.22 的 pack 垃圾回收掉，宿主 `.so` 随 pack 一起进入 `~/.dotnet/packs/.../1.0.0-preview.24/hosts/arm64-v8a/`。
+   *注*：上一轮的做法是只把 `.so` 拷进已装 pack；本轮直接升到 `.24`，否则演示 hap 的 `dotnet.zip` 会带 preview.22 的托管框架 DLL。
+5. **bundle**：`dist/openharmony-workload-1.0.0-preview.24.tar.gz`，**30,325,661** 字节、sha256
+   `639513dcd8242c18368cfb83a455dff8fc88d43ab62dc7f39a785a75221475ec`（`release-checksums.sh` 生成
+   `dist/SHA256SUMS`，1,529 字节）；从 GitHub 下载回读的资产与本地产物 sha256 **一致**。
+6. **发布**（`springmin/sdk-ohos`）：
+   - 版本化 release [`workload-1.0.0-preview.24`](https://github.com/springmin/sdk-ohos/releases/tag/workload-1.0.0-preview.24)：
+     `openharmony-workload-1.0.0-preview.24.tar.gz`（30,325,661）+ `SHA256SUMS`（1,529）；
+   - 滚动 release [`workload-latest`](https://github.com/springmin/sdk-ohos/releases/tag/workload-latest)：
+     `openharmony-workload-latest.tar.gz`（30,325,661）+ `SHA256SUMS` + `device-test-kit.tar.gz`（107,510,820）+ `.sha256`；
+   - [`device-test-kit`](https://github.com/springmin/sdk-ohos/releases/tag/device-test-kit)：`device-test-kit.tar.gz`
+     （107,510,820）+ `device-test-kit.tar.gz.sha256`（内容 `537153e0…`，与本地 tar 一致）。
+   发布前在本地补打 `workload-1.0.0-preview.23` 标签（指向 `2e52da6`）以获得正确的提交区间；**本次 notes 由
+   `scripts/release-notes.sh` 生成**（7 commits：`72e7034`/`437cf52`/`a8f6456`/`4addd43`/`20bacbb`/`84c184c`/`070f92f`，
+   末尾为 "Bundle and setup" 安装段）。
+7. **bundle 内容核验**：解包后的 `manifests/…/WorkloadManifest.json` = `1.0.0-preview.24`；
+   `feed/Microsoft.OpenHarmony.Sdk.1.0.0-preview.24.nupkg` 内 `modules.ui.abc` = `modules.shell.abc` = 79,676（`cce508fc…`）、
+   `modules.abc` = 3,580、`hosts/arm64-v8a/libopenharmonyhost.so` = 138,144（`9fa7c908…`）；`install-ohos-workload.sh --dry-run` 正常。
+8. **交付 hap（5 个，`-m:1` 构建，每次 publish 均打印 `verify-app success`，`git status --short test/hello-maui-app` 保持为空）**：
+
+| 文件 | 字节 | sha256 | 波段 | 权限 | `ets/modules.abc` | `libs/arm64-v8a/libopenharmonyhost.so` |
+|---|---|---|---|---|---|---|
+| `hello-maui-app.hap`（26 默认）| 21,739,782 | `498db6e9…` | `60001021`/`60101024` Beta1 | 0 | 79,676 | 138,144 |
+| `hello-maui-app-permissions.hap`（26 权限）| 21,739,783 | `5fbfa6e0…` | `60001021`/`60101024` Beta1 | 5 | 79,676 | 138,144 |
+| `hello-maui-app-api20.hap`（20 默认）| 21,739,781 | `70ccc70d…` | `60000020`/`60000020` Release | 0 | 79,676 | 138,144 |
+| `hello-maui-app-api20-permissions.hap`（20 权限）| 21,739,780 | `ba650ddd…` | `60000020`/`60000020` Release | 5 | 79,676 | 138,144 |
+| `hello-maui-app-unsigned.hap`（26 默认、未签名）| 21,706,354 | `ba16483a…` | `60001021`/`60101024` Beta1 | 0 | 79,676 | 138,144 |
+
+   - 权限恰为 5 项：`ACCESS_BLUETOOTH` / `PRINT` / `READ_CONTACTS` / `READ_CALENDAR` / `WRITE_CALENDAR`；
+   - 4 个已签包用 `hap-sign-tool verify-app` 独立复验 **success**，未签包 verify-app 失败（符合预期）；
+   - `dotnet.zip` 内的托管框架 DLL 与本轮 `.24` runtime pack 的 sha256 一致（`Microsoft.OpenHarmony.dll` `4f1650a0…`、
+     `Hosting.dll` `8cb302ea…`、`Maui.Graphics.dll` `4ef21cc5…`），即 hap 真的构建在 `.24` 上；
+   - 顺带清理：删除了 `bin/Release/net11.0-openharmony20.0/` 下两个**上一轮遗留**的 `hello-maui-app-api20[-permissions].hap`
+     （旧壳/Beta1 波段的过期副本，会污染 `SHA256SUMS`）；TFM 输出目录里现只有本轮产物。
+9. **交付 kit**：`/data/storage/el2/base/tmp/opencode/device-test-kit/` → tar **107,510,820** 字节、sha256
+   `537153e076af40ba78bb503e37fa97ddf958efb1961f3553a5befdadbf82d6e2`；内含 5 hap + `验收说明.md`、`快速开始.md`、
+   `文档索引.md`、`签名与UDID指南.md`、`自签说明.md`、`README-交付说明.md` + `SHA256SUMS`（5 hap + 6 文档，
+   `sha256sum -c` 全过）。kit 内 4 个文档是运行 `docs/plans/` 对应文件的**逐字节副本**（本轮改动已同步）。
+10. **harness**：`test/maui-platform-verify` 复制到 scratch，加 8 条 S 系列断言（S5 壳/清单/脚本/宿主导出、S2 节点数与
+    group/level、S3 手电筒、S4 分享、S1 Blazor 管理器），`-m:1 -p:UseSharedCompilation=false -p:UseMSBuildServer=false`
+    构建后运行：**208 条 `[verify]`、0 条 `Unhandled`、exit 0**，perf `within=True`（avg 4.211ms / p95 6.152ms / max 7.818ms，
+    首次冷跑 avg 10.27ms 也在预算内）；scratch 副本已删除，仓库内 harness 未改（仍 200 条，CI 阈值 199 不变）。
+
+### 35.3 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `84c184c`（`84c184c…`）、`070f92f` | preview.24 版本刷新（含 pack/templates 与 demo fixture）；release 脚本 `SHA256SUMS` 修复 |
+| runtime-ohos `feature/openharmony` | 本 commit（§35） | 本节 + 索引/验收说明/快速开始/签名指南/kit 说明同步 |
+
+推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次 × 15s 兜底，失败则 fetch+rebase（不 force）。
+推送前 `ls-remote` 复核远端 tip（ohos-workload `437cf52`、runtime-ohos `8ab824a9`），本地均为其后代（fast-forward）。
+
+### 35.4 真机前不确定项与遗留
+
+1. **S1/S3/S4 的运行时行为仍只在设备上可证**：`Blazor.start()` 与首屏渲染、torch 是否真的点亮（`setTorchMode` 返回 true
+   只代表 Camera Kit 接受）、接收方能否真正读取 `file://` URI（`FLAG_AUTH_READ_URI_PERMISSION` 只表达授权意图）、
+   多文件分享仍是文档化 no-op。
+2. **S2 的分组/层级效果**：`SetAccessibilityGroup(true)`/`SetAccessibilityLevel("yes"|"no")` 的读屏实际播报差异需要设备；
+   节点数导出只在 A11Y 角标弹窗可见。
+3. **签名**：4 个已签 hap 用 SDK 自签材料、profile 绑定示例 UDID → 其他设备安装会报 `9568344`（按 `签名与UDID指南.md`
+   重签，或用 `hello-maui-app-unsigned.hap` + `自签说明.md` 自助签名）；签名含时间戳，**同负载重新签名的哈希必然变化**，
+   交付文档中的 sha256 以随包 `SHA256SUMS` 为准。
+4. **本轮顺手做的小修正**（与刷新链直接相关，非行为改动）：`publish-workload-release.sh` 新建 release 时补传
+   `SHA256SUMS`；删除 `bin/…/openharmony20.0/` 下两个上一轮遗留的 api20 副本；tracked 演示 fixture
+   （`test/hello-maui-app/{ets/modules.abc,libs/…/libopenharmonyhost.so,resources/rawfile/dotnet.zip}`）刷新为本轮
+   staging 输出——它们只是仓库内快照，不参与打包路径。
+5. **未动的发布面**：SDK release `v11.0.100-rc.1.26451.109-openharmony` 上仍挂着旧 workload bundle（最新 preview.22）；
+   `workload-1.0.0-preview.22/23` 两个版本化 release 保持原样（`.23` 的 bundle 仍是 02:0x 打包、不含 S2/S3/S4 的版本，
+   新版以 `.24` 提供）。如需把 `.24` 也挂到 SDK release，用 `publish-workload-release.sh --also-sdk-release <tag>`。
+6. **kit 专有文档**：`自签说明.md`、`README-交付说明.md` 只存在于 kit 目录（未在本仓库建副本）；`文档索引.md` 是
+   `docs/plans/README.md` 的副本。
+7. **harness 的 S 系列断言只在 scratch**（与 §34 同一做法），仓库内套件仍是 200 条；若要固化进 CI，需要单独提交
+   （S5 未做，避免把验证脚本与交付刷新混在一个提交里）。
+8. 本机 `dotnet workload list` 现在指向 `.24`；preview.22 的 pack 已被 `dotnet workload install` 回收，回退需重新安装旧
+   bundle。安装/核验过程中对 `~/.dotnet` 的改动都可从 `dist/*.tar.gz`（或 release 资产）重放。

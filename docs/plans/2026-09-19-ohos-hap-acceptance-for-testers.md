@@ -13,11 +13,14 @@
 | 文件名 | `hello-maui-app.hap` |
 | 大小 | 约 21 MB（每轮重建可能变化，以随包 `SHA256SUMS` 为准）|
 | SHA-256 | **不做固定约定**：以随包 `SHA256SUMS`（或 kit 的 `.sha256`）为准；每次重签/重建哈希都会变 |
-| 构建版本 | `.NET/OpenHarmony workload 1.0.0-preview.23` |
+| 构建版本 | `.NET/OpenHarmony workload 1.0.0-preview.24` |
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
 | 内含 | 托管应用负载、自签名宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
 
 校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。
+
+另有**未签名包** `hello-maui-app-unsigned.hap`（与 26 默认包同一负载、同一 bundle name，未做签名）：适合用
+自己的华为开发者账号自助签名后安装，步骤见同包 `自签说明.md`；其哈希同样在 `SHA256SUMS` 中。
 
 应用名：`hello-maui-app`；启动后是一个包含大量控件的长列表页面（顶部导航栏标题「Root」）。
 
@@ -53,7 +56,9 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
   （及 `-p:OpenHarmonyApiReleaseType=…`）覆盖。带权限的 API 20 变体可由同一命令加
   `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
 - **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
-  大小 **21,679,125** 字节，SHA-256 `1a89a3729debe300ff0d0fd2e0bd0b302866adca8833b10c0737e8a068450c0a`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
+  大小 **21,739,783** 字节，SHA-256 `5fbfa6e00bab0826f0156d9b916b08b1f0ea525770fa771942d88b05e487a00c`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
+  同轮其余包：默认包 `hello-maui-app.hap` **21,739,782** 字节（`498db6e9…`）、`hello-maui-app-api20.hap` **21,739,781** 字节（`70ccc70d…`）、
+  `hello-maui-app-api20-permissions.hap` **21,739,780** 字节（`ba650ddd…`）、未签名包 `hello-maui-app-unsigned.hap` **21,706,354** 字节（`ba16483a…`）。
 
 ## 2. 环境要求
 

@@ -15,7 +15,7 @@ mkdir -p device-test-kit && tar xzf device-test-kit.tar.gz -C device-test-kit
 cd device-test-kit && sha256sum -c SHA256SUMS     # ② 包内逐文件校验（4 个 hap + 文档）
 ```
 
-包内自带 **`SHA256SUMS`**，含 4 个 hap 与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准。
+包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准。
 
 ## 2. 选哪个 hap
 
@@ -25,6 +25,7 @@ cd device-test-kit && sha256sum -c SHA256SUMS     # ② 包内逐文件校验（
 | `hello-maui-app-permissions.hap` | 追加蓝牙/打印/联系人/日历（首次使用弹运行时授权；PRINT 为 system_grant 不弹）|
 | `hello-maui-app-api20.hap` | API 20 波段设备；band 值 `60000020` 解码为**平台 6.0.0 / API 20** |
 | `hello-maui-app-api20-permissions.hap` | 同上，带权限 |
+| `hello-maui-app-unsigned.hap` | **未签名**（同 26 默认包）；用你自己的华为账号自动签名后再装，见 `自签说明.md` |
 
 设备 API ≥26 用默认包；只有 API 20 波段设备才用 api20 包。
 

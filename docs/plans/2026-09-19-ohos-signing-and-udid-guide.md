@@ -47,7 +47,7 @@ sh scripts/sign-for-device.sh "<UDID1>,<UDID2>"
 
 # 自定义输出 / 版本
 sh scripts/sign-for-device.sh <UDID> --out /tmp/hello-maui-app-<name>.hap
-sh scripts/sign-for-device.sh <UDID> --version 1.0.0-preview.23
+sh scripts/sign-for-device.sh <UDID> --version 1.0.0-preview.24
 ```
 
 脚本做的事：复制 SDK 调试模板 → 替换 `bundle-info.bundle-name` 与 `debug-info.device-ids` →
@@ -76,6 +76,35 @@ hap-sign-tool sign-app \
   -outFile hello-maui-app-signed.hap \
   -keystoreFile <their.p12> -keyPwd <pwd> -keystorePwd <pwd>
 ```
+
+### 4b. 华为自动签名材料代签（`scripts/sign-huawei.sh`）
+
+**何时用**：测试方已用 DevEco Studio 的 **Automatically generate signature**（登录华为账号）生成
+`*.p12` / `*.cer` / `*.p7b`，但不想自己敲 `hap-sign-tool`——于是把 Studio 的整个 `config` 目录
+（通常是 `~/Documents/ohos/config/`，含 `material/{fd,ac,ce}` 密钥材料）发给我们，由我们离线代签。
+这是"方案 B 的自助签名"与"方案 A 的 SDK 调试模板重签"之外的第三条路径：**证书/profile 是对方的**，
+所以 profile 里绑定的是**对方的设备**，签出的 hap 对方可直接安装。
+
+```bash
+cd ohos-workload
+sh scripts/sign-huawei.sh <unsigned.hap> <out.hap> [configDir] [encryptedPassword]
+# 例：sh scripts/sign-huawei.sh hello-maui-app-unsigned.hap hello-maui-app-huawei.hap ~/Documents/ohos/config
+```
+
+脚本做的事（全部本地、离线）：
+
+1. 在 `configDir` 下找 `*.p12` / `*.cer` / `*.p7b`（缺一即报错），并确认
+   `<hvigor-ohos-plugin>/src/utils/decipher-util.js`（`ARKTS_PLUGIN_DIR`，默认 `~/arkts-build/…`）与
+   SDK 的 `toolchains/lib/hap-sign-tool` 存在；
+2. 若 `build-profile.json5` 里的密码是 DevEco 加密值（`00000020…`），用**插件自己的 `DecipherUtil`**
+   配合 `config/material/{fd,ac,ce}` 就地解密（明文只在本地 `/data/storage/el2/base/tmp/opencode/ohos-pwd.txt`，
+   权限 600，下次自动复用）；也可显式传 `encryptedPassword`；
+3. `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign` 用对方的
+   p12/cer/p7b 签名；
+4. **`hap-sign-tool verify-app` 通过后才打印路径与 SHA-256**（失败即 `die`，不会给出未验证的产物）。
+
+**注意**：签出的 hap 只能装进该 profile 绑定的设备（对方新加设备需重新自动签名再发 `config`）；
+我们不修改对方的证书材料，明文密码不做持久化以外的传播。
 
 ---
 
@@ -112,4 +141,8 @@ sh scripts/release-checksums.sh     # 生成 dist/SHA256SUMS（bundle / abc / �
 ## 8. 相关文档
 
 - 验收清单（随 hap 交付）：`docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`
+- 快速上手（随包一页版）：`docs/plans/2026-09-20-ohos-tester-quickstart.md`
 - 交接状态与操作规程：`docs/plans/2026-09-19-ohos-arkts-handover-status.md`
+- 测试方自助签名（随包）：`自签说明.md`
+- 按 UDID 重签脚本：`ohos-workload/scripts/sign-for-device.sh`（本文第 3 节）
+- 华为自动签名材料代签脚本：`ohos-workload/scripts/sign-huawei.sh`（本文第 4b 节）

@@ -8,16 +8,16 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
-| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap → 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
-| `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`）| ✅ 当前（2026-09-20）|
-| `2026-09-19-ohos-signing-and-udid-guide.md` | `9568344` 根因（调试 profile 绑定 UDID）与自助/代签重签流程（包内名 `签名与UDID指南.md`）| ✅ 当前（2026-09-19）|
+| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 已签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
+| `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`）| ✅ 当前（2026-09-21，preview.24）|
+| `2026-09-19-ohos-signing-and-udid-guide.md` | `9568344` 根因（调试 profile 绑定 UDID）与自助/代签重签流程；含华为自动签名材料代签（`scripts/sign-huawei.sh`，包内名 `签名与UDID指南.md`）| ✅ 当前（2026-09-21）|
 | `2026-09-20-ohos-dotnet-getting-started.md` | 第三方开发者英文上手：安装 workload、选 TFM/publish hap、签名与 UDID、故障排查 | ✅ 当前（2026-09-20）|
 
 ## 当前状态与规划
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
-| `2026-09-19-ohos-code-audit.md` | 主审计报告 §1–§31：五仓库代码/批次审计、真机前硬化、Blazor 与无障碍等（要点见下节）| ✅ 当前主参考（2026-09-21）|
+| `2026-09-19-ohos-code-audit.md` | 主审计报告 §1–§35：五仓库代码/批次审计、真机前硬化、Blazor 与无障碍、S 系列（S1–S5）收官（要点见下节）| ✅ 当前主参考（2026-09-21）|
 | `2026-09-19-ohos-arkts-handover-status.md` | 交接状态：主线与版本、架构批次（D1–D4）、无障碍配方、操作坑、阻塞与剩余队列 | ✅ 当前（2026-09-20）|
 | `2026-09-16-ohos-platform-workload-plan.md` | 以 iOS 为参照的完整平台 workload 迁移规划（终态/pack 拆分/TFM/安装器）| 🔄 规划基线（W1–W22 已据此执行，2026-09-16）|
 | `2026-09-18-ohos-arkts-essentials-bridge-plan.md` | ArkTS 桥接 Essentials 的集成模式与逐 API 落地管线 | 🔄 计划（2026-09-19）|
@@ -25,7 +25,7 @@
 | `2026-09-18-ohos-openharmony-api-proposal.md` | 上游 API 提案草稿（`OSPlatform.OpenHarmony`、`OperatingSystem.IsOpenHarmony` 等）| 🔄 草稿待上游评审（2026-09-18）|
 | `2026-09-18-ohos-device-validation-checklist.md` | 设备侧验证清单：每一步含命令与可观察结果（等待可安装设备；示例产物为 preview.14）| ⏳ 待执行（2026-09-18）|
 
-## 主审计报告要点（`2026-09-19-ohos-code-audit.md`，§1–§31）
+## 主审计报告要点（`2026-09-19-ohos-code-audit.md`，§1–§35）
 
 - **§1–§5**：探针通过项、本轮修复与建议项落地、对照上游 MAUI / 鸿蒙 Kit 的再次盘点。
 - **§6–§13**：工作流 A–G 结果与不确定项（传感器精度、Launcher/Browser/Share、桌面菜单、拖放、触感+主题、ArkWeb JS 桥 + HybridWebView）。
@@ -35,6 +35,9 @@
 - **§26**：Q4/Q5 收官——交互回归套件纳入 CI 门禁、确定性 fuzz、上手文档交付。
 - **§27–§28**：BlazorWebView 里程碑 2/3——native 模型（非 WASM）；Hap 资产管线与 ArkTS bootstrap 落地；托管 `WebViewManager`/handler 注册（2b）与真机验证待做。
 - **§29–§31**：无障碍 provider R2/R2b（方向焦点、editable/checkable、16 参发布契约、range/checked 缺口）与 R3 文档级盘点（DevEco CLT 缺 hvigor、设备访问被策略拦截）。
+- **§32–§34**：上游门控收尾项（R7，三分支/补丁就绪）；S3 手电筒（Camera Kit torch 跨三仓）与 S4 分享文件（`sendData` Want + `FLAG_AUTH_READ_URI_PERMISSION`）。
+- **§35**：S 系列收官（S1 Blazor 管理器 · S2 无障碍节点数/分组层级 · S3 手电筒 · S4 文件分享 · S5 preview.24 刷新）：workload 1.0.0-preview.24、
+  bundle/滚动 release/device-test-kit 重发（4 已签 + 1 未签 hap）、harness 208 条与真机前不确定项。
 
 ## 运行时 / SDK 上游移植阶段（历史：2026-08-13 → 2026-09-15）
 
