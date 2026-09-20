@@ -392,3 +392,22 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - **不确定项**：电池公共事件订阅与 `display.on('change')` 的真机行为未验证（有守卫；启动快照即使订阅被拒也可用）；
   事件回调运行在壳/UI 线程（重负载应由用户自行派发）；`typeNode.createNode` FrameNode 能否通过 `GetNodeHandleFromNapiValue`
   与 CUSTOM 节点所需布局仍需真机确认；切片独立 `.csproj` 受既有 `eng/AndroidX.targets` 缺失影响，验证走 harness 编译路径 ✓。
+
+## 21. 无障碍附着修复（host-only，2026-09-20）
+
+- **修复的缺陷**：`SetNodeContent` 中 `AttachAccessibilityValue(...)` 原位于 `return` 之后（死代码 ✗）→ 现为
+  "先存 content，再执行附着"，并加 `argc/argv[0]` 与 env/value 守卫 ✓。
+- **新增原生 CUSTOM 节点路径**（ArkTS 无法创建自定义节点，故必须在原生侧建）：
+  `OH_ArkUI_GetNodeContentFromNapiValue` → `OH_ArkUI_GetModuleInterface(ARKUI_NATIVE_NODE, ArkUI_NativeNodeAPI_1)`
+  → `api->createNode(ARKUI_NODE_CUSTOM)` → `OH_ArkUI_NodeContent_AddNode(content, custom)`
+  → `OH_ArkUI_NativeModule_GetNativeAccessibilityProvider(&custom, &provider)` → `RegisterCallback` ✓。
+  provider 指针**仅在回调注册成功后提交**；自定义节点**缓存复用**，页面重入不重复添加；已附着直接返回 ✓。
+- **状态映射（真机日志判读）**：`0` 未附着 · **`1` 已附着+回调注册（期望）** · `2` frame node 被拒（非 CUSTOM）·
+  `3` NodeContent 收到但 CUSTOM 节点未能创建/挂载 · `4` CUSTOM 已挂但 provider 被拒 → **3/4 精确定位失败步骤** ✓。
+- **头文件逐字签名**（SDK 26.0.0.18_1）：`OH_ArkUI_GetModuleInterface`（宏，底层 `OH_ArkUI_QueryModuleInterfaceByName`）·
+  `ArkUI_NodeHandle (*createNode)(ArkUI_NodeType)`（`ARKUI_NODE_CUSTOM = 0`）· `OH_ArkUI_NodeContent_AddNode`（@since 12）·
+  `OH_ArkUI_NativeModule_GetNativeAccessibilityProvider`（@since 23，**非 CUSTOM 即 PARAM_INVALID**）✓。
+- **验证**：宿主 `selfsign ok` + 导入符号（`NodeContent_AddNode`/`QueryModuleInterfaceByName`/`GetNativeAccessibilityProvider`）✓；
+  套件 **191 项** 0 unhandled ✓（离设备仍为 0，**未伪造设备结果**）。
+- **真机唯一待确认**：provider 对原生 CUSTOM 节点是否返回非 null（预期 status=1）；`setNodeContent` 于 `aboutToAppear`
+  （早于 `build` 挂载 `NodeContainer`）执行，provider 只校验节点类型，预期可行，**由真机确认**。
