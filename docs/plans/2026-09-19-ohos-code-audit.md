@@ -292,3 +292,38 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 ### ③ 新发现的环境怪癖（后续项）
 `_OpenHarmonyHapStageDir` 为空（workload 目标求值时 `PublishDir` 未设置）→ publish 把 `module.json`/`ets`/`resources`/`libs`
 **落进 demo 工程目录**，会覆盖受跟踪的示例文件（本批已恢复、未提交）。建议修正暂存目录或加入 `.gitignore`。
+
+## 18. 批次 I（蓝牙 + 打印 + 地图评估）与 J-2（暂存目录修复）
+
+### 批次 I（174 项）
+- **蓝牙**（平台扩展）：`IsEnabledAsync/GetPairedDevicesAsync/StartDiscoveryAsync/StopDiscoveryAsync` →
+  `ohos_host_bluetooth_query` → 壳 `registerBluetoothSink` → 权限 `ohos.permission.ACCESS_BLUETOOTH`（user_grant）→
+  `access.getState()` / `connection.getPairedDevices()+getRemoteDeviceName()` / `start|stopBluetoothDiscovery()` →
+  结果回调；**仅用可编译成员**（避未导出的 `GattClientDevice` 与废弃 `bluetooth*`）；配对设备 `name\taddress` 行；
+  `IsSupported` 探测权限；代码 `0` 完成 / `-1` 不可用 / `-2` 瞬时（适配器关闭）。
+- **打印**（平台扩展）：`PrintTextAsync(jobName, text)` → 生成 **A4 PDF**（Helvetica/WinAnsi、53 行/页、转义完备）→
+  `PrintFileAsync` → `ohos_host_print_file` → `print.print([path], context)` → 结果回调；权限
+  `ohos.permission.PRINT`（system_grant，无弹窗）；PDF 结构经**独立 Python xref/stream 解析器**验证 ✓。
+- **地图（仅评估）**：建议默认 **(c) 交给应用**；若需一方地图面，首选 **(b) ArkWeb 承载**（JS 桥 + 资源服务已具备）；
+  (a) GraphicsView+瓦片仅适合静态预览。
+- 验证：宿主 `selfsign ok`（**121,760 B**，6 新导出已核）· 壳 `typeCheck:true` **0 ArkTS 错误**（abc **53,240 B**）·
+  套件 **174 项** 0 unhandled · 单文件在 `TreatWarningsAsErrors` 下 0 警告 ✓。
+- 随后需经 `-p:'OpenHarmonyExtraPermissions="ohos.permission.ACCESS_BLUETOOTH;ohos.permission.PRINT"'` 声明权限，
+  否则真机如实不可用。
+
+### J-2：hap 暂存目录修复（已实测）
+- **根因**：`_OpenHarmonyHapStageDir` 在**求值期**依赖尚未赋值的 `PublishDir` → 为空 → 所有暂存路径塌缩成项目相对路径，
+  把 `module.json`/`ets`/`resources`/`libs` 写进 **demo 工程目录** ✗。
+- **修复**：新增 `_OpenHarmonyResolveHapStageDir`（执行期解析）→ `OpenHarmonyHapStageDir`（可覆盖）默认
+  `$(IntermediateOutputPath)openharmony-hap/`，备选 `$(BaseIntermediateOutputPath)`/`$(PublishDir)` 派生；
+  **解析到工程目录即 `Error`**；`_OpenHarmonyStageHap`/`_OpenHarmonyPackHap` 均依赖之；文件头文档化 ✓。
+  实测暂存路径：`test/hello-maui-app/obj/Release/net11.0-openharmony26.0/openharmony-arm64/openharmony-hap/`。
+- **验收证据**：① publish 后 `git status --short test/hello-maui-app` **空**（连发 3 次）且受跟踪文件 sha256 前后一致 ✓
+  ② `sign-app success`/`verify-app success` ✓ ③ hap 9 项含 `ets/modules.abc 53,240`、`libs/...so 117,664` ✓
+  ④ 植入 `STALE_MARKER.txt`/`ets/STALE.abc` 后下次 publish **被清理且不入包**；两次发布 **242 个负载文件逐字节一致**
+  （仅外层 hap 因签名时间戳不同）✓；套件 174 ✓。
+- **环境备注**：MSBuild workload 解析走**已安装**的 `~/.dotnet/packs/.../preview.22`（忽略 `DOTNETSDK_WORKLOAD_PACK_ROOTS`），
+  已同步修复后的 targets 到该副本（备份于 `/data/.../hap-stage-fix/installed-22-Hap.targets.bak`）——属环境副本，非仓库改动。
+- **既有环境怪癖（非本修复引入）**：publish 退出后 ~3 s 有外部进程给 13 个运行时 `.so` **追加 ELF `.codesign` 段**
+  （+4–8 KB），使 `dotnet.zip` 在连续发布间必然不同；确定性检查在清理 `publish/` 后进行。
+- **后续**：feed 安装要拿到本修复需**重打包 preview.22/23**（发布刷新步骤已覆盖 ✓）。
