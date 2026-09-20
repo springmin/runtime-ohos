@@ -327,3 +327,33 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - **既有环境怪癖（非本修复引入）**：publish 退出后 ~3 s 有外部进程给 13 个运行时 `.so` **追加 ELF `.codesign` 段**
   （+4–8 KB），使 `dotnet.zip` 在连续发布间必然不同；确定性检查在清理 `publish/` 后进行。
 - **后续**：feed 安装要拿到本修复需**重打包 preview.22/23**（发布刷新步骤已覆盖 ✓）。
+
+## 19. JS→.NET 调用闭环（`__hwvInvokeDotNet`）与 BlazorWebView 就绪评估
+
+- **探测证据（SDK 26.0.0.18）**：`ets/component/web.d.ts` 提供 `setResponseIsReady(bool)`（@since 9）、
+  `setResponseData`、`setResponseCode/MimeType/Encoding`、`setReasonMessage`、`getResponseIsReady()`（@since 13）；
+  以 `typeCheck: true` 的 scratch 页验证**顺序可用**：拦截时返回 `setResponseIsReady(false)` → 稍后
+  `setResponseData` + `setResponseIsReady(true)`，**0 ArkTS 错误** ✓（探测日志 `/data/.../probe-build.log`）。
+- **链路**：`hybridwebview.js` POST `https://0.0.0.1/__hwvInvokeDotNet`（`X-Maui-Invoke-Token` / `X-Maui-Request-Body`）
+  → 壳 `hybridInvokeResponse`（code 200/JSON/utf-8，**先挂起**，注册 pending + 15 s 兜底）→
+  `host.notifyHybridInvoke(requestId, method, argsJson)` → 宿主 NAPI `notifyHybridInvoke` / 原生
+  `ohos_host_hwv_register_invoke` / `ohos_host_hwv_invoke_result` → 托管
+  `IHybridWebView.Invoker.InvokeMethodAsync(method, params)`（10 s 超时）→ `DotNetInvokeResult` JSON 回填（成功
+  `Result/IsJson`；失败 `IsError/ErrorMessage/ErrorType/ErrorStackTrace`）→ 壳下一 tick `setResponseData` + `setResponseReady(true)`。
+- **降级（页面 promise 永不悬挂）**：错 token/体 → 400；坏 JSON → 400；缺宿主导出 → 错误负载；无活动页/无 invoker/
+  未知方法/坏参数/超时 → 错误负载；壳兜底计时器 → 错误负载 ✓。
+- **验证**：宿主 `selfsign ok` + `T ohos_host_hwv_invoke_result`/`_register_invoke`（含 NAPI 字符串）✓；
+  壳 `TYPECHECK=1` **0 ArkTS 错误**（abc **58,420 B**，并新增 `TYPECHECK=1` 开关与 typeCheck loader 所需的
+  `node_modules` 链接，均非侵入、默认行为不变）✓；套件 **181 项** 0 unhandled ✓（新增 `Echo`→`"echo:hi"`(IsJson)、
+  `Add`→`42`、缺方法、坏参数 JSON、无目标、断连页、无宿主桥等 6 类负载）；demo publish 后
+  `git status --short test/hello-maui-app` **空** ✓（J-2 验收点保持）。
+- **BlazorWebView：评估为多日工程，未实现**。可复用：ArkWeb 拦截 + 刚验证的**延迟响应**、`dotnetHost.postMessage`、
+  `ohos_host_web_eval`、内嵌脚本抽取。**缺口**：`Microsoft.AspNetCore.Components.WebView.Maui` 包（本地缓存无、源可拉）、
+  OpenHarmony 版 `BlazorWebViewHandler`（maui-ohos 树内仅有 Tizen partial）、`OpenHarmonyWebViewManager`
+  （`NavigateCore/SendMessage/MessageReceivedInternal`）、**Blazor 感知的资源提供器**（内容根 + `_framework`：`blazor.webview.js`/
+  `dotnet.wasm`/`_*.dll`）、`window.external`↔`dotnetHost` 初始化脚本、带帧的 JS↔.NET 传输。**风险**：ArkWeb 内 WASM 执行未证、
+  单 `postMessage` 代理无顺序/背压、ohos-arm64 publish 不产出 Blazor WASM 资产。
+- **不确定项**：往返为**离设备验证**（ArkTS 类型检查 + 托管侧经与原生回调相同入口驱动）；**ArkWeb 延迟响应投递**与
+  跨线程 NAPI 回填（continuation 调 `ohos_host_hwv_invoke_result`）**未真机验证**（该 NAPI 模式与既有 `ohos_host_web_eval`/picker 一致）；
+  调用路由假设**单 Hybrid 页**（多实例时为 best-effort）；包内壳二进制未变 → hap 需经
+  `-p:OpenHarmonyArktsModulesAbc=<repo>/dist/ets/modules.abc` 才能带上新壳。
