@@ -509,3 +509,29 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   推送均 `fetch→rebase`（禁强推）✓。
 - **备注**：`git fetch origin` 默认不更新 `origin/feature/openharmony`（refspec 仅映射 `main`）→ 需
   `git fetch origin feature/openharmony` 或 `git ls-remote` 核对远端 tip ✓（已写入本记录）。
+
+## 25. 真机前硬化批次（Q1–Q3；Q4 待重试）
+
+- **Q1 宿主（`ohos-workload 269dbfc`）**：**14 个 sink 改经 `napi_threadsafe_function` 投递**
+  （每 sink 一个 TSFN，`max_queue=64`、`initial_thread_count=1`；替换时 `napi_tsfn_abort`；参数拷入堆负载后非阻塞投递，
+  JS/UI 线程重建参数并以原 `this` 调用；每 sink 互斥锁 + 待处理表，中止项释放，无 UAF/泄漏；队列满每轮一次告警后丢弃）
+  → **ArkWeb 线程风险由"假设"变为确定性投递** ✓；**唯一保持直连**：launcher/browser/share（同步布尔语义无法经 TSFN 表达，
+  否则会谎报"已派发"）✓ 已注明。同时 **`SetOperationActions` 发布动作列表**：12 个动作位全覆盖（CLICK/LONG_CLICK/
+  GAIN·CLEAR_FOCUS/SCROLL_*/COPY·PASTE·CUT/SELECT_TEXT/SET_TEXT/SET_CURSOR_POSITION；掩码为 0 不调用）✓。
+- **Q2 壳（`ohos-workload 7d7acc8`）**：`injectPageBridge()` 提供 **`window.external.sendMessage/receiveMessage`**
+  （后者派发 `HybridWebViewMessageReceived` CustomEvent，与托管 `SendRawMessage` 形状一致；**仅补缺不覆盖**）✓；
+  新增**无障碍自检入口**（左下 44×24 `A11Y` 按钮 → 弹窗显示 `accessibilityStatus` 0–4 映射 +（若导出存在）节点数；
+  不占布局、不动 XContent/ContentSlot）✓；abc → **70,392 B**；`TYPECHECK=1` **0 `ArkTS:ERROR`** ✓。
+- **Q3 打包（`ohos-workload 60e2cf7`）**：
+  - **`.codesign` 漂移根因**：SDK 的 `_OpenHarmonyCodesignBuildOutputs`（Build 后、`Directories=$(TargetDir)` **递归**）
+    会提前重签 `publish/` 内 ELF，而 hap 打包在 Publish 之后 → 打入陈旧重签副本；`ElfSigner` 每轮 strip+注入 4 KB 页 →
+    **每脏发布累积 2 页（8 KB）**；另有 `ZipDirectory` 的 FS 序 + mtime 不稳定 ✗。
+  - **修复**：① `_OpenHarmonyResetHapPublishOutputs`（`BeforeTargets=PrepareForPublish`，仅 hap）清复用 publish 目录，
+    从单次签名 runtime pack 重拷贝 → 载荷仅保留**一份**标准 `.codesign`；② `dotnet.zip` 改由内联
+    **`OpenHarmonyDeterministicZip`**（序数排序 + 固定 `1980-01-01` 时间戳 + deflate）写出 ✓。
+  - **验证**：26.0 载荷 `4ac80200…3379` **连续 3 次一致**；20.0 `b03a313f…77c7` **两次一致**；两 hap `verify-app success` ✓。
+  - **按 TFM 波段**：20.0 → min=target=**60000020**（6.0.0/API 20）、`apiReleaseType=Release`；26.0 → min **60001021**、
+    target **60101024**、`Beta1`（阈值可覆盖；解码规则 `<major><minor:02><patch:02><api:03>` 已写入 targets 头）✓。
+- **Q4（CI 191 项门禁 + 确定性模糊/压力）**：**首次运行因 OOM 失败** ✗ → 已按缩减范围重试（先 CI，fuzz 后补）；
+  其产物（workflow/harness）**不影响** 包与 hap，故本轮刷新不等它 ✓。
+- 三批均在**独立 harness 副本**验证（191/0）✓，未触碰共享目录与 demo 工程 ✓，推送均 `fetch→rebase`（禁强推）✓。
