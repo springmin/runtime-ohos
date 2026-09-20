@@ -1,0 +1,46 @@
+From f9dffc0cd78ab57ffca25462a991501dbefc7d47 Mon Sep 17 00:00:00 2001
+From: springmin <springmin@hotmail.com>
+Date: Mon, 21 Sep 2026 01:48:30 +0800
+Subject: [PATCH] eng/native: drop the no-op -ftls-model=global-dynamic on
+ OpenHarmony
+
+The OpenHarmony block keeps -fno-emulated-tls so the C++ definitions of the
+t_ThreadStatics/t_runtime_thread_locals TLS variables use native TLSDESC,
+matching the arm64 asm helpers (vm/arm64/asmhelpers.S and the PAL asm macros).
+With that flag the model is already global-dynamic for these accesses: the
+OHOS NDK clang 15.0.4 output is byte-identical with and without the explicit
+-ftls-model=global-dynamic (measured --target=aarch64-linux-ohos -O2 -fPIC),
+so the extra flag is redundant.
+
+Keep -fno-emulated-tls: the model must not diverge per translation unit, and
+initial-exec is not an option (static-TLS exhaustion / GOT contract).
+
+Upstream dependency: this block is added by dotnet/runtime#132953 (build
+infrastructure). Do not merge before that PR lands; this is the post-merge
+flags cleanup in the Haiku precedent style
+(#126701/#127392/#127502/#131700).
+---
+ eng/native/configurecompiler.cmake | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/eng/native/configurecompiler.cmake b/eng/native/configurecompiler.cmake
+index 55b1bfb309a..f83038291eb 100644
+--- a/eng/native/configurecompiler.cmake
++++ b/eng/native/configurecompiler.cmake
+@@ -661,10 +661,10 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Qunused-arguments")
+     # The arm64 asm helpers access t_ThreadStatics/t_runtime_thread_locals via TLS
+-    # descriptors; the C++ definitions must use native (non-emulated) TLS with the
+-    # global-dynamic model to match.
++    # descriptors; the C++ definitions must use native (non-emulated) TLS. With
++    # -fno-emulated-tls the default model for these accesses is already
++    # global-dynamic (TLSDESC), so no explicit -ftls-model is needed.
+     add_compile_options(-fno-emulated-tls)
+-    add_compile_options(-ftls-model=global-dynamic)
+   endif()
+ 
+   # Suppress warnings-as-errors in release branches to reduce servicing churn
+-- 
+2.55.0
+

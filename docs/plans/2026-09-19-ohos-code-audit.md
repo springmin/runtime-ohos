@@ -952,3 +952,64 @@ CLT 目前只能贡献 `hdc` 二进制，`devecocli` 的设备能力在本机被
 - 不确定项：`tool/node/bin` 为空可能是本机解包不完整（官方 CLT 可能随附 node），但 hvigor/ohpm 缺失是
   目录级事实，不依赖该假设；`E00C001` 是本机组织策略的提示，可能随策略放开而改变；CLT 的 `hdc`
   未对真机执行过任何命令（设备访问被拦截）。
+
+## 32. 上游门控收尾项：三分支/补丁预备（R7，2026-09-20）
+
+把此前记为「等上游合并后再做」的三项收尾各自做成**单关注点分支**，推送到 runtime fork
+（`origin` = `springmin/runtime-ohos`），并导出 patch 副本。**本轮无任何上游交互**：未向
+dotnet/runtime 发评论、未开 PR、未 push `upstream`；#132953 / #132827 的两条无 @ 评论文案
+仍按用户要求**保持未发**。
+
+### 32.1 找到的条目（改前记录，含判定）
+
+| # | 位置 | 改前代码/事实 | 上游门控 | 依据文档 |
+|---|---|---|---|---|
+| 1 | `eng/native/configurecompiler.cmake`（`pr/ohos-infra`，`CLR_CMAKE_HOST_OPENHARMONY` 块 666-667 行） | `add_compile_options(-fno-emulated-tls)` 后跟 `add_compile_options(-ftls-model=global-dynamic)` | dotnet/runtime **#132953**（该文件就是 PR 内容） | `2026-09-07-ohos-pr-plan-bsd-haiku-model.md` §6.1（OHOS NDK clang 15.0.4 实测：带/不带该 flag 生成码逐字节相同）；`2026-09-17-ohos-workload-w10-status.md:28` |
+| 2 | `src/libraries/Directory.Build.props:14-19` + `src/libraries/shims/Directory.Build.props:7-8` | `LibrariesOpenHarmonySfxTfm = $(NetCoreAppCurrent)-linux` 与 `LibrariesOpenHarmonyShimsTfm = $(NetCoreAppCurrent)-unix` 两套映射 | **#132953**（前置）+ N15 `pr/ohos-libs-tfm` 的 #132866 评审 | `2026-09-02-cxx-runtime-handoff.md` round-14d（1105-1112）与「Remaining TODO」（1140-1143）；`2026-09-17-ohos-workload-w10-status.md:28-29` |
+| 3 | `src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets:59-60`（仅 `feature/openharmony`） | openharmony RID 的 `_UseManagedNtlm=true`（与 linux-bionic 同形） | **没有 PR**；tools/ 归属待评审（#132866 开放问题） | `2026-09-03-ohos-pr-inclusion-audit.md` 开放项 3；`2026-09-07-ohos-pr-plan-bsd-haiku-model.md`（illink held out，§5 第 2 问） |
+
+判定：
+- 条目 1 是**实测 no-op** 的冗余 flag：删除是一行，保留 `-fno-emulated-tls`（TLS 模型必须各 TU 一致，
+  `initial-exec` 不可用）。#132953 合并后独立提交，或在该 PR 评审回复中顺手删除。
+- 条目 2 是**会实际破坏布局的 workaround**：shims 编译 `net11.0-unix`，而共享框架遍历用
+  `net11.0-linux`，`sfx-src` 的 `OmitIncompatibleProjectReferences` 把全部 60 个 facade 判为不兼容并
+  滤掉（round-14d 只能手工编译+拷贝）。真修法 = shims 与 libs 同一 TFM 组（linux）；压缩/Brotli 等
+  unix-only 引用从 linux 消费者解析的机制已在 `2aff77173c2`（共享框架）验证过。
+- 条目 3 确认**不存在 PR**：该 hunk 只在 `feature/openharmony`；逐个 `pr/ohos-*` 分支与 `main` 比 diff
+  均不含它。按「独立 tools PR」的候选形态隔离成单文件分支，但提交时机仍取决于上游对 tools/ 归属的答复。
+
+### 32.2 预备产物（分支已推送 + patch 副本）
+
+| 分支 | 基线 | commit | 文件 | 改动 |
+|---|---|---|---|---|
+| `pr/ohos-tls-flag-cleanup` | `pr/ohos-infra` `cece42439a1` | `f9dffc0cd78` | 1 | 删 `-ftls-model=global-dynamic`，注释改为「-fno-emulated-tls 下模型已是 global-dynamic(TLSDESC)，无需显式 flag」；commit message 写明 #132953 依赖与 Haiku 先例 |
+| `pr/ohos-shims-tfm-cleanup` | `pr/ohos-libs-tfm`（N15 栈顶）`01667c2c6d5` | `1157f1daf5c` | 2 | 删 `LibrariesOpenHarmonyShimsTfm`；shims 改用 `LibrariesOpenHarmonySfxTfm`（linux 组），注释解释兼容性过滤 |
+| `pr/ohos-illink-ntlm` | `main` `719009acffb` | `f8495f47ae3` | 1 | 加 openharmony `_UseManagedNtlm=true`；commit message 写明 tools/ 归属待 #132866 |
+
+patch 副本（`git format-patch` 导出，与分支 commit 逐字节一致，可直接 `git am`）：
+- `docs/plans/patches/pr-ohos-tls-flag-cleanup.patch`
+- `docs/plans/patches/pr-ohos-shims-tfm-cleanup.patch`
+- `docs/plans/patches/pr-ohos-illink-ntlm.patch`
+
+### 32.3 验证（本轮实际能做的）
+
+- 三分支 `git diff --check` 全部干净；`xmllint --noout` 通过（两个 `.props` + 一个 `.targets`）。
+- 回读改动上下文确认语法/注释；全仓 grep 确认 `LibrariesOpenHarmonyShimsTfm` 无残留引用。
+- `pr/ohos-illink-ntlm` 的单文件 diff blob（`e3788a15793`）与 `feature/openharmony` 中 held-out 的
+  hunk 相同 —— 隔离改动不是重写猜测。
+- **无构建**：checkout 内没有 `.dotnet/` 也没有 `artifacts/`（未 bootstrap SDK），OHOS 交叉编译还需要
+  NDK/rootfs；按本轮要求不做重型构建。因此条目 2 的 TFM 解析（shims 在 linux 组、Compression 的 unix
+  引用可解析）**未在构建层验证**，仅沿用既有实测结论 + 代码推理。
+- 远端核对：`git ls-remote origin` 三个 ref SHA 与本地一致。
+
+### 32.4 推送与剩余
+
+- 推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次×15s，**从未 force**。
+  - `pr/ohos-tls-flag-cleanup`、`pr/ohos-shims-tfm-cleanup`、`pr/ohos-illink-ntlm` 均**第 1 次即成功**
+    （此前 HTTPS 探测短暂超时，重试脚本按规则兜底；全程未 force）。
+  - 本 commit（§32 文档）按同一规则推送 `feature/openharmony`。
+- 剩余（提交顺序）：
+  1. #132953 合并后：删 TLS flag（条目 1）；N15（`pr/ohos-libs-tfm`）评审时决定 shims 对齐是并入该
+     PR 还是紧随其后（条目 2；属性命名/shape 可能按 reviewer 意见调整）。
+  2. #132866 答复 tools/ 归属后：`pr/ohos-illink-ntlm` 作为独立 tools PR，或并入 NativeAOT PR（条目 3）。
+  3. 两条上游评论文案（#132953/#132827）仍**未发**（用户约束）。

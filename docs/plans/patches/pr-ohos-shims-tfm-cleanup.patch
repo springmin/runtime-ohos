@@ -1,0 +1,67 @@
+From 1157f1daf5cf42e89fcb2335ebbe5caf70727fba Mon Sep 17 00:00:00 2001
+From: springmin <springmin@hotmail.com>
+Date: Mon, 21 Sep 2026 01:49:09 +0800
+Subject: [PATCH] libraries: compile the OpenHarmony shims in the linux TFM
+ group too
+
+A separate unix shim TFM (LibrariesOpenHarmonyShimsTfm) made sfx-src's
+OmitIncompatibleProjectReferences drop all 60 shims from the linux-group
+shared-framework traversal: the facades (System, mscorlib, netstandard, ...)
+never reached the layout, which is why the OpenHarmony build script had to
+compile them and copy them in by hand (round-14d).
+
+Use the same linux group as the shared framework (LibrariesOpenHarmonySfxTfm)
+for the shims and drop the extra property. The references that made the unix
+shim TFM necessary still resolve from a linux-group consumer: unix-only
+libraries (System.IO.Compression, Brotli, ...) resolve via the unix flavor
+(verified for the shared framework in commit 2aff77173c2) and the -linux/-osx
+libraries resolve exactly.
+
+Upstream dependency: applies on top of dotnet/runtime#132953 and the N15
+libraries TFM mapping; re-evaluate the property name and shape with the
+reviewers before folding this into the libraries PR. No runtime build
+environment in this checkout, so the alignment is not build-verified here.
+---
+ src/libraries/Directory.Build.props       | 5 +++--
+ src/libraries/shims/Directory.Build.props | 7 +++++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/src/libraries/Directory.Build.props b/src/libraries/Directory.Build.props
+index eeb63a3a21b..9370431a349 100644
+--- a/src/libraries/Directory.Build.props
++++ b/src/libraries/Directory.Build.props
+@@ -12,10 +12,11 @@
+   <Import Project="..\..\Directory.Build.props" />
+ 
+   <!-- OpenHarmony has no -openharmony TFM yet, so managed libraries compile in the
+-       linux (sfx) and unix (shims) groups. -->
++       linux group. The shims use the same group as the shared framework: a distinct
++       unix shim TFM is filtered out of the linux-group sfx traversal by
++       OmitIncompatibleProjectReferences, so the facades never reached the layout. -->
+   <PropertyGroup>
+     <LibrariesOpenHarmonySfxTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesOpenHarmonySfxTfm>
+-    <LibrariesOpenHarmonyShimsTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-unix</LibrariesOpenHarmonyShimsTfm>
+   </PropertyGroup>
+ 
+   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
+diff --git a/src/libraries/shims/Directory.Build.props b/src/libraries/shims/Directory.Build.props
+index 0d487ba3547..d3584b17b22 100644
+--- a/src/libraries/shims/Directory.Build.props
++++ b/src/libraries/shims/Directory.Build.props
+@@ -4,8 +4,11 @@
+ 
+   <PropertyGroup>
+     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+-    <!-- No -openharmony TFM: compile in the unix group (LibrariesOpenHarmonyShimsTfm). -->
+-    <TargetFramework Condition="'$(TargetOS)' == 'openharmony'">$(LibrariesOpenHarmonyShimsTfm)</TargetFramework>
++    <!-- No -openharmony TFM: compile in the linux group, the same TFM as the
++         shared-framework traversal (LibrariesOpenHarmonySfxTfm) so sfx-src does
++         not filter the shims out as incompatible; the Compression/Brotli unix
++         flavors still resolve from a linux-group consumer. -->
++    <TargetFramework Condition="'$(TargetOS)' == 'openharmony'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
+     <EnableDefaultItems>true</EnableDefaultItems>
+     <!-- By default make shims compile against reference assemblies. -->
+     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
+-- 
+2.55.0
+

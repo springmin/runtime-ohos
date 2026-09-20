@@ -1,0 +1,37 @@
+From f8495f47ae3137e9599003649b743a8995e79f46 Mon Sep 17 00:00:00 2001
+From: springmin <springmin@hotmail.com>
+Date: Mon, 21 Sep 2026 01:49:41 +0800
+Subject: [PATCH] illink: use the managed NTLM implementation on OpenHarmony
+
+OpenHarmony's sysroot ships no GSSAPI/krb5, like linux-bionic, so ILLink's
+_UseManagedNtlm default must be true for openharmony RIDs instead of falling
+through to the generic Linux false. Mirrors the runtime-side NTLM shim in the
+OpenHarmony platform PRs.
+
+Held out of the platform PRs on purpose: this is a tools/ concern (ILLink),
+so it goes as its own tools PR (or folds into the NativeAOT PR) once the
+reviewers answer the scope question on dotnet/runtime#132866.
+
+Upstream dependency: inert until the openharmony RID is accepted
+(dotnet/runtime#132953 runtime.json + the SDK RID graphs); the condition can
+only match a RuntimeIdentifier that ships in those graphs.
+---
+ .../illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets  | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets b/src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets
+index fd8868d1967..e3788a15793 100644
+--- a/src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets
++++ b/src/tools/illink/src/ILLink.Tasks/build/Microsoft.NET.ILLink.targets
+@@ -56,6 +56,8 @@ Copyright (c) .NET Foundation. All rights reserved.
+     <Http3Support Condition="'$(Http3Support)' == ''">false</Http3Support>
+     <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
+     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
++    <!-- OpenHarmony (openharmony) also lacks GSSAPI/krb5 in its sysroot, so use the managed implementation -->
++    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('openharmony'))">true</_UseManagedNtlm>
+     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
+     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
+     <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
+-- 
+2.55.0
+
