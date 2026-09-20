@@ -40,6 +40,12 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
   ```
   注意：`-p:` 参数**必须用单引号包住整体**，否则 shell 去引号会导致 MSB1006。
 - 默认包（不带属性）的 `module.json` 与基线**逐字一致** ✓（不会影响其他应用）。
+- **API 20 变体**：`hello-maui-app-api20.hap`（同壳/宿主，运行时使用 `net11.0-openharmony20.0` 通道的 Ref/Runtime 包，
+  面向 API 20 设备）。复现：`dotnet publish -c Release -r openharmony-arm64 -p:TargetFrameworks="net11.0-openharmony20.0"
+  -p:TargetFramework=net11.0-openharmony20.0 -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyArktsModulesAbc=… -p:OpenHarmonyHapPackage=true`。
+  ⚠️ 注意：`module.json` 的 `minAPIVersion/targetAPIVersion` 目前仍取打包目标默认值（60001021/60101024），
+  如需按目标设备声明可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…` 覆盖。带权限的 API 20 变体
+  可由同一命令加 `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
 - **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
   大小 **21,679,125** 字节，SHA-256 `1a89a3729debe300ff0d0fd2e0bd0b302866adca8833b10c0737e8a068450c0a`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
 
