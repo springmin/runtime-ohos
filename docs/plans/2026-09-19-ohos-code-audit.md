@@ -262,3 +262,33 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   建议以**可选属性**（如 `-p:OpenHarmonyExtraPermissions=...`）在打包时注入，再逐应用启用。
 - **不确定项**：联系人前缀过滤为**客户端过滤**（Kit 无前缀查询）→ 大通讯录下会先全量拉取再截断；真机侧仅"降级"被验证，
   套件执行未真机运行。
+
+## 17. 权限注入 + HybridWebView 资源服务（2026-09-20）
+
+### ① 打包权限注入（已实现并实测）
+- 属性 **`OpenHarmonyExtraPermissions`**（默认空）加入 `preview.22|23` 的 `targets/OpenHarmony.Hap.targets`。
+- 语义：非空时在生成的 `module.json` 追加 `"requestPermissions":[{"name":"..."}]`（**最小条目**，无 `usedScene`）；
+  以 `;`/`,` 分隔、去空白、丢空项；**未设置时目标代码路径不进入** → `module.json` 与改动前**逐字一致** ✓。
+- 实测（同一 publish 命令两次构建）：无属性 hap 的 `module.json` 982 B 与改动前 **cmp 逐字相同** ✓；
+  设属性后 1129 B，**diff 仅新增三个权限条目**（READ_CONTACTS / READ_CALENDAR / WRITE_CALENDAR）✓。
+- **用法注意**：`-p:Prop="a;b"` 会被 shell 去引号导致 MSB1006 → 需 `-p:'Prop="a;b"'`（或 `%3B`）；已在 target 顶部注明 ✓。
+- 证据目录：`/data/storage/el2/base/tmp/opencode/item1/{baseline,no-prop,with-prop}`。
+
+### ② HybridWebView 资源服务（探测 + 实现）
+- **探测更正**：`@ohos.web.webview.d.ts` **不含** `onInterceptRequest`/`WebResourceRequest/Response`；
+  它们位于 **ArkUI 组件声明** `ets/component/web.d.ts`（`onInterceptRequest` L9433、`WebResourceRequest` L3951、
+  `WebResourceResponse.setResponseData` L4347 等），返回 `null` 表示不拦截 ✓。
+- **编译验证**：壳 `CompileArkTS` 通过（abc **49,120 B**，含 `onInterceptRequest`/`hybrid`/`__hwvSendMessage`）；
+  另以 `typeCheck: true` 的最小拦截页复验 **0 ArkTS 错误** ✓。
+- **实现**：壳经 `onInterceptRequest` + `@ohos.file.fs` 提供 `<AppDir>/<HybridRoot>/…` 与
+  `<AppDir>/_framework/hybridwebview.js`；`__hwvSendMessage`（token/body 头）转发 `host.notifyJsMessage`；
+  仅在注册后拦截；handler 提取内嵌引导资源并映射 `HybridRoot`/`DefaultFile`；
+  **本批补充**：HybridWebView 连接时调用 `EnsureMessageRegistered`（此前纯 Hybrid 应用不会绑定消息 sink）✓。
+- **仍未实现（记录在案）**：`__hwvInvokeDotNet`（需 `setResponseIsReady` 延迟数据）→ 页面侧 `InvokeDotNet` 不可用，
+  **.NET→JS 可用**；**BlazorWebView 未触碰**。
+- **不确定项**：ArkWeb 无真机执行（顶层导航拦截 `https://0.0.0.1/`、自定义头投递、`fileIo` 读取均**仅编译级验证**）；
+  应在下次真机发布中复验 `InApp` 行为。
+
+### ③ 新发现的环境怪癖（后续项）
+`_OpenHarmonyHapStageDir` 为空（workload 目标求值时 `PublishDir` 未设置）→ publish 把 `module.json`/`ets`/`resources`/`libs`
+**落进 demo 工程目录**，会覆盖受跟踪的示例文件（本批已恢复、未提交）。建议修正暂存目录或加入 `.gitignore`。
