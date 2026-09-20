@@ -19,6 +19,30 @@
 
 ---
 
+## 1b. 带权限变体（用于验证联系人/日历/蓝牙/打印）
+
+除默认包外，可提供**带权限变体** `hello-maui-app-permissions.hap`（同一构建，仅 `module.json` 额外声明）：
+
+```
+ohos.permission.ACCESS_BLUETOOTH · ohos.permission.PRINT
+ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permission.WRITE_CALENDAR
+```
+
+- 适用于第 4 节 **G（传感器无关）之外的 H 类新能力**：蓝牙（读配对设备/发现）、打印（系统打印任务）、
+  联系人查询、日历查询/新增。首次使用时会**弹出运行时授权**（除 `PRINT` 为 system_grant 不弹）。
+- 复现命令（在本仓库 `test/hello-maui-app` 下）：
+  ```bash
+  dotnet publish -c Release -r openharmony-arm64 \
+    -p:OpenHarmonyUIPage=pages/Index \
+    -p:OpenHarmonyArktsModulesAbc=<repo>/dist/ets/modules.abc \
+    -p:OpenHarmonyHapPackage=true \
+    -p:'OpenHarmonyExtraPermissions="ohos.permission.ACCESS_BLUETOOTH;ohos.permission.PRINT;ohos.permission.READ_CONTACTS;ohos.permission.READ_CALENDAR;ohos.permission.WRITE_CALENDAR"'
+  ```
+  注意：`-p:` 参数**必须用单引号包住整体**，否则 shell 去引号会导致 MSB1006。
+- 默认包（不带属性）的 `module.json` 与基线**逐字一致** ✓（不会影响其他应用）。
+- **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
+  大小 **21,679,125** 字节，SHA-256 `1a89a3729debe300ff0d0fd2e0bd0b302866adca8833b10c0737e8a068450c0a`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
+
 ## 2. 环境要求
 
 - HarmonyOS / OpenHarmony 设备，**arm64（aarch64）**
