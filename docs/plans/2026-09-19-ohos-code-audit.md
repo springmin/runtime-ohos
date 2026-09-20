@@ -357,3 +357,38 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   跨线程 NAPI 回填（continuation 调 `ohos_host_hwv_invoke_result`）**未真机验证**（该 NAPI 模式与既有 `ohos_host_web_eval`/picker 一致）；
   调用路由假设**单 Hybrid 页**（多实例时为 best-effort）；包内壳二进制未变 → hap 需经
   `-p:OpenHarmonyArktsModulesAbc=<repo>/dist/ets/modules.abc` 才能带上新壳。
+
+## 20. 批次 J：蓝牙发现上抛 · 电池 · 显示 · 无障碍节点探测（191 项）
+
+- **蓝牙发现（已实现）**：探测 `@ohos.bluetooth.connection` 的 `connection.on('bluetoothDeviceFind', Callback<string[]>)`
+  （@since 10/跨设备 13）可编译 ✓ → 壳在 `StartDiscoveryAsync`（op 2）清表并注册监听，逐地址 `getRemoteDeviceName` 解析后
+  经 `host.notifyBluetoothDeviceFound("name\taddress")` 推送；停止时移除监听；**op 4** 返回累积表；
+  宿主新增 `ohos_host_bluetooth_register_device_found` / `_device_found`（**与查询路径分离** → 旧宿主最多丢推送，绝不丢配对列表 ✓）；
+  托管新增 `DeviceFound` 事件与 `GetDiscoveredDevicesAsync()`；离线：空表、事件不触发、不抛 ✓。
+- **电池（已实现）**：探测 `@kit.BasicServicesKit` 的 `batteryInfo`（`batterySOC`/`chargingStatus`/`pluggedType`/`isBatteryPresent`）
+  与 `power.getPowerMode()`（`DevicePowerMode` 600–650）✓；本 MAUI 版本有 `IBattery` 与 **可设置的 `Battery.defaultImplementation`**
+  → 实现并安装（反射 + `[ModuleInitializer]`）；壳在启动与 `BATTERY_CHANGED`/`CHARGING`/`DISCHARGING`/`POWER_SAVE_MODE_CHANGED`
+  公共事件时推 `soc\tcharge\tplugged\tpresent\tpowerMode`；宿主在监听注册时**重放最后负载** ✓。
+  映射：`DISABLE`→`Discharging`（OpenHarmony 无 `NotCharging` 区分）；plugged `NONE`→`Battery` ✓（已记录）。
+- **显示（已实现）**：探测 `@ohos.display` 的 `getDefaultDisplaySync()`（宽高/`densityDPI`/`rotation`/`refreshRate`/`orientation`）
+  与 `display.on('change')` ✓；实现 `IDeviceDisplay`（密度 = densityDPI/160；rotation 0..3 → Rotation0..270；方向含宽高回退），
+  快照去重后触发 `MainDisplayInfoChanged`；`KeepScreenOn` **无平台路径**（getter false、setter 忽略，已注明）✓；
+  推路径 `host.notifyDisplay`（启动 + change，宿主重放）✓。
+- **无障碍 CUSTOM 节点（仅探测，关键结论）**：
+  - **编译通过**：`import { FrameNode, NodeContent, NodeController, typeNode } from '@ohos.arkui.node'`、`typeNode.createNode(uiContext,'Column')`、
+    `NodeContent.addFrameNode(node)`、`FrameNode.getNodeType()/isAttached()/getUniqueId()`、`UIContext.getFrameNodeById/ByUniqueId()`、
+    `NodeController.makeNode()`、`NodeContainer(controller)`、`host.attachAccessibilityNode(frameNode)` ✓。
+  - **编译失败**：`typeNode.createNode(uiContext, 'custom')` → `10505001 No overload… '"custom"' is not assignable to … 'GridItem'`
+    → **ArkTS 无自定义节点创建类型** ✗。
+  - **正确解法（头文件证据）**：`OH_ArkUI_NativeModule_GetNativeAccessibilityProvider` 在节点非 `ARKUI_NODE_CUSTOM` 时返回 PARAM_INVALID
+    （`native_interface_accessibility.h`，`libace_ndk.z.so`）；**原生模块可自建该节点**：
+    `OH_ArkUI_GetModuleInterface(ARKUI_NATIVE_NODE, ArkUI_NativeNodeAPI_1)` → `createNode(ARKUI_NODE_CUSTOM)` →
+    `OH_ArkUI_NodeContent_AddNode(content, node)`（`native_node.h`）→ 再取 provider（预期 **status 1**）✓。
+  - **🔴 发现真实缺陷**：`SetNodeContent` 中的 `AttachAccessibilityValue(...)` 调用**位于 `return` 之后不可达** ✗，
+    且壳从未调用 `attachAccessibilityNode` ✗ → **当前 provider 根本无法附着**；真机应先用 `typeNode.createNode` 的 FrameNode 验证
+    `GetNodeHandleFromNapiValue`（预期 status 2），再按上面的**原生 CUSTOM 节点**路径接线（下一批）。
+- **验证**：宿主 `selfsign ok`（新增 4 导出，共 **101** 个 `ohos_host_*`）✓；壳 `TYPECHECK=1` **0 ArkTS 错误**（abc **65,296 B**）✓；
+  套件 **191 项** 0 unhandled（+10：发现降级/解析/事件、电池与显示默认安装、负载解析、原生形状推送）✓。
+- **不确定项**：电池公共事件订阅与 `display.on('change')` 的真机行为未验证（有守卫；启动快照即使订阅被拒也可用）；
+  事件回调运行在壳/UI 线程（重负载应由用户自行派发）；`typeNode.createNode` FrameNode 能否通过 `GetNodeHandleFromNapiValue`
+  与 CUSTOM 节点所需布局仍需真机确认；切片独立 `.csproj` 受既有 `eng/AndroidX.targets` 缺失影响，验证走 harness 编译路径 ✓。
