@@ -446,3 +446,46 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   若真机仍报 `17100001`，**确定性修复是宿主改用 `napi_threadsafe_function`**（在 `host_napi.cpp`，超出本批文件范围）→ 已写入提交信息 ✓。
 - `registerTextInputSink` 的 `focusControl.requestFocus(...)` 属同类"非 UI 线程 UI 调用"但**非 ArkWeb**，按范围未动；
   另发现既有小怪癖（`registerNotificationSink` 嵌在 picker sink 内）也未改动 ✓。
+
+## 23. 多目标与 API 波段（K-2，2026-09-20）
+
+### 交付
+- **demo 改为多目标**：`<TargetFrameworks>net11.0-openharmony20.0;net11.0-openharmony26.0</TargetFrameworks>`
+  （不带 `-f` 时**两者都构建**；`TargetFramework` 为空，已在 `project.assets.json` 验证两个 TFM 的还原与 `openharmony-arm64` 目标）✓。
+- **四个 hap（均通过独立 `hap-sign-tool verify-app`）**：
+  | 产物 | 大小 | SHA-256 | 权限 | 波段 |
+  |---|---|---|---|---|
+  | 26 默认 | 21,708,016 B | `cbe69482…d9be52` | 0 | min 60001021 / target 60101024 / Beta1 |
+  | 26 权限 | 21,708,011 B | `f2023d8c…4e660d` | 5 | 同上 |
+  | 20 默认 | 21,695,727 B | `076a08c1…c84e55` | 0 | 同上 |
+  | **20 权限（新补）** | 21,699,816 B | `c49512a5…c96a97d` | 5 | 同上 |
+  权限五项 = ACCESS_BLUETOOTH / PRINT / READ_CONTACTS / READ_CALENDAR / WRITE_CALENDAR；权限变体以
+  `-p:'OpenHarmonyExtraPermissions="…"'` **整体单引号**传入（无 MSB1006）✓。
+- **干净度**：六次 publish 后 `git status --short test/hello-maui-app` 仅含预期的 csproj 改动；所有受跟踪夹具
+  sha256 **前后逐字节一致** ✓（J-2 暂存修复持续生效）。套件 **191 项** 0 unhandled ✓。
+- 提交：`ohos-workload 943e398`（PUSHED ✓）。
+
+### 🔴 波段发现（重要，含证据与解码）
+`targets/OpenHarmony.Hap.targets`（preview.22/23 逐字节相同）**无条件硬编码**：
+`OpenHarmonyMinApiVersion=60001021`、`OpenHarmonyTargetApiVersion=60101024`、`OpenHarmonyApiReleaseType=Beta1`。
+- **解码**（DevEco hvigor 6.26.4 的 `apiTransform` + `sdkmanager-common` 的 `parseApiVersion/ApiVersion`）：
+  格式 = `<major><minor:02><patch:02><api:03>`（去前导零）→ `60001021` = **平台 6.0.1 / API 21**；`60101024` = **平台 6.1.1 / API 24**。
+  设备侧印证：`ServiceConstants::API_VERSION_MOD=1000`、`BundleDataMgr::GreatOrEqualTargetAPIVersion` 取 `%1000` 为 API 级别。
+- **结论**：**API 20 变体实际声明 min API 21** ✗ → 在 API 20 设备上（OpenHarmony 6.0.0/API 20 的 `const.ohos.apiversion=20`，
+  `module.json` 未写 `compileSdkType` → 默认 `OpenHarmony`，参考 BMS `CheckApiInfo` **裸比较**）会以
+  **`ERR_APPEXECFWK_INSTALL_SDK_INCOMPATIBLE`（bm 9568297）** 被拒 ✗。
+- **修正值（按同一解码推导，待真机确认）**：API 20 波段应传
+  `-p:OpenHarmonyMinApiVersion=60000020 -p:OpenHarmonyTargetApiVersion=60000020`（平台 6.0.0 / API 20）✓；
+  若目标设备为 HarmonyOS 6.0.1/API 21，则维持 `60001021` ✓。
+
+### 不确定项（如实记录）
+- 拒装判定源自开源 OpenHarmony BMS（`bundlemanager_bundle_framework`）；测试设备为**厂商 HarmonyOS 栈**（BMS 闭源），
+  故未能在真机上执行确认；但两种解释下 **min 21 > 20** 的风险都成立 ✓。
+- `60101024` → 平台 6.1.1/API 24 的解码仅有 6.0.1(21) 有外部印证。
+- 四个 hap **负载不完全一致**：`dotnet.zip` 内的原生负载（如 `libcoreclr.so`）在发布间漂移 4–8 KB（每次有 1 个合法的 4096 字节
+  ELF `.codesign` 段，由共享构建/签名流程引入）；四者验签与清单/权限均正确 ✓，但**若真机轮次要求负载逐字节一致需先处理** ✗。
+
+### 待办（并入下一轮刷新）
+1. 用 **API 20 正确波段**（`60000020`）重建 API 20 的默认/权限 hap（若测试设备确为 API 20）；
+2. 结合 P1/P2（版本标识日志 / 蓝牙去重 / Blazor 探测）后的新切片与壳归档（66,392 B）**统一 §8 刷新**；
+3. 重建交付包（4 hap + 指南 + `SHA256SUMS`）并给出最终哈希。
