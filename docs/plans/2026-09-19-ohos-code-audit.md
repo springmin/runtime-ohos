@@ -914,3 +914,41 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   环境限制）；托管编译由 harness（直接编译 slice 源）覆盖，未改变任何工程文件。
 - **托管与宿主必须成对发布**：旧托管 + 新宿主仍会把未初始化寄存器/哨兵当 range/checked 读；本轮按要求未发布、
   未刷新 pack 版本（版本配对留给发布轮次）。
+
+## 31. R3 残留（仅文档）：DevEco CLT 盘点 · hvigor 解析复核（2026-09-20）
+
+R3（设备/工具链探索轮次）在产出代码前被取消，**未做任何代码改动**；本节是该轮次唯一、也是全部的
+文档残留，供后续轮次复用。结论先行：`build-arkts-shell.sh` 现有的 hvigor file-mirror 解析保持不变；
+CLT 目前只能贡献 `hdc` 二进制，`devecocli` 的设备能力在本机被策略拦截。
+
+### CLT 安装事实（`/storage/Users/currentUser/ohos-clt`）
+| 项 | 实测 |
+|---|---|
+| 版本 | `version.txt` = `# Version: 26.0.0.999` |
+| 提供 | `sdk/default/openharmony/toolchains/hdc`（arm64/musl ELF，可执行）；`tool/node/` 目录存在 |
+| 不提供 | 无 `hvigor/`、无 `hvigorw`、无 `ohpm/bin/pm-cli.js`；`tool/node/bin/` 在本机为空（无 node 可执行文件） |
+| 对 devecocli 的含义 | 其 CLT 约定路径 `<root>/hvigor/bin/hvigorw.js`、`<root>/ohpm/bin/pm-cli.js`、`<root>/tool/node/bin/node` 均不存在 → CLT 无法驱动 hvigor 构建 |
+
+### hvigor 解析复核（`scripts/build-arkts-shell.sh`）
+- 现行路径（脚本 §1/§2/§4）：从 `HVIGOR_MIRROR`（默认 `https://repo.harmonyos.com/npm`）下载
+  `@ohos/hvigor`、`@ohos/hvigor-ohos-plugin` 到 `.arkts-build/hvigor/node_modules`（file mirror），
+  再以 `.arkts-build/sdk/<platformVersion>/` 符号链接出 hvigor 要求的 `<sdkRoot>/<platformVersion>/<component>`
+  布局，最后 `node hvigor.js assembleHap`。
+- 因 CLT 没有 hvigor/hvigorw（上表），该 file mirror **仍是唯一可用且已验证的 hvigor 解析路径**；
+  本轮不修改任何构建脚本。
+
+### devecocli（`DEVECO_CLI_CLT_PATH`）
+- 入口 `/storage/Users/currentUser/npm/bin/devecocli` v1.3.3；`DEVECO_CLI_CLT_PATH=/storage/Users/currentUser/ohos-clt`
+  时按 CLT 模式解析。`--help` 列出的相关子命令：`build`/`run`/`device`/`emulator`/`log`/`auth`
+  （另有 `ui`/`check`/`signature`/`skills`/`init`/`serve`/`docs`/`create`/`update`）。
+- 设备访问被策略拦截：`devecocli device list` 输出
+  `[E00C001]Operation restricted by the organization.`，无法枚举/操作设备。因此 `run`/`ui`/`log`
+  等依赖设备（或 hvigor）的子命令在本环境不可用；`hdc` 二进制本身也未经真机验证。
+
+### 验证与不确定项
+- 上述事实来自本机直接检查：`version.txt`、`ls`/`find` 目录清单、`file hdc`、`devecocli --help`、
+  `devecocli device list`；未改动任何仓库文件。R4（本轮）同样未改 runtime/slice/host，交互套件
+  scratch 副本以 `-m:1` 复核为 **199 `[verify]` / 0 `Unhandled`**（与 §30 基线一致）。
+- 不确定项：`tool/node/bin` 为空可能是本机解包不完整（官方 CLT 可能随附 node），但 hvigor/ohpm 缺失是
+  目录级事实，不依赖该假设；`E00C001` 是本机组织策略的提示，可能随策略放开而改变；CLT 的 `hdc`
+  未对真机执行过任何命令（设备访问被拦截）。
