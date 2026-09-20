@@ -535,3 +535,30 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - **Q4（CI 191 项门禁 + 确定性模糊/压力）**：**首次运行因 OOM 失败** ✗ → 已按缩减范围重试（先 CI，fuzz 后补）；
   其产物（workflow/harness）**不影响** 包与 hap，故本轮刷新不等它 ✓。
 - 三批均在**独立 harness 副本**验证（191/0）✓，未触碰共享目录与 demo 工程 ✓，推送均 `fetch→rebase`（禁强推）✓。
+
+## 26. Q4/Q5 收官（CI 门禁 · fuzz · 上手文档；2026-09-20）
+
+### Q4-A：191 项成为**真实 CI 门禁**（`ohos-workload 81531b8`，已推送 ✓）
+- Workflow（`.github/workflows/interaction-regression.yml`）：①检出本仓 ②**检出 `springmin/maui-ohos@feature/openharmony`**
+  （切片仅存在于该分支；fork 公开，`fetch-depth: 1`）③`setup-dotnet 11.0.x preview` ④Release 构建
+  `Microsoft.OpenHarmony.Hosting` 与 `Microsoft.OpenHarmony.Maui.Graphics`（harness 的 HintPath 两者都引用）
+  ⑤以 `MAUI_SLICE_DIR`/`HOSTING_DLL`/`OPENHARMONY_GRAPHICS_DLL` 运行套件；`set -euo pipefail` 下**要求**：
+  退出 0、`[verify]` **≥191**、无 `Unhandled`，否则失败 ✓；**不再依赖仓库变量**；像素 workflow 未动 ✓。
+- `verify.csproj` 新增 `OPENHARMONY_GRAPHICS_DLL → OpenHarmonyGraphicsDll`（原 Graphics HintPath 为硬编码绝对路径 ✗），
+  保留旧绝对回退 ✓；README 记录环境变量、门禁与计数 ✓。
+- **本地已验证**：PyYAML `safe_load` 解析两个 workflow ✓；`bash -n` 通过（替换 `${{ }}` 后）✓；
+  独立 harness 副本以三环境变量构建并**两次运行：exit 0 / 195 项 / 0 Unhandled** ✓。
+  **仅 runner 可验**：maui-ohos 检出、其上的 Release 构建、workflow 驱动的套件 ✓；MAUI 包在 nuget.org 上存在 ✓。
+
+### Q4-B：确定性 fuzz 尾段（`ohos-workload add3a5f`，已推送 ✓）
+- 固定种子 `20260920`，**0.14–0.21 s**（断言 <30 s）：300 组 down/move/up（含 ±2,000,000 与 ±`float.MaxValue` 等**有限极值**，
+  每 5 次落在 1080×1920 内）；32 KiB `__RawMessage` 与 48 KiB `notifyJsMessage` 负载（**往返断言**）；
+  **301 节点/150 层深树**经 `OpenHarmonyWindowRenderer.Render`（迭代式无障碍 Visit + 诊断遍历）与 `Describe` 驱动；
+  断言**无未处理异常、无挂起** ✓（新增 4 条 `[verify]`）。
+
+### 过程记录（诚实）
+- Q4 分为两个提交：Part A 提交后**并发会话推送**导致 README 冲突（`git fetch` 显示远端已前进），
+  **禁止强推** → Part B 作为后续提交落在其上（Part A 的树已正确 rebase，无历史改写）✓。
+- **runner 前提**：`springmin/maui-ohos` 需保持公开（或提供可读 token）；workflow 本机无法执行 ✓。
+- Q5 的**上手文档已交付**（`runtime-ohos f0f5071ffda`：feed 安装 / TFM publish / 签名与 UDID / 故障排查）；
+  **BlazorWebView 里程碑 2 骨架未落地** ✗（重启中断）——包可还原 ✓，方向见 §19/§24；建议作为 Q5b 续做 ✓。
