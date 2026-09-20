@@ -199,6 +199,24 @@ hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接�
 
 ---
 
+## 5b. 日志关键字对照（回传时请附对应行）
+
+| 测试组 | 关键字（在应用日志/`hdc hilog` 中过滤）| 期望 |
+|---|---|---|
+| 启动/渲染 | `[maui] accessibility provider status=` | **1 = 已附着**（理想）；3/4 请连同该行回传 |
+| 无障碍 | 同上（status 行即可）| 读屏能遍历控件（若可开启）|
+| 蓝牙（N1/N2）| `bluetooth` | 权限提示 / 设备列表 / 发现事件；失败时可见不可用提示 |
+| 打印（N3）| `print` | 出现系统打印界面；任务名正确 |
+| 联系人（N4）| `contacts` | 返回姓名+电话；拒绝授权时为空白 |
+| 日历（N5）| `calendar` | 近期日程 / 新增成功 |
+| Hybrid（N6）| `HybridWebView` / `__hwvInvokeDotNet` | JS→.NET 返回结果回显 |
+| WebView（K1/K2）| `webview` / `eval` | 页面加载/返回正常 |
+| IME（E1–E5）| 输入法相关系统日志 | 键盘弹出、上屏正常 |
+| 通知（H1）| `notification` | 通知栏出现标题/正文 |
+| 相机/选择器（I1–I3）| `picker` / `camera` | 系统界面出现并回传结果 |
+
+**采集建议**：有 hdc 时执行 `hdc hilog > log.txt`（全程录制），并在每个失败项旁标注时间点；无 hdc 时截图或复制应用内日志区。
+
 ## 6. 结果回传格式（请复制填写）
 
 ```
