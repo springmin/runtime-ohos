@@ -1013,3 +1013,90 @@ patch 副本（`git format-patch` 导出，与分支 commit 逐字节一致，�
      PR 还是紧随其后（条目 2；属性命名/shape 可能按 reviewer 意见调整）。
   2. #132866 答复 tools/ 归属后：`pr/ohos-illink-ntlm` 作为独立 tools PR，或并入 NativeAOT PR（条目 3）。
   3. 两条上游评论文案（#132953/#132827）仍**未发**（用户约束）。
+
+## 33. S3 手电筒（Camera Kit torch）跨三仓（2026-09-21）
+
+把 MAUI Essentials 的 `IFlashlight` 接到 OpenHarmony Camera Kit（`@ohos.multimedia.camera`，
+也可经 `@kit.CameraKit` 的 `camera` 重导出）。三仓各一个提交：workload（壳 + host）、
+maui-ohos（托管实现）、runtime-ohos（本文档）。
+
+### 33.1 探针（先探针后写码）
+
+先读 SDK d.ts（`ets/api/@ohos.multimedia.camera.d.ts`，API 26/26.0.0.18 波段），再把临时
+torch 片段放进整页、以真实编译器探针（`typeCheck: true` 跑 hvigor）。结果：
+
+| 成员 | 结果 |
+|---|---|
+| `camera.getCameraManager(getContext(this))` → `camera.CameraManager` | 编译通过（仅 "Function may throw exceptions" / "getContext deprecated" 警告，与既有页面同级） |
+| `CameraManager.isTorchSupported(): boolean` | 编译通过 |
+| `CameraManager.getTorchMode(): camera.TorchMode` | 编译通过 |
+| `CameraManager.isTorchModeSupported(mode: TorchMode): boolean` | 编译通过 |
+| `CameraManager.setTorchMode(mode: TorchMode): void`，`camera.TorchMode.ON`(1)/`OFF`(0)（另有 `AUTO`=2） | 编译通过（同上警告） |
+| `CameraManager.on('torchStatusChange', cb)` | **只有双参 `AsyncCallback` 形态 `(err: BusinessError, info: TorchStatusInfo)` 能编译**；单参 `(info: TorchStatusInfo)` 报 `No overload matches this call`（本切片不订阅） |
+| `camera.TorchStatusInfo.isTorchAvailable/isTorchActive/torchLevel`（只读） | 在上述双参回调里编译通过 |
+
+torch 成员在 d.ts 上**没有** `@permission`（只有创建输入/会话的成员标
+`ohos.permission.CAMERA`），ArkTS 检查器也未对手电筒调用输出权限告警，因此该功能不需要
+清单权限声明。
+
+### 33.2 桥与托管映射
+
+- **host**（`src/OpenHarmonyHost/host_napi.cpp`）：新导出 `ohos_host_flashlight_set(int on)`。
+  它用 `napi_call_function` 直调壳回调，与 ability sink 同形——托管侧要消费布尔答案，而
+  `napi_threadsafe_function` 只能报告"已入队"。返回 `0` = 壳答 true；`-1` = 没有已注册的
+  sink、调用失败或壳答 false。壳通过 `host.registerFlashlightSink(fn)` 注册。
+- **壳**（`packs/.../templates/ets/pages/Index.ets`，preview.22 与 preview.23 逐字节一致）：
+  `on` 为 0=关、1=开、2=支持探测（只跑 `isTorchSupported()`，不碰手电筒）。首次使用时
+  `camera.getCameraManager(getContext(this))` 并缓存 manager；`setTorchMode` 是同步调用、会抛
+  （7400102 不允许 / 7400201 服务致命），无 torch、无 kit、shell 无相机或调用异常一律答 false，
+  且丢弃缓存的 manager 以便下次重试。布尔只表示"kit 接受了请求"，不是 LED 的点亮确认。
+- **托管**（新文件 `OpenHarmonyFlashlight.cs`，未改其他切片文件）：`IFlashlight` 的真实形态
+  用反射从 `Microsoft.Maui.Essentials` 程序集读出——`Task<bool> IsSupportedAsync()`、
+  `Task TurnOnAsync()`、`Task TurnOffAsync()`（该波段不是常见文档写法的 `bool IsSupported`
+  属性）。`IsSupportedAsync` 走 op 2 探测；开/关走 op 1/0。`Flashlight.Default` 由
+  `[ModuleInitializer]` + 字段反射安装（get-only 入口的背衬字段 `Flashlight.defaultImplementation`，
+  与 haptics/battery/TTS/sensors 同模式）。所有原生调用有 guard：`DllNotFoundException` /
+  `EntryPointNotFoundException` 一次性把桥标记为不可用并让 `IsSupportedAsync` 之后恒 false；
+  开/关只写一行 `OpenHarmonyBridge` 状态并以 no-op 完成，**不抛**——这是与参考平台
+  （TurnOn/TurnOffAsync 抛 `FeatureNotSupportedException`）的有意差异，为的是让离机/无相机
+  调用方得到诚实的降级而不是异常。
+
+### 33.3 验证（本轮实际执行）
+
+- host：`bash scripts/build-host.sh` → `selfsign ok`；`llvm-nm -D` 可见
+  `T ohos_host_flashlight_set`。
+- 壳：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror \
+  bash scripts/build-arkts-shell.sh` → **0 条 `ArkTS:ERROR`**（hvigor 日志
+  `TYPE CHECK SUCCESSFUL` + `Finished :entry:default@CompileArkTS`；仅 PackageHap 因本机
+  无 java 失败，脚本按既定规则忽略）。新的 `dist/ets/modules.abc` = **79416 字节**（旧的
+  模板/发布体为 78060 字节；本轮按要求未把它复制进 pack）。
+- harness：把 `test/maui-platform-verify` 复制到 scratch，加 3 条断言（默认实现是
+  `OpenHarmonyFlashlight`、`IsSupportedAsync`=false、`TurnOnAsync`/`TurnOffAsync` 不抛），
+  `-m:1 -p:UseSharedCompilation=false` 构建后运行：**203 条 `[verify]`、0 条 Unhandled**、
+  perf `within=True`；scratch 副本已删除，仓库内 harness 未改。
+- 两份 pack 模板 `cmp` 逐字节一致；模板之外的 `.arkts-build` 构建状态已还原，未进提交。
+
+### 33.4 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `a8f6456`（`a8f64569580308cb32553776b7a3986551789a3e`） | 壳 preview.22/23 + host 导出/注册 |
+| maui-ohos `feature/openharmony` | `f95bc801`（`f95bc801eb1b78bbd18af59393355348f770e555`） | 新增 `OpenHarmonyFlashlight.cs` |
+| runtime-ohos `feature/openharmony` | 本 commit（§33） | 本文档 |
+
+推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次×15s 兜底；两个分支
+**第 1 次即成功**，未 force；`git ls-remote` 复核远端 SHA 与本地一致，推送前 `git fetch` 确认
+远端是本地祖先（fast-forward）。host 的 `.so` 与 `dist/modules.abc` 是忽略/未跟踪产物，未进
+提交；本轮无 release refresh、无 demo publish。
+
+### 33.5 真机前不确定项
+
+1. **未在真机验证**：camera 服务是否接受从 host 回调线程（托管 .NET 线程）发起的
+   `getCameraManager`/`setTorchMode`。该直调沿用 ability sink 的既有形态，本轮只到类型检查 +
+   离机 harness。
+2. 真机 LED 是否点亮、`setTorchMode` "被接受"到实际点亮之间的时延；`torchStatusChange`
+   事件本切片未订阅（其双参回调形态已在探针中确认可编译，后续可加）。
+3. 壳 sink 注册前（页面 `aboutToAppear` 之前）调用 `IsSupportedAsync` 会瞬时答 false；代码
+   只在缺失库/导出时缓存不可用，sink 注册后仍会重新探测。
+4. 无 torch、相机被占用（7400102）、服务重启（7400201）在托管侧都归一为 false + 一条状态
+   日志，调用方无法区分具体原因。
