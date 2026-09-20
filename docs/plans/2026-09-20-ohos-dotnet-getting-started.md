@@ -63,7 +63,7 @@ All public deliverables live as GitHub **release assets** on `springmin/sdk-ohos
 |---|---|---|---|
 | `workload-latest` | rolling | `openharmony-workload-latest.tar.gz`, `SHA256SUMS`, plus `device-test-kit.tar.gz` and `device-test-kit.tar.gz.sha256` | newest workload + the test kit |
 | `workload-1.0.0-preview.23` | immutable (one per workload version) | `openharmony-workload-1.0.0-preview.23.tar.gz`, `SHA256SUMS` | pinning a known-good version |
-| `v11.0.100-rc.1.26451.109-openharmony` | SDK release | the forked .NET SDK tarball, plus **all workload bundles attached so far** (newest there: `1.0.0-preview.22`) | SDK + a pinned snapshot; for a fresh install prefer `workload-latest` |
+| `v11.0.100-rc.1.26451.109-openharmony` | SDK release | the forked .NET SDK tarball, plus the workload bundles attached at various times (newest there: `1.0.0-preview.22`) | SDK + a pinned snapshot; for a fresh install prefer `workload-latest` |
 | `device-test-kit` | test delivery | `device-test-kit.tar.gz`, `device-test-kit.tar.gz.sha256` (also attached to `workload-latest`) | handing signed haps + acceptance docs to a tester |
 
 Download examples:
