@@ -489,3 +489,23 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 1. 用 **API 20 正确波段**（`60000020`）重建 API 20 的默认/权限 hap（若测试设备确为 API 20）；
 2. 结合 P1/P2（版本标识日志 / 蓝牙去重 / Blazor 探测）后的新切片与壳归档（66,392 B）**统一 §8 刷新**；
 3. 重建交付包（4 hap + 指南 + `SHA256SUMS`）并给出最终哈希。
+
+## 24. P1/P2 收尾（交付资产 + 版本横幅 + 蓝牙去重 + Blazor 里程碑 1）
+
+- **交付包发布为 release 资产（P1）**：脚本新增 `--kit/--kit-tag/--skip-kit` 与 `DEVICE_TEST_KIT(_TAG)`；
+  实测发布 `device-test-kit`（`device-test-kit.tar.gz` + `.sha256`，round-trip `sha256sum -c → OK` ✓）并在
+  `workload-latest` 一并附带（与 bundle、`SHA256SUMS` 共 4 资产）；缺件时仅记日志、不破坏既有发布 ✓（`ohos-workload fb38bdc`）。
+- **启动构建标识（P1）**：`OpenHarmonyBuildBanner.cs`（`[ModuleInitializer]` + `Interlocked` 一次性 + try/catch），
+  格式 `[maui] openharmony build <ver> abi=<arch> provider=<n|n/a>`；实测输出恰一行 ✓；
+  **启动时 `provider=0` 属预期**（壳在 `onPageShow` 才附着），附着后真实值由既有 `accessibility provider status=` 行报告 ✓（`maui-ohos e19e152`）。
+- **蓝牙发现去重/排序（P2）**：trim + 空地址丢弃 + 同地址合并（后到者补名）+ **按 name→address 序**（OrdinalIgnoreCase，文化无关）；
+  `DeviceFound` **每新地址至多一次**（`ConcurrentDictionary.TryAdd`），`StartDiscoveryAsync` 成功时清零（与壳清表一致）；
+  `ParseDevices/ParsePairedDevices` 保持**原样**（线序/重复），共享 harness 断言不变 ✓（`maui-ohos 268cf66`）。
+- **BlazorWebView 里程碑 1（P2）**：**NuGet 包可还原** ✓（`Microsoft.AspNetCore.Components.WebView.Maui 11.0.0-rc.1.26451.6`，经 darc
+  `dotnet-public` feed，20 包、0 警告 0 错误）；已交付**与包无关**的资产映射文件 `OpenHarmonyBlazorWebView.cs`
+  （`AppOrigin=https://0.0.0.0/`、`ContentRoot=wwwroot`、`ResolveAssetPath` 含 percent-decode 与**路径穿越拒绝**、`IsFrameworkRequest`）✓；
+  里程碑 2 = handler partial / WebViewManager / Blazor 资产提供器 / `window.external` 初始化 ✓。
+- **验证**：两批各在**独立 harness 副本**运行（P1: 191/0；P2: 195/0 含 4 条草稿断言）；共享目录未被污染 ✓；
+  推送均 `fetch→rebase`（禁强推）✓。
+- **备注**：`git fetch origin` 默认不更新 `origin/feature/openharmony`（refspec 仅映射 `main`）→ 需
+  `git fetch origin feature/openharmony` 或 `git ls-remote` 核对远端 tip ✓（已写入本记录）。
