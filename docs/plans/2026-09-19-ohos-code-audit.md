@@ -757,3 +757,91 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 2. 真机验证 Blazor Hybrid：首屏渲染、计数器/JS interop 往返、`blazor.webview.js` 指纹路由与
    缓存头（本批只按非指纹 URL 服务）。
 3. release 刷新时把 78,060 B 的 `modules.abc` 装进 pack 模板并重新生成设备测试 kit。
+
+## 29. 无障碍 provider R2：方向焦点 · editable/checkable · range 缺口（host-only，2026-09-20）
+
+### 范围与原则
+- 仅改 `ohos-workload/src/OpenHarmonyHost/host_napi.cpp`（无障碍回调与元素填充）。托管切片与 C 节点表
+  （`openharmony_host.c`）**只读未动**；C 符号/链接不变，无壳改动，无新导出。
+- 契约审计结论：角色/文本/描述/矩形可靠；**flags/actions 在真机上目前不可靠**（既有错位，见 §4）；
+  勾选值与范围值（min/max/current）**没有任何发布字段** → 不伪造。
+
+### 1. 方向焦点（`findNextFocusAccessibilityNode`）
+- 原实现忽略 `direction`，固定返回"下一个可聚焦"。现按 `ArkUI_AccessibilityFocusMoveDirection` 分两类：
+  - **UP/DOWN/LEFT/RIGHT（几何启发式）**：以当前节点屏幕矩形**中心**为原点；候选须是可聚焦节点且在主轴上
+    "严格在前"（主轴增量 ≥ `kA11yFocusEpsilon = 1px`，因此身后的、与原点重叠的、NaN 矩形全部跳过）；
+    评分 `主轴增量 + 2 × 垂直增量`（`kA11yFocusPerpendicularPenalty = 2.0`，单位同为像素），平局先比垂直
+    距离、再比发布索引（确定性）。
+  - **FORWARD/BACKWARD（索引顺序）**：按发布顺序（托管树先根后子）从当前索引前/后开始，环形回绕。
+  - 语义边界：`elementId <= 0` 视为"无当前节点"——几何方向用根（索引 0；托管发布以根为首、findById 对 ≤0
+    返回根）矩形为原点；FORWARD 从首个可聚焦、BACKWARD 从末个可聚焦开始。id 不在表中但 > 0 时保留
+    R2 前的 `id == index+1` 回退；`INVALID`/未知方向保留 R2 前的顺序移动。无候选 → `FAILED`。
+- 常数、平局规则、跳过条件全部写在代码注释里；47 项原生断言（真实抽取代码 + 真实节点表）覆盖 6 个方向、
+  回绕、非可聚焦诱饵、NaN、越界 id 与无候选分支。
+
+### 2. editable / checkable（角色派生）
+- `textInput` → `SetEditable(true)`；`checkBox`/`switch` → `SetCheckable(true)`；列表查询（findById/findByText）
+  与单节点填充（findFocused/findNextFocus）共用同一 helper。
+- **`SetChecked` 不调用**：节点记录没有 checked 值；对可能已打开的开关报"未选中"比不报更糟。
+
+### 3. range 决策：不可表达 → 记录发布扩展（不伪造）
+- `ArkUI_AccessibleRangeInfo` 需要 min/max/current 三值；`ohos_host_accessibility_node`/`get` 都没有值字段，
+  且托管 `RoleOf` 连 `IProgress` → "progress" 都没映射（只有 slider）。填默认 0/100/0 会把任意位置的滑块
+  报成"0/100"，属于伪造 → **本轮不调用 `SetRangeInfo`**（构建后 `llvm-nm -D` 验证：`SetEditable`/`SetCheckable`
+  已引用，`SetChecked`/`SetRangeInfo` 未引用）。
+- 需要的发布扩展（精确签名；一次补齐 hint 错位 + 勾选值 + 范围值）：
+  ```c
+  int ohos_host_accessibility_node(int id, int parent_id, const char* role, const char* text,
+                                   const char* description, const char* hint,
+                                   float x, float y, float width, float height,
+                                   int flags, int actions,
+                                   double range_min, double range_max, double range_current,
+                                   int checked);
+  ```
+  读取侧相应扩为：
+  ```c
+  int ohos_host_accessibility_get(int index, int* id, int* parent_id, const char** role,
+                                  const char** text, const char** description, const char** hint,
+                                  float* x, float* y, float* width, float* height,
+                                  int* flags, int* actions,
+                                  double* range_min, double* range_max, double* range_current,
+                                  int* checked);
+  ```
+  约定：`hint` 可为 NULL；仅当 `range_min <= range_max`（且非 NaN）时范围有效，host 侧才调用 `SetRangeInfo`
+  （slider/progress）；`checked` -1 = 未知/不适用，0/1 时调用 `SetChecked`（`SetCheckable` 仍由角色派生）。
+  托管侧配套（本轮未动）：记录增加值字段（`ISlider.Minimum/Maximum/Value`、`ICheckBox.IsChecked`、
+  `ISwitch.IsToggled`）、`RoleOf` 增加 `IProgress`→"progress"、`Publish` 按序追加参数；**pack 版本必须成对递增**
+  （旧托管 + 新宿主会把未初始化寄存器当 range/checked 读）。
+
+### 4. ★ 既有契约错位（本轮实测发现；宿主侧无法修，托管/C 均超出本文件所有权）
+- **现象**：托管 `DllImport AccessibilityNode(...)` 声明 **12** 个参数（第 6 个是 `hint`），而
+  `ohos_host_accessibility_node` 定义只有 **11** 个（`description` 后直接是 `x`，没有 hint）。AAPCS64 下整数/
+  指针与浮点寄存器分开编号：被调方第 10 个参数 `flags` 实际读到 **hint 指针**，第 11 个 `actions` 读到
+  **托管发布的 flags**，真正的 actions 被丢弃。
+- **后果（真机现存）**：节点表 `flags` = 指针低位、（本应 0..3 的）`actions` = flags ∈ {0,1,2,3}。于是
+  `SetEnabled`/`SetFocusable` 随机、`SetClickable` 恒 false、操作动作列表恒空；R2 之前的 `findFocused`/
+  `findNextFocus` 依赖的 `flags & 2` 同样是随机的。R2 的 editable/checkable 按角色派生、不受影响；方向焦点
+  在**表按正确形状填充时**可用（47 项原生断言），真机上要等错位修复后才生效。
+- **实测证据**：scratch 原生测试用真实 .NET marshaller 以 12 参形状调用 11 参实现对端，发布
+  `(flags=3, actions=0x10)` 后对端收到 `flags=68151328`（hint 指针低位，随分配变化）、`actions=3`；同一 TU
+  用真实 11 参形状填表则落位正确（`flags=3, actions=0x10`）。
+- **修法二选一**（建议与 §3 扩展一次完成）：
+  (a) 托管：`AccessibilityNode` 去掉 `hint` 形参（最小改动，flags/actions 立即对齐，hint 继续不送达宿主）；
+  (b) C：按 §3 签名把 `hint` 补为第 6 参并存入节点（`OhosAccessibilityNode` + `get` 出参同步），
+      宿主侧顺带补 `SetHintText`。
+
+### 验证
+- 宿主 `bash scripts/build-host.sh` → **`selfsign ok`**（仅既有 C-as-C++ 警告）。
+- 原生自测（scratch，**不入库**）：从 `host_napi.cpp` 抽取真实无障碍代码块 + 真实 `openharmony_host.c` 节点表，
+  ArkUI setter 打桩后在真机（aarch64 HarmonyOS）运行 → **47/47 通过**（方向几何/回绕/边界/状态派生/既有查询回归
+  + §4 错位实证）；自签后执行（未签 ELF 被设备拒绝，用 `scripts/selfsign.sh`）。
+- 托管 harness（自建 scratch 副本，`-m:1`）：exit 0，**195 `[verify]` / 0 `Unhandled` / 0 `assert=False`**
+  （未改托管，与基线一致）；副本含 bin/obj 已删。
+- 未跑 demo 发布、未做 release 刷新（按要求）。
+
+### 不确定项
+- **真机无屏幕阅读器实测**：几何启发式只有原生仿真证据；中心点比较在重叠/包裹元素上的取舍需真机手感确认。
+- RTL 下 LEFT/RIGHT 仍是物理方向（非逻辑读向）；`elementId <= 0` 以索引 0 为根是约定（托管发布先根），
+  未见框架文档明确。
+- §4 修复前，真机上的焦点与动作结果不可信；editable/checkable 不受影响。
+- `1px` 前沿阈值、`2:1` 垂直惩罚、平局规则都是启发式，集中在 `kA11yFocus*` 常数，可按真机调整。
