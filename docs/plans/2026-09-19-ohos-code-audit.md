@@ -1100,3 +1100,89 @@ torch 成员在 d.ts 上**没有** `@permission`（只有创建输入/会话的�
    只在缺失库/导出时缓存不可用，sink 注册后仍会重新探测。
 4. 无 torch、相机被占用（7400102）、服务重启（7400201）在托管侧都归一为 false + 一条状态
    日志，调用方无法区分具体原因。
+
+
+## 34. S4 分享文件（ShareFileRequest）跨三仓：sendData Want + FLAG_AUTH_READ_URI_PERMISSION（2026-09-21）
+
+### 34.1 探针（先探针后写码）
+
+- SDK（`$HOME/.harmonybrew/opt/ohos-sdk/ets/api`，本机解析到
+  `/storage/Users/currentUser/.harmonybrew/opt/ohos-sdk/`）实际声明：
+  - `@ohos.app.ability.Want`（default class）有 `uri?: string`、`type?: string`、`flags?: number`、
+    `action?: string`、`parameters?: Record<string, Object>`；`type` 的文档自 API 18 起出现，本 SDK 可写。
+  - `@ohos.app.ability.wantConstant` 的 `Flags.FLAG_AUTH_READ_URI_PERMISSION = 0x00000001`
+    （旧模块 `@ohos.ability.wantConstant` 同值但标 `@useinstead` 指向新模块）。
+  - `@ohos.file.fileuri` 有 `getUriFromPath(path)`（app sandbox path → file uri），本轮**未使用**（见 34.5）。
+  - 本 SDK 仍无 Share Kit（`systemShare`）；Want 只有单个 `uri` 槽，多文件没有载体。
+- 探针方式：把形状直接写进 pack 模板再跑官方工具链，而不是猜。`import wantConstant from
+  '@ohos.app.ability.wantConstant'` + `new Want()` + `want.flags =
+  wantConstant.Flags.FLAG_AUTH_READ_URI_PERMISSION` 编译通过：`TYPECHECK=1` → **0 条
+  `ArkTS:ERROR`**、hvigor 日志 `TYPE CHECK SUCCESSFUL`、`Finished :entry:default@CompileArkTS`；
+  新的 `dist/ets/modules.abc` = **79676 字节**（S3 为 79416）。
+- 结论（实际编译过的文件分享形状）：`new Want()` + `action='ohos.want.action.sendData'` +
+  `uri=<file:// URI>` + `type=<MIME>` + `flags=FLAG_AUTH_READ_URI_PERMISSION`。不用 viewData：
+  viewData 是既有 kind 0 的"打开文件"语义，分享是 sendData。
+
+### 34.2 桥与派发（kind 3；host 未改）
+
+- **壳**（`packs/.../templates/ets/pages/Index.ets`，preview.22/23 逐字节一致）：新增
+  `kind === 3` 分支——`uri` 槽 = file:// URI，`text` 槽 = MIME type（两者都由托管侧准备），
+  `flags` 用上述常量；kind 0/1/2 的代码与行为原样保留，文本路径零变化。
+- **host**（`src/OpenHarmonyHost/host_napi.cpp`）：**未改、未重编**。`ohos_host_ability_start(kind,
+  uri, text)` 对 kind 是不透明透传（只有壳解释 kind），不需要第 4 个参数或新导出。
+- **托管**（`src/Core/src/Platform/OpenHarmony/OpenHarmonyAppLauncher.cs`，未新增文件）：
+  - `KindShareFile = 3` + `TryShareFile(fileUri, mime)` → 复用同一条 `Dispatch` guard
+    （`DllNotFoundException` / `EntryPointNotFoundException` 一次性把桥标记不可用并降级 false，不抛）。
+  - `Share.RequestAsync(ShareFileRequest)`：`File.FullPath` → `FileUriForPath`（`"file://"` + 绝对
+    路径，`/data/...` → `file:///data/...`；已带 scheme 的原样通过）+ `MimeTypeForPath`（扩展名小写后
+    查表），调用桥；无论派发成功与否都返回 `Task.CompletedTask`，失败只写一行
+    `OpenHarmonyBridge.WriteStatus`——与文本路径完全一致。
+  - `Share.RequestAsync(ShareMultipleFilesRequest)`：**恰 1 个文件**时走同一条派发；0 个或 >1 个
+    保持 no-op + 状态行（一个 Want 只带一个 uri，多文件载体是缺失的 Share Kit），不静默地只分享第一个。
+- **MIME 映射**（20 个扩展名，其余 `*/*`）：txt/log→text/plain，csv→text/csv，html/htm→text/html，
+  json→application/json，xml→application/xml，pdf→application/pdf，png→image/png，
+  jpg/jpeg→image/jpeg，gif→image/gif，webp→image/webp，mp3→audio/mpeg，wav→audio/wav，
+  mp4→video/mp4，zip→application/zip，doc→application/msword，
+  docx→…wordprocessingml.document，xls→application/vnd.ms-excel，xlsx→…spreadsheetml.sheet，
+  ppt→application/vnd.ms-powerpoint，pptx→…presentationml.presentation。
+
+### 34.3 验证（本轮实际执行）
+
+- 壳：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror   bash scripts/build-arkts-shell.sh` → **0 条 `ArkTS:ERROR`**（`TYPE CHECK SUCCESSFUL`；仅
+  PackageHap 因本机无 java 失败，脚本按既定规则忽略）。新 `dist/ets/modules.abc` = 79676 字节，
+  按要求未复制进 pack、未做 demo publish / release refresh；模板构建状态 `.arkts-build` 未进提交。
+- host：未改，未重编（无新导出）。
+- harness：把 `test/maui-platform-verify` 复制到 scratch，加 3 条断言（MIME map 的
+  pdf/png/未知扩展名、`file://` URI 形状、单文件与多文件 `ShareFileRequest` 离机派发不抛），
+  `-m:1 -p:UseSharedCompilation=false -p:UseMSBuildServer=false` 构建（0 error；首次触发
+  CA1307 指向 `StartsWith('/')`，改为 `StartsWith("/", StringComparison.Ordinal)` 后过）并运行：
+  **203 条 `[verify]`、0 条 `Unhandled`**、exit 0、perf `within=True`；scratch 副本已删除，
+  仓库内 harness 未改。
+
+### 34.4 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `437cf52`（`437cf52b3a87fa00183990b92baf8907ee8006ac`） | 壳 preview.22/23：kind 3 + `wantConstant` 导入/注释 |
+| maui-ohos `feature/openharmony` | `0a88b8a1`（`0a88b8a1ced13c1718a6122b556d46bfdd870f10`） | `OpenHarmonyAppLauncher.cs`：kind 3 桥 + 文件派发 + MIME/URI 映射 |
+| runtime-ohos `feature/openharmony` | 本 commit（§34） | 本文档 |
+
+推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次 × 15s 兜底，失败则
+fetch+rebase（不 force）。推送前已复核：三仓本地 HEAD 都是远端分支 tip 的后代
+（fast-forward）；其中 maui-ohos 的 `origin/feature/openharmony` remote-tracking ref 因
+fetch refspec 只含 main 而陈旧，`git ls-remote` 复核实际远端为 `f95bc801`，本地提交在其之上。
+
+### 34.5 真机前不确定项
+
+1. **接收方能否读到文件**：壳已设 `FLAG_AUTH_READ_URI_PERMISSION`，但托管侧发的是
+   `file://` + sandbox 绝对路径（`file:///data/storage/...`）。`fileUri.getUriFromPath` 的
+   bundle-qualified 形式没有用——托管侧不知道 bundleName；若目标应用/ability 管理器要求带
+   bundle 前缀或 content URI，接收方会打不开。属设备验证项。
+2. **隐式 sendData Want 的匹配**：聊天/邮件类应用是否需要额外的 `entities`/`parameters`
+   （如 `ohos.extra.param.key.content` 只对文本路径设置）才能出现在选择器里，离机不可见；
+   目标应用也可能按 `type` 过滤。
+3. `type` 按扩展名映射，与真实内容不符时可能匹配不到 activity；未读取
+   `ShareFile.ContentType`（`ShareFile(path, contentType)` 的显式值），一律以扩展名为准，
+   未知扩展名用 `*/*`（选择器会变宽）。
+4. 多文件（>1）仍是 no-op；若后续要真支持，需要 Share Kit 或逐个 uri 的多次派发语义，
+   本轮明确不做。
