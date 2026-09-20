@@ -1,6 +1,8 @@
 # 验收说明（随 hap 一起发送）— .NET/MAUI on OpenHarmony
 
 > 本文档面向**外部测试人员**，不需要开发环境知识。请把本文档与 `hello-maui-app.hap` 一起拿到目标设备上执行。
+> 时间有限的测试者可以先看一页版 **快速上手**：`2026-09-20-ohos-tester-quickstart.md`（如何校验、先测哪 5 条、回传什么）；
+> 完整清单与结果模板仍以本文档为准。
 
 ---
 
@@ -9,11 +11,13 @@
 | 项 | 值 |
 |---|---|
 | 文件名 | `hello-maui-app.hap` |
-| 大小 | 21,521,150 字节（约 20.5 MB）|
-| SHA-256 | `8da356190b2e7c495dd39bb43de8c83399a300dedce4ca49cea3bfa3125f2d88` |
+| 大小 | 约 21 MB（每轮重建可能变化，以随包 `SHA256SUMS` 为准）|
+| SHA-256 | **不做固定约定**：以随包 `SHA256SUMS`（或 kit 的 `.sha256`）为准；每次重签/重建哈希都会变 |
 | 构建版本 | `.NET/OpenHarmony workload 1.0.0-preview.23` |
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
 | 内含 | 托管应用负载、自签名宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
+
+校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。
 
 应用名：`hello-maui-app`；启动后是一个包含大量控件的长列表页面（顶部导航栏标题「Root」）。
 
@@ -43,9 +47,11 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
 - **API 20 变体**：`hello-maui-app-api20.hap`（同壳/宿主，运行时使用 `net11.0-openharmony20.0` 通道的 Ref/Runtime 包，
   面向 API 20 设备）。复现：`dotnet publish -c Release -r openharmony-arm64 -p:TargetFrameworks="net11.0-openharmony20.0"
   -p:TargetFramework=net11.0-openharmony20.0 -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyArktsModulesAbc=… -p:OpenHarmonyHapPackage=true`。
-  ⚠️ 注意：`module.json` 的 `minAPIVersion/targetAPIVersion` 目前仍取打包目标默认值（60001021/60101024），
-  如需按目标设备声明可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…` 覆盖。带权限的 API 20 变体
-  可由同一命令加 `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
+  ✅ 波段（已按 TFM 修正，Q3 打包）：`module.json` 的 `minAPIVersion/targetAPIVersion/apiReleaseType` 随目标 TFM 取值——
+  API 20 变体为 min = target = **`60000020`**（平台 6.0.0 / API 20，`Release`）；26.0 变体为 min **`60001021`**、
+  target **`60101024`**（`Beta1`）。如需按具体设备声明，可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…`
+  （及 `-p:OpenHarmonyApiReleaseType=…`）覆盖。带权限的 API 20 变体可由同一命令加
+  `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
 - **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
   大小 **21,679,125** 字节，SHA-256 `1a89a3729debe300ff0d0fd2e0bd0b302866adca8833b10c0737e8a068450c0a`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
 
@@ -182,7 +188,7 @@ hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接�
 | N4 | **联系人查询** | 输入前缀查询 | 返回匹配联系人（姓名+电话）；拒绝授权时为空且不崩溃 |
 | N5 | **日历** | 列出近期日程 / 新增一条事件 | 列表含未来日程；新增后可在系统日历看到 |
 | N6 | **Hybrid JS 往返** | 打开 Hybrid 演示页并点击按钮 | JS→.NET 调用返回结果并回显（`Echo`/`Add` 等） |
-| N7 | **无障碍状态日志** | 启动应用后查看日志 | 出现 `[maui] accessibility provider status=N`：**1=已附着**（理想）；2/3 请连同该行一起回传 |
+| N7 | **无障碍状态日志** | 启动应用后查看日志 | 出现 `[maui] accessibility provider status=N`：**1=已附着**（理想）；0=未附着（启动初值，属预期）；2/3/4 及更大的 `unknown status` 请连同该行一起回传（含义见 §5b）|
 
 **日志采集（如有 hdc）**：`hdc hilog > log.txt` 或过滤应用包名；无 hdc 时请截图该行或应用内日志区域。
 
@@ -191,7 +197,8 @@ hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接�
 | 项 | 说明 |
 |---|---|
 | 读屏/无障碍 | 暂未接入系统读屏节点（数据层已完成，平台绑定待做）|
-| BlazorWebView / HybridWebView | 尚未实现 |
+| BlazorWebView | **进行中**：NuGet 包引用、资产映射、hap 资产管线与 ArkTS bootstrap 已就绪；托管 `WebViewManager`/handler 接线（里程碑 2b）待做，本轮包内未含 Blazor 演示页（故无需测试）|
+| HybridWebView | **已实现**：JS→.NET 往返见 N6，资源服务已就绪 |
 | Hot Reload / 诊断 overlay | 热重载未实现（诊断描边需应用内开关）|
 | Pinch | 需**两根手指**同时接触（单指无效）|
 | 悬停 | 需**鼠标**（触摸设备无悬停）|
@@ -203,7 +210,7 @@ hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接�
 
 | 测试组 | 关键字（在应用日志/`hdc hilog` 中过滤）| 期望 |
 |---|---|---|
-| 启动/渲染 | `[maui] accessibility provider status=` | **1 = 已附着**（理想）；3/4 请连同该行回传 |
+| 启动/渲染 | `[maui] accessibility provider status=` | **1 = 已附着**（理想）；2/3/4 请连同该行回传 |
 | 无障碍 | 同上（status 行即可）| 读屏能遍历控件（若可开启）|
 | 蓝牙（N1/N2）| `bluetooth` | 权限提示 / 设备列表 / 发现事件；失败时可见不可用提示 |
 | 打印（N3）| `print` | 出现系统打印界面；任务名正确 |
@@ -214,6 +221,16 @@ hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接�
 | IME（E1–E5）| 输入法相关系统日志 | 键盘弹出、上屏正常 |
 | 通知（H1）| `notification` | 通知栏出现标题/正文 |
 | 相机/选择器（I1–I3）| `picker` / `camera` | 系统界面出现并回传结果 |
+
+**status 值对照（0–4；界面/日志对更大值显示 `unknown status`，请原样回传）**：
+
+| 值 | 含义 |
+|---|---|
+| 0 | 未附着（启动初值，属预期）|
+| 1 | 已附着、回调注册成功（**理想**）|
+| 2 | 收到 frame node，但因不是 CUSTOM 节点被拒 |
+| 3 | 收到 NodeContent，但 CUSTOM 节点未创建/加入 |
+| 4 | CUSTOM 节点已加入，但 provider 拒绝 |
 
 **采集建议**：有 hdc 时执行 `hdc hilog > log.txt`（全程录制），并在每个失败项旁标注时间点；无 hdc 时截图或复制应用内日志区。
 
