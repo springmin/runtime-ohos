@@ -12,10 +12,11 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <!-- OpenHarmony has no -openharmony TFM yet, so managed libraries compile in the
-       linux (sfx) and unix (shims) groups. -->
+       linux group. The shims use the same group as the shared framework: a distinct
+       unix shim TFM is filtered out of the linux-group sfx traversal by
+       OmitIncompatibleProjectReferences, so the facades never reached the layout. -->
   <PropertyGroup>
     <LibrariesOpenHarmonySfxTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesOpenHarmonySfxTfm>
-    <LibrariesOpenHarmonyShimsTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-unix</LibrariesOpenHarmonyShimsTfm>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
