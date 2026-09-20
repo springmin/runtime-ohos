@@ -562,3 +562,99 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
 - **runner 前提**：`springmin/maui-ohos` 需保持公开（或提供可读 token）；workflow 本机无法执行 ✓。
 - Q5 的**上手文档已交付**（`runtime-ohos f0f5071ffda`：feed 安装 / TFM publish / 签名与 UDID / 故障排查）；
   **BlazorWebView 里程碑 2 骨架未落地** ✗（重启中断）——包可还原 ✓，方向见 §19/§24；建议作为 Q5b 续做 ✓。
+
+## 27. BlazorWebView 里程碑 2 骨架（Q5b，2026-09-20；编译级）
+
+### 交付（`maui-ohos`，已推送 `feature/openharmony`）
+- **包引用可用** ✓：`Microsoft.AspNetCore.Components.WebView.Maui 11.0.0-rc.1.26451.6`（darc `dotnet-public`）
+  已加入切片 csproj。资产：`lib/net11.0`（本次编译面）+ `net11.0-android37.0 / ios26.5 / maccatalyst26.5 /
+  windows10.0.19041 / windows10.0.20348`；net11.0 依赖 `Microsoft.AspNetCore.Components.WebView`、
+  `Microsoft.JSInterop`、`Microsoft.AspNetCore.Authorization` 均为 `11.0.0-preview.7.26381.103`；该 net11.0
+  程序集**引用 `Microsoft.Maui.Controls`**（编译车辆必须可解析，见"门"；切片现只引 Core+Graphics，留给里程碑 3 决策）。
+- **新文件** `src/Core/src/Platform/OpenHarmony/OpenHarmonyBlazorWebViewHandler.cs`（365 行，整体
+  `#if OPENHARMONY_BLAZOR_WEBVIEW`）：
+  - `OpenHarmonyBlazorWebViewHandler : OpenHarmonyViewHandler<IBlazorWebView>, IBlazorWebViewHandler`：Mapper
+    （HostPage/RootComponents）、`CreatePlatformView`（`IsWebView=true`）、`ConnectHandler`（挂
+    `OpenHarmonyWebViewHandler.JsMessage` + `EnsureMessageRegistered` + `RegisterBlazorAssets`）、
+    `CreateFileProvider`、`TryDispatchAsync`；`RegisterBlazorAssets` 经里程碑 1 `ResolveContentRoot` 校验后向壳发
+    `blazor` 命令（`origin`/`base`/`root`/`defaultFile` 的 JSON 描述符）。
+  - `OpenHarmonyWebViewManager : WebViewManager`：按包签名构造；`NavigateCore` → 壳 `load` 命令；`SendMessage` →
+    `window.__dispatchMessageCallback`（优先）/ 壳 `window.external.receiveMessage`（bootstrap 前回退）；
+    `MessageReceivedFromShell` 包装基类 protected `MessageReceived`。
+  - `OpenHarmonyBlazorFileProvider`（+`FileInfo`/`DirectoryContents`）：每个子路径都过里程碑 1
+    `ResolveAssetPath`（根路径 / `\` / `.`/`..` 拒绝），`Watch` = `NullChangeToken.Singleton`。
+- **编译门（诚实口径）**：独立切片 csproj 在本部分检出仍不可构建（`eng/AndroidX.targets` 缺失，既有条件），
+  可工作的门是 **harness 副本**。注意 `tmp/opencode/maui-platform-verify` 共享副本滞后（13:23，无 fuzz 尾段），
+  本批改从 `ohos-workload/test/maui-platform-verify`（Q4-B 最新版）拷到 `/data/.../verify-q5b`，在副本临时加包引用 +
+  `OPENHARMONY_BLAZOR_WEBVIEW` → `dotnet build` **0 error**，该文件 0 warning，`verify.dll` 元数据含
+  `OpenHarmonyBlazorWebViewHandler`/`OpenHarmonyWebViewManager`/`OpenHarmonyBlazorFileProvider`；再把副本恢复
+  canonical（无包/无常量）重建 → **0 error** 且运行 **exit 0 / 195 `[verify]` / 0 Unhandled**，证明共享 CI 口径不回归。
+  两次构建均为内存保护模式（`-m:1`、`UseSharedCompilation=false`、禁 MSBuild server）✓。
+- **回归与边界**：扩展口径同样 exit 0 / **195 项** / 0 Unhandled（含 fuzz 4 项，~0.13 s）✓；未跑 demo publish、
+  未做 release 刷新 ✓。
+- **提交**：`5c61b95`（csproj 包引用 + 骨架）→ `706ee40`（传输语义修正，见下），两者已推 `feature/openharmony`。
+- **显式未交付（里程碑 3）**：壳侧 `blazor` 命令与 `https://0.0.0.0/` 拦截、真实 `WebViewManager` 实例化 +
+  `Blazor.start()` bootstrap、hap 内 `wwwroot/_framework` 资产、`UsePlatformHandler` 注册接线、真机 WASM 验证 ✗。
+
+### 🔴 传输语义发现（包内 JS 反查；骨架据此修正）
+- `Microsoft.AspNetCore.Components.WebView 11.0.0-preview.7.26381.103` 的
+  `staticwebassets/blazor.webview.js`（604,610 B，唯一权威）确认：JS→.NET 走
+  `window.external.sendMessage(message)`（壳 `sendMessage` → `dotnetHost`，现成 ✓）；.NET→JS 是
+  `window.external.receiveMessage(callback)` = **注册接收回调**，投递必须走 `window.__dispatchMessageCallback(message)`
+  （与包内 Tizen 实现一致）。
+- 壳 `injectPageBridge` 的 `window.external.receiveMessage(message)`（HybridWebView 语义：派发
+  `HybridWebViewMessageReceived` CustomEvent）与 Blazor 的注册语义**不同**；若 bootstrap 后仍先调壳版本会吞掉消息 →
+  `706ee40` 已把骨架 `SendMessage` 改为 `__dispatchMessageCallback` 优先、壳 shim 仅作 bootstrap 前回退，并把契约写入文件头。
+
+### 里程碑 3 清单（精确）
+1. **包/TFM**：保持 `Microsoft.AspNetCore.Components.WebView.Maui 11.0.0-rc.1.26451.6`（`lib/net11.0`）；编译面同时
+   提供 `Microsoft.Maui.Controls`（net11.0 程序集引用它）。
+2. **handler 注册**：`builder.Services.AddMauiBlazorWebView().UsePlatformHandler<OpenHarmonyBlazorWebViewHandler>()`
+   （`BlazorWebViewServiceCollectionExtensions.AddMauiBlazorWebView` + `MauiBlazorWebViewBuilderExtensions.UsePlatformHandler<T>`，
+   包 XML 文档口径）；**不要**复用包内 net11.0 的 `BlazorWebViewHandler`（无平台实现）。
+3. **handler 形状**（对齐包内 Tizen partial，`src/BlazorWebView/src/Maui/Tizen/BlazorWebViewHandler.Tizen.cs` 是本部分检出里
+   唯一可参考的完整平台 partial）：`RequiredStartupPropertiesSet`（HostPage + Services）、幂等
+   `StartWebViewCoreIfPossible`、`contentRootDir`/`hostPageRelativePath`、`VirtualView.CreateFileProvider`、
+   `new MauiDispatcher(Services.GetRequiredService<IDispatcher>())`、`BlazorWebViewInitializing/Initialized` 事件、
+   `RootComponent.AddToWebViewManagerAsync`、`Navigate(VirtualView.StartPath)`、`DisconnectHandler` 里 `DisposeAsync` + 解绑。
+4. **WebViewManager 成员**（包 XML 全量）：基类 ctor `(IServiceProvider, Dispatcher, Uri, IFileProvider,
+   JSComponentConfigurationStore, string)`；抽象 `NavigateCore(Uri)`、`SendMessage(string)`；protected
+   `MessageReceived(Uri,string)`；供壳拦截的 `TryGetResponseContent(string,bool,out int,out string,out Stream,
+   out IDictionary<string,string>)`；`AddRootComponentAsync`/`RemoveRootComponentAsync`；`DisposeAsync`；
+   `TryDispatchAsync`；`Dispatcher` 属性；可选 `StaticContentHotReloadManager.AttachToWebViewManagerIfEnabled`。
+5. **资产管线**：内容根 `<AppDir>/wwwroot`（HostPage `wwwroot/index.html`）；包 target
+   `ConvertStaticWebAssetsToMauiAssets`（`Microsoft.AspNetCore.Components.WebView.Maui/build/*.targets`，
+   `ComputeStaticWebAssetsTargetPaths PathPrefix="wwwroot"`）把 `@(StaticWebAsset)` 变 `@(MauiAsset)`（带 `TargetPath`）；
+   **必须先确认 ohos TFM 谁消费 `@(MauiAsset)` 并写进 publish/hap**——本部分检出的 OpenHarmony SDK targets 与
+   maui-ohos `Microsoft.Maui.Sdk` 均未发现消费者，现有 demo 也没有 `wwwroot`；否则壳侧只能沿用 hybrid 的
+   "内嵌资源/启动时解包"路径。要服务的文件以 `blazor.webview.js` 为入口 = dotnet 运行时/加载器（`dotnet.js`、
+   `dotnet.native.js`、`dotnet.native.wasm` 等，随 SDK 波段变化）+ 应用程序集（Release 默认 WebCIL `.wasm`；
+   `WasmEnableWebcil=false` 时为 `_*.dll`）+ `blazor.boot.json` + satellite；**以应用自己的静态 Web 资产 manifest 为准，不猜名**。
+6. **壳侧 `blazor` 命令与拦截**：`https://0.0.0.0/` origin + `<AppDir>/<contentRoot>` 根 + 默认文件，复用 hybrid 的
+   `onInterceptRequest` 延迟响应（`setResponseIsReady(false)`）路径；`_framework/*` 与普通文件同路径（里程碑 1
+   `IsFrameworkRequest` 仅为诊断/特例保留）。
+7. **bootstrap（每文档一次，load 前注入）**：Tizen 式 `window.__receiveMessageCallbacks` +
+   `__dispatchMessageCallback`；`window.external = window.external || {}`，`sendMessage` → 壳 `dotnetHost`
+   （`__ohosDotNet`）postMessage，`receiveMessage` → push callback（**覆盖该页**壳 shim）；随后 `Blazor.start()`；
+   `onpageshow` persisted → reload。
+8. **JS↔.NET 帧**：JS 负载 = `blazor.webview.js` 私有前缀 + `JSON.stringify([messageType,...args])`，壳**原样**
+   转 `OpenHarmonyWebViewHandler.JsMessage` → `OnJsMessage` → `MessageReceived(AppOrigin, payload)`；.NET 方向
+   `SendMessage` 经 eval 送 `__dispatchMessageCallback(message)`（字符串用 `JsonSerializer.Serialize` 转义）。
+9. **真机/风险**：ArkWeb 的 WebAssembly 执行未验证（对齐 §19）；`dotnet publish -f net11.0-openharmony26.0` /
+   `openharmony-arm64` **不会**产出 browser-wasm 负载（Blazor WASM SDK 只认 `browser-wasm` RID）→ 需独立 WASM 发布 +
+   `MauiAsset`/内嵌资源搬运，或为 ohos TFM 增加静态 Web 资产管线；两条路都未实现 ✗。
+
+### 不确定项
+- 本批是**编译级**：只证明骨架对 `11.0.0-rc.1.26451.6` 的 net11.0 资产可编译；`UsePlatformHandler` 注册、dispatcher/服务范围、
+  `WebViewManager.MessageReceived` 的前缀解析与真机行为**未运行** ✗。
+- 运行时加载器文件名（`dotnet.wasm` vs `dotnet.native.wasm` + loader 脚本）随 .NET 11 波段变化，清单第 5 条以 manifest 为准 ✓。
+- net11.0 包程序集引用 `Microsoft.Maui.Controls` 而切片现只引 Core+Graphics；独立切片本来就不可构建，故本批未改引用集，
+  留给里程碑 3 决定（handler 放 Controls 侧程序集 vs. 给切片补 Controls）✓。
+- 共享 `tmp/opencode/maui-platform-verify` 副本滞后于 Q4-B（无 fuzz 尾段）；本批用仓库内最新 harness 的独立副本验证，
+  **未改共享树** ✓。若要把骨架纳入真实 CI 门禁，需给 `ohos-workload/test/maui-platform-verify` 加包引用 + 常量（另仓提交，见待办）。
+
+### 待办（并入下一轮）
+1. 里程碑 3 清单 1–9（尤其第 2、5、6、7 条：注册、`MauiAsset` 落 hap、壳拦截、bootstrap）。
+2. 如需 CI 级回归，给 ohos-workload harness 加 `Microsoft.AspNetCore.Components.WebView.Maui` 包引用 +
+   `OPENHARMONY_BLAZOR_WEBVIEW` 常量，并把 `[verify]` 期望值从 195 上调（本批未改该仓）。
+3. §8 归档刷新与 release 不受本批影响（无 hap 产物）✓。
