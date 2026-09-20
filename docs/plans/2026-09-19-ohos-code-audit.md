@@ -411,3 +411,38 @@ cd test/hello-maui-app && dotnet publish … -p:OpenHarmonyHapPackage=true
   套件 **191 项** 0 unhandled ✓（离设备仍为 0，**未伪造设备结果**）。
 - **真机唯一待确认**：provider 对原生 CUSTOM 节点是否返回非 null（预期 status=1）；`setNodeContent` 于 `aboutToAppear`
   （早于 `build` 挂载 `NodeContainer`）执行，provider 只校验节点类型，预期可行，**由真机确认**。
+
+## 22. 真机前壳侧风险消除（K-1，2026-09-20）
+
+### 风险 1：ArkWeb 调用来自非 UI 线程
+- **采用机制（实测可编译）**：壳内单一助手
+  ```ts
+  private runOnUiThread(task: () => void): void {
+    setTimeout(() => { this.getUIContext().runScopedTask(task); }, 0);
+  }
+  ```
+  **诚实说明**：`UIContext.runScopedTask` 是**同步的作用域绑定**（`syncInstanceId` → 回调 → `restoreInstanceId`），
+  **不切换线程**；真正的线程跳变来自 `setTimeout(...,0)` 的**延迟执行**（由页面 ArkTS/UI 事件循环服务）✓。
+- **包裹的全部宿主回调 → ArkWeb 路径**：`registerWebSink`（`loadUrl`/`loadData`/`accessBackward`/`backward`/`registerHybridAssets` 的 `loadUrl`）、
+  `registerWebEvalSink`（`runJavaScript`，保持同脚本/同 requestId/同错误应答）、`completeHybridInvoke`
+  （`setResponseData`/`Code`/`ReasonMessage`/`setResponseIsReady(true)`，原裸 `setTimeout` 改为该助手，**避免双重延迟**并保持
+  not-ready → data → ready 顺序）✓。
+- **有意不加包裹**：`onControllerAttached`/`onPageBegin`/`onPageEnd`/`onInterceptRequest`（ArkUI 原生事件，非宿主回调）✓。
+
+### 风险 2：附着发生在页面挂载之前
+- `build()` **本就**在 Stack 内以 `ContentSlot(this.content)` 承载（约 L1049）→ **未新增 NodeContainer、布局未变** ✓。
+- `host.setNodeContent(this.content)` 由 `aboutToAppear` **移至 `onPageShow()`**（挂载后执行）→ 目标：真机 status 从 3 → **1** ✓；
+  `host.notifyLifecycle(2)` 保留在 `aboutToAppear`；宿主已缓存自定义节点，重复 show 不会重复添加 ✓。
+
+### 验证与提交
+- `TYPECHECK=1`：`CompileArkTS` 通过，**`ArkTS:ERROR` 计数 = 0**（仅既有 WARN：权限提示、`getContext` 废弃、NAPI 校验）✓；
+  仅 `PackageHap`（缺 `app_packing_tool.jar`）失败，属既有容忍项 ✓。
+- 普通重建：`dist/ets/modules.abc` = **66,392 B**（typecheck 与普通构建一致，md5 `10228e9e…`）；**未入包、未跑发布刷新** ✓。
+- 套件：干净构建 + **191 项** 0 unhandled ✓。preview.22 与 preview.23 为**逐字节镜像**（`cmp` 验证）✓。
+- 提交：`ohos-workload d12aeb2`（PUSHED ✓）。
+
+### 不确定项（已记录）
+- `setTimeout` 注册在托管线程后**是否由 UI 事件循环服务**无法离设备证明（既有 hybrid 代码与本任务均按此约定）；
+  若真机仍报 `17100001`，**确定性修复是宿主改用 `napi_threadsafe_function`**（在 `host_napi.cpp`，超出本批文件范围）→ 已写入提交信息 ✓。
+- `registerTextInputSink` 的 `focusControl.requestFocus(...)` 属同类"非 UI 线程 UI 调用"但**非 ArkWeb**，按范围未动；
+  另发现既有小怪癖（`registerNotificationSink` 嵌在 picker sink 内）也未改动 ✓。
