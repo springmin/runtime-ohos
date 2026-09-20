@@ -217,3 +217,34 @@ cd test/hello-maui-app && $HOME/.dotnet/dotnet publish -c Release -r openharmony
 3. **运行时能力**：确认 CoreCLR 端口启用了 metadata update（`MetadataUpdater.IsSupported`
    与 `Microsoft.DotNet.HotReload` 所需接口）；未启用则需在运行时侧开启 EnC 支持并随 pack 发布。
 4. **无工具链时的等价做法**：改动 → 重编译 → 重打包 hap → 重装（本仓库脚本已支持，见第 5 节）。
+
+## 9. 并行批次轨迹（2026-09-20 更新）
+
+按"文件所有权切分 + 后台子代理"推进，每批强制：宿主 `selfsign ok` / 套件不回归 / 失败即回滚 / 禁强推 / 证据归档。
+
+| 批次 | 内容 | 关键结论 | 套件 |
+|---|---|---|---|
+| A | 传感器扩展（Magnetometer/Compass/Barometer/Orientation）| 复用 `ohos_host_sensor_*`，宿主零改动；单位/语义不确定项已记录 | 132 |
+| B | TextToSpeech | **本 SDK 无 Speech Kit**（两次真实 hvigor 编译拒绝）→ 链已接、sink 如实返回不可用 | 131 |
+| C | Launcher / Browser / Share | `@ohos.app.ability.common`/`Want` 可编译；startAbility（`viewData`/`sendData`）；无 Share Kit → 文本键用生态惯例 | 138 |
+| D | 桌面菜单 | `bindMenu` + 动态 `MenuElement[]`（宿主表 `begin/item/commit`）；模态感知刷新；子菜单展平 | 144 |
+| E | 拖放 | **分发 API 公开**（无需反射）；长按 500 ms + slop 8 px；`DropResult` 为 internal | 147 |
+| F | 触感 + 主题跟随 | 触感复用 `ohos_host_vibrate`（仅时长）；主题经 `colorMode` → `notifyTheme` | 152 |
+| G | ArkWeb JS 桥 + 最小 HybridWebView | `dotnetHost.postMessage` + `EvaluateJavaScriptAsync`；proxy 须 `onControllerAttached`；**资源服务缺失** | 157 |
+| ① | Orientation → ROTATION_VECTOR(259) 真四元数 w | 宿主监听器扩展第 4 分量；重建签名 | 158 |
+| ② | `InstallEssentials` 技术债 | 改为显式 no-op（默认经 DI + `[ModuleInitializer]`）| 158 |
+| ③ | 脚本 `log()/warn()` | 5 个自有脚本加时间戳助手；`sh -n` 全过 | 158 |
+| H | 日历 + 联系人 | `@kit.ContactsKit`/`@kit.CalendarKit` **编译通过**；探测：**PrintingKit/MapKit 缺失**、**ConnectivityKit 可用**（避开未导出的 `GattClientDevice`）| 163 |
+
+**§8 刷新链（含 `.so` 同步修正）**：`build-arkts-shell.sh` → 拷 abc 入包 → `build-host.sh` → **拷签名 `.so` 入包与 `~/.dotnet/packs` 安装副本** → `release-checksums.sh` → `pack-workload-bundle.sh` → `publish-workload-release.sh` → `dotnet publish … -p:OpenHarmonyHapPackage=true`；**校验点 = hap 内 `modules.abc` 与 `.so` 体积** ✓。
+
+**发布物一致性（当前）**：hap 内 `modules.abc` **40,048 B** · `.so` **117,664 B** · bundle 30,018,685 B · 两 release 均含 `SHA256SUMS` ✓。
+
+## 10. 剩余队列（按依赖）
+
+1. **打包权限注入**（`-p:OpenHarmonyExtraPermissions=…`）→ 启用 H 的联系人/日历（**进行中：后台批次**）；
+2. **HybridWebView 资源服务**（`onInterceptRequest` + `wwwroot`/`hybridwebview.js`）→ 之后才可能做 **BlazorWebView**（**同批探测中**）；
+3. 蓝牙（ConnectivityKit ✓）/ 打印（`@ohos.print` ✓）/ 地图（本 SDK 无 MapKit → 自绘或 ArkWeb 方案评估）；
+4. 无障碍 provider 真机判读（`[maui] accessibility provider status=N`：1 已附着 / 2 需 CUSTOM 节点 / 3 仅收到 NodeContent）；
+5. **真机验收**（`hdc` 被组织策略关闭）与测试方按 UDID 重签（`scripts/sign-for-device.sh`）；
+6. 上游：#132953（已批准，等 Helix 重跑/合并）· #132827（待复评）——两条无 @ 评论文案已备。
