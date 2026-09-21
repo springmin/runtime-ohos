@@ -1558,3 +1558,9 @@ ohos-workload 一次成功（`9a17d3b..e77c803`）。
 4. **harness 未加 V8 断言**：按批次边界，仓库内 harness 未动（仅 scratch 复跑）；如需把 C/NAPI/壳三处字符串源码级
    pin 进 CI，可在后续批次并入（当前 CI 阈值 222 不受影响）。
 5. **V5（`Microsoft.NET.Sdk.Razor` 变体）与 `headless-render.csproj` 环境变量化仍在队列**（§38 待办 1/3）。
+
+## 40. 五仓库安全扫描（2026-09-21）
+
+- **结论**：**PASS WITH FINDINGS** —— 23 项候选（A1–A8 / B1–B7 / C1–C8）全部解决：22 项修复 + B6 构造性修复；另 16 个区域无发现；修复均为离机验证（真机安装受组织策略限制）。
+- **报告**：`docs/plans/2026-09-21-ohos-security-scan.md` —— 覆盖五仓（`runtime-ohos` / `aspnetcore-ohos` / `ohos-workload` / `maui-ohos` / `sdk-ohos`），含逐项证据、独立复核与残余风险。
+- **修复与跟进提交区间**：`ohos-workload dc6b66b..3d8e7d0`（16 提交）· `maui-ohos c90a018e..be5d471f`（6）· `sdk-ohos d57e58e2..ebd82459b0`（2）；`runtime-ohos` 文档：`8a600e49fa4`/`0adc3edc4d0`（C1/C5）、`a363616fe4f`（树摘要）、`c82becfe18a`（argv 残余）、`b131c0ca319`（独立复核记录）。
