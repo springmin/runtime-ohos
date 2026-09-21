@@ -1396,3 +1396,86 @@ API 的探查结论。
    独立步骤（与 §28/§35 的待办相同）。
 7. 本节的 ohos-workload 改动是**两个**提交：首版 `736d332` 推送后，T6 的头部探查把失败根因定位到
    `RegExpMatchArray` 标注而非 header map，删除名义类只能在已推送历史之上追加 `1542b72`（不 force）。
+
+---
+
+## 37. DeviceDisplay.KeepScreenOn 跨三仓（T8；2026-09-21）
+
+T7 批次的 IDeviceDisplay 把 `KeepScreenOn` 留成 getter=false / setter 忽略。本节补齐
+托管 → 宿主 → 壳的窗口管理链：`ohos_host_keep_screen_on(on)` → 壳
+`registerKeepScreenOnSink` → `window.getLastWindow(context)` → `setWindowKeepScreenOn(on === 1)`。
+
+### 37.1 SDK 探查（`ets/api/@ohos.window.d.ts`，ohos-sdk 26.0.0.18，API 26）
+
+| 成员 | 签名 | since | 结论 |
+|---|---|---|---|
+| `window.getLastWindow` | `(ctx: BaseContext): Promise<Window>` | 9 | 采用（壳的 avoid-area 报告已在用同一调用） |
+| `Window.setWindowKeepScreenOn` | `(isKeepScreenOn: boolean): Promise<void>` | 11 | 采用（Promise 形式；回调重载同版本存在，未采用） |
+| `Window.setKeepScreenOn` | 同形 | 6，**9 起废弃**（`@useinstead Window#setWindowKeepScreenOn`） | 不采用 |
+| `Window.isKeepScreenOn` | `boolean` 属性 | 11 | 未采用（getter 取"最后一次被宿主接受的值"，不做回推） |
+
+TYPECHECK=1 证明上述用法在 ArkTS 严格模式下可编译；`getContext(this)` 作为 `BaseContext` 与
+既有 avoid-area 行完全同形，无新 import（`window` 已导入）。
+
+### 37.2 改动
+
+- **宿主 `src/OpenHarmonyHost/host_napi.cpp`**：新增单向 `HostSink g_keep_screen_on_sink("keep screen on", false)`
+  （复用既有 `HostSinkRegister`/`HostSinkPost`，回调在 JS 线程执行）、
+  `extern "C" int ohos_host_keep_screen_on(int on)`（0 = 已入队 / -1 = 丢弃）与
+  `RegisterKeepScreenOnSink`（导出表 `registerKeepScreenOnSink`）。0/1 之外的 int 原样透传。
+- **壳 `packs/…/1.0.0-preview.{22,23,24}/templates/ets/pages/Index.ets`**：新增 `applyKeepScreenOn(on)`，
+  用 `window.getLastWindow(getContext(this)).then(...)` 调 `win.setWindowKeepScreenOn(on === 1)`，
+  `.catch` 只记日志（窗口服务拒绝不落页）；`aboutToAppear` 中 try/catch 注册 sink（旧宿主库缺导出
+  时静默降级）。三份模板逐字节一致（71,280 B，md5 `e40c8204087f90daac443ae142dc8b90`）。
+- **托管切片 `src/Core/src/Platform/OpenHarmony/OpenHarmonyBatteryDisplay.cs`**（仅此文件）：`KeepScreenOn`
+  setter 调 `ohos_host_keep_screen_on`，仅当宿主返回 0（已入队）时缓存请求值；缺失库/导出
+  `DllNotFoundException`/`EntryPointNotFoundException` 只记一次（`s_keepScreenOnUnavailable`）并经
+  `WriteStatus` 记一行，值保持 false。单向设计：壳的窗口调用是异步的、不回推，getter 反映
+  "最后一次被宿主接受（入队）的值"。
+
+### 37.3 验证
+
+- **宿主构建**：`bash scripts/build-host.sh` → `selfsign ok`；`llvm-nm -D` 见
+  `T ohos_host_keep_screen_on`（相邻 `T ohos_host_display_set_listener` / `T ohos_host_flashlight_set` 完好）。
+- **壳类型检查**：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror
+  bash scripts/build-arkts-shell.sh` → **0 条 `ArkTS:ERROR`**（`Finished :entry:default@CompileArkTS`；
+  PackageHap 仍因本机打包工具失败，按脚本既定规则忽略）；`dist/ets/modules.abc` = **82,936 字节**
+  （上轮 81,556），**未复制进 pack**、未做 demo publish / release refresh。
+- **harness**：把 `test/maui-platform-verify` 复制到 scratch，加 8 条 T8 断言：
+  1. 托管切片含 `EntryPoint = "ohos_host_keep_screen_on"` + `KeepScreenOnSet(...) == 0` 门控 + 缓存赋值；
+  2. 宿主含 `extern "C" int ohos_host_keep_screen_on(int on)`、单向 sink 名/`AddInt(on)`/`? 0 : -1`；
+  3. 宿主导出表含 `registerKeepScreenOnSink` 且用 `HostSinkRegister`；
+  4. 壳 sink 注册带 try/catch；
+  5. 壳 apply 走 `getLastWindow` + `setWindowKeepScreenOn` + 失败日志；
+  6. preview.22/23/24 模板逐字节一致（71,280 B）；
+  7. 托管缺失库守卫记忆化；
+  8. 离线 set(true/false) 不抛且缓存保持 false。
+  `-m:1 -p:UseSharedCompilation=false` 构建（0 error）并运行：**216 条 `[verify]`、0 条 `Unhandled`、
+  exit 0**，perf `within=True`（avg 10.418ms / p95 14.734ms / max 19.968ms）；scratch 副本已删除，
+  仓库内 harness 未改（仍 208 条，CI 阈值 199 不变）。
+- **回归兼容**：离线时 setter 不改变 getter，§6 起就有的断言
+  （`KeepScreenOn` 在 `= true` 后仍为 false）继续通过，仓库内 208 条套件不被本次切片改动打破。
+
+### 37.4 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `9c6ea79`（`9c6ea79ce51dd0bd051bab7b70143056770d9c29`） | 宿主 sink/导出 + 三份壳模板（推送前远端 tip `76de081`，其上是另一 agent 的 demo/release 提交） |
+| maui-ohos `feature/openharmony` | `caaa4a99`（`caaa4a99e9949cfe445feafdf48c5e10c3eca7a4`） | 托管 `KeepScreenOn` 桥（推送前远端 tip `0a88b8a1`） |
+| runtime-ohos `feature/openharmony` | 本 commit（§37） | 本节（推送前远端 tip `b02597273ab`） |
+
+推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次 × 15s 兜底，失败则 fetch+rebase
+（不 force）。ohos-workload 与 maui-ohos 两次 push 均一次成功（`76de081..9c6ea79`、`0a88b8a1..caaa4a99`）。
+maui-ohos 的 sparse-checkout 不含切片目录，`git add` 需 `--sparse`（本次照做，未改 sparse 定义）。
+
+### 37.5 不确定项与遗留
+
+1. **运行时未验证**：类型检查只证明 API 可编译；真机上窗口服务是否接受 `setWindowKeepScreenOn`、
+   屏幕是否真的常亮，需设备验证。壳的失败只在日志留 `[maui] keep screen on failed: ...`。
+2. **单向语义**：宿主返回 0 只代表"请求已入队"，不代表窗口已生效；getter 缓存的是最后一次被接受
+   （入队）的请求值，而非窗口真实状态。若需真实状态，可用 `Window.isKeepScreenOn` 回推（本次未做）。
+3. **每次请求都 `getLastWindow`**：未缓存窗口对象；KeepScreenOn 变更很少，成本可忽略。
+4. **abc 未入包**：`dist/ets/modules.abc`（82,936 B）仍只是构建产物；把最新 abc 装进 pack、刷新
+   release/kit 与 §28/§35/§36 同一待办链。
+5. **demo/harness 未动**：按批次边界，仓库内 harness 未加 T8 断言（仅在 scratch 验证），demo 与
+   `scripts/` 未动。
