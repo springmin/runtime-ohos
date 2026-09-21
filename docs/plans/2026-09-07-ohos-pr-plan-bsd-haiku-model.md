@@ -47,6 +47,29 @@ it; resolves jkotas's thread), removed the no-op `-ftls-model=global-dynamic`,
 and merged the duplicated `find_program` in configuretools.cmake. The standalone
 `pr/ohos-tls-flag-cleanup` follow-up is superseded.
 
+**Update (2026-09-21, second review round):** two new reviewer notes landed on
+#132953 after the RID move:
+
+- jkotas: the `openharmony` RID must import `any` like the other non-unix
+  top-level OS RIDs (browser/wasi/win). Fixed in `be8e6f6988d` (feature branch
+  `5a096525a4a`); the arch RIDs keep the parent-only shape (win-x64 precedent).
+- am11: the `eng/common` side is missing and belongs in dotnet/arcade
+  (runtime's `eng/common` is synced from there; OpenBSD precedent). Opened
+  **dotnet/arcade#17608**: `init-os-and-arch.sh` detects OpenHarmony hosts
+  (`param get const.ohos.fullname`, since devices report `HarmonyOS`/`Linux`
+  from uname), `init-distro-rid.sh` adds the `openharmony.<api>-<arch>`
+  non-portable RID from `const.ohos.apiversion` (and scopes the musl check to
+  linux targets), `cross/toolchain.cmake` includes the NDK
+  `ohos.toolchain.cmake` like the Android branch. No `build-rootfs.sh`
+  counterpart (the NDK ships the sysroot). Verified on a HarmonyOS device:
+  original `init-os-and-arch.sh` fails (`Unsupported OS harmonyos detected!`),
+  patched yields `os=openharmony arch=arm64` and `openharmony.26-arm64`.
+
+Reminder (S1a): the sdk-ohos override graphs
+(`eng/PortableRuntimeIdentifierGraph.openharmony.json` and
+`eng/RuntimeIdentifierGraph.openharmony.json`) still carry
+`"openharmony": {}` and need the same `any` fallback.
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
