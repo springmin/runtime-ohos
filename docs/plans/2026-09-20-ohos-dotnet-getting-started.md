@@ -307,7 +307,7 @@ sh scripts/sign-for-device.sh --huawei <configDir> --unsigned <hap> --out <hap>
 
 Every test kit also ships `hello-maui-app-unsigned.hap` (same payload and bundle name as the
 default 26.0 hap) plus the Chinese one-pager `自签说明.md`:
-create any DevEco project with `bundleName = com.example.hello-maui-app`, enable
+create any DevEco project with `bundleName = com.example.hellomauiapp`, enable
 **Automatically generate signature**, sign the unsigned hap with `hap-sign-tool sign-app`
 using the generated `*.p12`/`*.cer`/`*.p7b`, `verify-app` it and install. That path needs no
 UDID exchange and no re-signing by us; the tester may instead send the `config` directory back
@@ -339,14 +339,17 @@ variant.
 
 ### 6.3 API-band properties and the version decode rule
 
-`module.json`'s `minAPIVersion`, `targetAPIVersion` and `apiReleaseType` come from three
-overridable properties; their defaults follow the **target TFM**:
+`module.json`'s `minAPIVersion`, `targetAPIVersion`, `apiReleaseType` and the optional
+`compileSdkVersion`/`compileSdkType` come from overridable properties; their defaults follow
+the **target TFM**:
 
-| Property | `net11.0-openharmony20.0` | `net11.0-openharmony26.0` |
+| Property | `net11.0-openharmony20.0` | `net11.0-openharmony26.0` (device band) |
 |---|---|---|
-| `OpenHarmonyMinApiVersion` | `60000020` | `60001021` |
+| `OpenHarmonyMinApiVersion` | `60000020` | `50002014` |
 | `OpenHarmonyTargetApiVersion` | `60000020` | `60101024` |
-| `OpenHarmonyApiReleaseType` | `Release` | `Beta1` |
+| `OpenHarmonyApiReleaseType` | `Release` | `Release` |
+| `OpenHarmonyCompileSdkType` | (not emitted) | `HarmonyOS` |
+| `OpenHarmonyCompileSdkVersion` | (not emitted) | `6.0.2.130` |
 
 Values are not plain API numbers. The format is
 `<major><minor:02><patch:02><api:03>` with leading zeros removed:
@@ -356,17 +359,34 @@ Values are not plain API numbers. The format is
 | `60001021` | platform **6.0.1**, API **21** |
 | `60101024` | platform **6.1.1**, API **24** |
 | `60000020` | platform **6.0.0**, API **20** |
+| `50002014` | platform **5.0.2**, API **14** |
 
-Override per build when your device band differs, e.g. for an API 20 device:
+`minAPIVersion` is checked at install and must be **<= the device's `apiCompatibleVersion`**
+(the tester's 2in1 reports `50002014`, which is why the 26.0 device band defaults to it); a
+higher value is rejected with `bm 9568297 ERR_APPEXECFWK_INSTALL_SDK_INCOMPATIBLE`. Override
+per device, e.g. for an API 20 device:
 
 ```sh
 -p:OpenHarmonyMinApiVersion=60000020 -p:OpenHarmonyTargetApiVersion=60000020
 ```
 
-Warning: an app whose `minAPIVersion` is higher than the device's API level is rejected with
-`bm 9568297 ERR_APPEXECFWK_INSTALL_SDK_INCOMPATIBLE`. The per-TFM defaults above already
-account for the API 20/26 split (the old hard-coded defaults declared min API 21 for the API 20
-variant; that was fixed in the Q3 packaging work — see the audit report).
+`compileSdkVersion`/`compileSdkType` are emitted into `module.json` only when
+`OpenHarmonyCompileSdkType` is non-empty; the API 20 band keeps both empty so its
+`module.json` is unchanged (BMS then keeps its own `OpenHarmony` default), while the 26.0
+device band emits the tester's known-good `HarmonyOS 6.0.2.130`.
+
+### 6.4 Bundle-name property (`OpenHarmonyBundleName`)
+
+`app.bundleName` accepts only letters, digits, `_` and `.`; any other character (a hyphen,
+most commonly) is rejected at install with `bm 9568344` "bundle name or module name is
+invalid". The pack default is `com.example.<AssemblyName>` with hyphens stripped, the
+demo/razor projects pin legal names (`com.example.hellomauiapp` / `com.example.hellomauirazor`),
+and the pack fails the build early (`_OpenHarmonyValidateBundleName`, before `PrepareForBuild`)
+if the effective value contains another illegal character. Override with:
+
+```sh
+-p:OpenHarmonyBundleName=com.example.myapp
+```
 
 ---
 
@@ -375,11 +395,12 @@ variant; that was fixed in the Q3 packaging work — see the audit report).
 | Exact error / symptom | Root cause | Fix |
 |---|---|---|
 | `failed to install bundle. code:9568344 error: install parse profile prop check error` | debug signing profile is bound to other devices' UDIDs | re-sign with the target UDID (`scripts/sign-for-device.sh <UDID>`), or have the tester auto-sign in DevEco; see §6.1 |
+| `bm 9568344` "bundle name or module name is invalid" (install rejected) | `app.bundleName` contains a character outside letters/digits/`_`/`.` — e.g. the old default `com.example.hello-maui-app` | use a legal name (the demo/razor projects pin `com.example.hellomauiapp` / `com.example.hellomauirazor`; the pack default strips hyphens and the build fails early on any other illegal character); override with `-p:OpenHarmonyBundleName=com.example.myapp` (§6.4) |
 | `E00C001 Operation restricted by the organization` (from `hdc`) | device management policy disables hdc (`const.usb.port.user_hdc.disable=true`) | device admin must lift the policy; otherwise copy the hap to the device and install from the file manager, or self-sign on a machine with DevEco |
 | `MSB1006: Property is not valid.` | unquoted `;`/spaces in an MSBuild property (most often `OpenHarmonyExtraPermissions`) | single-quote the whole switch: `-p:'OpenHarmonyExtraPermissions="a;b"'` |
 | hvigor download 404 for `@ohos-hvigor-6.26.4.tgz` (only when rebuilding the ArkTS shell) | the registry URL is dead / not reachable | build against a local file mirror: `HVIGOR_MIRROR=file://<mirror> bash scripts/build-arkts-shell.sh`, with layout `@ohos/<pkg>/-/@ohos-<pkg>-6.26.4.tgz` |
 | `NETSDK1083` (unrecognized RID / missing runtime) | the runtime pack's `*.deps.json` (or the SDK RID graph) still says `ohos-arm64` while the platform TFM uses `openharmony-arm64` | `prepare-packs.sh` rewrites `ohos-arm64` → `openharmony-arm64` in the runtime pack's `*.deps.json`; apply the same rewrite to hand-made installed copies |
-| `bm 9568297 ERR_APPEXECFWK_INSTALL_SDK_INCOMPATIBLE` | `minAPIVersion` in `module.json` is above the device API level (the API 20 variant used to declare min 21) | set the correct band (§6.3); packages from preview.23 onward default per TFM |
+| `bm 9568297 ERR_APPEXECFWK_INSTALL_SDK_INCOMPATIBLE` | `minAPIVersion` in `module.json` is above the device's `apiCompatibleVersion` (the API 20 variant used to declare min 21, and the 26.0 variant used to declare 21 on a device whose compatible version is 50002014) | set the correct band (§6.3); the 26.0 device band now defaults to the tester profile (`min 50002014` / `Release` / `HarmonyOS 6.0.2.130`), the API 20 band stays `60000020` |
 | publish wrote `module.json`/`ets`/`resources`/`libs` into the project directory (**fixed**) | `_OpenHarmonyHapStageDir` was empty at evaluation time because `PublishDir` was not set yet, so staging paths collapsed to project-relative paths | fixed in preview.22/23: `_OpenHarmonyResolveHapStageDir` resolves at execution time, default `$(IntermediateOutputPath)openharmony-hap/`, and errors if it resolves to the project directory; use `OpenHarmonyHapStageDir` only for an explicit override |
 | identical publishes produced different haps (`dotnet.zip` differed by 4–8 KB) (**fixed**) | the SDK's codesign target re-signed ELFs in the publish directory after the hap packaging had already picked files, and zip order/mtime varied | fixed in preview.22/23: `_OpenHarmonyResetHapPublishOutputs` rebuilds the publish payload from a single signed copy (one `.codesign` section per ELF) and `dotnet.zip` is written by `OpenHarmonyDeterministicZip` (ordinal sort, fixed `1980-01-01` timestamps); payload hash now stable across repeated publishes |
 

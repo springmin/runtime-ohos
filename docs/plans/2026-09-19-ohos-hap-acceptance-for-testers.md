@@ -50,11 +50,13 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
 - **API 20 变体**：`hello-maui-app-api20.hap`（同壳/宿主，运行时使用 `net11.0-openharmony20.0` 通道的 Ref/Runtime 包，
   面向 API 20 设备）。复现：`dotnet publish -c Release -r openharmony-arm64 -p:TargetFrameworks="net11.0-openharmony20.0"
   -p:TargetFramework=net11.0-openharmony20.0 -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyArktsModulesAbc=… -p:OpenHarmonyHapPackage=true`。
-  ✅ 波段（已按 TFM 修正，Q3 打包）：`module.json` 的 `minAPIVersion/targetAPIVersion/apiReleaseType` 随目标 TFM 取值——
-  API 20 变体为 min = target = **`60000020`**（平台 6.0.0 / API 20，`Release`）；26.0 变体为 min **`60001021`**、
-  target **`60101024`**（`Beta1`）。如需按具体设备声明，可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…`
-  （及 `-p:OpenHarmonyApiReleaseType=…`）覆盖。带权限的 API 20 变体可由同一命令加
-  `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
+  ✅ 波段（2026-09-21 真机修正）：`module.json` 的 `minAPIVersion/targetAPIVersion/apiReleaseType` 随目标 TFM 取值——
+  API 20 变体为 min = target = **`60000020`**（平台 6.0.0 / API 20，`Release`）；26.0 变体（本设备波段）为
+  min **`50002014`**（平台 5.0.2 / API 14）、target `60101024`、apiReleaseType `Release`，并带
+  `compileSdkType=HarmonyOS`、`compileSdkVersion=6.0.2.130`。**min 必须 ≤ 设备的 apiCompatibleVersion**
+  （本设备为 `50002014`），否则安装报 `bm 9568297`；可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…`
+  （及 `-p:OpenHarmonyApiReleaseType=… -p:OpenHarmonyCompileSdkType=… -p:OpenHarmonyCompileSdkVersion=…`）覆盖。
+  带权限的 API 20 变体可由同一命令加 `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
 - **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
   大小 **21,739,783** 字节，SHA-256 `5fbfa6e00bab0826f0156d9b916b08b1f0ea525770fa771942d88b05e487a00c`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
   同轮其余包：默认包 `hello-maui-app.hap` **21,739,782** 字节（`498db6e9…`）、`hello-maui-app-api20.hap` **21,739,781** 字节（`70ccc70d…`）、
@@ -79,7 +81,7 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
 ```bash
 hdc list targets          # 能看到设备
 hdc install hello-maui-app.hap
-hdc shell aa start -a EntryAbility -b com.example.hello-maui-app   # 或直接从桌面图标启动
+hdc shell aa start -a EntryAbility -b com.example.hellomauiapp   # 或直接从桌面图标启动
 ```
 
 **启动后预期**（首帧）：黑色导航栏 + 标题「Root」，下方依次出现标签、按钮、图片、复选框、开关、滑块、进度条、单选框、步进器、搜索框、日期/时间选择器、集合视图、SwipeView 行、RefreshView 行、WebView、按钮「Sync」在导航栏右侧等。
