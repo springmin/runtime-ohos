@@ -118,3 +118,31 @@ arm），把 arm 的 SDK/aspnetcore 列表加回放在设备就绪之后。C/D �
 
 **需要你决定的关键输入：是否已有（或能拿到）32 位 OpenHarmony 标准系统设备/
 模拟器？**
+
+---
+
+## 6. 选 A 对现有 PR 的影响
+
+**结论：两个已开 PR 不受影响；三个尚未提交的 prepared 分支需要 amend；N11/N12
+可能需要小幅补充（取决于 arm 构建验证）。**
+
+| PR / 分支 | 影响 | 动作 |
+|-----------|------|------|
+| **#132953**（open） | **无**：RID graph 已含 `openharmony-arm`，本次不动它 | 不改 |
+| **#132827**（open） | **无**：全部是 `TARGET_OPENHARMONY` 条件，与架构无关 | 不改 |
+| N1–N10、N14–N16 | 无 | 不改 |
+| **N13** `pr/ohos-packs` | 需把 `openharmony-arm` 加回 runtime/apphost 两个 pack 列表；NativeAOT 标签的 runtime pack 列表也应加入（上游 `linux-arm` 在 NativeAOT 面内） | amend + 重演 |
+| **S1a** `pr/ohos-sdk-rids` | 8 处 bundled RID 列表加 arm：AppHost、RuntimePack、Crossgen2、ILCompiler、NativeAOT runtime packs、AspNetCore runtime packs 等（RID 快照图已含 arm） | amend + 重演 |
+| **A1** `pr/ohos-aspnet-rids` | `SupportedRuntimeIdentifiers`、`BundledToolTargetRuntimeIdentifiers`、`_LatestRuntimePackageReference`（Runtime + Crossgen2）加 `openharmony-arm`；NativeAOT 禁用说明不变 | amend |
+| **N11 / N12**（AOT） | 可能：`openharmony-arm` → `CrossCompileArch=armv7`、ABI `ohos`，triple `armv7-linux-ohos`（clang 接受）；但 OHOS armv7 默认 **softfp**（NDK wrapper 强制 `-mfloat-abi=softfp -march=armv7-a`），AOT 编译/链接的 ABI 是否一致（含 `_linuxLibcFlavor=musl` vs `musleabihf`）需在 arm ILCompiler pack 构建时验证，必要时补 flag/flavor | 验证后定 |
+| SDK S1b | 无（`TargetsOpenHarmony` 条件） | 不改 |
+
+**顺序建议（避免阻塞现有节奏）：**
+
+1. 先做 runtime 侧 arm 构建打通（纯 fork/CI 工作，不触碰任何 PR）；
+2. 用 arm ILCompiler pack 验证 N11/N12 的 ABI/flags，必要时补丁；
+3. 一次性 amend N13/S1a/A1 加回 arm，并重跑 2026-09-21 的 rebase 演练；
+4. 在 32 位设备就绪前，PR 描述里把 arm 标注为 experimental / 待设备验证。
+
+替代方案：N13/S1a/A1 先按 arm64/x64 提交（当前状态），arm 作为后续增量补丁；
+代价是 arm 支持要等第二轮 review。
