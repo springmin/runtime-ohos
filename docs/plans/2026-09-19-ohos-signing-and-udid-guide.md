@@ -17,8 +17,9 @@
 模板内 `debug-info.device-ids` 是**示例 UDID**（`69C7505B…`、`7EED0650…`），
 所以**只有被显式加入的设备**才能安装。
 
-**30 秒判断法**：查看 profile 的 `device-ids`（`profile-work/profile.json`）是否包含目标设备 UDID。
-不包含 → 必须重签（见第 3 节）。
+**30 秒判断法**：`sh scripts/sign-for-device.sh --show-profile-devices` 直接打印 profile 中嵌入的
+`debug-info.device-ids`（旧方法：查看 `profile-work/profile.json`）；不包含目标设备 UDID →
+必须重签（见第 3 节）或改走第 4b 节（对方证书代签）。
 
 ---
 
@@ -48,10 +49,18 @@ sh scripts/sign-for-device.sh "<UDID1>,<UDID2>"
 # 自定义输出 / 版本
 sh scripts/sign-for-device.sh <UDID> --out /tmp/hello-maui-app-<name>.hap
 sh scripts/sign-for-device.sh <UDID> --version 1.0.0-preview.24
+
+# 查看 profile 绑定了哪些设备（两种模式都可用；不带路径 = 最近一次签名的
+# profile-work/out.p7b，没有则回退到 SDK 调试模板并提示）
+sh scripts/sign-for-device.sh --show-profile-devices
+sh scripts/sign-for-device.sh --show-profile-devices <某个.p7b>
+sh scripts/sign-for-device.sh --show-profile-devices --config <configDir>
 ```
 
 脚本做的事：复制 SDK 调试模板 → 替换 `bundle-info.bundle-name` 与 `debug-info.device-ids` →
 `hap-sign-tool sign-profile` → `hap-sign-tool sign-app` → 打印 **SHA-256** 与输出路径。
+若 `module.json` 的 `bundleName` 与 `--bundle` 不一致，脚本会先给出 **WARN**
+（这种 hap 装不上，bundle-name 必须一致——见第 4b 节的硬性规则）。
 
 **交付给测试方**：新 hap + 新的 SHA-256（重签后哈希必然变化）。
 
@@ -77,7 +86,7 @@ hap-sign-tool sign-app \
   -keystoreFile <their.p12> -keyPwd <pwd> -keystorePwd <pwd>
 ```
 
-### 4b. 华为自动签名材料代签（`scripts/sign-huawei.sh`）
+### 4b. 华为自动签名材料代签（`scripts/sign-for-device.sh --huawei`）
 
 **何时用**：测试方已用 DevEco Studio 的 **Automatically generate signature**（登录华为账号）生成
 `*.p12` / `*.cer` / `*.p7b`，但不想自己敲 `hap-sign-tool`——于是把 Studio 的整个 `config` 目录
@@ -85,13 +94,25 @@ hap-sign-tool sign-app \
 这是"方案 B 的自助签名"与"方案 A 的 SDK 调试模板重签"之外的第三条路径：**证书/profile 是对方的**，
 所以 profile 里绑定的是**对方的设备**，签出的 hap 对方可直接安装。
 
+`--huawei` 模式是 `scripts/sign-huawei.sh` 的入口封装：先做 **bundle-name 校验**（见下），
+再转交 `sign-huawei.sh` 完成解密、签名与 `verify-app`。
+
 ```bash
 cd ohos-workload
-sh scripts/sign-huawei.sh <unsigned.hap> <out.hap> [configDir] [encryptedPassword]
-# 例：sh scripts/sign-huawei.sh hello-maui-app-unsigned.hap hello-maui-app-huawei.hap ~/Documents/ohos/config
+
+# 基本用法（configDir 默认 ~/Documents/ohos/config；encryptedPassword 可省，
+# 省略时复用上次解密的明文缓存）
+sh scripts/sign-for-device.sh --huawei [configDir] [encryptedPassword]
+
+# 指定输入/输出（--out 默认 hello-maui-app-huawei.hap）
+sh scripts/sign-for-device.sh --huawei ~/Documents/ohos/config \
+  --unsigned hello-maui-app-unsigned.hap --out hello-maui-app-huawei.hap
+
+# 先看对方 profile 绑定了哪些设备（解析配置目录里的 *.p7b）
+sh scripts/sign-for-device.sh --show-profile-devices --huawei ~/Documents/ohos/config
 ```
 
-脚本做的事（全部本地、离线）：
+`sign-huawei.sh` 做的事（全部本地、离线）：
 
 1. 在 `configDir` 下找 `*.p12` / `*.cer` / `*.p7b`（缺一即报错），并确认
    `<hvigor-ohos-plugin>/src/utils/decipher-util.js`（`ARKTS_PLUGIN_DIR`，默认 `~/arkts-build/…`）与
@@ -103,8 +124,38 @@ sh scripts/sign-huawei.sh <unsigned.hap> <out.hap> [configDir] [encryptedPasswor
    p12/cer/p7b 签名；
 4. **`hap-sign-tool verify-app` 通过后才打印路径与 SHA-256**（失败即 `die`，不会给出未验证的产物）。
 
-**注意**：签出的 hap 只能装进该 profile 绑定的设备（对方新加设备需重新自动签名再发 `config`）；
-我们不修改对方的证书材料，明文密码不做持久化以外的传播。
+#### 硬性规则：hap 的 bundle-name 必须与 profile 一致
+
+签名不改变应用身份：hap 内 `module.json` 的 `app.bundleName` 必须与 profile（p7b）里的
+`bundle-info.bundle-name` **完全相同**，否则设备安装会报 `9568344`。
+`--huawei` 模式在签名前解压 `module.json` 与 p7b 对比，不一致直接拒绝签名：
+
+```
+ERROR: bundle-name mismatch: .../hello-maui-app-unsigned.hap is 'com.example.hello-maui-app'
+but the Huawei profile .../default_MyApplication....p7b is bound to 'com.example.myapplication'.
+Rebuild the hap with -p:OpenHarmonyBundleName=com.example.myapplication (or pass --unsigned
+with a matching hap), then re-run
+```
+
+两条出路：
+
+- **重新打包**（推荐）：`dotnet publish ... -p:OpenHarmonyBundleName=<profile 的 bundle-name>`，
+  或直接改工程里的 `OpenHarmonyBundleName` 属性，让 `module.json` 与对方 profile 一致；
+- **换输入**：`--unsigned` 指向一个 `module.json` 已经匹配的未签名 hap。
+
+`--huawei` 模式下 **`--bundle` 不可用**（发布时改 bundle 无效，脚本会直接报错）；
+bundle 身份只能靠重新打包决定。`--version` 在 `--huawei` 模式下忽略（SDK 由 `OHOS_SDK_ROOT` 决定）。
+
+#### 已知限制
+
+- **profile 与设备绑定**：签出的 hap 只能装进该 profile `debug-info.device-ids` 里列出的设备；
+  可以先 `sh scripts/sign-for-device.sh --show-profile-devices --huawei <configDir>`
+  核对目标设备 UDID 是否在列表里。
+- **新增设备需要对方操作**：每加一台设备，都要在 DevEco Studio / AGC 里把该设备 UDID 加入自动签名
+  （重新生成 p7b）后把新的 `config` 目录发给我们；我们无法为对方的证书/profile 增删设备。
+- **加密密码需要 hvigor 插件**：Studio 的 `00000020…` 密码必须用 `@ohos/hvigor-ohos-plugin` 的
+  `DecipherUtil` 配合 `config/material/{fd,ac,ce}` 解密；只发 p12/cer/p7b 而没有 `material`/插件时无法代签。
+- 我们不修改对方的证书材料；明文密码只缓存在本地 `…/ohos-pwd.txt`（600），不随产物分发。
 
 ---
 
@@ -132,6 +183,7 @@ sh scripts/release-checksums.sh     # 生成 dist/SHA256SUMS（bundle / abc / �
 | 错误 | 含义 | 处理 |
 |---|---|---|
 | `9568344 install parse profile prop check error` | profile 属性/UDID 校验失败 | 第 3/4 节重签 |
+| 签名前置检查失败（bundle-name mismatch）| hap 的 `module.json` 与 profile 的 `bundle-name` 不一致 | 按第 4b 节重新打包（`-p:OpenHarmonyBundleName=`）或换匹配的 `--unsigned` hap |
 | `E00C001 Operation restricted by the organization`（hdc）| 系统组织策略关闭了 hdc（`const.usb.port.user_hdc.disable=true`）| 由设备管理员放开策略；或改走人工安装/方案 B |
 | 安装被拒（未知来源）| 设备未允许外部/调试安装 | 开发者模式 + 允许调试安装 |
 | 签名校验失败（非 9568344）| 证书链不受信任 | 方案 B（对方证书）或方案 C（OpenHarmony 设备）|
@@ -145,4 +197,5 @@ sh scripts/release-checksums.sh     # 生成 dist/SHA256SUMS（bundle / abc / �
 - 交接状态与操作规程：`docs/plans/2026-09-19-ohos-arkts-handover-status.md`
 - 测试方自助签名（随包）：`自签说明.md`
 - 按 UDID 重签脚本：`ohos-workload/scripts/sign-for-device.sh`（本文第 3 节）
-- 华为自动签名材料代签脚本：`ohos-workload/scripts/sign-huawei.sh`（本文第 4b 节）
+- 华为自动签名材料代签：`ohos-workload/scripts/sign-for-device.sh --huawei`（封装 `scripts/sign-huawei.sh`，本文第 4b 节）
+- profile 设备列表查看：`ohos-workload/scripts/sign-for-device.sh --show-profile-devices`（两种模式通用）
