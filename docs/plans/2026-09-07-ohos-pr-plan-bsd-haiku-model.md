@@ -27,6 +27,13 @@ archived in the repo at `docs/plans/2026-09-21-ohos-pr-drafts.md` (the
 `/data/.../tmp` copy was stale: old tips/sizes and an N2 body describing the
 dropped configure.cmake exemption).
 
+**Update (2026-09-21, arm32):** openharmony-arm (32-bit) was assessed and
+**parked** until a 32-bit OHOS device is available for validation (§5 item 6).
+Status quo: the RID graph keeps `openharmony-arm` as an addressable RID; the
+pack/SDK/aspnetcore lists stay arm64/x64 (N13 `fed16fdbdc9`). Feasibility and
+the enablement plan are recorded in
+`docs/plans/2026-09-21-ohos-arm32-support-gap.md`.
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -372,6 +379,14 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    sign-off (am11 requested stacked-PR visibility). **DONE 2026-09-14** —
    posted as `#issuecomment-5658511943` (N1-N16 inventory + the three open
    reviewer questions).
+6. **arm32 (`openharmony-arm`) full support — PARKED 2026-09-21.** No 32-bit
+   OHOS device is available for validation, so the pack/SDK/aspnetcore lists
+   stay arm64/x64 (N13 `fed16fdbdc9`) and no arm build work starts; the RID
+   graph keeps `openharmony-arm` as an addressable RID. Feasibility, the
+   enablement plan (`ARM_SOFTFP` for openharmony+arm, NativeAOT armel mapping,
+   arm32 signer) and the device readiness checklist are recorded in
+   `docs/plans/2026-09-21-ohos-arm32-support-gap.md` — start there when a
+   32-bit device (or a 32-bit-capable emulator) arrives.
 
 ## 6. Post-merge cleanups (deferred while PRs are in review)
 

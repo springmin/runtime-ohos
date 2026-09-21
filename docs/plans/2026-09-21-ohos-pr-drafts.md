@@ -257,7 +257,10 @@ after #132953 (as with all branches).
 apphost pack RID lists (tip `fed16fdbdc9`), matching A1 (arm64/x64 only). The
 #132953 RID graph keeps `openharmony-arm` as an addressable RID — the graph
 entry alone does not promise a pack; the pack lists are the published set and
-now agree with the supported-arch matrix.
+now agree with the supported-arch matrix. Full arm32 support is **parked**
+until a 32-bit OHOS device is available; the enablement plan (`ARM_SOFTFP`,
+NativeAOT armel mapping, arm32 signer) and the device readiness checklist live
+in `docs/plans/2026-09-21-ohos-arm32-support-gap.md`.
 
 ---
 

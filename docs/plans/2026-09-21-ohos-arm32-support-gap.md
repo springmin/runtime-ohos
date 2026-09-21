@@ -7,6 +7,23 @@
 
 ---
 
+## 0. 决策（2026-09-21）：暂缓，等设备
+
+- 当前**找不到 32 位 ARM 的 HarmonyOS/OpenHarmony 设备**，没有设备验证路径
+  （本机 arm64 设备内核不支持 32 位 ELF，见 §1）。
+- 决策：**暂不实现** openharmony-arm 的构建/发布面支持，维持现状：
+  - RID graph 保留 `openharmony-arm`（可寻址 RID）；
+  - N13/S1a/A1 只发布 arm64/x64（N13 tip `fed16fdbdc9`）；
+  - 不投入 runtime/CI 的 arm 构建打通。
+- **启动条件**：拿到 32 位设备（或支持 32 位镜像的模拟器）后，按 §3/§4 的
+  清单启动实现（runtime arm 构建 + `ARM_SOFTFP` 启用 → amend N13/S1a/A1 →
+  arm32 签名器 → 设备验证）。本文件的可行性与验收清单（§2–§7）届时直接复用，
+  无需重新调研。
+- 记录位置：本文件 + `docs/plans/2026-09-07-ohos-pr-plan-bsd-haiku-model.md`
+  §5 决策点 6。
+
+---
+
 ## 1. 结论摘要
 
 - **技术上没有硬阻塞**：OHOS 公共 SDK 完整提供 armv7 工具链；上游 .NET 对
