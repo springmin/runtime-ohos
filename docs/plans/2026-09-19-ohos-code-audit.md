@@ -1012,7 +1012,8 @@ patch 副本（`git format-patch` 导出，与分支 commit 逐字节一致，�
   1. #132953 合并后：删 TLS flag（条目 1）；N15（`pr/ohos-libs-tfm`）评审时决定 shims 对齐是并入该
      PR 还是紧随其后（条目 2；属性命名/shape 可能按 reviewer 意见调整）。
   2. #132866 答复 tools/ 归属后：`pr/ohos-illink-ntlm` 作为独立 tools PR，或并入 NativeAOT PR（条目 3）。
-  3. 两条上游评论文案（#132953/#132827）仍**未发**（用户约束）。
+  3. 两条上游评论文案（#132953/#132827）已按用户指示于 **2026-09-21** 发出
+     （#132953 `#issuecomment-5757951166`、#132827 `#issuecomment-5757951615`）。
 
 ## 33. S3 手电筒（Camera Kit torch）跨三仓（2026-09-21）
 

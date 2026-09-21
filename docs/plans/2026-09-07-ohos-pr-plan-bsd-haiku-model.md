@@ -18,6 +18,15 @@ mapping, System.Console), marked the `OpenHarmonyInTreeR2R` gate and the
 #132827/#132953 status in §2. The 36ef/#133296 item is resolved on the fork
 (decision-table item 5: 27.1 + untrimmed split layout).
 
+**Update (2026-09-21):** upstream/main moved `8f610270d37` (09-15) →
+`35423f17d6e` (09-21); all held branches were re-rehearsed clean onto that tip
+(§3 "Rebase rehearsal"). The two upstream reminder comments are now posted
+(#132953 `#issuecomment-5757951166`, #132827 `#issuecomment-5757951615`) and
+#132953 was renamed to the OpenHarmony wording on 09-16. Draft PR texts are
+archived in the repo at `docs/plans/2026-09-21-ohos-pr-drafts.md` (the
+`/data/.../tmp` copy was stale: old tips/sizes and an N2 body describing the
+dropped configure.cmake exemption).
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -94,19 +103,21 @@ single-concern PRs dominate; infra and CI wiring are separate.
 
 ---
 
-## 2. Current OHOS upstream state (2026-09-07)
+## 2. Current OHOS upstream state (updated 2026-09-21)
 
 Open PRs (dotnet/runtime):
 
-- **#132827** sandbox fixes (6 files, libraries+gc) — in review; RID-naming
-  **resolved 2026-09-13: `openharmony`** (rename already on the PR branch).
-  Follow-up commit `a250da4de6e` (F1/F2 comment fixes + MutexTests shm path)
-  pushed 2026-09-13 and the status comment posted
-  (`#issuecomment-5653459155`); awaiting @jkoritzinsky re-review.
-- **#132953** infra + RID graph (11 files, eng/+coreclr+RID; +133/-18) —
-  **@jkotas 2026-09-10 APPROVED**; awaiting maintainer merge. The failing leg
-  is Helix test-infrastructure (non-applicable), not this PR; the
-  ohos→openharmony rename is already on the branch.
+- **#132827** sandbox fixes (6 files, libraries+gc) — in review; RID naming
+  resolved as `openharmony`. The last reviewer ask (`akoeplinger` 09-14:
+  `IsOSPlatform("openharmony")` in MutexTests) is in the current head
+  `6ed2f9ab9a` (09-15); build/test legs green, only the known Helix/infra
+  checks fail. **Awaiting approval** (no pending review request); reminder
+  posted 2026-09-21 (`#issuecomment-5757951615`).
+- **#132953** infra + RID graph (11 files, eng/+coreclr+RID; +134/-18) —
+  **@jkotas APPROVED 2026-09-10**, renamed to the final OpenHarmony wording on
+  09-16; the remaining review request is with @am11. Build/test legs green;
+  only the known Helix/infra checks fail. Reminder posted 2026-09-21
+  (`#issuecomment-5757951166`).
 
 Remaining feature-branch inventory (from plan §13 + inclusion audit
 `2026-09-03-ohos-pr-inclusion-audit.md`, refreshed 2026-09-14): runtime N1-N16
@@ -158,20 +169,42 @@ fourteen are based on `pr/ohos-infra` (N16 stacked on N15) and **N13 is based
 on latest `upstream/main`** (its sfxproj patch context had to track upstream's
 WASM R2R refactor — conflict pre-solved: evidence
 `final-evidence/post132953-rebase-rehearsal.txt` +
-`n13-rebase-resolution.patch`): N1 `pr/ohos-clrfeatures` (4+/3-),
-N2 `pr/ohos-pal` (4+/4-), N3 `pr/ohos-zstd` (2+/2-), N4 `pr/ohos-libs-native`
-(7+), N5 `pr/ohos-apphost` (15+/4-), N7 `pr/ohos-pal-process` (5+/2-),
-N8 `pr/ohos-ifaddrs` (4+/2-), N9 `pr/ohos-wx-default` (5+/2-),
-N10 `pr/ohos-crossgen-corelib` (14+/1-), N11 `pr/ohos-aot-unix` (9+/1-),
-N12 `pr/ohos-aot-singleentry` (7+), N13 `pr/ohos-packs` (62+/6-),
-N14 `pr/ohos-tryrun` (9+), N15 `pr/ohos-libs-tfm` (29+/3-),
-N16 `pr/ohos-console` (7+/3-). N13 ships without the fork-local
+`n13-rebase-resolution.patch`), tips/sizes as of 2026-09-21: N1
+`pr/ohos-clrfeatures` `d9428292318` (4+/3-), N2 `pr/ohos-pal` `0f9fcf089c4`
+(1 file, 2+/2-), N3 `pr/ohos-zstd` `83dae1c2849` (2+/2-), N4
+`pr/ohos-libs-native` `9e48c9e4a93` (9+), N5 `pr/ohos-apphost` `934173210f1`
+(13+/4-), N7 `pr/ohos-pal-process` `c5e1dc3e4aa` (5+/2-), N8 `pr/ohos-ifaddrs`
+`3eb1ab8f51c` (4+), N9 `pr/ohos-wx-default` `bb7e8e69e76` (4+/2-), N10
+`pr/ohos-crossgen-corelib` `169c072d07c` (11+/1-), N11 `pr/ohos-aot-unix`
+`91a2e8e5a62` (6+/1-), N12 `pr/ohos-aot-singleentry` `da4dc098a4a` (4+), N13
+`pr/ohos-packs` `d2d512a2999` (44+/6-), N14 `pr/ohos-tryrun` `c2a5e90db55`
+(9+), N15 `pr/ohos-libs-tfm` `01667c2c6d5` (23+/3-), N16 `pr/ohos-console`
+`94f72514835` (6+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
 `IgnoreStandardErrorWarningFormat` attribute; N10's comment is neutralized
-for upstream. The fourteen `pr/ohos-infra`-based branches are rebase-verified
-clean onto the post-#132953 state
-(`final-evidence/preflight-rebase-20260914.txt`). Submission-ready PR texts
-(title/body/test): `/data/storage/el2/base/tmp/opencode/pr-drafts-ohos.md`.
+for upstream. Submission-ready PR texts (title/body/test), regenerated
+2026-09-21: **`docs/plans/2026-09-21-ohos-pr-drafts.md`** (in-repo; the
+`/data/.../tmp` copy is stale).
+
+**Post-#132953 follow-ups (prepared, not in the N table):**
+
+| Branch | Trigger | Delta vs `pr/ohos-infra` |
+|---|---|---|
+| `pr/ohos-tls-flag-cleanup` | after #132953 merges: drop the no-op `-ftls-model=global-dynamic` (§6.1) | 1 file, 3+/3- |
+| `pr/ohos-shims-tfm-cleanup` | N15 review decides whether to fold the shims alignment in or land it right after | 6 files, 27+/3- |
+| `pr/ohos-illink-ntlm` | after the dotnet/runtime#132866 tools/ ownership answer: separate tools PR or folded into the NativeAOT PR | 1 file, 2+ (base `upstream/main`) |
+
+**Rebase rehearsal (2026-09-21):** re-run in a throwaway worktree against the
+current `upstream/main` `35423f17d6e` (the 09-14/09-15 rehearsals were against
+`8f610270d37`). Result: **all CLEAN** — `pr/ohos-infra` → `49ff06d3be`; the 13
+`pr/ohos-infra`-based N branches (N1, N2, N3, N4, N5, N7, N8, N9, N10, N11,
+N12, N14, N15) → `9fa88a8be6`, `7ff38eea4c`, `b3c6c90155`, `47e327066b`,
+`8c48f3cb85`, `0b218e389e`, `8c75377751`, `2d71c78d1f`, `80fa4f3374`,
+`e21b963ea7`, `729445273c`, `9b2efec3f9`, `39422e0ec6`; N16 →
+`77f4ead81d`; N13 → `2d599725fa` (onto `main`) and `23f08fac5f` (onto
+post-infra); follow-ups → `tls-flag-cleanup` `79e964f1bb`, `shims-tfm-cleanup`
+`58b546de89`, `illink-ntlm` `86abe3ee71`. Evidence:
+`/data/storage/el2/base/tmp/opencode/rebase-rehearsal-20260921.txt`.
 
 **Review-fix pass (2026-09-15):** N15 now defaults `LibrariesBinPlaceTfm` to
 `$(NetCoreAppCurrent)-$(TargetOS)` so non-OHOS platforms keep their binplace
@@ -356,7 +389,8 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    | `-fno-emulated-tls -ftls-model=global-dynamic` | byte-identical to the previous row (no-op) |
 
    Action after #132953 merges: one-line delete (own commit or a small flags-cleanup PR; Haiku
-   precedents #126701/#127392/#127502/#131700). If a reviewer touches these flags during the
+   precedents #126701/#127392/#127502/#131700). Prepared as `pr/ohos-tls-flag-cleanup`
+   (rebase-verified 2026-09-21). If a reviewer touches these flags during the
    #132953 review, fold the deletion into the review response instead.
 
 2. **TFM-scoped `KnownAppHostPack` replacement** — `eng/targetingpacks.targets:94`. The broad
