@@ -104,11 +104,11 @@ cd ohos-workload
 # OHOS_ENC_PWD 环境变量传入以免出现在 argv；明文不再落盘缓存）
 sh scripts/sign-for-device.sh --huawei [configDir] [encryptedPassword]
 
-# 交互式输入密码（推荐；密码不进任何 argv）：-pwdInputMode 1，由 hap-sign-tool 在真实
-# 终端提示输入；不需要 encryptedPassword，也跳过 hvigor 插件解密。调用方无 tty 时用
-# script(1) 提供伪终端（管道喂密码无效）。
+# 交互式输入密码（推荐；密码不进任何 argv）：-pwdInputMode 1，由 hap-sign-tool 在终端读取密码；
+# 不需要 encryptedPassword，也跳过 hvigor 插件解密。stdin 不是 tty（CI/构建脚本）时
+# sign-huawei.sh 自动用 script(1) 提供伪终端，密码可从 stdin 送进 pty（明文仍不进 argv）；
+# 环境里没有 script(1) 时该模式明确报错。
 sh scripts/sign-for-device.sh --huawei --pwd-input-mode [configDir]
-script -qec 'sh scripts/sign-for-device.sh --huawei --pwd-input-mode' /dev/null
 
 # 指定输入/输出（--out 默认 hello-maui-app-huawei.hap）
 sh scripts/sign-for-device.sh --huawei ~/Documents/ohos/config \
@@ -167,11 +167,11 @@ bundle 身份只能靠重新打包决定。`--version` 在 `--huawei` 模式下�
 - **签名密码的 argv 残留（仅默认模式）**：默认（非 tty/CI）路径下 `hap-sign-tool` 只接受命令行密码，
   因此签名调用期间明文会短暂出现在该子进程的 `-keyPwd/-keystorePwd` argv 中，进程结束即消失，不落盘、
   不随产物分发。`--pwd-input-mode`（或 `OHOS_PWD_INPUT_MODE=1`）改用 `-pwdInputMode 1` 并**完全省略**
-  这两个参数：密码由 `hap-sign-tool` 在真实终端上提示输入，argv 残留彻底消失，且不需要
-  encryptedPassword、不需要 hvigor 插件（跳过解密步骤）。该模式要求 stdin 是 tty（管道喂密码无效），
-  调用方没有 tty 时用 `script(1)` 提供伪终端：
-  `script -qec 'sh scripts/sign-for-device.sh --huawei --pwd-input-mode <configDir>' /dev/null`
-  （直接调 `sign-huawei.sh` 同理，加 `--pwd-input-mode` 即可）。
+  这两个参数：密码由 `hap-sign-tool` 在终端/pty 上读取，argv 残留彻底消失，且不需要
+  encryptedPassword、不需要 hvigor 插件（跳过解密步骤）。该模式有 tty 时直接提示输入；stdin 不是 tty
+  （CI/构建脚本）时脚本自动用 `script(1)` 提供伪终端，密码可从 stdin 送进 pty（仍不进 argv）。
+  残留只剩一种：调用环境既没有 tty、又找不到 `script(1)`，此时脚本明确报错（安装 util-linux/busybox
+  的 script 即可）。
 
 ---
 
