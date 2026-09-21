@@ -40,6 +40,13 @@ is frozen — the openharmony RIDs moved to `PortableRuntimeIdentifierGraph.json
 feature branch mirrors it (`a65f978d85d`); §5.1/§6.3 and the S1a draft text
 were updated accordingly. The reply to am11 is held until the PR's CI is green.
 
+**Update (2026-09-21, review cleanups F1-F3):** the same PR push applied three
+cleanups (commit `8ef4e925163`; feature branch `dc3b15b3fda`): removed the
+redundant `__PortableTargetOS` propagation (init-distro-rid.sh already exports
+it; resolves jkotas's thread), removed the no-op `-ftls-model=global-dynamic`,
+and merged the duplicated `find_program` in configuretools.cmake. The standalone
+`pr/ohos-tls-flag-cleanup` follow-up is superseded.
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -203,7 +210,7 @@ for upstream. Submission-ready PR texts (title/body/test), regenerated
 
 | Branch | Trigger | Delta vs `pr/ohos-infra` |
 |---|---|---|
-| `pr/ohos-tls-flag-cleanup` | after #132953 merges: drop the no-op `-ftls-model=global-dynamic` (§6.1) | 1 file, 3+/3- |
+| `pr/ohos-tls-flag-cleanup` | **superseded**: the no-op flag is already removed in #132953 (commit `8ef4e925163`, 2026-09-21) — keep the branch as archive | 1 file, 3+/3- |
 | `pr/ohos-shims-tfm-cleanup` | N15 review decides whether to fold the shims alignment in or land it right after | 6 files, 27+/3- |
 | `pr/ohos-illink-ntlm` | after the dotnet/runtime#132866 tools/ ownership answer: separate tools PR or folded into the NativeAOT PR | 1 file, 2+ (base `upstream/main`) |
 
@@ -419,6 +426,9 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    precedents #126701/#127392/#127502/#131700). Prepared as `pr/ohos-tls-flag-cleanup`
    (rebase-verified 2026-09-21). If a reviewer touches these flags during the
    #132953 review, fold the deletion into the review response instead.
+   **DONE 2026-09-21:** the flag was removed inside #132953 itself as part of the
+   review cleanups (commit `8ef4e925163`); `pr/ohos-tls-flag-cleanup` is now
+   superseded and kept only as an archive.
 
 2. **TFM-scoped `KnownAppHostPack` replacement** — `eng/targetingpacks.targets:94`. The broad
    `Remove` deletes same-identity entries for every target framework. Evaluation-time metadata
