@@ -11,6 +11,7 @@
 |---|---|---|
 | `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 已签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
 | `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（JsError / exit 254）：当前 kit 重测与校验记录 + 最小 hilog/faultlog/status 取证 + 三个 A/B + 回传清单 | ✅ 当前（2026-09-21）|
+| `2026-09-21-ohos-device-report-template.md` | 下一轮真机回传一页模板（填补空白即可）：kit 身份/重签/安装/启动/探针 P1–P4/附件清单，供机器解析归档 | ✅ 当前（2026-09-21）|
 | `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`）| ✅ 当前（2026-09-21，preview.24）|
 | `2026-09-21-ohos-device-run-playbook.md` | 真机运行操作手册：包内 `sh verify-kit.sh` 校验 → 安装/启动 → hilog 取证 → 5 条冒烟 → 9568344/E00C001 失败分支与回传 | ✅ 当前（2026-09-21）|
 | `2026-09-19-ohos-signing-and-udid-guide.md` | `9568344` 根因（调试 profile 绑定 UDID）与自助/代签重签流程；含华为自动签名材料代签（`scripts/sign-huawei.sh`，包内名 `签名与UDID指南.md`）| ✅ 当前（2026-09-21）|
