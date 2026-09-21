@@ -1499,3 +1499,61 @@ maui-ohos 的 sparse-checkout 不含切片目录，`git add` 需 `--sparse`（�
 4. 上游三预备分支待 #132953/N15 ✗；两条评论文案待许可 ✗。
 
 **验证基线（V 后）**：交互回归 **226 项**（含 10 条 late-context 演练）· CI 阈值 **222** · 双 perf 门禁（frame + a11y skip/republish）`within=True` · 像素套件本地 PASSED · 五仓库全部 PUSHED。
+
+## 39. V8 宿主侧上下文 setter 与壳重发（2026-09-21）
+
+V2 让托管桥在 surface/lifecycle 事件上重读上下文（`OHOS_HOST_APP_CONTEXT` 优先、原生入口兜底），但原生宿主只在
+`ohos_host_start_app` 存一次 JSON：壳启动时若上下文不含负载目录（`appDir` 为空/缺失），托管侧就再也没有渠道拿到新
+快照。本节补齐最后一段——**壳可随时向宿主重发上下文，宿主替换当前快照并通过既有通知路径叫醒托管桥**。
+
+### 39.1 机制
+
+| 层 | 入口 | 行为 |
+|---|---|---|
+| C/头文件 | `ohos_host_set_app_context(const char* json)` | `strdup` 新 JSON → `setenv(OHOS_HOST_APP_CONTEXT)` → 替换 `ohos_host_get_app_context` 快照 → 重放当前 surface 状态；句柄存在前存为 **pending**，`start_app` 在自己的上下文缺失或 `appDir` 为空时采纳它（紧凑 JSON 的 `"appDir"` 非空判定），app 自带的有效上下文优先 |
+| C/头文件 | `ohos_host_notify_context(void)` | 不改快照，只重放通知；返回 1=已通知 / 0=无可用通道（无句柄、无桥或无 created/changed surface；后续 surface/lifecycle 事件仍会重读） |
+| NAPI | `host.setAppContext(json)` / `host.notifyAppContext()` | 返回原生 rc（0 成功；-1 参数缺失/空或拷贝失败） |
+| ArkTS 壳 | `preview.22/23/24 Index.ets` XComponent `.onLoad()` | surface 就绪后 `publishAppContext()` 由 `getContext(this)` 重建 `appDir=<filesDir>/dotnet` + files/cache/bundle/ability 的 JSON 并 `host.setAppContext(json)`；`typeof` 守卫 + try/catch，旧宿主库静默降级 |
+
+**通知路径**：重放的是已存 surface 状态（仅 CREATED/CHANGED），托管 `OnSurfaceNative` 在转发事件前先跑
+`RefreshContext()`（V2 实现），因此 setter 一次调用即可让托管侧读到新快照；无 surface 时通知返回 0，但下一次
+surface/lifecycle 事件、或托管桥注册时 `register_bridge` 既有的 surface 重放仍会重读，快照不丢。
+
+**内存与并发守卫**：被替换的旧快照进入 `retired_contexts` 链、join 时统一释放（托管 reader 可能仍在校验 getter 指针）；
+pending 在采纳或后续 `start_app` 自带有效上下文时释放；retire 节点分配失败时选择泄漏旧串而不是在读者脚下释放。
+
+### 39.2 验证（ohos-workload e77c803）
+
+- **宿主**：`bash scripts/build-host.sh` → **"selfsign ok"**（`libopenharmonyhost.so` 142,240 B，含签名）；`llvm-nm -D`
+  导出表含 `T ohos_host_set_app_context`、`T ohos_host_notify_context` 与既有 `T ohos_host_get_app_context`。
+- **壳类型检查**：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror bash scripts/build-arkts-shell.sh`
+  → **0 条 `ArkTS:ERROR`**（`Finished :entry:default@CompileArkTS`；PackageHap 失败按脚本既定规则忽略），
+  `dist/ets/modules.abc` = **84,040 字节**（上轮 82,936），**未复制进 pack**、未做 demo publish / release refresh。
+- **壳模板**：preview.22/23/24 `Index.ets` 逐字节一致（**72,847 B**，md5 `dca1fc9b9b09108147a74075a3710f02`）。
+- **harness**：`test/maui-platform-verify` 复制到 scratch，`dotnet build -m:1 -p:UseSharedCompilation=false`（0 error）
+  并运行：**226 条 `[verify]`、0 条 `Unhandled`、exit 0**；frame perf `within=True`（avg 9.601ms / p95 11.459ms /
+  max 13.158ms），a11y skip/republish 全部 `within=True`（ratio render 28.65x / publish 147.38x）；scratch 副本已删除，
+  仓库内 harness 未改（仍 226 条，CI 阈值 222 不变）。
+- **既有行为**：未调用新入口时 `start_app`/getter/join 与 V2 完全一致（pending 为空即走原路径）；`ohos_host_run_app` 未动。
+
+### 39.3 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `e77c803`（`e77c80321586cfebd2d1c60793d0f8c26e68a59b`） | 宿主 set_app_context/notify_context + NAPI 导出 + 三份壳模板（推送前远端 tip `9a17d3b`，其上为另一 agent 的 preflight/kit 提交）|
+| runtime-ohos `feature/openharmony` | 本 commit（§39） | 本节 |
+
+推送规则同 §37：`git -c http.version=HTTP/1.1 push origin master`，6 次 × 15s 兜底，失败则 fetch+rebase（不 force）；
+ohos-workload 一次成功（`9a17d3b..e77c803`）。
+
+### 39.4 不确定项与遗留
+
+1. **真机未验证**：交叉编译/类型检查只证明契约可编译；宿主重放的 surface 事件在真机上是否总能让混合资产的晚注册
+   落地（`AppDir` 生效后的重试窗口），需设备实证。
+2. **`appDir` 判定是紧凑 JSON 文本扫描**：`start_app` 的 pending 采纳只识别 `"appDir":"..."` 形态；带空格的格式化
+   JSON 可能被判定为"不含负载目录"而让 pending 优先——本平台壳均由 `JSON.stringify` 生成紧凑 JSON；false negative
+   只会保留 start 上下文，不会崩溃。
+3. **abc 仍未入 pack**：`dist/ets/modules.abc`（84,040 B）只是构建产物，与 §28/§35/§37 同一待办链（V8 不做版本刷新）。
+4. **harness 未加 V8 断言**：按批次边界，仓库内 harness 未动（仅 scratch 复跑）；如需把 C/NAPI/壳三处字符串源码级
+   pin 进 CI，可在后续批次并入（当前 CI 阈值 222 不受影响）。
+5. **V5（`Microsoft.NET.Sdk.Razor` 变体）与 `headless-render.csproj` 环境变量化仍在队列**（§38 待办 1/3）。
