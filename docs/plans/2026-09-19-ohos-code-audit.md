@@ -1300,3 +1300,99 @@ S1–S4 的能力改动分散在三个仓库（见 35.1），S5 把它们随 **w
    （S5 未做，避免把验证脚本与交付刷新混在一个提交里）。
 8. 本机 `dotnet workload list` 现在指向 `.24`；preview.22 的 pack 已被 `dotnet workload install` 回收，回退需重新安装旧
    bundle。安装/核验过程中对 `~/.dotnet` 的改动都可从 `dist/*.tar.gz`（或 release 资产）重放。
+
+---
+
+## 36. 静态 Web 资产指纹回退与响应缓存头（shell，T6；2026-09-21）
+
+S1 记录的问题：MAUI/Blazor 的静态 Web 资产按指纹名（`name.<hash>.ext`）请求时，壳的
+`onInterceptRequest` 只按 `<base>/<root>/<path>` 精确查找，指纹名 404。本节把指纹回退与响应缓存
+策略落到壳的公共负载读取路径（hybrid 与 Blazor 两条桥共用），并记录 `WebResourceResponse` 头部
+API 的探查结论。
+
+### 36.1 改动（`packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.{22,23,24}/templates/ets/pages/Index.ets`）
+
+- **指纹回退 `staticFingerprintBase(filePath)`**：只重写最后一个路径段的文件名；回收
+  `^(.+)\.[0-9a-f]{8,32}$`（8–32 位小写十六进制、必须是主干的最后一段且主干非空），
+  `name.<hash>.ext → name.ext`。因此 `app.settings.css`、`.hidden.css`、7/33 位十六进制等原样返回；
+  父目录直接取自 `hybridFilePath`/`blazorFilePath` 已校验过的入参（`..`、`\`、编码穿越拒绝保持原样），
+  重写只可能缩短最后一段文件名，不会把服务范围移出内容根。
+- **`servePayloadFile`**：精确路径优先；未命中且名字含指纹时，用去掉指纹的基名**只重试一次**；
+  仍未命中返回 404。hybrid / Blazor 两桥共享该路径，非指纹请求路径逐字不变。
+- **缓存头**：`readPayloadFile` 在 200 响应上调用
+  `WebResourceResponse.setResponseHeader([{ headerKey: 'Cache-Control', headerValue: ... }])`：
+  指纹请求 → `public, max-age=31536000, immutable`；其余（`blazor.webview.js`、`hybridwebview.js`、
+  宿主页、应用资产）→ `no-cache`（每次重验证，刷新 pack 不被热 WebView 缓存掩盖）。
+
+### 36.2 头部 API 探查（ArkTS 类型检查）
+
+- SDK 声明：`ets/component/web.d.ts` 的 `WebResourceResponse.setResponseHeader(header: Array<Header>)`
+  （API 9+；`Header { headerKey; headerValue }`）；`setResponseData` 等既有成员不变。
+- 探查 1：显式标注 `const match: RegExpMatchArray | null = /.../.exec(stem)` + 对象字面量 header map
+  → **FAIL**（`{ERROR:2}`），打印 `10605030 ArkTS Compiler Error: Structural typing is not supported
+  (arkts-no-structural-typing)`，位置在 `RegExpMatchArray` 标注行。
+- 探查 2：`.exec()` 结果改为推断、其余不变 → **0 条 `ArkTS:ERROR`**，
+  `Finished :entry:default@CompileArkTS`。结论：**`setResponseHeader` + 对象字面量 header map 可编译**
+  （不需要名义类）；被拒的是 `RegExpMatchArray` 的显式标注（结构类型规则），与 header map 无关。
+- 中间产物：`736d332` 首版带 `class PayloadHeader implements Header`（同样 0 错误，abc 81,916 B）；
+  探查 2 后由 `1542b72` 删除（abc 81,556 B），无行为差异。
+
+### 36.3 验证
+
+- **壳类型检查**：`TYPECHECK=1 HVIGOR_MIRROR=file:///data/storage/el2/base/tmp/opencode/npm-mirror
+  bash scripts/build-arkts-shell.sh` → **0 条 `ArkTS:ERROR`**（`Finished :entry:default@CompileArkTS`；
+  仅既有 warning；PackageHap 仍因本机打包工具失败，按脚本既定规则忽略）。最终
+  `dist/ets/modules.abc` = **81,556 字节**（首版 81,916），**未复制进 pack**、未做 demo publish /
+  release refresh；模板构建状态 `.arkts-build` 未进提交。
+- **三份镜像**：preview.22/23/24 的 `Index.ets` 在改动前逐字节相同，本轮改完后仍逐字节一致
+  （70,039 B，md5 `fd92ce328fb44759d488f19225957da7`）；pack 选择器读取所选版本的模板，三份必须同步。
+- **harness**：把 `test/maui-platform-verify`（`5d88377` 折叠 S 系列后仓库内已是 **208** 条）复制到
+  scratch，加 8 条 T6 断言：
+  1. 模板含该正则/函数（`private staticFingerprintBase(...)`、`.exec(stem)`）；
+  2. 同一正则 + 同名切分算法重放 9 个样例全部符合期望（`blazor.webview.713e519f.js→blazor.webview.js`、
+     `css/app.0a1b2c3d4e5f6a7b.css→css/app.css`、32 位十六进制、7/33 位不匹配、
+     `app.css`/`app.settings.css`/`blazor.modules.json` 原样）；
+  3. 精确优先（`exactAt < fallbackAt`）；
+  4. 父目录/主干切分与 `..`/`\` 穿越拒绝仍在；
+  5. `readPayloadFile(` 调用点 = 3（声明 + 精确 + 回退一次）；
+  6. 缓存值 immutable / no-cache；
+  7. `setResponseHeader` + header map 存在、无多余名义类；
+  8. preview.22/23/24 逐字节一致（70,039 B）。
+  `-m:1 -p:UseSharedCompilation=false` 构建（0 error）并运行：**216 条 `[verify]`、0 条 `Unhandled`、
+  exit 0**，perf `within=True`（avg 3.061ms / p95 3.871ms / max 5.795ms）；scratch 副本已删除，
+  仓库内 harness 未改（仍 208 条，CI 阈值 199 不变）。
+  说明：ArkTS 函数不能在本机 C# harness 里执行，第 2 条是"模板必须含该正则 + 同算法重放"，
+  壳函数本身的运行时行为仍只由类型检查覆盖。
+
+### 36.4 提交与推送
+
+| 仓 / 分支 | commit | 内容 |
+|---|---|---|
+| ohos-workload `master` | `736d332`（`736d332869551cdfb3428570efa987acbe55e366`） | 指纹回退 + 缓存头（首版含名义 `PayloadHeader`） |
+| ohos-workload `master` | `1542b72`（`1542b729566f7216dc8316c004a293d98c2ba556`） | 探查后删除名义类（对象字面量 header map 可编译） |
+| runtime-ohos `feature/openharmony` | 本 commit（§36） | 本节 |
+
+推送规则：`git -c http.version=HTTP/1.1 push origin <branch>`，6 次 × 15s 兜底，失败则 fetch+rebase
+（不 force）。ohos-workload 推送前 `ls-remote` 复核远端 tip 为 `5d46e2e`（另一 agent 的签名提交），
+本地提交在其上（fast-forward），两次 push 均一次成功；远端 tip 最终为 `1542b72`。runtime-ohos 推送前
+远端 tip 为 `8a15f3b`（签名文档提交），本节提交在其上。
+
+### 36.5 不确定项与遗留
+
+1. **真实指纹形态**：本节的保守文法只覆盖 8–32 位小写十六进制；若部署清单使用其他字母表
+   （base36/base62 等含 g–z 字母的指纹），**不会**匹配。按名单映射需要
+   `*.staticwebassets*.json` 清单，而本应用模型（提取的 payload 目录）不带清单；当前 demo 的
+   `wwwroot` 只引用基名（`js/app.js`、`_framework/blazor.webview.js`、`blazor.modules.json`），
+   指纹请求只在真实静态资产管线生成的页面里出现。若真机日志出现其他形态，单独放宽文法（保留精确优先）。
+2. **无清单 / 无内容校验**：回退按名字推断，不校验"基名文件内容确实对应那个指纹"；错误名字会命中基文件
+   （可接受：服务的是同一份内容）。
+3. **没有条件请求处理**：壳不实现 `If-None-Match`/`If-Modified-Since`；`no-cache` 只要求重验证，
+   壳每次都回 200 全量内容（离线仍可用，只是没有 304 优化）。
+4. **运行时未验证**：类型检查只证明头部 API 可编译；ArkWeb 是否把拦截响应的 `Cache-Control` 用于
+   其缓存策略、指纹回退在真机是否命中，都需要设备验证。
+5. 指纹回退对 hybrid 桥同时生效（共享 `servePayloadFile`）；`_framework/hybridwebview.js` 特例与
+   `_hwv*` 端点仍先精确命中，非指纹请求行为不变。
+6. `dist/ets/modules.abc`（81,556 B）只是本轮构建产物：把最新 abc 装进 pack、刷新 release/kit 仍是
+   独立步骤（与 §28/§35 的待办相同）。
+7. 本节的 ohos-workload 改动是**两个**提交：首版 `736d332` 推送后，T6 的头部探查把失败根因定位到
+   `RegExpMatchArray` 标注而非 header map，删除名义类只能在已推送历史之上追加 `1542b72`（不 force）。
