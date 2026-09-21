@@ -19,7 +19,7 @@
 
 **30 秒判断法**：`sh scripts/sign-for-device.sh --show-profile-devices` 直接打印 profile 中嵌入的
 `debug-info.device-ids`（旧方法：查看 `profile-work/profile.json`）；不包含目标设备 UDID →
-必须重签（见第 3 节）或改走第 4b 节（对方证书代签）。
+必须重签（见第 3 节）或改走第 4b/4c 节（对方证书/材料代签）。
 
 ---
 
@@ -173,6 +173,77 @@ bundle 身份只能靠重新打包决定。`--version` 在 `--huawei` 模式下�
   残留只剩一种：调用环境既没有 tty、又找不到 `script(1)`，此时脚本明确报错（安装 util-linux/busybox
   的 script 即可）。
 
+### 4c. 外部材料代签（对方自备 p7b + p12，`--external`）
+
+**何时用**：测试方用自己在 DevEco/AGC 侧的流程为目标设备申请到了 **Huawei 签发的 debug profile
+（`.p7b`，已绑定其设备 UDID）**，并本地生成了配套私钥（`.p12`），但不想自己跑 `hap-sign-tool`；
+于是把材料发来由我们**离线预签**，产物装到对方设备即可。与 4b 的区别：不需要 DevEco 的
+`config/material`，也不需要 hvigor 插件解密——密码由对方直接提供（或交互输入）。
+
+**对方需要发送（走安全通道；只发 debug 材料，勿用明文邮件/群聊）**：
+
+| 材料 | 说明 |
+|---|---|
+| `*.p7b` | Huawei 签发的 debug profile；`debug-info.device-ids` 必须包含目标设备 UDID |
+| `*.p12` | 配套私钥库（对方本地生成） |
+| `keyAlias` | p12 中的密钥别名（DevEco 自动签名默认 `debugKey`） |
+| p12 密码 | 建议放 `0600` 的 pwd 文件随材料发送，或单独走更安全的通道；不会写进任何日志/产物 |
+| `*.cer` | 与该 p12 匹配的 app 证书链（DevEco 配置目录的 `default_*.cer`）。p7b 里只有**叶子**证书，而 `hap-sign-tool sign-app` 需要完整链（root/sub CA/leaf），请一并发送；放在 p7b 同目录会自动识别，或用 `--cert <cer>` 显式指定 |
+| 目标 UDID | `hdc shell bm get -u` 的 64 位十六进制值，供前置校验 |
+
+**我们校验什么（fail closed：任何一项不通过都拒绝签名）**：
+
+1. 用 `hap-sign-tool verify-profile` 提取 p7b 的 JSON，读取 `debug-info.device-ids`：
+   **必须包含 `--expect-udid`**；找不到列表（如 release profile）或 UDID 不在其中都直接报错退出；
+2. 每个 hap 的 `module.json` `bundleName` 必须与 p7b 的 `bundle-info.bundle-name` 完全一致（否则装时报 9568344）；
+3. app 证书链必须包含 p7b 的 `bundle-info.development-certificate`（防止拿错 `.cer`）；
+4. 每个 hap 签完都跑 `hap-sign-tool verify-app`，不通过就不保留产物。
+
+**用法**（支持一次签多个 hap；密码不进 argv、不打印）：
+
+```bash
+cd ohos-workload
+
+# 交互式：hap-sign-tool 在终端提示 keystorePwd/keyPwd（两次）；无 tty 时自动用 script(1)
+# 提供 pty（stdin 需送两行密码）
+sh scripts/sign-for-device.sh --external \
+  --profile <对方.p7b> --key <对方.p12> --key-alias <alias> \
+  --expect-udid <目标UDID> --pwd-input-mode \
+  --unsigned hello-maui-app-unsigned.hap --out /tmp/hello-maui-app-<name>.hap
+
+# 批量：密码放 0600 文件。加 --pwd-input-mode 时经 script(1) pty 送入，仍不进 argv；
+# 不加时沿用 --huawei 默认模式的 argv 短暂残留（见 4b 已知限制）
+sh scripts/sign-for-device.sh --external \
+  --profile <对方.p7b> --key <对方.p12> --key-alias <alias> \
+  --expect-udid <目标UDID> --key-pwd-file /secure/pwd.txt \
+  --unsigned a.hap --unsigned b.hap --out-dir out/
+
+# 不签名，只查看 profile 绑定了哪些设备
+sh scripts/sign-for-device.sh --show-profile-devices <对方.p7b>
+```
+
+**一键产出预签交付包**（kit 内全部 hap、含 unsigned 变体都会预签为该 UDID 后再打包）：
+
+```bash
+cd ohos-workload
+# 把对方的 .cer 放在 .p7b 同目录（自动识别），或用 OHOS_EXT_CERT=... 指定
+OHOS_KEY_PWD_FILE=/secure/pwd.txt sh scripts/make-device-test-kit.sh \
+  --sign-external <对方.p7b> <对方.p12> <alias> <目标UDID> \
+  [--kit-dir <dir>] [--skip-tar]
+```
+
+Kit 里会多出 `目标设备.txt`（目标 UDID、profile 的 sha256、签名方式与覆盖范围；**不含任何密钥/密码**），
+`SHA256SUMS` 照常覆盖它，随包 `verify-kit.sh` 的 tree digest 也覆盖它。密码只在签名进程内使用：
+`--pwd-input-mode` 下由终端/pty 读取；脚本从不打印密码（pty 回显也被丢弃）。
+
+**注意**：
+
+- 只收 debug 材料；签名完成后材料由双方各自销毁，本仓库不保存任何外部材料；
+- profile 的 bundle-name 必须与目标 hap 一致：kit 内 hap 的实际 bundle 以 `verify-kit.sh` 输出的
+  `bundle=...` 为准。若对方 profile 绑的是别的 bundle（例如 `com.example.myapplication`），
+  需要按 4b 节重新打包 hap，或让对方为对应 bundle 重新生成 profile；
+- 外部材料模式也可直接签单个 hap：日志会打印每个产物的 SHA-256，交付时同步给对方。
+
 ---
 
 ## 5. 方案 C：release 型自签名（仅 OpenHarmony 设备）
@@ -214,4 +285,6 @@ sh scripts/release-checksums.sh     # 生成 dist/SHA256SUMS（bundle / abc / �
 - 测试方自助签名（随包）：`自签说明.md`
 - 按 UDID 重签脚本：`ohos-workload/scripts/sign-for-device.sh`（本文第 3 节）
 - 华为自动签名材料代签：`ohos-workload/scripts/sign-for-device.sh --huawei`（封装 `scripts/sign-huawei.sh`，本文第 4b 节）
+- 外部材料代签（对方 p7b + p12）：`ohos-workload/scripts/sign-for-device.sh --external`（本文第 4c 节）
+- 一键预签交付包：`ohos-workload/scripts/make-device-test-kit.sh --sign-external`（本文第 4c 节）
 - profile 设备列表查看：`ohos-workload/scripts/sign-for-device.sh --show-profile-devices`（两种模式通用）
