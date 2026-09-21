@@ -12,6 +12,8 @@
 | `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`）| ✅ 当前（2026-09-21，preview.24）|
 | `2026-09-19-ohos-signing-and-udid-guide.md` | `9568344` 根因（调试 profile 绑定 UDID）与自助/代签重签流程；含华为自动签名材料代签（`scripts/sign-huawei.sh`，包内名 `签名与UDID指南.md`）| ✅ 当前（2026-09-21）|
 | `2026-09-20-ohos-dotnet-getting-started.md` | 第三方开发者英文上手：安装 workload、选 TFM/publish hap、签名与 UDID、故障排查 | ✅ 当前（2026-09-20）|
+| `2026-09-21-ohos-tester-selfsign.md` | 未签名 hap 自助签名（DevEco 自动签名 + hap-sign-tool）；包内名 `自签说明.md` | ✅ 当前（2026-09-21，preview.24）|
+| `2026-09-21-ohos-delivery-kit-readme.md` | kit 交付包总说明：基线 preview.24、5 hap 用途、安装与 9568344 指路；包内名 `README-交付说明.md` | ✅ 当前（2026-09-21，preview.24）|
 
 ## 当前状态与规划
 
