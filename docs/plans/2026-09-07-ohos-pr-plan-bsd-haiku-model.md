@@ -272,6 +272,16 @@ N15/N16 were re-rehearsed after the shims-predicate fix (that run: infra
 `ba17a103d6`, N15 `9be2a85dec`, N16 `ef0e0bb44e`); rebase hashes are per-run
 (committer timestamps), only the CLEAN/CONFLICT verdict is durable.
 
+**Rebase rehearsal (2026-09-22):** re-run in a throwaway worktree against the
+current `upstream/main` `6f4751a142c`. Result: **all CLEAN** — infra →
+`84fc5f4e5b`; the 13 infra-based N branches (N1, N2, N3, N4, N5, N7, N8, N9,
+N10, N11, N12, N14, N15), N16 (stacked on N15), N13 (onto both `main` and the
+rebased infra), `shims-tfm-cleanup`, and `illink-ntlm`. Only
+`tls-flag-cleanup` now conflicts (`eng/native/configurecompiler.cmake`) —
+expected, the flag it removed is already gone inside #132953, so the branch
+stays archived. Evidence:
+`/data/storage/el2/base/tmp/opencode/rebase-rehearsal-20260922.txt`.
+
 **Review-fix pass (2026-09-15):** N15 now defaults `LibrariesBinPlaceTfm` to
 `$(NetCoreAppCurrent)-$(TargetOS)` so non-OHOS platforms keep their binplace
 items; N13's runtime-pack override is scoped to `TargetsOpenHarmony` and the

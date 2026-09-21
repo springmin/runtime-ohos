@@ -1,14 +1,17 @@
 # OHOS upstream PR drafts (dotnet/runtime, fork `springmin`)
 
-States as of **2026-09-21** (re-verified against the branch tips below;
-supersedes the `/data/.../tmp` copy and the 09-16 table).
+States as of **2026-09-22** (re-verified against the branch tips below;
+supersedes the `/data/.../tmp` copy and the 09-16 table). S1a/S1b carry the
+`any` RID follow-up (`123a665d9b1` / `ce1846b0dfa`); the A1 draft is added at
+the end of this file.
 
 Base for every branch: `pr/ohos-infra` (#132953) — stacked until it merges;
 then rebase onto `main` and open. One commit per branch, single concern.
 N16 is stacked on N15 (`pr/ohos-libs-tfm`); N13 (`pr/ohos-packs`) is based on
 `upstream/main` and behaves only once #132953 (the `TargetsOpenHarmony`
-property) has landed. `upstream/main` at the last rehearsal: `35423f17d6e`
-(2026-09-21).
+property) has landed. `upstream/main` at the last rehearsal: `6f4751a142c`
+(2026-09-22; every held branch re-rehearsed CLEAN, see the plan's 09-22
+update).
 
 | PR | branch | commit | files | size |
 |---|---|---|---|---|
@@ -46,10 +49,11 @@ so the whole set shares one predicate. N16 suppresses CA1416
 the TFM mapping lands" sentence in the PR body so the suppression is clearly
 temporary.
 
-Rebase status: the 09-15 pre-flight (clean on the then-current main
-`8f610270d37`) is **superseded** — `upstream/main` has since moved to
-`35423f17d6e`; a re-run against that tip is recorded in the plan's 2026-09-21
-update (see `docs/plans/2026-09-07-ohos-pr-plan-bsd-haiku-model.md`).
+Rebase status: the 09-15/09-21 rehearsals are **superseded** — the 2026-09-22
+re-run against `upstream/main` `6f4751a142c` is CLEAN for the infra branch, all
+N branches (N13 both onto main and stacked), and the shims/illink follow-ups;
+only the archived `tls-flag-cleanup` conflicts (its change is already inside
+#132953). See the plan's 2026-09-22 update.
 
 ---
 
@@ -347,7 +351,8 @@ openharmony-arm64; the E2E AOT harnesses stay disabled on OHOS.
 ```
 The Microsoft.NETCore.Platforms RID graphs do not know the openharmony RIDs
 yet, so the SDK cannot restore or build for them. Add the openharmony,
-openharmony-arm and openharmony-arm64 / openharmony-x64 entries and a
+openharmony-arm and openharmony-arm64 / openharmony-x64 entries (the top-level
+openharmony RID imports `any`, like the other non-unix top-level OS RIDs) and a
 RidGraphOverrideRuntimeJson / RidGraphOverridePortableJson hook in
 PublishRuntimeIdentifierGraphFiles that lets the SDK layout use local graph
 copies instead of the package copies. Per am11's 2026-09-21 review on #132953,
@@ -368,8 +373,10 @@ crossgen2's platform whitelist has no openharmony entry.
 `dotnet publish -r openharmony-arm64` resolves the RID; R2R resolution maps to
 linux. Covered by the fork's `ohos-full-build` CI.
 
-**Base/size:** `upstream/main` `530aaa51fa`; tip `3c147cedbc`; 5 files,
-+5189/-4 (the graphs are snapshot data). Depends on the runtime shipping the
+**Base/size:** `upstream/main` `530aaa51fa`; tip `123a665d9b1` (the `any`
+follow-up on top of `3c147cedbc`); 5 files, +5189/-4 (the graphs are snapshot
+data). `openharmony-arm` stays in the graph snapshot only — the bundled lists
+ship arm64/x64 (arm32 parked 2026-09-21). Depends on the runtime shipping the
 openharmony RIDs and packs:
 the bundled RID lists (crossgen2/ILCompiler/runtime packs and the ASP.NET Core
 runtime packs) only resolve to real packages once the runtime/aspnetcore ports
@@ -409,5 +416,34 @@ SDK build:
 **Test:** on-device `dotnet --info` and a build without `DOTNET_*` env vars;
 the fork's `ohos-full-build` CI.
 
-**Base/size:** stacked on `pr/ohos-sdk-rids`; tip `d97231e55c`; 17 files,
-+182/-15 (2 commits).
+**Base/size:** stacked on `pr/ohos-sdk-rids`; tip `ce1846b0dfa` (carries the
+same `any` follow-up commit; rebasing onto the updated S1a drops it as already
+applied); 17 files, +182/-15 (2 commits before the follow-up).
+
+---
+
+## A1 — `pr/ohos-aspnet-rids` (aspnetcore-ohos)
+
+**Title:** Disable NativeAOT and add the openharmony RIDs to the aspnetcore build
+
+**Body:**
+```
+openharmony is not a NativeAOT target in this repo: override
+NativeAotSupported=false for openharmony targets (TargetOsName=openharmony or
+an openharmony-* runtime identifier) so the bundled tools and the E2E AOT
+harnesses do not try to restore or link an ILCompiler pack that does not
+exist. The override has no '== ''' guard, so it also wins under src/Tools,
+which imports the vendored NativeAotSupported.props first.
+
+Add openharmony-x64/openharmony-arm64 to SupportedRuntimeIdentifiers,
+BundledToolTargetRuntimeIdentifiers and the Microsoft.NETCore.App.Runtime /
+Crossgen2 package reference lists so the shared framework and the bundled
+tools can build for the port. openharmony-arm is intentionally absent: the
+port only ships x64 and arm64.
+```
+
+**Test:** build the shared framework and the bundled tools with
+`-p:TargetRuntimeIdentifier=openharmony-arm64`; covered end-to-end by the
+fork's `ohos-full-build` CI.
+
+**Base/size:** `upstream/main` `7b520eb5d3`; tip `b7070c3748`; 5 files, +21/-4.
