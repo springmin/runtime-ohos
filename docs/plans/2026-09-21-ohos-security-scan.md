@@ -34,7 +34,7 @@ Verification already produced by the fix batches (not re-run for this report):
 
 - host: `ohos-workload/scripts/build-host.sh` + `scripts/selfsign.sh` — build + self-sign OK, **120 exported symbols identical to the pre-fix baseline**.
 - harness: `ohos-workload/test/maui-platform-verify` — 244 `[verify]` lines, 0 Unhandled, `perf within=True`; README documents `dotnet build -v:q && dotnet bin/Debug/net11.0/verify.dll | grep -c '\[verify\]'`.
-- shell: `TYPECHECK=1 ohos-workload/scripts/build-arkts-shell.sh` — 0 ArkTS errors, `modules.abc` = 88756 B; slice build 0 errors.
+- shell: `TYPECHECK=1 ohos-workload/scripts/build-arkts-shell.sh` — 0 ArkTS errors, `modules.abc` = 96268 B at the latest shell revision (`ohos-workload 0e9e248`); slice build 0 errors.
 - CI: workflow runs `35569919416`, `35569919487`, `35569919479` all success after C8.
 
 Severity below is exploitability × impact at three coarse levels (High/Medium/Low) plus Info; it is **not**
@@ -87,7 +87,7 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
 
 - **B1 fabricated `AppOrigin` in Blazor IPC — High, fixed.** Evidence `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyBlazorWebViewHandler.cs:324-358` (envelope + origin/id validation); shell side `ohos-workload/packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/templates/ets/pages/Index.ets:311-330` (`__OHORIGIN|<document url>|<document id>` envelope, id selection). Attack path: a page script sent a bare message that was dispatched to `WebViewManager.MessageReceived` with a fabricated `AppOrigin`. Fix: require the shell envelope, match the Blazor origin and this handler's registration id; reject and log mismatches. Verification: the shared envelope parser rejection cases are pinned by the hybrid checks (`Program.cs:1215-1227`); the Blazor origin/id gate itself has no dedicated harness pin; shell typecheck 0 errors. Residual: on-device untested.
 - **B2 origin-independent bridge + invoke-result forgery — High, fixed.** Evidence `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyHybridWebViewHandler.cs:646-746` (origin check + single-handler `ResolveMessageHandler`), `:779-791`, `:862-877` (completion must match handler + page id), `:89,830` (`PendingInvoke`). Attack path: hybrid messages were dispatched without a document binding, and a page that harvested a task id could complete another page's JS invocation. Fix: origin/id match, one handler per dispatch, `PendingInvoke` ownership check. Verification: harness pins foreign-origin/foreign-id/missing-envelope rejection (`Program.cs:1215-1227`); 244 checks/0 Unhandled.
-- **B3 app → page delivery to the wrong document — Medium, fixed.** Evidence `maui-ohos/.../OpenHarmonyHybridWebViewHandler.cs:609-636` (marker-checked eval), `maui-ohos/.../OpenHarmonyBlazorWebViewHandler.cs:503-527`; shell stamping `Index.ets:355-370`. Attack path: a host → page eval was delivered to whatever document was currently loaded, even a foreign one. Fix: the shell stamps `window.__ohHybridId` / `window.__ohBlazorId` only into documents it served for that registration; deliveries skip when the marker is missing/mismatched. Verification: shell typecheck, `modules.abc` 88756 B, static review of the skip path; no dedicated harness pin for the marker skip. Residual: on-device untested.
+- **B3 app → page delivery to the wrong document — Medium, fixed.** Evidence `maui-ohos/.../OpenHarmonyHybridWebViewHandler.cs:609-636` (marker-checked eval), `maui-ohos/.../OpenHarmonyBlazorWebViewHandler.cs:503-527`; shell stamping `Index.ets:355-370`. Attack path: a host → page eval was delivered to whatever document was currently loaded, even a foreign one. Fix: the shell stamps `window.__ohHybridId` / `window.__ohBlazorId` only into documents it served for that registration; deliveries skip when the marker is missing/mismatched. Verification: shell typecheck, `modules.abc` 96268 B at the latest shell revision, static review of the skip path; no dedicated harness pin for the marker skip. Residual: on-device untested.
 - **B4 kit wire-protocol injection — Medium, fixed.** Evidence shell `Index.ets:579-601` (`escapeRecordField`:
   `\` → `\\`, tab/LF/CR → `\t`/`\n`/`\r`); managed decoder
   `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyCalendarContacts.cs:408-567` (`OpenHarmonyKitRecords`,
@@ -122,7 +122,8 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
   id/URL the shell itself cancelled), and a rejected, expired or malformed request leaves the load blocked.
   Verification: the B6 scenario asserts
   `approval`/`cancelBlocked`/`channelScoped`/`malformedInert`/`startedSuppressed`/`oneShot` all true; shell
-  `TYPECHECK=1` 0 ArkTS errors; slice build 0 errors; those pins are now committed (`ohos-workload d636436`)
+  `TYPECHECK=1` 0 ArkTS errors, `modules.abc` 96268 B at the latest shell revision (`ohos-workload
+  0e9e248`); slice build 0 errors; those pins are now committed (`ohos-workload d636436`)
   and the harness reports 247 `[verify]` lines (244 + 2 B7 pins + 1 B6 pin), 0 Unhandled and
   `perf within=True`; CI's floor (224) is unchanged. Commits `ohos-workload 57a147c` (three `Index.ets` copies
   byte-identical), `maui-ohos e2d68ddf`. Accepted risks (device-unverified): the
@@ -145,7 +146,7 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
 
 ### Build / supply chain (C)
 
-- **C1 signing secrets — High, fixed.** Evidence `ohos-workload/scripts/sign-huawei.sh:13-17,39,42-47` (private `mktemp -d` 0700, traps, env-passed secret), `:50-57`; `ohos-workload/scripts/sign-for-device.sh` (env forwarding); doc `runtime-ohos docs/plans/2026-09-19-ohos-signing-and-udid-guide.md` (commit `8a600e49fa40`). Attack path: the decrypted p12 password was written to a predictable shared-scratch path before `chmod`, and a fixed-path `decrypt.js` was executed verbatim, so any same-UID process could tamper with the helper and harvest the Studio password (the encrypted password also travelled in node's argv). Fix: helper generated into a private temp dir removed on exit/INT/TERM/HUP, secret via environment, stale shared-scratch leftovers deleted. Verification: script inspection. Residual: `hap-sign-tool` still needs the password in `-keyPwd`/`-keystorePwd` argv (no tty-less stdin mode) — documented.
+- **C1 signing secrets — High, fixed.** Evidence `ohos-workload/scripts/sign-huawei.sh:13-17,39,42-47` (private `mktemp -d` 0700, traps, env-passed secret), `:50-57`; `ohos-workload/scripts/sign-for-device.sh` (env forwarding); doc `runtime-ohos docs/plans/2026-09-19-ohos-signing-and-udid-guide.md` (commit `8a600e49fa40`). Attack path: the decrypted p12 password was written to a predictable shared-scratch path before `chmod`, and a fixed-path `decrypt.js` was executed verbatim, so any same-UID process could tamper with the helper and harvest the Studio password (the encrypted password also travelled in node's argv). Fix: helper generated into a private temp dir removed on exit/INT/TERM/HUP, secret via environment, stale shared-scratch leftovers deleted. Verification: script inspection. Residual: interactive mode (`-pwdInputMode 1`) now auto-wraps in `script -qec` when stdin is not a tty (`ohos-workload 334df0b`; guide `runtime-ohos ef089ce5537`), so `hap-sign-tool` needs the password in `-keyPwd`/`-keystorePwd` argv only when neither a tty nor `script(1)` exists — documented. Caveat: only util-linux `script(1)` was probed; pty echo behaviour with the real tool is untested (device-unverified).
 - **C2 installer downloads — High, fixed.** Evidence `sdk-ohos/eng/ohos-install/install-dotnet-ohos.sh:156-185` (`sha256_of`/`verify_sha256`), `:197-229` (digest resolution), `:231-274` (`download_verified`, `verify_local_file`), `:330` (selfsign), `:375-383` (local/cached tarballs). Attack path: a downloaded selfsign binary could be executed, and tarballs extracted, before any digest check. Fix: downloads land in `mktemp` files, are sha256-verified before exec/extract, and fail closed when no digest resolves; `ALLOW_UNVERIFIED=1` is the explicit insecure opt-out. Verification: script inspection; commit `sdk-ohos d57e58e28c`.
 - **C3 runtime-pack digest gate — High, fixed.** Evidence `ohos-workload/scripts/prepare-packs.sh:19-22` (fixed 64-char digest of the published nupkg), `:55-80` (`digest_artifact`, refuse without expectation), `:146-153` (stale download cache dropped). Attack path: the recorded digest was 60 chars so both checks could never pass, and an explicit artifact argument was unpacked with no verification at all. Fix: every unpacked artifact must match a 64-char expectation (`--sha256`/`RUNTIME_PACK_SHA256`, or a `<artifact>.sha256` record written once with `--record-sha256` for local builds), else refuse. Verification: commit `ohos-workload 083c9dd0cece`; fail-closed branches by inspection (no pack rebuild for this report).
 - **C4 publish integrity — Medium, fixed.** Evidence `ohos-workload/scripts/publish-workload-release.sh:54-57,93-114` (independent expected digest required for a real publish), `:119-160` (`published_asset_digest`, `guard_clobber`: `--clobber` only when the published digest matches, otherwise `--allow-clobber-mismatch` is required and logged). Attack path: publishing trusted only the local artifact, and `--clobber` could replace a different published asset blindly. Fix: fail-closed digest gate plus digest-compare clobber guard. Verification: commit `083c9dd0cece`; inspection only.
@@ -195,26 +196,37 @@ No finding after investigation; none of these became a fix.
 3. **Host residuals N1-N4 fixed.** Found by the same pass: pthread_create failure cleanup, unlocked
    pending-lifecycle flush, unlocked `join_app`, `node_content` clear/pre-handle registration; fixed in
    `ohos-workload fed30c9`. Host rebuilt (120 exported symbols unchanged); harness 256 checks, 0 Unhandled.
-4. **C1 narrowed.** `hap-sign-tool` has no file/env/fd password input, but an interactive tty mode
-   (`-pwdInputMode 1`) is now supported by `sign-huawei.sh` (`ohos-workload 81261b27`, guide
-   `runtime-ohos c82becfe18a`); the argv residual now applies only to the non-tty/CI path.
-5. **B5 guard tightened, two corners accepted.** Drive prefixes/NUL rejected (`maui-ohos be5d471f`); the
-   documented corners are one shell docId per document (a second `HybridWebView` on the same page can
-   re-attribute an older page's messages) and, device-only, if the `dotnetHost` proxy is injected into
-   subframes a hostile iframe's raw messages would attribute to the main document (invoke completion still
-   needs the unguessable taskId).
+4. **C1 narrowed twice.** `hap-sign-tool` has no file/env/fd password input; `sign-huawei.sh` now
+   supports interactive `-pwdInputMode 1` (`ohos-workload 81261b27`, guide `runtime-ohos c82becfe18a`)
+   and, with stdin not a tty, auto-wraps that mode in `script -qec` with the password fed through the
+   pty (`ohos-workload 334df0b`, guide `runtime-ohos ef089ce5537`). The argv residual now applies only
+   when neither a tty nor `script(1)` exists; only util-linux `script(1)` was probed and pty echo with
+   the real tool is untested.
+5. **B5 guard tightened, one corner accepted, one confirmed real and fixed.** Drive prefixes/NUL rejected
+   (`maui-ohos be5d471f`); the accepted corner is one shell docId per document (a second `HybridWebView`
+   on the same page can re-attribute an older page's messages). The device-only subframe `dotnetHost`
+   proxy hypothesis was confirmed real by the local SDK declarations (the proxy is registered into all
+   frames, iframes included) and fixed in the shell (`ohos-workload 0e9e248`; see Residual Risk) —
+   device-unverified.
+6. **Installer end-to-end dry-run, three defects fixed.** An `sdk-ohos` installer dry-run found and fixed
+   an SDK temp-tarball leak (now trapped and cleaned up after extraction), a missing/mismatched workload
+   bundle that returned 0 (now non-zero unless `ALLOW_MISSING_WORKLOAD=1`), and `curl` progress on stdout
+   (now `-sS`); `sdk-ohos f98392bca9`, 33/33 harness checks, no caller changes needed.
 
 ## Residual Risk
 
 - **No on-device verification of any fix**: device install is blocked by org policy. All A/B/C verification
   above, including the independent pass and every follow-up fix (`ohos-workload
-  ab6bb55`/`3d8e7d0`/`4ce13de`/`0579f2b`/`fed30c9`/`81261b27`, `maui-ohos be5d471f`, `runtime-ohos
-  a363616fe4f`), is off-device (host rebuild, harness, typecheck, CI) unless stated otherwise.
-- **`hap-sign-tool` argv password (narrowed)**: the p12 password remains visible in the signing child's
-  `-keyPwd`/`-keystorePwd` argv only on the non-tty/CI path; `hap-sign-tool` exposes no file/env/fd input,
-  but `sign-huawei.sh` now supports an interactive tty mode (`-pwdInputMode 1`, `ohos-workload 81261b27`;
-  guide `runtime-ohos c82becfe18a`). Documented in `ohos-workload/scripts/sign-huawei.sh` and the signing
-  guide.
+  ab6bb55`/`3d8e7d0`/`4ce13de`/`0579f2b`/`fed30c9`/`81261b27`/`334df0b`/`0e9e248`,
+  `maui-ohos be5d471f`, `sdk-ohos f98392bca9`, `runtime-ohos a363616fe4f`/`ef089ce5537`), is off-device
+  (host rebuild, harness, typecheck, CI) unless stated otherwise.
+- **`hap-sign-tool` argv password (narrowed further)**: the p12 password remains visible in the signing
+  child's `-keyPwd`/`-keystorePwd` argv only when the call has neither a tty nor `script(1)`;
+  `hap-sign-tool` exposes no file/env/fd input, but `sign-huawei.sh` now auto-wraps interactive mode
+  (`-pwdInputMode 1`) in `script -qec` off-tty with the password fed through the pty (`ohos-workload
+  81261b27` + `334df0b`; guides `runtime-ohos c82becfe18a` + `ef089ce5537`). Documented in
+  `ohos-workload/scripts/sign-huawei.sh` and the signing guide. Caveat: only util-linux `script(1)` was
+  probed; the real tool's pty echo behaviour is device-unverified.
 - **Pre-digest GitHub release assets** still need an explicit sha256 pin/override; without one the installer fails closed (or the operator sets `ALLOW_UNVERIFIED=1`, which is insecure by design).
 - **npm transitive dependencies** used by `markdownlint` (`npx`) are not digest-pinned; noted `ohos-workload dc6b66baeef7`.
 - **B1/B3 hybrid/Blazor flows are on-device untested**; the off-device pins prove the reject paths, not ArkWeb's actual document/marker behaviour.
@@ -232,9 +244,15 @@ No finding after investigation; none of these became a fix.
   method/body); a redirect produces a second, correctly re-checked `Navigating`.
 - **B5 one shell docId per document (accepted)**: a second `HybridWebView` on the same page can
   re-attribute an older page's messages.
-- **B5 subframe `dotnetHost` proxy (device-only, accepted)**: if the proxy is injected into subframes, a
-  hostile iframe's raw messages would attribute to the main document; invoke completion still requires the
-  unguessable taskId.
+- **B5 subframe `dotnetHost` proxy (confirmed real, fixed in the shell, device-unverified)**: the local SDK
+  declarations state the proxy is registered into all frames including iframes
+  (`@ohos.web.webview.d.ts:4664,4694`, `component/web.d.ts:8252,8270`), so a hostile iframe's raw messages
+  would have attributed to the main document. The shell now gates the hybrid intercepted-response paths on
+  the main frame (`event.request.isMainFrame()`) and adds a safe, fail-open calling-frame guard
+  (`getLastJavascriptProxyCallingFrameUrl()` drops only a non-empty url differing from the top url) —
+  `ohos-workload 0e9e248`, shell typecheck 0 ArkTS errors, `modules.abc` 96268 B. The calling-frame
+  semantics remain device-unverified, and the same-origin-subframe case is deliberately allowed (same
+  trust domain).
 - **B7 residual logging gaps (accepted, log-only)**: the launcher/browser and image "file not found"
   logs now reuse `SanitizeUrlForLog` (`maui-ohos 883e2b73`), but the image handler's general failure log
   (`image load failed: {ex.Message}`, ~line 46) can still embed a raw path, and a filename literally
