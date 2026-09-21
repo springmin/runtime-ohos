@@ -2159,22 +2159,6 @@
         "linux-x86"
       ]
     },
-    "openharmony": {},
-    "openharmony-arm": {
-      "#import": [
-        "openharmony"
-      ]
-    },
-    "openharmony-arm64": {
-      "#import": [
-        "openharmony"
-      ]
-    },
-    "openharmony-x64": {
-      "#import": [
-        "openharmony"
-      ]
-    },
     "linux-ppc64le": {
       "#import": [
         "linux",
