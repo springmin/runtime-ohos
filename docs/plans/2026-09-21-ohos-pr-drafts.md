@@ -420,30 +420,3 @@ the fork's `ohos-full-build` CI.
 same `any` follow-up commit; rebasing onto the updated S1a drops it as already
 applied); 17 files, +182/-15 (2 commits before the follow-up).
 
----
-
-## A1 — `pr/ohos-aspnet-rids` (aspnetcore-ohos)
-
-**Title:** Disable NativeAOT and add the openharmony RIDs to the aspnetcore build
-
-**Body:**
-```
-openharmony is not a NativeAOT target in this repo: override
-NativeAotSupported=false for openharmony targets (TargetOsName=openharmony or
-an openharmony-* runtime identifier) so the bundled tools and the E2E AOT
-harnesses do not try to restore or link an ILCompiler pack that does not
-exist. The override has no '== ''' guard, so it also wins under src/Tools,
-which imports the vendored NativeAotSupported.props first.
-
-Add openharmony-x64/openharmony-arm64 to SupportedRuntimeIdentifiers,
-BundledToolTargetRuntimeIdentifiers and the Microsoft.NETCore.App.Runtime /
-Crossgen2 package reference lists so the shared framework and the bundled
-tools can build for the port. openharmony-arm is intentionally absent: the
-port only ships x64 and arm64.
-```
-
-**Test:** build the shared framework and the bundled tools with
-`-p:TargetRuntimeIdentifier=openharmony-arm64`; covered end-to-end by the
-fork's `ohos-full-build` CI.
-
-**Base/size:** `upstream/main` `7b520eb5d3`; tip `b7070c3748`; 5 files, +21/-4.
