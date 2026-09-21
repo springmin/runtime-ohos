@@ -347,13 +347,16 @@ openharmony-arm64; the E2E AOT harnesses stay disabled on OHOS.
 ```
 The Microsoft.NETCore.Platforms RID graphs do not know the openharmony RIDs
 yet, so the SDK cannot restore or build for them. Add the openharmony,
-openharmony-arm64 and openharmony-x64 entries to local copies of both graphs
-(runtime.json and PortableRuntimeIdentifierGraph.json; openharmony is a
-standalone base RID, like the other community platforms) and a
+openharmony-arm and openharmony-arm64 / openharmony-x64 entries and a
 RidGraphOverrideRuntimeJson / RidGraphOverridePortableJson hook in
-PublishRuntimeIdentifierGraphFiles that lets the SDK layout use them instead of
-the package copies. Once the runtime ships the RIDs in Microsoft.NETCore.Platforms
-the overrides are no longer needed.
+PublishRuntimeIdentifierGraphFiles that lets the SDK layout use local graph
+copies instead of the package copies. Per am11's 2026-09-21 review on #132953,
+`runtime.json` is frozen: the upstream-facing override is the **portable**
+graph (`PortableRuntimeIdentifierGraph.openharmony.json`); the legacy
+`RuntimeIdentifierGraph.openharmony.json` copy is fork bootstrap plumbing (the
+stock bootstrap SDK ships a frozen legacy graph), so it stays out of the
+upstream PR. Once the runtime ships the RIDs in Microsoft.NETCore.Platforms
+the portable override is no longer needed.
 
 Also list the two shipped openharmony RIDs in the bundled RID lists (apphost,
 crossgen2/ILCompiler, runtime packs, ASP.NET Core runtime packs) and map the

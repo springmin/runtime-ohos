@@ -34,6 +34,12 @@ pack/SDK/aspnetcore lists stay arm64/x64 (N13 `fed16fdbdc9`). Feasibility and
 the enablement plan are recorded in
 `docs/plans/2026-09-21-ohos-arm32-support-gap.md`.
 
+**Update (2026-09-21, RID graph):** per am11's review on #132953, `runtime.json`
+is frozen — the openharmony RIDs moved to `PortableRuntimeIdentifierGraph.json`
+(PR head `9e4af17017`; rehearsal CLEAN, infra rebase `b1b8512ae5`). The runtime
+feature branch mirrors it (`a65f978d85d`); §5.1/§6.3 and the S1a draft text
+were updated accordingly. The reply to am11 is held until the PR's CI is green.
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
@@ -367,8 +373,10 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
 ## 5. Open decision points
 
 1. **RID naming — RESOLVED 2026-09-13: `openharmony`.** Both open PR branches
-   carry the rename (`pr/ohos-infra` `runtime.json` `"openharmony"` + arch
-   RIDs; `pr/ohos-sandbox-fixes` tip `cece42439a1`, rename commit
+   carry the rename (`pr/ohos-infra` `PortableRuntimeIdentifierGraph.json`
+   `"openharmony"` + arch RIDs — the entries live in the **portable** graph:
+   `runtime.json` is frozen and must not be edited, per am11's 2026-09-21
+   review; `pr/ohos-sandbox-fixes` tip `cece42439a1`, rename commit
    `6f124bf2fb7`), and the three forks are in sync (`runtime-ohos`
    `d90f0865d92`, `aspnetcore-ohos` `5a6202d929`, sdk-ohos override graphs).
    Historical note: jkotas leaned `openharmony` 09-04; am11 argued `ohos`
@@ -419,6 +427,9 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    survives both restore modes exists.
 
 3. **SDK RID-graph overrides re-check** — `eng/RuntimeIdentifierGraph.openharmony.json` /
-   `eng/PortableRuntimeIdentifierGraph.openharmony.json`. These are local bootstrap injections;
-   drop them once the upstream Platforms package carries the openharmony RID (inclusion-audit open
-   item 1).
+   `eng/PortableRuntimeIdentifierGraph.openharmony.json`. Per am11's 2026-09-21 review on
+   #132953, the upstream-facing side is the **portable** graph (the frozen `runtime.json` is only
+   extended at package build time); drop the portable override once the upstream Platforms package
+   carries the openharmony RID. The legacy `RuntimeIdentifierGraph.openharmony.json` override stays
+   fork-local bootstrap injection (stock bootstrap SDKs ship a frozen legacy graph), not
+   upstream-bound.
