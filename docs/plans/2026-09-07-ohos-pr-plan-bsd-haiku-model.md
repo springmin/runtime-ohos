@@ -78,8 +78,13 @@ refreshed to the current 11-file set and references dotnet/arcade#17608.
 
 **Arcade review round 2 (2026-09-21):** jkotas reviewed #17608 and asked for the
 long name; renamed the CMake variable `OHOS` → `OPENHARMONY` in `4975a234c`
-(reply `discussion_r4066587172`). The first commit was 10/10 green; checks
-rerun after the rename.
+(reply `discussion_r4066587172`). The checks re-ran after the rename and are
+**10/10 green** (2026-09-21T22:39Z).
+
+**End-to-end validation (2026-09-22):** `ohos-full-build` run `35659586206`
+(sdk-ohos, all three feature branches) **success in 46m27s** — the runtime +
+sdk RID graphs with the `any` fallback pass the full runtime → aspnetcore →
+sdk chain.
 
 **#132953 CI result (head `be8e6f6988d`):** 148 success / 12 neutral / 4 red:
 `Build Analysis`, `Monitor Helix Jobs` (both chronic infra reds on this PR),
