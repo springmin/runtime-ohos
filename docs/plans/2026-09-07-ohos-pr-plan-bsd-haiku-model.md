@@ -177,7 +177,7 @@ WASM R2R refactor — conflict pre-solved: evidence
 `3eb1ab8f51c` (4+), N9 `pr/ohos-wx-default` `bb7e8e69e76` (4+/2-), N10
 `pr/ohos-crossgen-corelib` `169c072d07c` (11+/1-), N11 `pr/ohos-aot-unix`
 `91a2e8e5a62` (6+/1-), N12 `pr/ohos-aot-singleentry` `da4dc098a4a` (4+), N13
-`pr/ohos-packs` `d2d512a2999` (44+/6-), N14 `pr/ohos-tryrun` `c2a5e90db55`
+`pr/ohos-packs` `fed16fdbdc9` (44+/6-), N14 `pr/ohos-tryrun` `c2a5e90db55`
 (9+), N15 `pr/ohos-libs-tfm` `01667c2c6d5` (23+/3-), N16 `pr/ohos-console`
 `94f72514835` (6+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
@@ -201,8 +201,9 @@ current `upstream/main` `35423f17d6e` (the 09-14/09-15 rehearsals were against
 N12, N14, N15) → `9fa88a8be6`, `7ff38eea4c`, `b3c6c90155`, `47e327066b`,
 `8c48f3cb85`, `0b218e389e`, `8c75377751`, `2d71c78d1f`, `80fa4f3374`,
 `e21b963ea7`, `729445273c`, `9b2efec3f9`, `39422e0ec6`; N16 →
-`77f4ead81d`; N13 → `2d599725fa` (onto `main`) and `23f08fac5f` (onto
-post-infra); follow-ups → `tls-flag-cleanup` `79e964f1bb`, `shims-tfm-cleanup`
+`77f4ead81d`; N13 → `628239fd4d` (onto `main`) and `67af5e8820` (onto
+post-infra; N13 was amended on 2026-09-21 to drop `openharmony-arm` from the
+runtime/apphost pack RID lists, then re-rehearsed); follow-ups → `tls-flag-cleanup` `79e964f1bb`, `shims-tfm-cleanup`
 `58b546de89`, `illink-ntlm` `86abe3ee71`. Evidence:
 `/data/storage/el2/base/tmp/opencode/rebase-rehearsal-20260921.txt`.
 

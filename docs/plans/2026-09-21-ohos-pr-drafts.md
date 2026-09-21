@@ -23,7 +23,7 @@ property) has landed. `upstream/main` at the last rehearsal: `35423f17d6e`
 | N10 | `pr/ohos-crossgen-corelib` | `169c072d07c` | `src/coreclr/crossgen-corelib.proj` | 11+/1- |
 | N11 | `pr/ohos-aot-unix` | `91a2e8e5a62` | `AOT/Microsoft.NETCore.Native.Unix.targets` | 6+/1- |
 | N12 | `pr/ohos-aot-singleentry` | `da4dc098a4a` | `AOT/Microsoft.DotNet.ILCompiler.SingleEntry.targets` | 4+ |
-| N13 | `pr/ohos-packs` | `d2d512a2999` | `targetingpacks.targets`, `ds-portable-rid.c`, `ILCompiler.pkgproj`, `CoreCLR.sfxproj` | 44+/6- |
+| N13 | `pr/ohos-packs` | `fed16fdbdc9` | `targetingpacks.targets`, `ds-portable-rid.c`, `ILCompiler.pkgproj`, `CoreCLR.sfxproj` | 44+/6- |
 | N14 | `pr/ohos-tryrun` | `c2a5e90db55` | `eng/native/tryrun.cmake` | 9+ |
 | N15 | `pr/ohos-libs-tfm` | `01667c2c6d5` | libraries TFM mapping (6 files) | 23+/3- |
 | N16 | `pr/ohos-console` | `94f72514835` | `System.Console/src/System.Console.csproj` | 6+/3- |
@@ -253,11 +253,11 @@ artifacts present; `ResolvedRuntimePack` override scoped to the target RID.
 Note: the sfxproj hunk sits on top of #132953's sfxproj changes — submit
 after #132953 (as with all branches).
 
-**Open item:** the runtime / NativeAOT / apphost pack RID lists include
-`openharmony-arm`, while A1 (aspnetcore) deliberately ships only arm64/x64.
-Confirm the runtime port claims 32-bit arm support (the #132953 RID graph has
-`openharmony-arm`); otherwise drop it from the three pack lists for
-consistency with the supported-arch matrix.
+**Resolved (2026-09-21):** `openharmony-arm` was dropped from the runtime and
+apphost pack RID lists (tip `fed16fdbdc9`), matching A1 (arm64/x64 only). The
+#132953 RID graph keeps `openharmony-arm` as an addressable RID — the graph
+entry alone does not promise a pack; the pack lists are the published set and
+now agree with the supported-arch matrix.
 
 ---
 
