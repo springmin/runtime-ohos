@@ -100,8 +100,8 @@ hap-sign-tool sign-app \
 ```bash
 cd ohos-workload
 
-# 基本用法（configDir 默认 ~/Documents/ohos/config；encryptedPassword 可省，
-# 省略时复用上次解密的明文缓存）
+# 基本用法（configDir 默认 ~/Documents/ohos/config；encryptedPassword 必填，也可用
+# OHOS_ENC_PWD 环境变量传入以免出现在 argv；明文不再落盘缓存）
 sh scripts/sign-for-device.sh --huawei [configDir] [encryptedPassword]
 
 # 指定输入/输出（--out 默认 hello-maui-app-huawei.hap）
@@ -118,8 +118,9 @@ sh scripts/sign-for-device.sh --show-profile-devices --huawei ~/Documents/ohos/c
    `<hvigor-ohos-plugin>/src/utils/decipher-util.js`（`ARKTS_PLUGIN_DIR`，默认 `~/arkts-build/…`）与
    SDK 的 `toolchains/lib/hap-sign-tool` 存在；
 2. 若 `build-profile.json5` 里的密码是 DevEco 加密值（`00000020…`），用**插件自己的 `DecipherUtil`**
-   配合 `config/material/{fd,ac,ce}` 就地解密（明文只在本地 `/data/storage/el2/base/tmp/opencode/ohos-pwd.txt`，
-   权限 600，下次自动复用）；也可显式传 `encryptedPassword`；
+   配合 `config/material/{fd,ac,ce}` 就地解密：解密助手临时生成在私有 `mktemp -d`（0700，退出/信号时删除），
+   加密密码经环境变量传入、明文只留在进程内存；不再写入共享目录（旧版 `…/ohos-pwd.txt` 缓存已移除）。
+   encryptedPassword 可通过第四个参数或 `OHOS_ENC_PWD` 环境变量传入；
 3. `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign` 用对方的
    p12/cer/p7b 签名；
 4. **`hap-sign-tool verify-app` 通过后才打印路径与 SHA-256**（失败即 `die`，不会给出未验证的产物）。
@@ -155,7 +156,9 @@ bundle 身份只能靠重新打包决定。`--version` 在 `--huawei` 模式下�
   （重新生成 p7b）后把新的 `config` 目录发给我们；我们无法为对方的证书/profile 增删设备。
 - **加密密码需要 hvigor 插件**：Studio 的 `00000020…` 密码必须用 `@ohos/hvigor-ohos-plugin` 的
   `DecipherUtil` 配合 `config/material/{fd,ac,ce}` 解密；只发 p12/cer/p7b 而没有 `material`/插件时无法代签。
-- 我们不修改对方的证书材料；明文密码只缓存在本地 `…/ohos-pwd.txt`（600），不随产物分发。
+- 我们不修改对方的证书材料；解密后的明文密码不再缓存到任何路径（旧版共享 scratch 缓存已移除）。
+  `hap-sign-tool` 只接受命令行密码（`pwdInputMode=1` 需要真实终端），因此签名调用期间明文会短暂出现在
+  该子进程的 `-keyPwd/-keystorePwd` argv 中，进程结束即消失，不落盘、不随产物分发。
 
 ---
 
