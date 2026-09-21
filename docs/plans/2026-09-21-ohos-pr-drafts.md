@@ -25,8 +25,8 @@ property) has landed. `upstream/main` at the last rehearsal: `35423f17d6e`
 | N12 | `pr/ohos-aot-singleentry` | `da4dc098a4a` | `AOT/Microsoft.DotNet.ILCompiler.SingleEntry.targets` | 4+ |
 | N13 | `pr/ohos-packs` | `fed16fdbdc9` | `targetingpacks.targets`, `ds-portable-rid.c`, `ILCompiler.pkgproj`, `CoreCLR.sfxproj` | 44+/6- |
 | N14 | `pr/ohos-tryrun` | `c2a5e90db55` | `eng/native/tryrun.cmake` | 9+ |
-| N15 | `pr/ohos-libs-tfm` | `01667c2c6d5` | libraries TFM mapping (6 files) | 23+/3- |
-| N16 | `pr/ohos-console` | `94f72514835` | `System.Console/src/System.Console.csproj` | 6+/3- |
+| N15 | `pr/ohos-libs-tfm` | `588cd8e1d98` | libraries TFM mapping (6 files) | 23+/3- |
+| N16 | `pr/ohos-console` | `c5e5fb01fbd` | `System.Console/src/System.Console.csproj` | 6+/3- |
 
 Notes: N13 ships **without** the fork-local `OpenHarmonyInTreeR2R` gate and is
 **based on latest `upstream/main`** (its sfxproj patch context had to track
@@ -39,10 +39,9 @@ upstream (no fork-specific references). Review-fix pass 2026-09-15: N15 defaults
 fixes the ILCompiler comment/predicate. Cleanup pass (P2, 2026-09-15): N9/N10/N1
 comments neutralized, dead `ohos` RID mapping removed.
 
-**Review-risk notes:** N15's shims clause still keys off `'$(TargetOS)' ==
-'openharmony'` while the rest of the set uses `TargetsOpenHarmony` (available
-there — the root `Directory.Build.props` imports `eng/RuntimeIdentifier.props`)
-— consider unifying so reviewers see one predicate. N16 suppresses CA1416
+**Review-risk notes:** N15's shims clause now uses `TargetsOpenHarmony`
+(resolved 2026-09-21; tip `588cd8e1d98`, N16 rebased onto it as `c5e5fb01fbd`),
+so the whole set shares one predicate. N16 suppresses CA1416
 (`NoWarn`) only for the neutral-TFM OpenHarmony case; keep the "drops out once
 the TFM mapping lands" sentence in the PR body so the suppression is clearly
 temporary.
