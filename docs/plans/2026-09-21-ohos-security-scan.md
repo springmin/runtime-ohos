@@ -4,11 +4,14 @@ Scope: `runtime-ohos`, `aspnetcore-ohos`, `ohos-workload`, `maui-ohos`, `sdk-oho
 
 ## Verdict
 
-**PASS WITH FINDINGS.** 23 candidates were triaged: 20 fully fixed, 1 partially fixed (B4 shell half; the
-managed decoder is still in progress), and 2 in progress (B6, B7). All High-severity host, IPC and
-supply-chain findings are fixed in the scanned trees. A further 16 areas were investigated and closed with
-no finding. No fix has been verified on a device (device install is blocked by org policy), so every
-device-visible behaviour claim below is explicitly marked as device-unverified.
+**PASS WITH FINDINGS.** 23 candidates were triaged and all 23 are now resolved: 22 fully fixed plus B6
+fixed by construction (implemented and off-device verified, but resting on event-ordering assumptions that
+only a device can confirm — see the accepted risks under Residual Risk). Since the initial scan the B4
+managed decoder, B6 navigation interception and B7 status-log hardening all landed (fix commits are cited
+per finding below). All High-severity host, IPC and supply-chain findings are fixed in the scanned trees. A
+further 16 areas were investigated and closed with no finding. No fix has been verified on a device (device
+install is blocked by org policy), so every device-visible behaviour claim below is explicitly marked as
+device-unverified.
 
 ## Scope
 
@@ -35,7 +38,9 @@ Verification already produced by the fix batches (not re-run for this report):
 - CI: workflow runs `35569919416`, `35569919487`, `35569919479` all success after C8.
 
 Severity below is exploitability × impact at three coarse levels (High/Medium/Low) plus Info; it is **not**
-a CVSS claim. Status: F = fixed (off-device verified), P = partial, W = work in progress.
+a CVSS claim. Status: F = fixed (off-device verified), F† = fixed by construction (implemented and
+off-device verified, but with event-ordering assumptions that cannot be exercised off-device — see B6
+under Residual Risk), P = partial, W = work in progress. No candidate remains at P or W.
 
 ## Findings
 
@@ -52,10 +57,10 @@ a CVSS claim. Status: F = fixed (off-device verified), P = partial, W = work in 
 | B1 | High | F | Fabricated `AppOrigin` in Blazor IPC | Any page script could inject messages dispatched as if from the app origin → confused deputy |
 | B2 | High | F | Origin-independent hybrid bridge + invoke-result forgery | Foreign pages could dispatch to handlers or complete another page's invocation → forged results |
 | B3 | Medium | F | App → page delivery to the wrong document | Evals could land in a document the handler did not serve → cross-document script injection |
-| B4 | Medium | P | Wire-protocol injection in kit record fields | Unescaped `\t`/`\n`/`\` could forge/split records and confuse managed parsers; shell escaped, decoder pending |
+| B4 | Medium | F | Wire-protocol injection in kit record fields | Unescaped `\t`/`\n`/`\` could forge/split records; the shell escapes and the managed decoder now splits before unescaping and skips malformed records |
 | B5 | High | F | `HybridRoot`/`DefaultFile` traversal | Crafted root/default file could escape the payload directory and serve arbitrary files |
-| B6 | Medium | W | Navigation interception gap | The shell does not yet intercept every navigation; a navigated-away document can retain stale bridge state |
-| B7 | Low | W | Status file unbounded + URL/path leakage | `dotnet-status.txt` grows without a cap and can carry URLs/paths into shared diagnostics |
+| B6 | Medium | F† | Navigation interception gap | Un-originated main-frame navigations are now cancelled and re-issued only on a one-shot managed `Navigating` approval; event-ordering assumptions device-unverified |
+| B7 | Low | F | Status file unbounded + URL/path leakage | `dotnet-status.txt` is capped at 256 KiB (newest whole lines) and the web navigation URL is logged without query/fragment at ≤ 2 KiB |
 | C1 | High | F | Signing secret in shared scratch / fixed-path helper exec | Same-UID code replacement could steal the p12 password; residual argv exposure documented |
 | C2 | High | F | Installer downloads executed/extracted unverified | Unverified selfsign binary exec / tarball extract = supply-chain RCE on a dev or CI machine |
 | C3 | High | F | Runtime-pack digest gate inert | A 60-char digest could never match, and an explicit artifact was unpacked with no check at all |
@@ -83,10 +88,59 @@ a CVSS claim. Status: F = fixed (off-device verified), P = partial, W = work in 
 - **B1 fabricated `AppOrigin` in Blazor IPC — High, fixed.** Evidence `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyBlazorWebViewHandler.cs:324-358` (envelope + origin/id validation); shell side `ohos-workload/packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/templates/ets/pages/Index.ets:311-330` (`__OHORIGIN|<document url>|<document id>` envelope, id selection). Attack path: a page script sent a bare message that was dispatched to `WebViewManager.MessageReceived` with a fabricated `AppOrigin`. Fix: require the shell envelope, match the Blazor origin and this handler's registration id; reject and log mismatches. Verification: the shared envelope parser rejection cases are pinned by the hybrid checks (`Program.cs:1215-1227`); the Blazor origin/id gate itself has no dedicated harness pin; shell typecheck 0 errors. Residual: on-device untested.
 - **B2 origin-independent bridge + invoke-result forgery — High, fixed.** Evidence `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyHybridWebViewHandler.cs:646-746` (origin check + single-handler `ResolveMessageHandler`), `:779-791`, `:862-877` (completion must match handler + page id), `:89,830` (`PendingInvoke`). Attack path: hybrid messages were dispatched without a document binding, and a page that harvested a task id could complete another page's JS invocation. Fix: origin/id match, one handler per dispatch, `PendingInvoke` ownership check. Verification: harness pins foreign-origin/foreign-id/missing-envelope rejection (`Program.cs:1215-1227`); 244 checks/0 Unhandled.
 - **B3 app → page delivery to the wrong document — Medium, fixed.** Evidence `maui-ohos/.../OpenHarmonyHybridWebViewHandler.cs:609-636` (marker-checked eval), `maui-ohos/.../OpenHarmonyBlazorWebViewHandler.cs:503-527`; shell stamping `Index.ets:355-370`. Attack path: a host → page eval was delivered to whatever document was currently loaded, even a foreign one. Fix: the shell stamps `window.__ohHybridId` / `window.__ohBlazorId` only into documents it served for that registration; deliveries skip when the marker is missing/mismatched. Verification: shell typecheck, `modules.abc` 88756 B, static review of the skip path; no dedicated harness pin for the marker skip. Residual: on-device untested.
-- **B4 kit wire-protocol injection (shell half) — Medium, partial.** Evidence `Index.ets:579-601` (`escapeRecordField`: `\` → `\\`, tab/LF/CR → `\t`/`\n`/`\r`). Attack path: an unescaped separator in contacts/calendar/Bluetooth record fields could forge additional fields or split records at the managed parser. Fix: reversible escaping at the shell join; the managed decoders (agent B-a) are still in progress, so escaped fields are not yet decoded managed-side. Verification: shell typecheck only for the escaped half; commit `ohos-workload 89a292f876`.
+- **B4 kit wire-protocol injection — Medium, fixed.** Evidence shell `Index.ets:579-601` (`escapeRecordField`:
+  `\` → `\\`, tab/LF/CR → `\t`/`\n`/`\r`); managed decoder
+  `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyCalendarContacts.cs:408-567` (`OpenHarmonyKitRecords`,
+  shared by the contacts, calendar and Bluetooth parsers). Attack path: an unescaped separator in
+  contacts/calendar/Bluetooth record fields could forge additional fields or split records at the managed
+  parser. Fix: reversible escaping at the shell join plus a shell-compatible decoder that splits records on
+  raw LF and fields on raw TAB *before* decoding (`:423-487`, `:500-516`), reverses `\\`/`\t`/`\n`/`\r` in
+  one left-to-right pass (`:519-567`), requires exactly the expected field count, caps a field at 512
+  decoded chars (`:411`), caps a payload at 2000 records (`:414`) and skips malformed records (unknown
+  escape, trailing `\`, over-long field) without throwing. Injection guard: a raw LF before the record's
+  first TAB folds into field 0 as literal text (never forges a record); a raw LF after a TAB drops the
+  record and skips the rest of its line, so the remaining fields cannot start a new record. Verification:
+  slice build 0 errors, 15/15 decoder driver checks, harness 244/0 with the B4 assertions
+  (`escapedDecoded`/`injectionGuarded`/`tablessDropped`); the committed harness pins for those three B4
+  shapes are being ported in a parallel follow-up (count stays 244). Commit `maui-ohos 9c6a89a5`. Residual:
+  on-device untested.
 - **B5 `HybridRoot`/`DefaultFile` traversal — High, fixed.** Evidence `maui-ohos/.../OpenHarmonyHybridWebViewHandler.cs:250-254,297-316` (`IsSafeRelativePath`), `maui-ohos/.../OpenHarmonyBlazorWebViewHandler.cs:298-307` (+ `ResolveAssetPath`), shell `Index.ets:1161-1171,1186-1223,1236-1260` (reject + 404). Attack path: `HybridRoot`/`DefaultFile` containing `..`, `\` or a leading `/` could escape the extracted payload directory. Fix: both layers accept only ordinary relative path segments; registration is rejected otherwise. Verification: `Program.cs:2318` pins `ResolveAssetPath(..., "css\\evil.css") == null`; harness pins; typecheck 0 errors.
-- **B6 navigation interception — Medium, in progress (planned).** Evidence: shell `Index.ets` bridge/registration state and `maui-ohos/.../OpenHarmonyWebViewHandler.cs` navigation path. Attack path: navigations that the shell does not intercept can leave a document whose bridge state is stale relative to the handler. Planned fix: shell `onLoadIntercept` plus an async managed retry. No fix commit yet; verification pending.
-- **B7 status-file cap + URL redaction — Low, in progress.** Evidence `ohos-workload/src/Microsoft.OpenHarmony.Hosting/OpenHarmonyApp.cs:635,639-650` (`<filesDir>/dotnet-status.txt`, `File.AppendAllText`, no size cap) with URL/path-bearing messages (e.g. `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyImageHandler.cs:40`, `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyAppLauncher.cs:144,210-244`). Attack path: unbounded growth plus URLs/paths copied into diagnostics that can leave the app sandbox. Planned fix: cap the file and redact URLs. No fix commit yet; verification pending.
+- **B6 navigation interception — Medium, fixed by construction.** Evidence shell `Index.ets:1742-1768`
+  (`onLoadIntercept`: main frame only; app origins, `about:`/`data:`/`blob:`/`javascript:`/`file:` and
+  relative references pass untouched), `:365-383` (`isAppNavigation`), `:385-415` (one-shot
+  `consumeApprovedNavigation`/`retireNavigationMarker`), `:417-447` (`askManagedAboutNavigation`: UUID id,
+  5 s TTL, 8 pending cap, oldest evicted), `:449-467` (`approveNavigation`: the id must be pending and the
+  URL must match exactly, then one `loadUrl`); managed
+  `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyWebViewHandler.cs:193-240` (`HandleJsMessage`
+  routes `__OHNAV|` to `HandleNavigationRequest` and never fans it out to `JsMessage`/HybridWebView; raises
+  `Navigating` and sends the `nav` approval back). Attack path: a navigation the shell did not originate
+  could leave a document whose bridge state was stale relative to the handler. Fix: the shell cancels the
+  load it did not originate and sends `__OHNAV|<url>|<id>`; the managed handler raises `Navigating`
+  (`NewPage`) on the connected WebViews and, unless a handler cancels, approves the exact `(id, url)` pair;
+  the shell re-issues only that URL through a one-shot, loop-guarded marker that `onPageBegin` consumes, so
+  one load raises one event. Page-originated envelopes are inert (an approval is honoured only for an
+  id/URL the shell itself cancelled), and a rejected, expired or malformed request leaves the load blocked.
+  Verification: the scratch harness asserts
+  `approval`/`cancelBlocked`/`channelScoped`/`malformedInert`/`startedSuppressed`/`oneShot` all true; shell
+  `TYPECHECK=1` 0 ArkTS errors; slice build 0 errors; the 247-check scratch harness (244 + 3 B6 pins) ran 0
+  Unhandled with `perf within=True`. Commits `ohos-workload 57a147c` (three `Index.ets` copies
+  byte-identical), `maui-ohos e2d68ddf`. Accepted risks (device-unverified): the
+  `onLoadIntercept`/`loadUrl` event ordering and `isMainFrame()` cannot be exercised off-device, and an
+  unexpected event error fails open (the load is allowed); an allowed POST form navigation is re-issued by
+  `loadUrl` as GET (the interceptor exposes no method/body); a redirect produces a second, correctly
+  re-checked `Navigating`. Residual: on-device untested.
+- **B7 status-file cap + URL redaction — Low, fixed.** Evidence `ohos-workload/src/Microsoft.OpenHarmony.Hosting/OpenHarmonyApp.cs:641-710`
+  (`StatusFileMaxBytes = 256 * 1024`, `StatusMessageMaxChars = 4 * 1024`, `s_statusSync`, `TrimStatusFile`
+  keeps the newest whole lines that fit under the lock) and managed URL sanitization
+  `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyWebViewHandler.cs:28,303-321,426`
+  (`SanitizeUrlForLog`: scheme+host+path only, query/fragment stripped, `MaxLoggedUrlLength = 2048`).
+  Attack path: unbounded growth plus URLs/paths copied into diagnostics that can leave the app sandbox.
+  Fix: the status file cannot exceed 256 KiB (oldest lines dropped, every line truncated to 4 KiB) and the
+  page-finish navigation URL is logged without query/fragment and at most 2 KiB long. Verification: 300 ×
+  ~4 KiB URLs produced a 260820-byte file, within the cap, with no queries. Commits `ohos-workload
+  57a147c`, `maui-ohos e2d68ddf`. Residual: the cap drops the oldest diagnostic lines by design; other
+  call sites that log app-supplied URLs/paths are bounded but not query-stripped (see Residual Risk);
+  on-device untested.
 
 ### Build / supply chain (C)
 
@@ -133,8 +187,18 @@ No finding after investigation; none of these became a fix.
 - **A2 per-thread copy lifetime** is documented in `openharmony_host.h:233-240` (valid until the next get on the same thread; freed on thread exit).
 - **A6 queue drains only on a successful launch**; a launch that never succeeds leaves bounded pending events queued.
 - **A7 rejects later `startApp` in-process** (no teardown path), by design.
-- **B4 managed decoders pending**: until they land, escaped fields are not decoded managed-side (data-fidelity issue; no injection).
-- **B6/B7 open**; B6 verification and B7 cap/redaction still to land.
+- **B4 harness pins in flight**: the decoder change was verified off-device (slice build, 15/15 decoder
+  driver checks, 244-check harness with the three B4 assertions), but the committed harness assertions for
+  the `escapedDecoded`/`injectionGuarded`/`tablessDropped` shapes are being ported in a parallel follow-up;
+  the managed decoder is on-device untested.
+- **B6 is fixed by construction, device-unverified**: the `onLoadIntercept`/`loadUrl` event ordering and
+  `isMainFrame()` cannot be exercised off-device, and unexpected event errors fail open (the load is
+  allowed); an allowed POST form navigation is re-issued by `loadUrl` as GET (the interceptor exposes no
+  method/body); a redirect produces a second, correctly re-checked `Navigating`.
+- **B7 redaction covers the page-navigation URL only**: the status file is bounded and every line is
+  truncated, but other call sites still log app-supplied URLs/paths as-is — e.g.
+  `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyAppLauncher.cs:124,180` (`uri.AbsoluteUri`) and
+  `OpenHarmonyImageHandler.cs:40` (file path) — and the cap drops the oldest diagnostic lines by design.
 - **C4 `--allow-clobber-mismatch`** remains available to an operator; it is explicit and logged, but still a bypass of the digest guard.
 
 ## Method note
