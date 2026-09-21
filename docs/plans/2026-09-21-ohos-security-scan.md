@@ -101,9 +101,9 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
   first TAB folds into field 0 as literal text (never forges a record); a raw LF after a TAB drops the
   record and skips the rest of its line, so the remaining fields cannot start a new record. Verification:
   slice build 0 errors, 15/15 decoder driver checks, harness 244/0 with the B4 assertions
-  (`escapedDecoded`/`injectionGuarded`/`tablessDropped`); the committed harness pins for those three B4
-  shapes are being ported in a parallel follow-up (count stays 244). Commit `maui-ohos 9c6a89a5`. Residual:
-  on-device untested.
+  (`escapedDecoded`/`injectionGuarded`/`tablessDropped`); those pins are now committed (`ohos-workload
+  f828c9f`: contacts/calendar/Bluetooth parsing shapes plus escape/injection coverage; count stays 244).
+  Commit `maui-ohos 9c6a89a5`. Residual: on-device untested.
 - **B5 `HybridRoot`/`DefaultFile` traversal — High, fixed.** Evidence `maui-ohos/.../OpenHarmonyHybridWebViewHandler.cs:250-254,297-316` (`IsSafeRelativePath`), `maui-ohos/.../OpenHarmonyBlazorWebViewHandler.cs:298-307` (+ `ResolveAssetPath`), shell `Index.ets:1161-1171,1186-1223,1236-1260` (reject + 404). Attack path: `HybridRoot`/`DefaultFile` containing `..`, `\` or a leading `/` could escape the extracted payload directory. Fix: both layers accept only ordinary relative path segments; registration is rejected otherwise. Verification: `Program.cs:2318` pins `ResolveAssetPath(..., "css\\evil.css") == null`; harness pins; typecheck 0 errors.
 - **B6 navigation interception — Medium, fixed by construction.** Evidence shell `Index.ets:1742-1768`
   (`onLoadIntercept`: main frame only; app origins, `about:`/`data:`/`blob:`/`javascript:`/`file:` and
@@ -120,10 +120,11 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
   the shell re-issues only that URL through a one-shot, loop-guarded marker that `onPageBegin` consumes, so
   one load raises one event. Page-originated envelopes are inert (an approval is honoured only for an
   id/URL the shell itself cancelled), and a rejected, expired or malformed request leaves the load blocked.
-  Verification: the scratch harness asserts
+  Verification: the B6 scenario asserts
   `approval`/`cancelBlocked`/`channelScoped`/`malformedInert`/`startedSuppressed`/`oneShot` all true; shell
-  `TYPECHECK=1` 0 ArkTS errors; slice build 0 errors; the 247-check scratch harness (244 + 3 B6 pins) ran 0
-  Unhandled with `perf within=True`. Commits `ohos-workload 57a147c` (three `Index.ets` copies
+  `TYPECHECK=1` 0 ArkTS errors; slice build 0 errors; those pins are now committed (`ohos-workload d636436`)
+  and the harness reports 247 `[verify]` lines (244 + 2 B7 pins + 1 B6 pin), 0 Unhandled and
+  `perf within=True`; CI's floor (224) is unchanged. Commits `ohos-workload 57a147c` (three `Index.ets` copies
   byte-identical), `maui-ohos e2d68ddf`. Accepted risks (device-unverified): the
   `onLoadIntercept`/`loadUrl` event ordering and `isMainFrame()` cannot be exercised off-device, and an
   unexpected event error fails open (the load is allowed); an allowed POST form navigation is re-issued by
@@ -137,10 +138,10 @@ under Residual Risk), P = partial, W = work in progress. No candidate remains at
   Attack path: unbounded growth plus URLs/paths copied into diagnostics that can leave the app sandbox.
   Fix: the status file cannot exceed 256 KiB (oldest lines dropped, every line truncated to 4 KiB) and the
   page-finish navigation URL is logged without query/fragment and at most 2 KiB long. Verification: 300 ×
-  ~4 KiB URLs produced a 260820-byte file, within the cap, with no queries. Commits `ohos-workload
-  57a147c`, `maui-ohos e2d68ddf`. Residual: the cap drops the oldest diagnostic lines by design; other
-  call sites that log app-supplied URLs/paths are bounded but not query-stripped (see Residual Risk);
-  on-device untested.
+  ~4 KiB URLs produced a 260820-byte file, within the cap, with no queries; the two B7 pins are now
+  committed (`ohos-workload d636436`, same 247-line harness). Commits `ohos-workload
+  57a147c`, `maui-ohos e2d68ddf`. Residual: the cap drops the oldest diagnostic lines by design; see
+  Residual Risk for the remaining narrower image-handler logging gaps; on-device untested.
 
 ### Build / supply chain (C)
 
@@ -187,18 +188,18 @@ No finding after investigation; none of these became a fix.
 - **A2 per-thread copy lifetime** is documented in `openharmony_host.h:233-240` (valid until the next get on the same thread; freed on thread exit).
 - **A6 queue drains only on a successful launch**; a launch that never succeeds leaves bounded pending events queued.
 - **A7 rejects later `startApp` in-process** (no teardown path), by design.
-- **B4 harness pins in flight**: the decoder change was verified off-device (slice build, 15/15 decoder
-  driver checks, 244-check harness with the three B4 assertions), but the committed harness assertions for
-  the `escapedDecoded`/`injectionGuarded`/`tablessDropped` shapes are being ported in a parallel follow-up;
-  the managed decoder is on-device untested.
+- **B4 harness pins committed (`ohos-workload f828c9f`)**: the decoder change was verified off-device
+  (slice build, 15/15 decoder driver checks, the 244-check harness with the three B4 assertions covering
+  the `escapedDecoded`/`injectionGuarded`/`tablessDropped` shapes and the contacts/calendar/Bluetooth
+  parsers; count stays 244). The managed decoder remains on-device untested.
 - **B6 is fixed by construction, device-unverified**: the `onLoadIntercept`/`loadUrl` event ordering and
   `isMainFrame()` cannot be exercised off-device, and unexpected event errors fail open (the load is
   allowed); an allowed POST form navigation is re-issued by `loadUrl` as GET (the interceptor exposes no
   method/body); a redirect produces a second, correctly re-checked `Navigating`.
-- **B7 redaction covers the page-navigation URL only**: the status file is bounded and every line is
-  truncated, but other call sites still log app-supplied URLs/paths as-is — e.g.
-  `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyAppLauncher.cs:124,180` (`uri.AbsoluteUri`) and
-  `OpenHarmonyImageHandler.cs:40` (file path) — and the cap drops the oldest diagnostic lines by design.
+- **B7 residual logging gaps (accepted, log-only)**: the launcher/browser and image "file not found"
+  logs now reuse `SanitizeUrlForLog` (`maui-ohos 883e2b73`), but the image handler's general failure log
+  (`image load failed: {ex.Message}`, ~line 46) can still embed a raw path, and a filename literally
+  containing `?`/`#` is truncated by the sanitizer; the cap drops the oldest diagnostic lines by design.
 - **C4 `--allow-clobber-mismatch`** remains available to an operator; it is explicit and logged, but still a bypass of the digest guard.
 
 ## Method note
