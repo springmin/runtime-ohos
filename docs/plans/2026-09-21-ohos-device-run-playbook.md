@@ -32,7 +32,7 @@ hdc install hello-maui-app.hap                      # API 20 设备换成 hello-
 ## 3. 启动
 
 ```sh
-hdc shell aa start -a EntryAbility -b com.example.hello-maui-app
+hdc shell aa start -a EntryAbility -b com.example.hellomauiapp
 ```
 
 或直接点桌面图标。首帧应为**黑色导航栏 + 标题「Root」**的长列表；若黑屏/闪退，先记录并走第 7 节回传。

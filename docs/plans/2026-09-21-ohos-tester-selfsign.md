@@ -6,7 +6,7 @@
 
 ## 步骤（约 3 分钟）
 1. DevEco Studio → 新建任意工程（Empty Ability 即可）→ 在 `AppScope/app.json5` 里把 **bundleName 改为
-   `com.example.hello-maui-app`**（必须与我们的 hap 一致，否则同样会因属性校验失败）。
+   `com.example.hellomauiapp`**（必须与我们的 hap 一致，否则同样会因属性校验失败）。
 2. File → **Project Structure → Signing Configs** → 勾选 **Automatically generate signature**（需登录华为开发者账号）
    → Studio 会生成 `*.p12` / `*.cer` / `*.p7b`（目录通常在 `~/Documents/ohos/config/`，含 `material/` 子目录）。
 3. 用同一 SDK 的 `hap-sign-tool` 给我们的未签名 hap 签名（把下面路径换成你的）：

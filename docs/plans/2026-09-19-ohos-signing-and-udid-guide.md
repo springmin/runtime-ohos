@@ -59,7 +59,7 @@ sh scripts/sign-for-device.sh --show-profile-devices --config <configDir>
 
 脚本做的事：复制 SDK 调试模板 → 替换 `bundle-info.bundle-name` 与 `debug-info.device-ids` →
 `hap-sign-tool sign-profile` → `hap-sign-tool sign-app` → 打印 **SHA-256** 与输出路径。
-若 `module.json` 的 `bundleName` 与 `--bundle` 不一致，脚本会先给出 **WARN**
+若 `module.json` 的 `bundleName` 与 `--bundle`（缺省 `com.example.hellomauiapp`）不一致，脚本会先给出 **WARN**
 （这种 hap 装不上，bundle-name 必须一致——见第 4b 节的硬性规则）。
 
 **交付给测试方**：新 hap + 新的 SHA-256（重签后哈希必然变化）。
@@ -139,7 +139,7 @@ sh scripts/sign-for-device.sh --show-profile-devices --huawei ~/Documents/ohos/c
 `--huawei` 模式在签名前解压 `module.json` 与 p7b 对比，不一致直接拒绝签名：
 
 ```
-ERROR: bundle-name mismatch: .../hello-maui-app-unsigned.hap is 'com.example.hello-maui-app'
+ERROR: bundle-name mismatch: .../hello-maui-app-unsigned.hap is 'com.example.hellomauiapp'
 but the Huawei profile .../default_MyApplication....p7b is bound to 'com.example.myapplication'.
 Rebuild the hap with -p:OpenHarmonyBundleName=com.example.myapplication (or pass --unsigned
 with a matching hap), then re-run

@@ -41,7 +41,7 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 1. **无需安装 .NET 运行时**：运行时随 hap 打包在 `resources/rawfile/dotnet.zip`。
 2. 把 hap 拷到设备（U 盘/文件管理器/局域网），在**文件管理器中打开**该 hap，按提示安装。
 3. 需要**开发者模式** + 允许调试/外部来源安装（设置 → 安全，各 ROM 名称略有差异）。
-4. 设备允许 hdc 时：`hdc install hello-maui-app.hap`；启动用 `hdc shell aa start -a EntryAbility -b com.example.hello-maui-app`，或直接点桌面图标（首帧为黑色导航栏 + 标题「Root」的长列表）。
+4. 设备允许 hdc 时：`hdc install hello-maui-app.hap`；启动用 `hdc shell aa start -a EntryAbility -b com.example.hellomauiapp`，或直接点桌面图标（首帧为黑色导航栏 + 标题「Root」的长列表）。
 
 ## 4. 报 `9568344 install parse profile prop check error`
 

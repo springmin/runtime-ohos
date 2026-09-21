@@ -23,7 +23,7 @@ they need. The older sections stay valid on the same hap.
 
 ```
 hdc install -r hello-maui-app.hap          # or: bm install -p <extracted dir>
-hdc shell aa start -a EntryAbility -b com.example.hello-maui-app
+hdc shell aa start -a EntryAbility -b com.example.hellomauiapp
 ```
 Expected: the app starts; the status file (`<filesDir>/dotnet-status.txt`) contains
 `bridge attached: registered=True`, `[hello-maui-app] starting MAUI application`,
