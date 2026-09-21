@@ -90,6 +90,7 @@
 | 文档 | 用途 |
 |---|---|
 | `2026-09-19-ohos-code-audit.md` | 主审计报告 **§1–§37**：探针/修复、A–J、K、P、Q、R、S、T 各批次与不确定项 |
+| `2026-09-22-ohos-maui-coverage-matrix.md` | MAUI 覆盖矩阵：已实现 / 部分（附代码证据）/ 未实现 / SDK 阻塞 + Top-10 缺口（只读审计） |
 | `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描 **PASS WITH FINDINGS**：23 项全部处置（22 修复 + B6 构造性修复），修复均未真机验证 |
 | `README.md` | 文档索引（含 §1–§37 要点、交付文档与历史阶段） |
 | `2026-09-19-ohos-hap-acceptance-for-testers.md` | 验收说明 §4b/§5b/§6（A1–K2、N1–N7 清单与回传模板；包内名 `验收说明.md`） |
