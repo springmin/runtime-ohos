@@ -10,10 +10,15 @@
 base=https://github.com/springmin/sdk-ohos/releases/download
 curl -L -O "$base/device-test-kit/device-test-kit.tar.gz"   # 镜像：$base/workload-latest/device-test-kit.tar.gz
 curl -L -O "$base/device-test-kit/device-test-kit.tar.gz.sha256"
-sha256sum -c device-test-kit.tar.gz.sha256        # ① 压缩包传输校验
+sha256sum -c device-test-kit.tar.gz.sha256        # ① 压缩包传输校验（外层 .tar.gz.sha256）
 mkdir -p device-test-kit && tar xzf device-test-kit.tar.gz -C device-test-kit
-cd device-test-kit && sha256sum -c SHA256SUMS     # ② 包内逐文件校验（4 个 hap + 文档）
+cd device-test-kit
+sh verify-kit.sh \
+  --anchor "$(awk '{print $1}' ../device-test-kit.tar.gz.sha256)" \
+  --anchor-file ../device-test-kit.tar.gz         # ② 包内逐文件校验 + 外层锚定
 ```
+
+**先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；把外层哈希传给 `verify-kit.sh --anchor` 才把解压内容和下载的压缩包绑定（`--anchor` 缺失/不匹配会直接失败；不带 `--anchor` 运行时会提示，并只做包内校验）。
 
 包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准。
 
