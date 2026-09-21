@@ -177,10 +177,44 @@ No finding after investigation; none of these became a fix.
 | Managed context parsing | No finding | Parsing bounded and app-scoped |
 | Delegate rooting / reflection seams | No finding | PII stays app-sandboxed; no cross-boundary escape |
 
+### Independent verification and follow-up fixes
+
+1. **Independent verification pass (3 agents).** It attempted to falsify the B1/B2/B3/B5/B6/C4/minified-digest
+   fixes with exact matrices: origin-envelope bypass attempts (userinfo@host, host suffix, wrong port,
+   trailing dot, IDN/hex/octal, nested `__OHORIGIN|`, foreign/replayed ids, cross-handler invoke completion)
+   were all rejected; the marker gate, traversal probes (28 managed + 11 shell), approval
+   replay/expiry/forgery and the publish gates (0 `gh` calls on refusal) were all falsified. Provenance
+   check: the published bundle/kit contain the fixed shell `abc` (`aa3c74cd`) and the UTF-16 markers.
+2. **Two small bypasses found, both fixed.** C3 `--sha256` precedence: a sidecar could override the explicit
+   digest; the explicit value now wins (`ohos-workload ab6bb55`). C5 anchor semantics: the anchor binds only
+   the tarball; the wording was corrected and a new deterministic `--tree-digest`/`--expect-tree-digest`
+   covers the extracted tree, with the 3-step workflow in the docs (`ohos-workload 3d8e7d0`,
+   `runtime-ohos a363616fe4f`). C4 now always regenerates and validates `SHA256SUMS` before publishing
+   (`ohos-workload 4ce13de`); the previously published sums file had absolute/stale paths (generator fixed
+   in `ohos-workload 0579f2b`).
+3. **Host residuals N1-N4 fixed.** Found by the same pass: pthread_create failure cleanup, unlocked
+   pending-lifecycle flush, unlocked `join_app`, `node_content` clear/pre-handle registration; fixed in
+   `ohos-workload fed30c9`. Host rebuilt (120 exported symbols unchanged); harness 256 checks, 0 Unhandled.
+4. **C1 narrowed.** `hap-sign-tool` has no file/env/fd password input, but an interactive tty mode
+   (`-pwdInputMode 1`) is now supported by `sign-huawei.sh` (`ohos-workload 81261b27`, guide
+   `runtime-ohos c82becfe18a`); the argv residual now applies only to the non-tty/CI path.
+5. **B5 guard tightened, two corners accepted.** Drive prefixes/NUL rejected (`maui-ohos be5d471f`); the
+   documented corners are one shell docId per document (a second `HybridWebView` on the same page can
+   re-attribute an older page's messages) and, device-only, if the `dotnetHost` proxy is injected into
+   subframes a hostile iframe's raw messages would attribute to the main document (invoke completion still
+   needs the unguessable taskId).
+
 ## Residual Risk
 
-- **No on-device verification of any fix**: device install is blocked by org policy. All A/B/C verification above is off-device (host rebuild, harness, typecheck, CI) unless stated otherwise.
-- **`hap-sign-tool` argv password**: the p12 password remains visible in the signing child's `-keyPwd`/`-keystorePwd` argv; no tty-less alternative exists. Documented in `ohos-workload/scripts/sign-huawei.sh` and the signing guide.
+- **No on-device verification of any fix**: device install is blocked by org policy. All A/B/C verification
+  above, including the independent pass and every follow-up fix (`ohos-workload
+  ab6bb55`/`3d8e7d0`/`4ce13de`/`0579f2b`/`fed30c9`/`81261b27`, `maui-ohos be5d471f`, `runtime-ohos
+  a363616fe4f`), is off-device (host rebuild, harness, typecheck, CI) unless stated otherwise.
+- **`hap-sign-tool` argv password (narrowed)**: the p12 password remains visible in the signing child's
+  `-keyPwd`/`-keystorePwd` argv only on the non-tty/CI path; `hap-sign-tool` exposes no file/env/fd input,
+  but `sign-huawei.sh` now supports an interactive tty mode (`-pwdInputMode 1`, `ohos-workload 81261b27`;
+  guide `runtime-ohos c82becfe18a`). Documented in `ohos-workload/scripts/sign-huawei.sh` and the signing
+  guide.
 - **Pre-digest GitHub release assets** still need an explicit sha256 pin/override; without one the installer fails closed (or the operator sets `ALLOW_UNVERIFIED=1`, which is insecure by design).
 - **npm transitive dependencies** used by `markdownlint` (`npx`) are not digest-pinned; noted `ohos-workload dc6b66baeef7`.
 - **B1/B3 hybrid/Blazor flows are on-device untested**; the off-device pins prove the reject paths, not ArkWeb's actual document/marker behaviour.
@@ -196,6 +230,11 @@ No finding after investigation; none of these became a fix.
   `isMainFrame()` cannot be exercised off-device, and unexpected event errors fail open (the load is
   allowed); an allowed POST form navigation is re-issued by `loadUrl` as GET (the interceptor exposes no
   method/body); a redirect produces a second, correctly re-checked `Navigating`.
+- **B5 one shell docId per document (accepted)**: a second `HybridWebView` on the same page can
+  re-attribute an older page's messages.
+- **B5 subframe `dotnetHost` proxy (device-only, accepted)**: if the proxy is injected into subframes, a
+  hostile iframe's raw messages would attribute to the main document; invoke completion still requires the
+  unguessable taskId.
 - **B7 residual logging gaps (accepted, log-only)**: the launcher/browser and image "file not found"
   logs now reuse `SanitizeUrlForLog` (`maui-ohos 883e2b73`), but the image handler's general failure log
   (`image load failed: {ex.Message}`, ~line 46) can still embed a raw path, and a filename literally
