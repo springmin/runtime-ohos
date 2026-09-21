@@ -9,15 +9,27 @@ keep-screen-on, static asset fingerprint fallback + cache headers, file share, f
 accessibility node count and the performance budget), and §0 names the preview.24 artifacts
 they need. The older sections stay valid on the same hap.
 
+Updated 2026-09-21 (kit #5): §0 records the kit identity check to run before installing
+(sha256 + tree digest; the five haps need no `module.json` edits — legal bundle name and a
+device-aligned profile), and §8 adds the P1–P4 startup-crash probe ladder and the fill-in
+report template to what to return.
+
 ## 0. Artifacts
 
 | Artifact | Where |
 |---|---|
 | `hello-maui-app.hap` (~21 MB, 26.0 band, `verify-app` success; siblings `-permissions`, `-api20`, `-api20-permissions`, `-unsigned`) | `ohos-workload/test/hello-maui-app/bin/Release/<tfm>/openharmony-arm64/` or the delivery kit |
-| Delivery kit `device-test-kit.tar.gz` (5 haps + zh-CN docs + `SHA256SUMS`) | release `device-test-kit`, also attached to `workload-latest` |
+| Delivery kit `device-test-kit.tar.gz` — current **kit #5** (5 haps + 8 zh-CN docs + `SHA256SUMS` + `verify-kit.sh`; sha256 `869d1d10…bce27`, tree digest `ac869484…a9cfb`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
 | Workload bundle `openharmony-workload-1.0.0-preview.24.tar.gz` | GitHub release `workload-1.0.0-preview.24` (+ `workload-latest` with `SHA256SUMS`; the SDK release keeps an earlier snapshot) |
 | Host library | `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so` (signed) |
 | ArkTS shells | `packs/.../templates/ets/modules.abc` (headless) and `modules.ui.abc` (UI); preview.24 carries the T6/T8 archive (fingerprint fallback, keep-screen-on) |
+
+**Step 0 — kit identity check (before installing anything).** Run the quickstart's verify chain
+(`verify-kit.sh --anchor-file …` + `--expect-tree-digest …`) and confirm the in-kit version line
+(`最终状态.md`「发布物」 or `README-交付说明.md`「构建基线」) reads `1.0.0-preview.24`. Compare the
+hashes with the release notes for the build you downloaded — re-signed or pre-signed kits
+legitimately differ. The five kit haps are already legal (`bundleName` matches the profile) and
+band-aligned, so **no rename and no `module.json` edit** is needed.
 
 ## 1. Install and launch
 
@@ -28,6 +40,12 @@ hdc shell aa start -a EntryAbility -b com.example.hellomauiapp
 Expected: the app starts; the status file (`<filesDir>/dotnet-status.txt`) contains
 `bridge attached: registered=True`, `[hello-maui-app] starting MAUI application`,
 `[maui] window created (Window), content=ContentPage`.
+
+Kit #5 replaces the earlier rename/band workarounds, so the haps install and start under the
+shipped `bundleName` as-is. `9568344` still means the debug profile does not carry this device's
+UDID (send the UDID, or p7b + p12 + cer + keyAlias for the `--external` pre-sign path in the
+signing guide §4c). If the app exits ~1 s after `aa start` (`exit 254` / `JsError`), go to §8's
+probe ladder instead of retrying.
 
 ## 2. Rendering (pixel expectations)
 
@@ -220,5 +238,12 @@ warmupOk=True within=True
 ## 8. Reporting back
 
 Collect `dotnet-status.txt`, `hilog` excerpts around a tap/typing/animation and any crash
-traces. With those, the port validation is complete and the remaining work is upstream API
-approval only.
+traces, and record them in the fill-in template `2026-09-21-ohos-device-report-template.md`
+(one page; its §0–§1 also pin the kit version and hashes). **If the app exits at startup
+(`exit 254` / `JsError`) or a step dies with no log line**, add the minimal evidence from
+`2026-09-21-ohos-device-crash-diagnostics.md` and walk the probe ladder in
+`2026-09-21-ohos-crash-probes.md` — P1 shell-only, P2 host `dlopen`, P3 host entry/`dlsym`,
+P4 per-dependency; its decision table names the failing layer, and its P4 section has a
+no-app 14-library self-check (`hdc shell ls -l /system/lib64/...`). The probe haps are
+unsigned and live on the same `device-test-kit` release. With those, the port validation is
+complete and the remaining work is upstream API approval only.

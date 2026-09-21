@@ -16,13 +16,15 @@ cd device-test-kit
 sh verify-kit.sh \
   --anchor "$(awk '{print $1}' ../device-test-kit.tar.gz.sha256)" \
   --anchor-file ../device-test-kit.tar.gz         # ② 包内逐文件校验 + tar.gz 文件锚定
-sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ 绑定解压内容树
+sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ 绑定解压内容树（kit #5 当前值见下）
 # 发布说明没给 tree sha256 时，先打印再人工比对：sh verify-kit.sh --tree-digest
 ```
 
 **先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；`--anchor`（或 `KIT_ANCHOR`）只校验磁盘上的 `.tar.gz` 文件本身是发布件，**不能**证明解压出来的目录与其一致（解压发生在本脚本之外）。因此要绑定"解压后的内容"用内容树摘要：交付方在发布说明里给出 `tree sha256`，用 `--expect-tree-digest <hex>`（或 `KIT_TREE_DIGEST=<hex>`）校验，不匹配会直接失败；发布说明未给出该值时，可用 `--tree-digest` 打印后人工比对。**正确顺序：先校验压缩包（①），再解压，最后校验内容树（③）。**
 
-包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在发布说明中给出）。
+包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）、8 个说明文档与 `verify-kit.sh`；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在发布说明中给出）。
+
+**当前交付 = kit #5**（2026-09-21，基线 `1.0.0-preview.24`）：整包 `sha256 = 869d1d10ec2e21a65001dd18824597602a227d02568ac42be19edff3a4fbce27`，解压内容树 `sha256 = ac8694844d8f8b19713f0059690c19ef39d0b7cabc54c641628cb0e72d8a9cfb`（即 ③ 的参数；包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」）。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
 
 ## 2. 选哪个 hap
 
@@ -36,6 +38,8 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 设备 API ≥26 用默认包；只有 API 20 波段设备才用 api20 包。
 
+当前 **kit #5** 的 5 个 hap 均为合法 `bundleName`（`com.example.hellomauiapp`）且按设备波段打包：**无需改名、无需改 `module.json`**（上轮的重命名/波段手改请勿再带入）。
+
 ## 3. 安装
 
 1. **无需安装 .NET 运行时**：运行时随 hap 打包在 `resources/rawfile/dotnet.zip`。
@@ -45,10 +49,11 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 ## 4. 报 `9568344 install parse profile prop check error`
 
-不是应用缺陷：hap 用调试 profile 签名，**profile 只绑定了示例设备 UDID**。二选一：
+不是应用缺陷：hap 用调试 profile 签名，**profile 只绑定了示例设备 UDID**。三选一：
 
 - 把本机 **UDID** 发回（`hdc shell bm get -u`，或 DevEco Studio → Device Manager → 设备信息）→ 我们按 UDID 重签发新包（哈希会变）；
-- 按 `签名与UDID指南.md` 用 DevEco 自动签名后自助重签。
+- 按 `签名与UDID指南.md` 用 DevEco 自动签名后自助重签；
+- 把 **p7b + p12 + cer + keyAlias**（p12 密码走安全通道）发回 → 我们用 `ohos-workload/scripts/sign-for-device.sh --external --profile … --key … --key-alias <alias> --expect-udid <你的UDID>` 按其 UDID **预签**（p7b 的 `debug-info.device-ids` 必须含该 UDID；细节见 `签名与UDID指南.md` §4c）。
 
 另：`E00C001 Operation restricted by the organization` = 设备策略关闭了 hdc → 改用文件管理器安装。
 
@@ -63,6 +68,8 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 | 5 | 点左下角小按钮 **`A11Y`** | 弹出 Accessibility self-check（`accessibilityStatus` + 节点数）|
 
 失败就记下步骤和现象；完整清单见 `验收说明.md`（A1–K2、N1–N7）。
+
+**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit #5 的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
 
 ## 6. 回传什么
 
@@ -85,10 +92,13 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 **关键字摘录**：`bluetooth` / `print` / `contacts` / `calendar` / `HybridWebView`、`__hwvInvokeDotNet` / `webview`、`eval` / `notification` / `picker`、`camera` / IME 输入法系统日志（完整表见 `验收说明.md` §5b）。
 
-**结果模板**：照抄 `验收说明.md` §6 填写；安装失败附**完整错误文案**；有 hdc 时附 `hdc hilog > log.txt` 片段与各失败项时间点。
+**结果模板**：优先用一页版 `docs/plans/2026-09-21-ohos-device-report-template.md`（照抄填空，含 kit 哈希/版本核对与探针栏；A1–K2、N1–N7 逐项仍按 `验收说明.md` §6）。安装失败附**完整错误文案**；有 hdc 时附 `hdc hilog > log.txt` 片段与各失败项时间点；启动崩溃另附 P1–P4 探针结果与 hilog 崩溃点前后各 200 行。
 
 ## 7. 相关文档
 
 - 完整验收：`docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内 `验收说明.md`）
 - 签名/UDID：`docs/plans/2026-09-19-ohos-signing-and-udid-guide.md`（包内 `签名与UDID指南.md`）
 - 上手（开发）：`docs/plans/2026-09-20-ohos-dotnet-getting-started.md`
+- 启动崩溃取证：`docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`
+- 崩溃探针 P1–P4 与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`（4 个未签名 hap 挂在 `device-test-kit` release）
+- 回传模板（一页）：`docs/plans/2026-09-21-ohos-device-report-template.md`

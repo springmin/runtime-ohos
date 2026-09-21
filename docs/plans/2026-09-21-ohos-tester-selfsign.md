@@ -26,3 +26,4 @@
 - 日志两行：`[maui] openharmony build …` 与 `[maui] accessibility provider status=<n>`（期望 1）
 - 左下角 **A11Y** 角标弹窗内容（状态 + 节点数）
 - `验收说明.md` §4b 的 N1–N7 与 §5b 关键字清单结果
+- 一页回传模板：`docs/plans/2026-09-21-ohos-device-report-template.md`；若启动即崩（约 1 秒退出 / `exit 254` / `JsError`），附 `docs/plans/2026-09-21-ohos-crash-probes.md` 的 P1–P4 探针结果（含免安装 14 库自检）
