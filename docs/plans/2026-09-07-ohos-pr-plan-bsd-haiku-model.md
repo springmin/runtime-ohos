@@ -185,8 +185,8 @@ WASM R2R refactor — conflict pre-solved: evidence
 `pr/ohos-crossgen-corelib` `169c072d07c` (11+/1-), N11 `pr/ohos-aot-unix`
 `91a2e8e5a62` (6+/1-), N12 `pr/ohos-aot-singleentry` `da4dc098a4a` (4+), N13
 `pr/ohos-packs` `fed16fdbdc9` (44+/6-), N14 `pr/ohos-tryrun` `c2a5e90db55`
-(9+), N15 `pr/ohos-libs-tfm` `588cd8e1d98` (23+/3-), N16 `pr/ohos-console`
-`c5e5fb01fbd` (6+/3-). N13 ships without the fork-local
+(9+), N15 `pr/ohos-libs-tfm` `2bab0935bf6` (23+/3-), N16 `pr/ohos-console`
+`39b33de4e56` (6+/3-). N13 ships without the fork-local
 `OpenHarmonyInTreeR2R` gate; N11 excludes the upstream-only
 `IgnoreStandardErrorWarningFormat` attribute; N10's comment is neutralized
 for upstream. Submission-ready PR texts (title/body/test), regenerated
@@ -207,14 +207,14 @@ current `upstream/main` `35423f17d6e` (the 09-14/09-15 rehearsals were against
 `pr/ohos-infra`-based N branches (N1, N2, N3, N4, N5, N7, N8, N9, N10, N11,
 N12, N14, N15) → `9fa88a8be6`, `7ff38eea4c`, `b3c6c90155`, `47e327066b`,
 `8c48f3cb85`, `0b218e389e`, `8c75377751`, `2d71c78d1f`, `80fa4f3374`,
-`e21b963ea7`, `729445273c`, `9b2efec3f9`, `1b0a8af233`; N16 →
-`f3b853f524`; N13 → `628239fd4d` (onto `main`) and `67af5e8820` (onto
+`e21b963ea7`, `729445273c`, `9b2efec3f9`, `9be2a85dec`; N16 →
+`ef0e0bb44e`; N13 → `628239fd4d` (onto `main`) and `67af5e8820` (onto
 post-infra; N13 was amended on 2026-09-21 to drop `openharmony-arm` from the
 runtime/apphost pack RID lists, then re-rehearsed); follow-ups → `tls-flag-cleanup` `79e964f1bb`, `shims-tfm-cleanup`
 `58b546de89`, `illink-ntlm` `86abe3ee71`. Evidence:
 `/data/storage/el2/base/tmp/opencode/rebase-rehearsal-20260921.txt`.
 N15/N16 were re-rehearsed after the shims-predicate fix (that run: infra
-`933f89ca33`, N15 `1b0a8af233`, N16 `f3b853f524`); rebase hashes are per-run
+`ba17a103d6`, N15 `9be2a85dec`, N16 `ef0e0bb44e`); rebase hashes are per-run
 (committer timestamps), only the CLEAN/CONFLICT verdict is durable.
 
 **Review-fix pass (2026-09-15):** N15 now defaults `LibrariesBinPlaceTfm` to
