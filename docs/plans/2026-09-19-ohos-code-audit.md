@@ -1479,3 +1479,23 @@ maui-ohos 的 sparse-checkout 不含切片目录，`git add` 需 `--sparse`（�
    release/kit 与 §28/§35/§36 同一待办链。
 5. **demo/harness 未动**：按批次边界，仓库内 harness 未加 T8 断言（仅在 scratch 验证），demo 与
    `scripts/` 未动。
+
+## 38. V 系列收官（2026-09-21）
+
+| 批次 | 内容 | 提交 |
+|---|---|---|
+| **V1** | 去掉 BlazorWebView 初始冗余 `load`（仅当壳已加载 host page 时抑制首次导航；后续显式导航照常 ✓；双配置 216/0 + 原生桩探针实证）| `maui-ohos 96da93de` |
+| **V2** | 宿主桥**重发布应用上下文**（`ReadContext` 优选含负载目录的快照；`RefreshContext` 由 surface/lifecycle/晚订阅/重复 `Attach` 触发；单飞/仅变化才发布/**空读不降级**/不清 `NodeContent`/订阅者异常不外溢；`s_contextVersion` 保证精确一次）| `ohos-workload f847224` |
+| **V3** | U1"晚到上下文"演练**入 CI**（10 条 `hybrid late …`，驱动真实私有缝；计数 216→**226**；阈值 216→**222**——注：226−20=206 会**降低**门禁，故取 count−4 ✓）| `ohos-workload 074f491` |
+| **V4** | kit **自带 `verify-kit.sh`**（`SHA256SUMS` 12 项；包内 `sha256sum -c` 12×OK、`sh verify-kit.sh` → `KIT OK`）+ 索引补 §36/§37 与手册行 | `ohos-workload 37b91bd` · `runtime-ohos 8cb6c8af1a1` |
+| **V6** | **最终状态页**（交付/批次/基线/发布/证据/不确定项/外部依赖；如实标注不可核项）| `runtime-ohos f9feacfc1d4` |
+| **V7** | **真机操作手册**（校验→安装→启动→采集→五分钟冒烟→失败分支→回传；§5 的"Blazor 不在本轮"注记已过时 → 本批修正 ✓）| `runtime-ohos dea854be427` |
+| **像素 CI 修复** | pixel-regression 现在检出切片 + 构建两个 hosting 程序集 + 物化绝对根（`sudo mkdir /storage/...` + 符号链接）；**发现 `headless-render.csproj` 不读环境变量（硬编码）** ✗ → 推荐后续将其改为环境变量间接并删除链接步骤 | `ohos-workload 13ec6e8` |
+
+**待办（排队）**：
+1. **V5** `.razor` 变体（切 `Microsoft.NET.Sdk.Razor` 会激活静态 web 资产管线，有改变"4 条 wwwroot"不变量之险 ✗ → 加开关 + 独立工程验证后再评估 ✓）；
+2. **V8** 宿主侧**上下文 setter / 壳重发**（V2 只能重读环境变量与原生入口；原生宿主目前只在 `ohos_host_start_app` 存一次 JSON ✗ → 需新增可被壳调用的下发路径才能彻底闭环 ✓）；
+3. `headless-render.csproj` 环境变量化（消除 CI 的 sudo/绝对路径依赖 ✓）；
+4. 上游三预备分支待 #132953/N15 ✗；两条评论文案待许可 ✗。
+
+**验证基线（V 后）**：交互回归 **226 项**（含 10 条 late-context 演练）· CI 阈值 **222** · 双 perf 门禁（frame + a11y skip/republish）`within=True` · 像素套件本地 PASSED · 五仓库全部 PUSHED。
