@@ -15,12 +15,14 @@ mkdir -p device-test-kit && tar xzf device-test-kit.tar.gz -C device-test-kit
 cd device-test-kit
 sh verify-kit.sh \
   --anchor "$(awk '{print $1}' ../device-test-kit.tar.gz.sha256)" \
-  --anchor-file ../device-test-kit.tar.gz         # ② 包内逐文件校验 + 外层锚定
+  --anchor-file ../device-test-kit.tar.gz         # ② 包内逐文件校验 + tar.gz 文件锚定
+sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ 绑定解压内容树
+# 发布说明没给 tree sha256 时，先打印再人工比对：sh verify-kit.sh --tree-digest
 ```
 
-**先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；把外层哈希传给 `verify-kit.sh --anchor` 才把解压内容和下载的压缩包绑定（`--anchor` 缺失/不匹配会直接失败；不带 `--anchor` 运行时会提示，并只做包内校验）。
+**先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；`--anchor`（或 `KIT_ANCHOR`）只校验磁盘上的 `.tar.gz` 文件本身是发布件，**不能**证明解压出来的目录与其一致（解压发生在本脚本之外）。因此要绑定"解压后的内容"用内容树摘要：交付方在发布说明里给出 `tree sha256`，用 `--expect-tree-digest <hex>`（或 `KIT_TREE_DIGEST=<hex>`）校验，不匹配会直接失败；发布说明未给出该值时，可用 `--tree-digest` 打印后人工比对。**正确顺序：先校验压缩包（①），再解压，最后校验内容树（③）。**
 
-包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准。
+包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）与说明文档；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在发布说明中给出）。
 
 ## 2. 选哪个 hap
 
