@@ -1,7 +1,7 @@
 # OpenHarmony .NET/MAUI 移植最终状态（2026-09-21）
 
 > 一页版收官状态：五仓库（`runtime-ohos` 文档、`ohos-workload` 宿主/壳/脚本/套件、`maui-ohos` 切片、
-> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-21 11:38（CST）** 可核实的事实。
+> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-21 23:10（CST）** 可核实的事实（含当日晚间真机跟进，见 §10）。
 > 数字均来自仓库提交、审计报告与 GitHub 实测读取；无法读取或未落名的一律标注，不做推测。
 > 详细依据见主审计报告 `docs/plans/2026-09-19-ohos-code-audit.md`（§1–§37）与索引 `docs/plans/README.md`。
 
@@ -43,37 +43,42 @@
 
 ## 4. 验证基线（离设备）
 
-- **交互套件**：`test/maui-platform-verify` 现为 **216 条** `[verify]` = 203 交互检查 + 4 fuzz + 1 帧性能门 + 8 无障碍发布路径性能门；
-  最近一次仓库内运行（2026-09-21 10:33）：**216 条、0 Unhandled、exit 0**；README 与 CI 阈值均为 **≥216**。
-- **帧性能门**：200 帧 / 401 节点，`avg=6.485ms p50=6.205ms p95=9.483ms max=29.668ms max/avg=4.57`，`within=True`
+- **交互套件**：`test/maui-platform-verify` 现为 **256 条** `[verify]` = 243 交互检查 + 4 fuzz + 1 帧性能门 + 8 无障碍发布路径性能门；
+  最近一次本地 preflight（2026-09-21 22:52–22:54）：**256 条、0 Unhandled、exit 0**；README 期望 256，CI 门限 **≥224**，本地 preflight 门限 **≥226**。
+- **帧性能门**：200 帧 / 401 节点，`avg=3.121ms p50=3.003ms p95=4.009ms max=4.987ms max/avg=1.60`，`within=True`
   （预算 avg≤20ms、max≤250ms、max/avg≤100）。
-- **无障碍发布路径性能门**：未变化帧跳过 vs 变化帧重发：render `0.302ms` vs `6.319ms`（20.91×，下限 1.25×）、
-  publish `0.051ms` vs `5.634ms`（110.23×，下限 2×），全部 `within=True`。
-- **像素套件**：`test/headless-render` 本次实测 **PIXEL ASSERTIONS PASSED**，2 项 `[KNOWN]`（复选框描边取样、选择态取样）
+- **无障碍发布路径性能门**：未变化帧跳过 vs 变化帧重发：render `0.276ms` vs `3.299ms`（11.93×，下限 1.25×）、
+  publish `0.033ms` vs `2.795ms`（84.97×，下限 2×），全部 `within=True`。
+- **像素套件**：`test/headless-render` 本次 preflight（22:54）实测 **PIXEL ASSERTIONS PASSED**，2 项 `[KNOWN]`（复选框描边取样、选择态取样）
   为测试侧已记录项（设备清单 §7）。
-- **CI（`springmin/ohos-workload`）**：最新 master（`40384e6`）运行 `interaction-regression` **success**
-  （run 35554634466，37s）与 `markdownlint` **success**（run 35554634472）；`pixel-regression` **failure**，
-  但失败在构建阶段（runner 未物化切片/两个 Hosting 程序集，无法编译像素工程），**不是像素断言失败** —— 像素套件目前是本地门禁。
+- **CI（`springmin/ohos-workload`）**：最新 master（`00d27c1`，2026-09-21T14:55Z 推送）运行 `markdownlint` **success**
+  （run 35615374665）、`pixel-regression` **success**（run 35615374630）；`interaction-regression` **failure**
+  （run 35615374619），失败在编译阶段 —— workflow 固定在 `maui-ohos 90c8373f`，该切片尚无 B 系列的
+  `PageDocumentId` / `SanitizeUrlForLog` / `NavigationApprovalSent` 符号；本地 preflight 编译本地切片，256 条全绿，故该 CI 红为 pin 未随 B 系列推进，**不是套件回归**。
 - **发布前刷新链**：`build-arkts-shell.sh` → 壳归档入包 → `build-host.sh`（`selfsign ok`）→ 校验和 → bundle → release → hap
   （审计 §8、§35.2；hap 均 `verify-app success`）。
 
-## 5. 发布物（2026-09-21 11:38 读取自 GitHub releases）
+## 5. 发布物（2026-09-21 23:05 读取自 GitHub releases）
 
 | 渠道 | 资产 | 大小（B） | sha256 |
 |---|---|---|---|
-| `workload-1.0.0-preview.24` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,328,703 | `98d72a04b54b245c1de46c05e8dd4227124d9b8a2e5ad8bb0f73fa8a334599b0` |
-| `workload-1.0.0-preview.24` / `workload-latest` | `SHA256SUMS` | 1,529 | `a4f25a47b7a10c1857388ddf92deaed086d358e687f20032f3ffd5bee2b72caf` |
-| `workload-latest` | `openharmony-workload-latest.tar.gz` | 30,328,703 | `98d72a04…`（同上，逐字节一致） |
-| `device-test-kit`（也在 `workload-latest`） | `device-test-kit.tar.gz` | 111,688,616 | `1e42a14cda6b7d3bb6d57a95bb001335bbda10ff70dce27a23441242e570ea7b`（`.sha256` 内容实测一致） |
-| `device-test-kit` | `device-test-kit.tar.gz.sha256` | 89 | `bd3b857ab4bc5b5833c097eab6414b6e80008b1371d27e4c1e70c675532dc825` |
-| SDK release `v11.0.100-rc.1.26451.109-openharmony` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,325,661 | 未读哈希（早一批 bundle 快照，未随 T6/T8 重打） |
+| `workload-1.0.0-preview.24` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,374,980 | `638e49320f33f93a00ac7c17f4cbf1cac9dc03fbe0eda519bd1d97a695f08f45` |
+| `workload-1.0.0-preview.24` / `workload-latest` | `SHA256SUMS` | 212 | `d3a6a9d2577aab501287ba5214d461a94970d2a61f82174b1839c2970c16aebd`（内容为当前 bundle 与滚动名两条 `638e4932…`） |
+| `workload-latest` | `openharmony-workload-latest.tar.gz` | 30,374,980 | `638e4932…`（同上，逐字节一致） |
+| `device-test-kit`（也在 `workload-latest`） | `device-test-kit.tar.gz` | 114,000,630 | `7ec0475ccaed1a554b846a5ea7d833c2aeaec61d19c48569defb90ca3269f8bd`（`.sha256` 内容实测一致；tree digest `799dfce263bf828b3e2537a98798ba47a7e35adb6f728099bdb9a2070c1e1301`） |
+| `device-test-kit` | `device-test-kit.tar.gz.sha256` | 89 | `2caf64e58e140bcddeafe6f49c1ccaca8f30ba43f05e536ab49dccad66da157b` |
+| `device-test-kit` | `hello-mauiapp-probe1-unsigned.hap`（P1） | 11,988 | `92ef933cf7e0eadce1b415f67362dbba0f533dfff8cbbde89ee0eb6c4dcbeac4` |
+| `device-test-kit` | `hello-mauiapp-probe2-unsigned.hap`（P2，重建） | 178,492 | `70bbc687ba1f131185d72eae6b7dfaddf934d8a296726c792385b901eac9d7b0` |
+| SDK release `v11.0.100-rc.1.26451.109-openharmony` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,374,980 | 未读哈希（2026-09-21T14:48:57Z 更新为当前 `638e4932…` 快照大小） |
 | SDK release 同上 | `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` | 178,005,544 | 未读哈希 |
 
-- `device-test-kit` release 创建于 2026-09-18、资产更新于 **2026-09-21T02:46:56Z**；bundle 与滚动 `workload-latest` 指向**同一份**
-  `98d72a04…` bundle（本地 `dist/` 重新计算 sha256 一致），说明 T6/T8 刷新后的壳已进包（pack 内 `modules.ui.abc` = 82,936 B）。
-- 交付 kit 组成（本地 11:26 刷新目录）：5 个 hap（26 默认/权限、20 默认/权限、未签名）+ 6 个文档
-  （`README-交付说明.md`、`快速开始.md`、`文档索引.md`、`签名与UDID指南.md`、`自签说明.md`、`验收说明.md`）
-  + `SHA256SUMS`（12 项，`verify-kit.sh` 自检脚本）；已发布资产的内部清单未下载核对。
+- `device-test-kit` release 创建于 2026-09-18；kit 资产更新于 **2026-09-21T14:52:28Z**，探针 P1/P2 分别更新于 14:13:24Z / 15:01:33Z（P2 于 23:01 CST 以当前 kit 宿主重建后重传）。
+- bundle 与滚动 `workload-latest` 指向**同一份** `638e4932…`（本地 `dist/` 与 `.feed/` 重新计算 sha256 一致）；SDK release 上同名资产已更新为相同大小（哈希未读）。
+- 交付 kit 组成（本地 22:51 解包目录）：5 个 hap（26 默认/权限、20 默认/权限、未签名）+ 8 个文档
+  （`README-交付说明.md`、`快速开始.md`、`文档索引.md`、`最终状态.md`、`真机操作手册.md`、`签名与UDID指南.md`、`自签说明.md`、`验收说明.md`）
+  + `SHA256SUMS`（14 项：5 hap + 8 文档 + `verify-kit.sh`，`sha256sum -c` 全过）+ `verify-kit.sh` 自检脚本；tree digest 与 `.sha256` sidecar 均在本地实测一致，整包未从线上重新下载（以 sidecar 绑定本地同哈希文件）。
+- 当前 5 个 hap 实测：`bundleName=com.example.hellomauiapp`、`minAPIVersion 50002014`、`targetAPIVersion 60101024`、`apiReleaseType Release`、
+  `compileSdkType HarmonyOS`、`compileSdkVersion 6.0.2.130`；`libs/arm64-v8a/` 含 `libopenharmonyhost.so`（`0c15a68a…`）与 `libc++_shared.so`；`ets/modules.abc` = 119,912 B。
 - 历史对照：审计 §35 的 S 系列快照为 bundle 30,325,661 / `639513dc…`、kit 107,510,820 / `537153e0…`，已被本表数字取代。
 - 演示工程 `test/hello-maui-app` 多目标（`net11.0-openharmony20.0` / `26.0`），含 S1/T5 Blazor/hybrid 验证页；
   hap 打包走 `-p:OpenHarmonyHapPackage=true` 并注入 5 项权限变体。
@@ -83,6 +88,7 @@
 | 文档 | 用途 |
 |---|---|
 | `2026-09-19-ohos-code-audit.md` | 主审计报告 **§1–§37**：探针/修复、A–J、K、P、Q、R、S、T 各批次与不确定项 |
+| `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描 **PASS WITH FINDINGS**：23 项全部处置（22 修复 + B6 构造性修复），修复均未真机验证 |
 | `README.md` | 文档索引（含 §1–§37 要点、交付文档与历史阶段） |
 | `2026-09-19-ohos-hap-acceptance-for-testers.md` | 验收说明 §4b/§5b/§6（A1–K2、N1–N7 清单与回传模板；包内名 `验收说明.md`） |
 | `2026-09-20-ohos-tester-quickstart.md` | 一页版快速开始（下载校验 → 选 hap → 安装 → 先测 5 条；包内名 `快速开始.md`） |
@@ -91,6 +97,8 @@
 | `2026-09-21-ohos-tester-selfsign.md` | 未签名 hap 自助签名（包内名 `自签说明.md`） |
 | `2026-09-18-ohos-device-validation-checklist.md` | 设备侧验证清单；**§6 为 S/T 系列**（Blazor/hybrid 页、常亮、指纹回退、分享、手电筒、节点数、性能预算） |
 | `2026-09-21-ohos-device-run-playbook.md` | 真机运行手册（`verify-kit.sh` → 安装/启动 → hilog 取证 → 5 条冒烟 → 失败分支/回传） |
+| `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（`JsError` / exit 254）：当前 kit 重测与校验记录、最小 hilog/faultlog/`dotnet-status.txt` 取证、三个 A/B 与回传清单 |
+| `2026-09-21-ohos-crash-probes.md` | P1/P2 最小探针（纯 ArkTS / 宿主 dlopen）与三层定位决策表；探针挂在 `device-test-kit` release |
 | `2026-09-21-ohos-delivery-kit-readme.md` | kit 交付说明（基线 preview.24、5 hap 用途） |
 | `2026-09-19-ohos-arkts-handover-status.md` | 交接状态（主线、D 批次、环境坑、剩余队列） |
 | `2026-09-18-ohos-openharmony-api-proposal.md` | 上游 API 提案草稿（`OSPlatform.OpenHarmony` 等） |
@@ -109,26 +117,49 @@
 9. **B 语音**：本 SDK 无 Speech Kit，真机同样应如实不可用（审计 §5c）。
 10. **D4 Hot Reload**：设备通道 + 运行时 metadata update，均为硬阻塞（交接状态 §8）。
 11. **签名**：4 个已签 hap 的调试 profile 绑定示例 UDID，其他设备安装报 `9568344`；重签后哈希必变，以随包 `SHA256SUMS` 为准（审计 §35.4）。
+12. **启动崩溃根因**：`JsError` / exit 254 需 P1/P2 探针（或当前 kit 重测）的设备日志定论 —— P1 失败 = 设备/SDK 侧，
+    P1 正常、P2 失败 = 宿主 `.so` 加载，二者正常 = .NET 运行时/主启动（`docs/plans/2026-09-21-ohos-crash-probes.md` 决策表）。
 
 ## 8. 剩余外部依赖
 
-1. **测试设备 UDID 或自助签名**：测试方回传 UDID（`hdc shell bm get -u`）由我们重签，或按 `自签说明.md` 用其 DevEco 自动签名；
+1. **测试设备 UDID 或自助签名 / 外部预签**：测试方回传 UDID（`hdc shell bm get -u`）由我们重签，或按 `自签说明.md` 用其 DevEco 自动签名；
+   若要我们按其 UDID 预签，需 p7b + p12 + cer + keyAlias（`scripts/sign-for-device.sh --external --profile … --key … --key-alias … --expect-udid 60CF7B27…`，
+   p7b 的 `debug-info.device-ids` 必须含该 UDID、bundleName 需与包内一致，否则失败关闭；每个 hap 逐个 `verify-app`）；
    Huawei 材料可代签（`scripts/sign-huawei.sh`，签名指南 §4b）。
-2. **上游 PR**：`dotnet/runtime#132953`（Add OpenHarmony build infrastructure）状态 **OPEN / APPROVED / MERGEABLE**（2026-09-16 更新）；
-   `#132827`（read-only /tmp、NUMA/robust-mutex）**OPEN / REVIEW_REQUIRED / MERGEABLE**；R7 三分支与补丁已就绪，等上述 PR/评审后按序提交；
+2. **上游 PR**：`dotnet/runtime#132953`（Add OpenHarmony build infrastructure）状态 **OPEN / REVIEW_REQUIRED / MERGEABLE**（2026-09-21T15:06Z 更新）；
+   `#132827`（read-only /tmp、NUMA/robust-mutex）**OPEN / REVIEW_REQUIRED**（mergeable 未返回，2026-09-21T09:01Z 更新）；R7 三分支与补丁已就绪，等上述 PR/评审后按序提交；
    两条无 @ 评论文案仍按约束未发；`#132866` 在本环境 `gh` 查询报 “Could not resolve to a PullRequest”（编号/归属以评审线程为准）。
 3. **hdc 策略**：本环境 `hdc` 被组织策略拦截（`E00C001 Operation restricted by the organization`）；无 hdc 时用文件管理器安装（设备手册 §2/§6）。
    DevEco CLT 26.0.0.999 仅带 hdc、无 hvigor/hvigorw，R3 已取消（审计 §31）。
-4. **发布面待办**：SDK release 上的 bundle 仍是较早快照（30,325,661），如需对齐当前 `98d72a04…` 需
-   `publish-workload-release.sh --also-sdk-release <tag>`；kit 在写作时点后有本地重建（11:26，含 `verify-kit.sh` 与最新演示页），
-   已发布资产的内部清单未核对。
+4. **发布面待办**：SDK release 上的 bundle 已更新为当前快照大小（30,374,980，2026-09-21T14:48:57Z；哈希未读），无需再跑
+   `publish-workload-release.sh --also-sdk-release <tag>`；kit 已重建为 22:51 CST 版本（含 `libc++_shared.so`、lazy-shell、8 条 hilog 诊断与探针），
+   其 sidecar 与本地 tree digest/包内 14 项校验一致；整包（114 MB）未从线上重新下载解压核对。
 
 ## 9. 核实说明
 
-- **实测读取（2026-09-21 11:38 CST）**：GitHub releases（bundle/kit 大小与 sha256、`.sha256` 内容）、
-  PR 132953/132827、CI run 列表与失败日志；本地：像素套件运行（PASSED）、仓库内交互套件日志（216 条）、
-  `test/maui-platform-verify/README.md` 与 workflow 阈值、`dist/` 与 pack 内壳归档字节数。
+- **实测读取（2026-09-21 23:05–23:10 CST）**：GitHub releases（bundle/kit/`SHA256SUMS`/`.sha256` sidecar/探针的大小与 sha256、
+  SDK release 资产列表与更新时间）、PR 132953/132827、CI run 列表与失败日志；本地：preflight 全绿（256 条 + 像素 PASSED）、
+  kit 解包 tree digest 与 14 项校验、5 hap 的 `module.json`/libs 清单、`dist/` 与 `.feed/` bundle 重算、探针哈希。
 - **未核实（如实标注）**：T1–T4 与 U1/U2 的编号对应（仅 T5–T8、U3/U4 有落名证据）；V 系列的范围与条目；
-  已发布 kit 的内部清单/逐文件哈希（未下载）；SDK release 上两条资产的 sha256（未读）；`#132866` 的仓库归属与状态。
+  SDK release 上 bundle 与 SDK 包的 sha256（未下载）；kit 整包线上内容（未下载，仅以 sidecar 绑定本地同哈希文件）；`#132866` 的仓库归属与状态。
 - **一致性提示**：任何文档中早于本页的计数（如 getting-started 的 191 条、审计 §35 的 208 条与 kit 107,510,820）
   均为其写作时点快照，以本页数字与随包 `SHA256SUMS` 为准。
+
+## 10. 真机跟进（on-device follow-up，2026-09-21 晚间）
+
+- **测试方首轮**（OpenHarmony 7.0.0.105 / API 26 / 2in1，UDID `60CF7B27…F8A19`）：旧 kit（preview.23）先后遇 `9568344`（连字符 bundleName）与
+  `9568297`（波段不符）；改用合法 bundleName + 设备波段安装成功后，`aa start` 约 1 秒退出（`exit 254`，`AppKilledReporter` `reason=JsError`）。
+- **安装侧修复**（`ohos-workload bbfa03c`）：默认 bundleName 改为 `com.example.hellomauiapp`（`hello-maui-razor` 同理），
+  新增打包期校验 `_OpenHarmonyValidateBundleName`，非法名在编译前失败；设备波段默认
+  `minAPIVersion 50002014 / targetAPIVersion 60101024 / apiReleaseType Release / compileSdkType HarmonyOS / compileSdkVersion 6.0.2.130`（修 `9568297`），
+  API 20 波段保持 `60000020` 不变。当前 kit 的 5 个 hap 实测均为上述取值。
+- **崩溃相关修复**（`ff2e11e`、`89a4a6c`、`00d27c1`）：(a) haps 随包 `libs/arm64-v8a/libc++_shared.so`（宿主 `DT_NEEDED`，缺失即 dlopen 失败）；
+  (b) ArkTS 壳把 Camera/Contacts/Connectivity/print 等非核心 Kit 改为按需 guarded `import()`（缺模块只降级，不再在启动前杀死页面），
+  同时修 notification sink 的嵌套作用域、给 UI/事件路径的 `host.*` 调用加 `hostCall` 守卫；(c) 宿主新增 8 条 hilog 诊断
+  （hostfxr dlopen/dlerror、hostfxr 初始化 rc、缺失符号、托管 Main 退出码、`start_app` begin/launch）。当前 kit 的 `ets/modules.abc` = 119,912 B。
+- **诊断探针**：`hello-mauiapp-probe1-unsigned.hap`（纯 ArkTS，证明设备能跑本工具链产物）与 `hello-mauiapp-probe2-unsigned.hap`
+  （dlopen 随包宿主 `.so` 并 hilog 结果）已挂到 `device-test-kit` release；定位决策表见 `docs/plans/2026-09-21-ohos-crash-probes.md`，
+  最小证据与回传模板见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`。
+- **安全扫描**：仍为 **PASS WITH FINDINGS**；23 个候选项已全部处置（22 修复 + B6 构造性修复），所有修复均未真机验证（`docs/plans/2026-09-21-ohos-security-scan.md`）。
+- **当前基线与待办**：本地 preflight 256 条全绿（含像素套件），CI 门限 ≥224；待测试方用当前 kit 重测（自行重签），
+  或回传 p7b + p12 + cer + keyAlias，用 `--external` 按其 UDID `60CF7B27…F8A19` 预签（§8 第 1 项）。
