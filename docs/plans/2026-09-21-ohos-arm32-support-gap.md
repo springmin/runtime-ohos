@@ -128,7 +128,7 @@ arm），把 arm 的 SDK/aspnetcore 列表加回放在设备就绪之后。C/D �
 
 | PR / 分支 | 影响 | 动作 |
 |-----------|------|------|
-| **#132953**（open） | **无**：RID graph 已含 `openharmony-arm`，本次不动它 | 不改 |
+| **#132953**（open） | **无直接改动**：RID graph 已含 `openharmony-arm`。arm32 需要的 `ARM_SOFTFP` 启用点虽在同一文件（`configureplatform.cmake` 的 openharmony 块），建议放进后续 arm32 支持 PR，避免在等 am11 review 期间改已获批内容 | 不改 |
 | **#132827**（open） | **无**：全部是 `TARGET_OPENHARMONY` 条件，与架构无关 | 不改 |
 | N1–N10、N14–N16 | 无 | 不改 |
 | **N13** `pr/ohos-packs` | 需把 `openharmony-arm` 加回 runtime/apphost 两个 pack 列表；NativeAOT 标签的 runtime pack 列表也应加入（上游 `linux-arm` 在 NativeAOT 面内） | amend + 重演 |
@@ -146,3 +146,65 @@ arm），把 arm 的 SDK/aspnetcore 列表加回放在设备就绪之后。C/D �
 
 替代方案：N13/S1a/A1 先按 arm64/x64 提交（当前状态），arm 作为后续增量补丁；
 代价是 arm 支持要等第二轮 review。
+
+---
+
+## 7. arm32 设备能否跑 .NET runtime —— ABI 层结论（2026-09-21 追加）
+
+### 7.1 平台 ABI = softfp（实测）
+
+- SDK sysroot 的 `libc.so`/`libm.so` **没有 `Tag_ABI_VFP_args`**（base/softfp
+  ABI），`file` 也显示 "soft float"；`armv7-unknown-linux-ohos-clang` 包装器
+  固定传 `-mfloat-abi=softfp`（`-march=armv7-a -mtune=generic-armv7-a -mfpu`
+  来自工具链）。
+- 标准系统存在 32 位 arm 用户态（loader 路径为 `/system/lib/ld-musl-arm.so.1`；
+  NDK 提供 arm sysroot 与 `a7_{soft,softfp_neon-vfpv4,hard_neon-vfpv4}` libc++
+  multilib）。
+
+### 7.2 CoreCLR 的 softfp（armel）支持是现成的，且有上游在用
+
+- `eng/native/configureplatform.cmake`：`--arch armel`（Tizen）或
+  `CLR_CMAKE_TARGET_OS == android` + ARM → `set(ARM_SOFTFP 1)`。
+- `eng/native/configurecompiler.cmake`：`ARM_SOFTFP` → `-DARM_SOFTFP` +
+  `-mfloat-abi=softfp`（否则 `-mfloat-abi=hard`）；默认 `-mfpu=vfpv3`，与
+  OHOS sysroot 的 VFPv3 一致。
+- VM/JIT 侧有完整 softfp 分支：`CORJIT_FLAG_SOFTFP_ABI`（`jitinterface.cpp`
+  在 `ARM_SOFTFP` 下设置）、JIT `compUseSoftFP`（HFA/FP 参数按 core 寄存器）、
+  `callingconvention.h`/`callstubgenerator.cpp` 的 `#ifndef ARM_SOFTFP` 分支、
+  `switches.h` 中 softfp 关闭 `FEATURE_HFA`。
+- 上游 CI 存在 softfp 平台：`tizen_armel`（`archType: armel`）与
+  `linux-bionic-arm`——说明这条路径是被构建过、有覆盖的。
+
+### 7.3 OHOS arm32 还缺什么（相比 Tizen armel/Android）
+
+| 项 | 状态 | 改动 |
+|----|------|------|
+| `openharmony` + `arm` → `ARM_SOFTFP` | ❌ 目前只对 android/armel 生效 | 在 openharmony 的 target 分支加 `set(ARM_SOFTFP 1)`（几行）；建议作为紧随 #132953 之后的 arm32 支持 PR，不动已获批内容 |
+| NativeAOT（ILCompiler）armel ABI | 工具链有 `TargetAbi.NativeAotArmel`（Android arm 在用） | 加 `("openharmony", "arm") => NativeAotArmel` 映射（AOT targets） |
+| CoreCLR R2R（app `PublishReadyToRun`）softfp | crossgen2 的 ABI 选择未覆盖 openharmony-armel | 可先不做：OHOS 框架本来就是 IL-only；app R2R 后置 |
+| 设备端签名器 | 只有 arm64 资产 | 构建 `selfsign-ohos-arm`（依赖 arm ILCompiler pack）；或用 C 版自签器编 arm32 |
+| 设备/CI 验证 | 无 32 位设备 | 需要 armv7 标准系统设备/模拟器 |
+
+### 7.4 目标设备的条件清单（拿到 32 位设备时按此验收）
+
+1. **CPU**：ARMv7-A + VFPv3（NDK 默认 `-mfpu=vfpv3`；Cortex-A7/A53-32 满足）。
+2. **系统**：OpenHarmony 标准系统、Linux 内核（SDK UAPI 5.10；设备 4.19+ 预期
+   也可）、API ≥ 10（clang15 ABI 的下限）、用户态 musl、`/system/lib/ld-musl-arm.so.1`
+   存在。
+3. **ABI**：`readelf -A /system/lib/libc.so | grep VFP_args` → 无该 tag = softfp
+   （与预期一致）；若带 VFP registers 则是硬浮点设备（CoreCLR 也可，按 linux-arm
+   处理）。
+4. **内存/存储**：标准系统最低 128MiB，但跑 CoreCLR 建议 ≥512MiB；安装 SDK 需
+   ~200MB 空间 + 可写 TMPDIR。
+5. **内核策略**（arm64 上已确认，32 位设备需复验）：seccomp 是否 trap
+   `close_range`/`get_mempolicy`（有 N7/运行时修复）；文件映射 `PROT_EXEC` 是否
+   被拒（N9 默认 RWX 依赖匿名可执行内存）；`/tmp` 是否只读（TMPDIR 修复）。
+6. **代码签名**：`code_protect` 是否对 32 位 ELF 生效/支持未知；若生效，需要
+   32 位可用的签名器（arm32 selfsign/C 版）。
+7. **验证集**：`dotnet --info`、hello console（JIT）、`DOTNET_EnableWriteXorExecute`
+   冒烟、跨进程/线程冒烟、（可选）NativeAOT hello。
+
+**结论**：硬件/内核/工具链层面 32 位 OHOS 标准系统设备**满足**跑 .NET runtime；
+ABI 层面平台是 softfp，而 CoreCLR 的 softfp 路径（Tizen armel 模式）现成，
+OHOS 侧只差“openharmony+arm → ARM_SOFTFP”的少量启用改动 + arm32 签名器 +
+真机验证。真正的不确定项集中在 32 位内核的签名/沙箱策略，需要设备实测。
