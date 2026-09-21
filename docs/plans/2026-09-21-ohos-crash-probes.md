@@ -11,7 +11,12 @@
 | probe | asset | size (bytes) | sha256 |
 |---|---|---|---|
 | P1 shell-only | `hello-mauiapp-probe1-unsigned.hap` | 11988 | `92ef933cf7e0eadce1b415f67362dbba0f533dfff8cbbde89ee0eb6c4dcbeac4` |
-| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 178492 | `2ec1bf3f3db15bb04a538387c0f2385e3af37be3858d66dbdbc22abb5e2151ec` |
+| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 178492 | `70bbc687ba1f131185d72eae6b7dfaddf934d8a296726c792385b901eac9d7b0` |
+
+P2 embeds the **current kit host** `libopenharmonyhost.so` (the FIX-A pinch-export build,
+`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/`,
+sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B), so its
+`dlopen` result reflects the shipped artifact rather than the earlier pre-pinch host.
 
 Download (uploaded to the existing `device-test-kit` tag; the two pre-existing assets were not modified):
 
@@ -47,8 +52,10 @@ Expected P1 log chain:
 - `libprobe.so` is a tiny NAPI shim that calls `dlopen("<app libs dir>/libopenharmonyhost.so",
   RTLD_NOW|RTLD_GLOBAL)` (then by soname as fallback), and returns the result or the exact
   `dlerror()` text as a string; the page logs it through ArkTS `hilog`.
-- The bundled `libopenharmonyhost.so` is **byte-identical to the kit's**
-  (sha256 `5a8fd6b6630c06ca17b8e97870ff180ff43b778c0a0df6100e0062bd021af96d`).
+- The bundled `libopenharmonyhost.so` is **byte-identical to the current kit host**
+  (`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/`,
+  sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B; the FIX-A
+  build which exports `ohos_host_register_pinch` and has 120 dynamic `T` symbols).
 - Proves two things:
   1. the ArkTS → NAPI → app-libs loading path works on this device (`libprobe.so` itself loads
      through the normal `@normalized:Y&&&libprobe.so&` import form, same form the kit uses for
