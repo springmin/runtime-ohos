@@ -76,6 +76,19 @@ jkotas's `__PortableTargetOS` thread (`discussion_r4064243671`), and the
 eng/common note (`issuecomment-5763969252`). The #132953 description was
 refreshed to the current 11-file set and references dotnet/arcade#17608.
 
+**Arcade review round 2 (2026-09-21):** jkotas reviewed #17608 and asked for the
+long name; renamed the CMake variable `OHOS` → `OPENHARMONY` in `4975a234c`
+(reply `discussion_r4066587172`). The first commit was 10/10 green; checks
+rerun after the rename.
+
+**#132953 CI result (head `be8e6f6988d`):** 148 success / 12 neutral / 4 red:
+`Build Analysis`, `Monitor Helix Jobs` (both chronic infra reds on this PR),
+the rollup `runtime`, and `runtime (Build osx-arm64 Debug Libraries_CheckedCoreCLR)`.
+The osx leg is a flake — the log shows `sccache: Compiler killed by signal 11`
+while compiling `src/coreclr/jit/utils.cpp` with the checked JIT clang++ command;
+nothing in the PR touches that path. Rerun the failed job to clear it (the two
+infra checks have been red throughout and are ignored by reviewers).
+
 ---
 
 ## 1. The reference model — OpenBSD (37 merged PRs, Feb 24 → Aug 7 2026)
