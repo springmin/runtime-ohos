@@ -25,7 +25,7 @@ under the touch, offset clamped to the content, propagated back to `IScrollView`
 ```
 [verify] window handler=OpenHarmonyWindowHandler
 [verify] window Created() ok
-  VerticalStackLayout frame=24,24,1032x... 
+  VerticalStackLayout frame=24,24,1032x...
     Grid > HorizontalStackLayout > Label + Button   (arranged)
     Entry (placeholder)      -> tap focuses (platformFocused=True)
     Image                    -> image=70B (FileImageSource resolved)
