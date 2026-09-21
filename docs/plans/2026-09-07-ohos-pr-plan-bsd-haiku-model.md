@@ -65,10 +65,16 @@ and merged the duplicated `find_program` in configuretools.cmake. The standalone
   original `init-os-and-arch.sh` fails (`Unsupported OS harmonyos detected!`),
   patched yields `os=openharmony arch=arm64` and `openharmony.26-arm64`.
 
-Reminder (S1a): the sdk-ohos override graphs
-(`eng/PortableRuntimeIdentifierGraph.openharmony.json` and
-`eng/RuntimeIdentifierGraph.openharmony.json`) still carry
-`"openharmony": {}` and need the same `any` fallback.
+**S1a sync done 2026-09-21:** the sdk-ohos override graphs now import `any`
+too (`737fc2a767e` on `feature/openharmony`, `123a665d9b1` on
+`pr/ohos-sdk-rids`, `ce1846b0dfa` on `pr/ohos-sdk-sandbox`).
+
+**Replies posted 2026-09-21** (head `be8e6f6988d`; the CI rerun was still in
+progress at posting time, 0 failures so far): am11's runtime.json thread
+(`discussion_r4064243013`), jkotas's `any` thread (`discussion_r4064243335`),
+jkotas's `__PortableTargetOS` thread (`discussion_r4064243671`), and the
+eng/common note (`issuecomment-5763969252`). The #132953 description was
+refreshed to the current 11-file set and references dotnet/arcade#17608.
 
 ---
 
