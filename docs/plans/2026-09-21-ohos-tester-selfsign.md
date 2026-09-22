@@ -23,9 +23,17 @@
    hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign \
      -appCertFile <你的>.cer -profileFile <你的>.p7b \
      -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-signed.hap \
-     -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"
+     -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>" -signCode 1
    hap-sign-tool verify-app -inFile hello-maui-app-signed.hap -outCertChain out.cer -outProfile out.p7b
    ```
+   > **`-signCode 1` 必须带上（它同时也是默认值）**：`sign-app` 靠它在 HAP 签名块里为 `libs/**`
+   > （含 `*.an`）逐个写入 `SoInfoSegment`，这是 app 内 native 库在安装时被使能 fs-verity 的**唯一签名
+   > 凭据**（设备 XPM 校验的正是它）。若你的重签包装脚本/模板显式覆盖过 `-signCode`（如写成 `0`），
+   > 请显式传 `1`——否则 `libs/**` 不受保护，app 内 `dlopen` 会报 `unsigned file` /
+   > `lib_no_signed event waken: -9(E_HM_PERM)`（机制与 kmsg 判读：`docs/plans/2026-09-22-ohos-elf-signing-research.md`）。
+   > 包内 `libs/**` 文件里可能带的 `.codesign` keyless 自签（我方 `ElfSigner`）**不是** app 的签名凭据：
+   > 安装期不读它，只认上面的 HAP 签名块；重签后可用研究文档 Tester checklist 第 3 条一行命令确认
+   > `SoInfoSegment` 出现（期望 ≥1）。
    > 若 `build-profile.json5` 里的密码显示为 `00000020…`（DevEco 加密值），可让 Studio 的 Signing Configs 界面显示/复制明文；
    > 或把该 `config` 目录整体发回给我们，我们用插件离线解密后代签（一条命令：`ohos-workload/scripts/sign-huawei.sh`，
    > 见 `签名与UDID指南.md` 第 4b 节）。

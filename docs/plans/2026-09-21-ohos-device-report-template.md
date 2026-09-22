@@ -54,6 +54,24 @@ grep -inE "hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|appspawn|PROB
 <粘贴全文；不存在或未更新也要写明>
 ```
 
+## 4b. 签名与内核验签（XPM / fs-verity；命令出处：`2026-09-22-ohos-elf-signing-research.md` Tester checklist / §6）
+
+```sh
+hdc shell "cat /proc/sys/kernel/xpm/xpm_mode"              # 0=关闭；1..5=各级 XPM
+hdc shell "cat /proc/sys/fs/verity/require_signatures"     # 1=fs-verity 文件必须带签名
+hdc shell "hilog -t kmsg" > kmsg.log                       # 与 §4 启动复现同一时刻抓
+grep -iE "xpm|unsigned file|fs_security_verity|libopenharmonyhost" kmsg.log
+# 在测试方 PC 上对重签产物跑（SoInfoSegment magic 命中数；期望 >=1）：
+python3 -c 'import re,sys; d=open(sys.argv[1],"rb").read(); print("SoInfoSegment magic hits:", len(re.findall(bytes.fromhex("20e7d20e"), d)))' <重签后的 hap>
+# 对照一个能跑的 app（cc-switch）的某个 libs/*.so：
+binary-sign-tool display-sign -inFile <cc-switch 的 libs/*.so>
+```
+- `xpm_mode`：`<0..5 / 不可得 + 原因>`
+- `require_signatures`：`<0 / 1>`
+- kmsg 过滤输出（逐字粘贴；特别注意含 `unsigned file`、`is not protected by dmverity`、`lib_no_signed event waken: -9(E_HM_PERM)` 的行及其路径）：`<粘贴 / 无此类事件>`
+- 重签 hap 的 `SoInfoSegment` magic 命中数：`<n>`（0 = 本次 sign-app 未做 code signing，检查是否漏了 `-signCode 1`）
+- cc-switch 某个 lib 的 `display-sign` 输出：`<code signature is not found / self-sign / 证书链原文>`
+
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 
 ```sh

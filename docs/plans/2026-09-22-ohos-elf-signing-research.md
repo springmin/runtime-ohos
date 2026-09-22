@@ -37,6 +37,39 @@
 
 ---
 
+## Tester checklist（测试方检查清单：签名类原因最小判定集）
+
+> 一次做完下面 4 项即可判定/排除「ELF 代码签名」类原因；命令细节与输出判读同 §6。
+
+1. **在复现启动失败（`host` undefined / runtime 启动失败）的同一时刻抓内核验签日志**：
+   ```sh
+   hdc shell "hilog -t kmsg" > kmsg.log
+   grep -iE "xpm|unsigned file|fs_security_verity|libopenharmonyhost" kmsg.log
+   ```
+   出现 `unsigned file` / `is not protected by dmverity` / `lib_no_signed event waken: -9(E_HM_PERM)` 且路径是
+   `libopenharmonyhost.so`（或解压出来的 runtime 库）→ **签名拒绝成立**；没有 → 签名假设否定，回到加载/依赖排查。
+2. **设备的强制级别**（只读）：
+   ```sh
+   hdc shell "cat /proc/sys/kernel/xpm/xpm_mode"              # 0=关闭；1..5=各级 XPM
+   hdc shell "cat /proc/sys/fs/verity/require_signatures"     # 1=fs-verity 文件必须带签名
+   ```
+3. **重签后的 hap 是否覆盖 `libs/**`**（在测试方 PC 上跑；期望命中 ≥1）：
+   ```sh
+   python3 -c 'import re,sys; d=open(sys.argv[1],"rb").read(); print("SoInfoSegment magic hits:", len(re.findall(bytes.fromhex("20e7d20e"), d)))' \
+     hello-maui-app-yourself.hap
+   ```
+   0 = 这次 `sign-app` 没有 code signing（`-signCode 0` / 旧工具），`libs/**` 不受 fs-verity 保护
+   → 显式加 `-signCode 1` 重签（§7 ①）。
+4. **对照一个能跑的 app（cc-switch）**：
+   ```sh
+   binary-sign-tool display-sign -inFile <cc-switch 的某个 libs/*.so>
+   ```
+   输出 `code signature is not found` 而 app 可运行 → app 内 lib 不依赖文件内 `.codesign`（§2/§4 结论成立）。
+
+回传（同 §6.6）：以上 4 项输出 + 重签命令原文（是否带/覆盖 `-signCode`）+ 失败时间点。
+
+---
+
 ## 1. 机制总览（上游源码）
 
 ### 1.1 安装期：HAP → 每 lib 一个签名 → 内核 fs-verity
