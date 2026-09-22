@@ -6,7 +6,10 @@
 >    必须重签 `hello-maui-app-unsigned.hap`（唯一可重签安装的变体）或用发布方预签包，与启动崩溃无关。
 > 2. 重签安装成功后启动即崩（约 1 秒 / `exit 254` / `JsError`）的根因是 **ArkTS 壳 `modules.abc` 缺少入口模块
 >    record 索引**（记录名与 `module.json` 的 `srcEntry` 不匹配），**不是**宿主缺 `libc++_shared.so`（H1），
->    也不是宿主 dlopen/入口（H2）。修复进行中：PA1 重建壳 abc（`ohos-workload/scripts/build-arkts-shell.sh`）后重出 kit。
+>    也不是宿主 dlopen/入口（H2）。修复：PA1 重建壳 abc（`ohos-workload/scripts/build-arkts-shell.sh`）后重出 kit —— 已随 kit #10 落地并被测试方真机确认。
+> 3. 修复入口 record 后的同一轮真机复测暴露第二个独立阻塞：**壳 abc 字节码版本 `24.0.0.0` 超出设备的 ark runtime
+>    上限 `13.0.1.0`**（hilog `export objects of native so is undefined` / `Cannot read property … of undefined`），
+>    已随 kit #11（`compatibleSdkVersion 18`）修复。两个根因的收尾见 §5b。
 
 ## 0. 一手材料与验证环境
 
@@ -97,7 +100,9 @@ kit（崩溃）abc:
 ```
 
 即：**kit 的 `modules.abc` 缺少设备运行时所需的 record 索引/映射结构**。`ark_disasm` 的版本差（kit 产物
-24.0.0.0，本机 SDK 工具上限 13.0.1.0；本机为 OpenHarmony 6.0.2 / API 22）是工具侧限制，**不作为根因**。
+24.0.0.0，本机 SDK 工具上限 13.0.1.0；本机为 OpenHarmony 6.0.2 / API 22）当时被判为工具侧限制；
+**2026-09-22 更正**：入口 record 修复后的真机复测表明该版本差同时是**第二个独立阻塞**（设备 ark runtime
+拒收高于 `13.0.1.0` 的 abc），见 §5b 与 `2026-09-22-ohos-arkts-abc-version-history.md`。
 
 ### 2.4 官方检索佐证（华为）
 
@@ -131,7 +136,7 @@ es2abc/hvigor 参数未对齐 `srcEntry`）导致：
 - 判读顺序调整：**先看退出错误**；命中本 ReferenceError 的 kit（截至 PA1 重建前）不需要再跑 P1–P4。P1–P4 阶梯
   仍适用于 dlopen / 缺库 / 宿主入口 / .NET 运行时类崩溃。
 
-## 5. 修复（进行中，PA1）与验证计划
+## 5. 修复（PA1；已完成，见 §5b）与验证计划
 
 - 修复：`ohos-workload/scripts/build-arkts-shell.sh`（PA1，另一 agent）——让壳 abc 带完整、与 `srcEntry` 匹配的
   入口 record 索引（含试行 `useNormalizedOHMUrl=false` / 对齐 es2abc+hvigor 归档参数）。
@@ -139,19 +144,40 @@ es2abc/hvigor 参数未对齐 `srcEntry`）导致：
   并让 `verify-kit.sh` 打印自签名警告）。
 - 验证（设备侧）：重签 `hello-maui-app-unsigned.hap`（或按 UDID 预签）后安装启动；期望不再出现
   `ReferenceError … EntryAbility`，再按 `验收说明.md` / P1–P4 判读宿主与运行时（回归）。
-- 状态：**修复未验证**；当前已发布 kit（截至 #9）仍带该缺陷，测试方无需对旧 kit 重跑 P1–P4。
+- 状态：**已修复并验证**（kit #10：入口 record，测试方真机确认；kit #11：abc 版本，待真机回归）——
+  收尾结论见 §5b。
 
-## 6. 三个错误的关系（避免混淆）
+## 5b. Resolution（已修复，2026-09-22）
+
+两个独立阻塞都已修复并进入交付：
+
+1. **入口 record（PA1）**：壳构建改为 `useNormalizedOHMUrl=false` + bundle 前缀 record
+   （`ohos-workload c2c4a9a`，壳归档 `6e55ae6`，162,996 B），随 **kit #10** 发布；测试方真机复测确认
+   入口可解析（不再报 `ReferenceError … EntryAbility`）。
+2. **abc 字节码版本**：修复入口后，真机复测暴露第二个阻塞 —— 壳 abc 头为 `24.0.0.0`，超出测试设备
+   ark runtime 上限 `13.0.1.0`（hilog `export objects of native so is undefined` /
+   `Cannot read property … of undefined`）。修复：壳构建固定 `compatibleSdkVersion 18`，
+   SDK 26 工具链即产出 `13.0.1.0`（`ohos-workload 95c89a7`，壳归档 `ef1c947`，191,072 B），
+   随 **kit #11** 发布（当前 kit；校验值见 release 说明「## Integrity」）。
+3. **设备侧查询**：`xxd -l16 modules.abc`（期望 `0d 00 01 00` = `13.0.1.0`；`18 00 00 00` = `24.0.0.0`）
+   与 `hdc shell param get const.ark.version`（设备运行时上限）；版本→API/SDK 映射与完整版本史见
+   `2026-09-22-ohos-arkts-abc-version-history.md` §5。
+4. **待办**：kit #11 的真机回归（重签 `hello-maui-app-unsigned.hap` 后按 `验收说明.md` 走）；
+   两个分支已并入 `2026-09-21-ohos-crash-probes.md` §4.0/§4.0b 与决策表。
+
+## 6. 四类错误的关系（避免混淆）
 
 | 错误 | 含义 | 是否预期 | 处置 |
 |---|---|---|---|
 | `9568257 fail to verify pkcs7 file` | 自签名 hap 被设备拒绝（签名不受信任/无效） | 是（包内 4 个默认 hap） | 重签 `hello-maui-app-unsigned.hap` 或用预签包 |
 | `9568344 install parse profile prop check error` | 调试 profile 未绑定本设备 UDID | 是 | 重签 / 回传 UDID 重签 / `--sign-external` 预签 |
-| `ReferenceError … EntryAbility` + `exit 254` | 壳 abc 入口 record 缺陷 | **否**（本版已知缺陷） | 等 PA1 重建后的 kit 重测 |
+| `ReferenceError … EntryAbility` + `exit 254` | 壳 abc 入口 record 缺陷 | **否**（kit #10 前） | kit #10 起已修复；重签新 kit 重测 |
+| `export objects of native so is undefined` / `Cannot read property … of undefined` | 壳 abc 字节码版本高于设备 ark runtime 上限（`24.0.0.0` > `13.0.1.0`） | **否**（kit #11 前） | kit #11 起已修复（`compatibleSdkVersion 18` → `13.0.1.0`）；`xxd -l16 modules.abc` + `hdc shell param get const.ark.version` 复核 |
 
 ## 7. 参考
 
 - 测试方反馈原文：`ohos-device-test-kit-feedback.md`（2026-09-22；本机 `~/Download/com.haitai.htbrowser/`）
 - 自签与重签：`2026-09-21-ohos-tester-selfsign.md`（包内 `自签说明.md`）、`2026-09-19-ohos-signing-and-udid-guide.md`
-- 崩溃探针与决策表：`2026-09-21-ohos-crash-probes.md`（§4.0 已加本分支）
+- 崩溃探针与决策表：`2026-09-21-ohos-crash-probes.md`（§4.0/§4.0b 已加两个分支）
+- abc 版本史与设备查询：`2026-09-22-ohos-arkts-abc-version-history.md`
 - 交付与状态：`2026-09-21-ohos-delivery-kit-readme.md`、`2026-09-21-ohos-final-status.md`

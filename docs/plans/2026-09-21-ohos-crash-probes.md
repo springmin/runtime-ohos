@@ -6,9 +6,14 @@
 >
 > **2026-09-22 update**: the tester's evidence chain (E1–E5 plus the working `cc-switch` abc
 > comparison: 37 vs 1–2 occurrence counts, missing record index entries) pinned the current kit
-> crash to the shell abc entry record — see `2026-09-22-ohos-startup-crash-rootcause.md`. The
+> crash to the shell abc entry record — fixed in kit #10 (`useNormalizedOHMUrl=false` +
+> bundle-prefixed record, `ohos-workload c2c4a9a`/`6e55ae6`) and verified on device by the tester;
+> see `2026-09-22-ohos-startup-crash-rootcause.md`. The same re-test surfaced a second pre-shell
+> blocker, the abc bytecode version (`24.0.0.0` vs the device's `13.0.1.0` ceiling; hilog shows
+> `export objects of native so is undefined` / `Cannot read property … of undefined`), fixed in
+> kit #11 (`95c89a7`/`ef1c947`, §4.0b). The
 > P1–P4 ladder below still classifies **dlopen / host-entry / .NET-runtime** crashes; branch on
-> the exact exit error first (§4.0). The install error `9568257 fail to verify pkcs7 file` is the
+> the exact exit error first (§4.0/§4.0b). The install error `9568257 fail to verify pkcs7 file` is the
 > expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
 >
 > These four minimal, standalone probes bisect the failure between five layers:
@@ -296,11 +301,39 @@ then this is the **shell abc entry-record issue** (the abc's record name/index d
 `module.json` `srcEntry`), already root-caused from the tester's E1–E5 experiments and the
 `cc-switch` comparison — see `2026-09-22-ohos-startup-crash-rootcause.md`. It happens **before**
 any host `.so` load, so the P1–P4 ladder below is **not** the tool for it (the P1 shell-only
-probe builds its own abc and can still pass). Kits up to the PA1 shell-abc rebuild carry this
-defect: re-sign, then wait for / retest the rebuilt kit instead of running P1–P4. The P1–P4
+probe builds its own abc and can still pass). Fixed in kit #10 (PA1: `useNormalizedOHMUrl=false`,
+bundle-prefixed record, `ohos-workload c2c4a9a`/`6e55ae6`) — re-sign the rebuilt kit and retest;
+kits before #10 carry this defect, so re-sign and wait for / retest the rebuilt kit instead of
+running P1–P4. The P1–P4
 ladder still applies to the other classes (dlopen / missing dependency / host entry / .NET
 runtime). The install error `9568257 fail to verify pkcs7 file` is the expected self-signed
 rejection — re-sign `hello-maui-app-unsigned.hap` (see `自签说明.md`) before judging startup.
+
+### 4.0b Branch on the exit error first: the abc bytecode version
+
+If the process still exits shortly after `aa start` (or the page dies while the shell imports the
+host `.so` / starts) and hilog shows
+
+```text
+export objects of native so is undefined
+```
+
+or a `Cannot read property '…' of undefined` thrown from the shell's host import, then the shell
+`ets/modules.abc` was produced for a newer ark runtime than the device accepts. The abc version is
+the 4-byte field at offset 12..15 (`18 00 00 00` = 24.0.0.0, `0d 00 01 00` = 13.0.1.0); API ≤23
+runtimes top out at **13.0.1.0**, API 24+ devices accept **24.0.0.0**. Fixed in kit #11: the shell
+is built with `compatibleSdkVersion 18` on the SDK 26 toolchain, so the abc is `13.0.1.0`
+(`ohos-workload 95c89a7`, archive `ef1c947`). Check the shipped abc and the device before running
+P1–P4:
+
+```sh
+xxd -l 16 modules.abc                  # 0d 00 01 00 = 13.0.1.0; 18 00 00 00 = 24.0.0.0
+hdc shell param get const.ark.version  # device runtime ceiling (24.0.0.0 on API 26; 13.0.1.0 on API ≤23)
+```
+
+Like the entry-record branch, this happens before any host `.so` load, so P1–P4 are not the tool
+for it; the ladder still covers dlopen / missing dependency / host entry / .NET runtime crashes.
+Full mapping and background: `2026-09-22-ohos-arkts-abc-version-history.md` §5.
 
 P4 is the authoritative row for missing dependencies: `PROBE4|<name>|FAIL|<dlerror>` names the
 exact missing library, and a P2/P3 that dies without any result line is consistent with a missing
@@ -308,6 +341,7 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 
 | P1 (shell-only) | P2 (host-dlopen) | P3 (host-entry) | P4 (per-dependency) | Conclusion | Next action |
 |---|---|---|---|---|---|
+| n/a — pre-shell (abc version) | n/a | n/a | n/a | Process exits, hilog shows `export objects of native so is undefined` / `Cannot read property … of undefined` — **abc bytecode version mismatch** (shell abc 24.0.0.0 vs the device's 13.0.1.0 ceiling) | Use a kit from #11 on (shell abc `13.0.1.0`, `compatibleSdkVersion 18`) and re-sign it; compare `xxd -l16 modules.abc` with `hdc shell param get const.ark.version` (§4.0b) |
 | fails (`JsError`, no/failed `PROBE1` chain) | n/a | n/a | n/a | Device/framework issue — plain ArkTS haps built by this toolchain do not run | Re-sign/reinstall, compare with a DevEco Empty Ability build in the same band; kit crash is not host-specific |
 | ok | fails (`…_FAIL=<dlerror>`) | n/a | n/a | Host `.so` dlopen fails — missing library file / unresolved relocation / namespace or signature problem (the `dlerror` text is the root cause) | Fix native packaging per the error (e.g. bundle `libc++_shared.so` / missing system lib / namespace), then rerun P2 |
 | ok | ok (`abs_NOW_OK`) | fails (`dlsym.…=NULL`, `call.…=SKIP`, or no `PROBE3 HOST_ENTRY_RESULT` line) | n/a | Host entry/dlsym mismatch — the `.so` maps but a key export is not resolvable/usable from the app linker namespace | Send the P3 line verbatim (missing/demangled export name); compare the shipped host's symbol table with the kit's expected imports |
@@ -349,9 +383,10 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 
 ## 6. 给测试方的速用版（中文）
 
-0. **先分类**：安装报 `9568257`（自签名被拒）属预期 —— 先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap` 再装。安装成功后启动即退，若 hilog 报
-   `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`，是本版 kit 的壳 abc 入口 record 缺陷
-   （PA1 重建后的 kit 修复，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**不要跑 P1–P4**；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
+0. **先分类**：安装报 `9568257`（自签名被拒）属预期 —— 先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap` 再装。安装成功后启动即退：
+   - hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point` → 壳 abc 入口 record 缺陷（**kit #10 已修复**，测试方真机已确认；旧 kit 请换新 kit）；
+   - hilog 报 `export objects of native so is undefined` / `Cannot read property … of undefined` → abc 字节码版本不符（**kit #11 已修复**：`13.0.1.0`；用 `xxd -l16 modules.abc` 与 `hdc shell param get const.ark.version` 对照）。
+   以上两类都发生在宿主加载之前，**不要跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b 与本文 §4.0/§4.0b）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。
