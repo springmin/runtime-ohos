@@ -28,6 +28,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
+| `2026-09-22-ohos-render-route-decision.md` | 渲染路线决议（PJ4）：保持自绘合成器路线（单 XComponent + canvas + 自绘 IView/materializer + 影子无障碍树），不转原生 ArkUI 控件；附理由、混合路线与 UX 深度自实现清单（PJ1/PJ2 进行中，文本编辑/窗口 overlay/阴影未接） | ✅ 决议（2026-09-22）|
 | `2026-09-22-ohos-elf-signing-research.md` | OHOS ELF 代码签名研究（PE1）：app 内 `.so` 的凭证是 HAP code signing block（`SoInfoSegment`，app 证书/Profile），不是文件内 `.codesign`；keyless self-sign（flags=0x10）只属独立二进制/PC 场景；新发现 payload 库不经 hap 签名、SDK 厂商 DevID 证书签名被我方重签为 keyless 两个问题；含工具矩阵、真机 kmsg/签名块检查命令与修复排序 | ✅ 当前（2026-09-22）|
 | `2026-09-22-ohos-arkts-abc-version-history.md` | abc 版本史与 SDK 映射研究：version 字段/isa.yaml 对照、es2abc 与 `compatibleSdkVersion` 接线、可下载 SDK 清单、设备查询命令；结论：现有 SDK 26 工具链把 `compatibleSdkVersion` 设为 18–23 即产出设备可接受的 `13.0.1.0`（推荐 22 重建壳）| ✅ 当前（2026-09-22）|
 | `2026-09-19-ohos-code-audit.md` | 主审计报告 §1–§37：五仓库代码/批次审计、真机前硬化、Blazor 与无障碍、S 系列（S1–S5）收官、T6/T8 补丁（要点见下节）| ✅ 当前主参考（2026-09-21）|
