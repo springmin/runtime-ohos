@@ -32,9 +32,9 @@
 | probe | asset | size (bytes) | sha256 |
 |---|---|---|---|
 | P1 shell-only | `hello-mauiapp-probe1-unsigned.hap` | 12004 | `bec893c2ea6120b360b45e5b7a61593d5799b0702d31856afaeba1f724c0a951` |
-| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 178520 | `692ee1d75cc09b3c34869c7966d2477898fc39aab3d0b79d926f61657bc744a0` |
-| P3 host-entry | `hello-mauiapp-probe3-unsigned.hap` | 186026 | `dc27f81b1a5deff141311641e2ddd4e20e0f2d30fea43be72ff9539ae2be1c61` |
-| P4 per-dependency | `hello-mauiapp-probe4-unsigned.hap` | 186314 | `a2978e225465aeb8a7ad539e80bd6dd0b2b48369968a4705c3e83d60f2f06c3b` |
+| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 215384 | `5bdce033d00a561dc22dd4196a4f17aa2e5d6df025682adbe98c30836f6c1960` |
+| P3 host-entry | `hello-mauiapp-probe3-unsigned.hap` | 222954 | `43557cfe9c274406ad8cc4985eadace9eb4a7f13d560af2e452491727a5e5b6c` |
+| P4 per-dependency | `hello-mauiapp-probe4-unsigned.hap` | 223178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` |
 
 > **2026-09-22 rebuild — built with `compatibleSdkVersion 18` (abc `13.0.1.0`), safe on the
 > older device now:** all four haps were rebuilt with the toolchain setting the kit now uses
@@ -44,15 +44,21 @@
 > applies to them, so they are **safe to run on the older API≤23/API 24 device**. Only
 > `ets/modules.abc` changed in P1–P3; P4 additionally swapped its shim for the full-path
 > dependency probe (§1). All four stay **unsigned**. The four assets were replaced in place
-> (`gh release upload --clobber`); the other `device-test-kit` assets were not modified.
+> (`gh release upload --clobber`); the other `device-test-kit` assets were not modified. A later
+> same-day host refresh replaced P2–P4 again (see the note under the table).
 
-P2, P3 and P4 embed the same `libopenharmonyhost.so` payload as before the rebuild — the FIX-A
-pinch-export build (`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/` at probe-build
-time), sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B — so
-their `dlopen`/`dlsym` results reflect that artifact rather than the earlier pre-pinch host. The
-preview.24 pack host has since been refreshed again (`2bcc9049…3433`, 187296 B, 2026-09-22), so
-these probes deliberately still exercise the FIX-A host; compare against the current kit host
-when the pack moves.
+P2, P3 and P4 embed the **current `preview.24` pack host** — a byte-identical copy of
+`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/libopenharmonyhost.so` after the
+2026-09-22 refresh, sha256
+`2bcc904988f8e0cc501b61e1e221add7ae5f3ffe51d9f84cb8a3ca6aca8d3433`, 187296 B — so their
+`dlopen`/`dlsym` results reflect the host the `preview.24` pack now ships (it still exports
+`ohos_host_register_pinch` and has 167 dynamic `T` symbols). The P3/P4 shims carry this sha as
+their compile-time `expected_host_sha256=` pin; P2's shim has no pin. The earlier 2026-09-22
+rebuild had embedded the FIX-A pinch-export host (`0c15a68a…3989`, 150432 B); the host refresh
+replaced only the P2/P3/P4 assets in place (`gh release upload --clobber`) and left P1 and the
+other `device-test-kit` assets untouched. The in-kit signed host
+(`886cdbfb540ef8fe5d7610b0b435f824a6ac00628e541792c79b0991b851ab98`, 138144 B) is a **different**
+build; the probes exercise the pack host, not the kit's signed one.
 
 Download (uploaded to the existing `device-test-kit` tag; the four probe assets were replaced in
 place on 2026-09-22 with the abc-`13.0.1.0` rebuild, no other asset touched):
@@ -96,10 +102,11 @@ Expected P1 log chain:
 - `libprobe.so` is a tiny NAPI shim that calls `dlopen("<app libs dir>/libopenharmonyhost.so",
   RTLD_NOW|RTLD_GLOBAL)` (then by soname as fallback), and returns the result or the exact
   `dlerror()` text as a string; the page logs it through ArkTS `hilog`.
-- The bundled `libopenharmonyhost.so` is **byte-identical to the current kit host**
+- The bundled `libopenharmonyhost.so` is **byte-identical to the current `preview.24` pack host**
   (`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/`,
-  sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B; the FIX-A
-  build which exports `ohos_host_register_pinch` and has 120 dynamic `T` symbols).
+  sha256 `2bcc904988f8e0cc501b61e1e221add7ae5f3ffe51d9f84cb8a3ca6aca8d3433`, 187296 B; the
+  2026-09-22 refresh, which still exports `ohos_host_register_pinch` and has 167 dynamic `T`
+  symbols).
 - Proves two things:
   1. the ArkTS → NAPI → app-libs loading path works on this device (`libprobe.so` itself loads
      through the normal `@normalized:Y&&&libprobe.so&` import form, same form the kit uses for
@@ -132,8 +139,8 @@ If the shim import itself fails, there will be no `PROBE2 PAGE_ABOUT_TO_APPEAR`;
 ### P3 "host-entry" (`com.example.hellomauiapp.probe3`)
 
 - Same shell plus `import probe from 'libprobe3.so'`; the shim dlopens the same bundled
-  `libopenharmonyhost.so` (byte-identical to the current kit host, sha256
-  `0c15a68a…3989`, 150432 B) with `RTLD_NOW|RTLD_GLOBAL`, then goes one step further than P2.
+  `libopenharmonyhost.so` (byte-identical to the current `preview.24` pack host, sha256
+  `2bcc9049…3433`, 187296 B) with `RTLD_NOW|RTLD_GLOBAL`, then goes one step further than P2.
 - Only after `dlopen` returns a handle, the shim:
   (a) `dlsym`s six key exports and reports each address: `ohos_host_get_app_context`,
   `ohos_host_get_avoid_area`, `ohos_host_run_app`, `ohos_host_start_app`,
@@ -154,7 +161,7 @@ If the shim import itself fails, there will be no `PROBE2 PAGE_ABOUT_TO_APPEAR`;
 Expected P3 log chain adds, after `PROBE3 PAGE_ABOUT_TO_APPEAR`:
 
 ```text
-PROBE3 HOST_ENTRY_RESULT shim=<path>; hostpath=<path>; expected_host_sha256=0c15a68a…3989; abs_NOW_OK; dlsym.ohos_host_get_app_context=0x…; dlsym.ohos_host_get_avoid_area=0x…; dlsym.ohos_host_run_app=0x…; dlsym.ohos_host_start_app=0x…; dlsym.ohos_host_register_bridge=0x…; dlsym.RegisterHostModule=0x…; call.get_app_context=NULL; call.get_avoid_area=rc=1[…,…,…,…]
+PROBE3 HOST_ENTRY_RESULT shim=<path>; hostpath=<path>; expected_host_sha256=2bcc9049…3433; abs_NOW_OK; dlsym.ohos_host_get_app_context=0x…; dlsym.ohos_host_get_avoid_area=0x…; dlsym.ohos_host_run_app=0x…; dlsym.ohos_host_start_app=0x…; dlsym.ohos_host_register_bridge=0x…; dlsym.RegisterHostModule=0x…; call.get_app_context=NULL; call.get_avoid_area=rc=1[…,…,…,…]
 ```
 
 Any `dlsym.<name>=NULL` or `call.<name>=SKIP(no symbol)` is the decisive P3 failure evidence; a
@@ -205,7 +212,7 @@ PROBE4|libace_napi.z.so|ok
 …                                    (one line per name; a bad one is e.g.
                                       PROBE4|libc++_shared.so|FAIL|cannot find library "libc++_shared.so")
 PROBE4|deps|14/14
-PROBE4|host|ok|hostpath=/data/…/libs/arm64-v8a/libopenharmonyhost.so; expected_host_sha256=0c15a68a…3989; napi_module_register=0x…
+PROBE4|host|ok|hostpath=/data/…/libs/arm64-v8a/libopenharmonyhost.so; expected_host_sha256=2bcc9049…3433; napi_module_register=0x…
 ```
 
 or, when a dependency fails (the three `|path|` lines follow only a failed name; a hit short-circuits
@@ -457,16 +464,18 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
   `resources/base/profile/main_pages.json`, plus for P2 `libs/arm64-v8a/libprobe.so`
   (sha256 `1ca5ab3189046ba66ef25ca2e5cd198153a29d3b8173a345c4de20f93e6259f2`, 15352 B), for P3
   `libs/arm64-v8a/libprobe3.so` (sha256
-  `3fbf5f9a5b46d84a8acec4e8a86ec62ba131ca8f878c19bae2460afb3874267e`, 22848 B; built from
-  `shim/probe3_shim.c` with the SDK clang, `NEEDED libc.so` only) and for P4
+  `b4503e1cd1fb8258faabb575cca825f4b3816322ecdc35c9429ffa6e95aa7652`, 22912 B; rebuilt
+  2026-09-22 from `shim/probe3_shim.c` with the SDK clang + lld 23.1.1, `NEEDED libc.so` only,
+  re-pinned to the `preview.24` host) and for P4
   `libs/arm64-v8a/libprobe4.so` (sha256
-  `b4ec37e1b040baa4c2d609ac30763d60e95668b997658ffa5acb35a410d45208`, 22912 B; rebuilt
+  `3ae26c9562b86c6c037f1e7df81cf1d898867d0e353a6fa7ea2864da64d991b9`, 22912 B; rebuilt
   2026-09-22 from `shim/probe4_shim.c` incl. the per-name full-path probe, with the harmonybrew
   clang 23.1.1 + lld 23.1.1 against the SDK sysroot
   (`--target=aarch64-linux-ohos --sysroot=<SDK>/native/sysroot -shared -fPIC --ld-path=<lld>
   -Wl,-soname,libprobe4.so`); `NEEDED libc.so` only — on this host the SDK-bundled clang-15 still
   cannot run its own `lld` (libxml2 load error)), plus the host `.so` (the P2/P3/P4 copies all
-  carry the FIX-A host, sha256 `0c15a68a…3989`, 150432 B; see the §0 note).
+  carry the current `preview.24` pack host, sha256 `2bcc9049…3433`, 187296 B, pinned in the P3/P4
+  shims; see the §0 note).
 - The `module.json` band values are authored (not hvigor-generated) because the local SDK reports
   `26.0.0.18 / Beta` while the kit ships the HarmonyOS 26 band; the hap metadata matches the kit's
   26-band exactly.
