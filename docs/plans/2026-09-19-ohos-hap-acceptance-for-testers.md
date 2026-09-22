@@ -11,13 +11,13 @@
 | 项 | 值 |
 |---|---|
 | 文件名 | `hello-maui-app.hap` |
-| 大小 | 约 21 MB（每轮重建可能变化，以随包 `SHA256SUMS` 为准）|
-| SHA-256 | **不做固定约定**：以随包 `SHA256SUMS`（或 kit 的 `.sha256`）为准；每次重签/重建哈希都会变 |
+| 大小 | **不写死**：每轮重建/重签都会变，以随包 `SHA256SUMS` 为准 |
+| SHA-256 | **不做固定约定**：以随包 `SHA256SUMS`（或 kit 的 `.tar.gz.sha256` sidecar）为准；每次重签/重建哈希都会变 |
 | 构建版本 | `.NET/OpenHarmony workload 1.0.0-preview.24` |
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
 | 内含 | 托管应用负载、自签名宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
 
-校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。
+校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。
 
 另有**未签名包** `hello-maui-app-unsigned.hap`（与 26 默认包同一负载、同一 bundle name，未做签名）：适合用
 自己的华为开发者账号自助签名后安装，步骤见同包 `自签说明.md`；其哈希同样在 `SHA256SUMS` 中。
@@ -57,10 +57,10 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
   （本设备为 `50002014`），否则安装报 `bm 9568297`；可用 `-p:OpenHarmonyMinApiVersion=… -p:OpenHarmonyTargetApiVersion=…`
   （及 `-p:OpenHarmonyApiReleaseType=… -p:OpenHarmonyCompileSdkType=… -p:OpenHarmonyCompileSdkVersion=…`）覆盖。
   带权限的 API 20 变体可由同一命令加 `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
-- **变体摘要（实测）**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；文件 `hello-maui-app-permissions.hap`，
-  大小 **21,739,783** 字节，SHA-256 `5fbfa6e00bab0826f0156d9b916b08b1f0ea525770fa771942d88b05e487a00c`（每次重新构建会因签名时间戳变化，请以随包提供的值为准）。
-  同轮其余包：默认包 `hello-maui-app.hap` **21,739,782** 字节（`498db6e9…`）、`hello-maui-app-api20.hap` **21,739,781** 字节（`70ccc70d…`）、
-  `hello-maui-app-api20-permissions.hap` **21,739,780** 字节（`ba650ddd…`）、未签名包 `hello-maui-app-unsigned.hap` **21,706,354** 字节（`ba16483a…`）。
+- **变体摘要**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；5 个 hap 文件名：
+  `hello-maui-app.hap`（默认）、`hello-maui-app-permissions.hap`、`hello-maui-app-api20.hap`、
+  `hello-maui-app-api20-permissions.hap`、`hello-maui-app-unsigned.hap`；大小与 SHA-256 不做固定约定，
+  以随包 `SHA256SUMS` 为准（解包后 `sha256sum -c SHA256SUMS` 全过即可），kit 整包与内容树见 `device-test-kit` release 说明的「## Integrity」或 `.tar.gz.sha256` sidecar。
 
 ## 2. 环境要求
 
