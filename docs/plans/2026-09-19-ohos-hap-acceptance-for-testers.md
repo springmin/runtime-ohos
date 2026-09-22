@@ -268,3 +268,44 @@ I1 未测（无相机）
 1. 填好的第 6 节结果
 2. 安装失败时的**完整错误文案**或截图
 3. （可选）日志或录屏
+
+---
+
+## 8. 本轮新增能力（2026-09-22 批次，M1–M10）
+
+> 本轮新增：运行时权限、连通性、剪贴板、邮件/短信/拨号、截图、地理编码、窗口生命周期/安全区、
+> FontImageSource 与 SwitchCell/EntryCell/ImageButton、读屏公告与无障碍自检、Shell 扩展。
+> **注意**：默认演示页（含 permissions 变体）**没有**这些能力的按钮。逐项点按需要一个**功能探针 hap**
+> （由交付方随包提供）。若你的包里没有探针页，请对 M1–M6、M8、M10 登记「未测（本包无入口）」，**不要判失败**；
+> M7、M9 现在就能测。（§4b 的 N1–N7 同理以各自入口是否存在为准；没有入口的项按同一口径登记。）
+> 完整细节与取证关键字见同批交付的《新功能真机验证清单》（若未随包，本节即可满足填写）。
+
+| # | 能力 | 步骤 | 期望 | 未通过时抓什么 |
+|---|---|---|---|---|
+| M1 | 权限 | 探针页请求相机 → 允许；再请求一次；看 `CheckStatus` | 首次弹**系统授权框**；允许后为 `Granted`；拒绝后再请求**不再弹窗**且为 `Denied`；应用不崩溃 | `files/dotnet-status.txt` 的 `[maui] permission request …` 行；hilog `[maui] permission request failed:`；弹窗截图 |
+| M2 | 连通性 | 探针页看 `NetworkAccess`；关/开 Wi-Fi 或飞行模式 | `Internet` ↔ `None`/`Local`；变化事件次数增加；不崩溃（`ConnectionProfiles` 为空属预期）| 数值前后截图；hilog `[maui] networkKit unavailable…` |
+| M3 | 剪贴板 | 应用写文本 → 读文本（首次弹 `READ_PASTEBOARD`）→ 切到别的应用复制后再回来 | 读回一致；变化事件触发；拒绝授权后读为 `null`、不再弹窗；不崩溃 | 弹窗/结果截图；hilog `[maui] clipboard op …` / `clipboard permission request failed` |
+| M4 | 邮件/短信/拨号 | 探针页三个按钮（带收件人/号码/正文）| 系统邮件/短信/拨号应用打开且字段预填；设备无对应应用时应用保持稳定 | 系统应用截图；hilog `[maui] ability start dispatched: kind=0` / `failed: kind=0 …` |
+| M5 | 截图 | 探针页点「截图」，显示尺寸与字节数 | 有效 PNG；`Width×Height` = 窗口快照尺寸；临时文件不残留；不崩溃 | 导出 PNG + 尺寸截图；hilog `[maui] screenshot rejected: …` / `screenshot failed:` |
+| M6 | 地理编码 | 地址→坐标、坐标→地址各一次 | 有结果，或**干净的空结果**（无网络/拒绝定位权限时）；绝不抛异常 | 结果截图；hilog `[maui] geocode op …` / `location permission request failed:` |
+| M7 | 窗口/安全区 | 启动看日志；观察状态栏/刘海是否遮挡；点 Entry 弹出键盘 | 生命周期 `Created` 先于 `Activated`；状态栏/手势条/刘海不遮内容；键盘不改变安全区内缩（已知限制）| `dotnet-status.txt` 的 `[maui] window created` / `[maui] lifecycle …` 行；截图（键盘前后）|
+| M8 | 图像/单元格/ImageButton | 探针页看 FontImageSource 与 ImageButton；点 SwitchCell、EntryCell | 字形清晰不空白；按下/点击有反馈；开关与文本双向同步 | 截图/录屏 |
+| M9 | 无障碍 | 点壳左下角 `A11Y` 自检；开启系统读屏后遍历控件 | 自检显示 `1 (attached - expected)`；控件可聚焦朗读、双击激活；不崩溃 | 自检弹窗截图；`dotnet-status.txt` 的 `[maui] accessibility provider status=<n>` 行 |
+| M10 | Shell 扩展 | 探针页切 TabBar/FlyoutBehavior；看 header/footer；带 SearchHandler 的页 | 底栏/抽屉行为符合设置；header/footer 为抽屉首/末**纯文本**行；本版**不出现**搜索框（已知缺口）| 截图/录屏；`dotnet-status.txt` 的 `[maui] shell search attached …` / `flyout header=…` 行 |
+
+**权限声明注意**：剪贴板读取 `ohos.permission.READ_PASTEBOARD` 与坐标→地址 `ohos.permission.APPROXIMATELY_LOCATION`
+默认包**未声明**。探针包构建时在 §1b 命令上加
+`-p:'OpenHarmonyExtraPermissions="ohos.permission.READ_PASTEBOARD;ohos.permission.APPROXIMATELY_LOCATION"'`
+（`-p:` 参数整体用单引号包住，否则 MSB1006）。声明本身不会授权：首次使用仍会弹窗。
+
+**日志提示**：托管侧的 `[maui]` 行写在应用沙箱 `files/dotnet-status.txt`（不在 hilog）；壳侧 `[maui]` 行（如
+`[maui] permission request failed:`、`[maui] ability start failed:`、`[maui] screenshot rejected:`）在 hilog。
+两者都取到最好；只能取其一时请在回传里注明。
+
+### 8b. 若应用启动即崩（JsError / exit 254）
+
+**先别做 M1–M10**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
+`sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按
+`自签说明.md` 自签），按「五层决策表」回传结论：P1 失败 = 设备/框架/包波段；P2 失败 = 宿主 `.so` dlopen；
+P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` 行里的库名即答案）；P1–P4 全过 = 崩在
+.NET 运行时/主启动。探针与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`。

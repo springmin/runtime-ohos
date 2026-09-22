@@ -11,6 +11,7 @@
 |---|---|---|
 | `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 已签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
 | `2026-09-22-ohos-tester-runner.md` | 一条命令跑完一轮真机测试（`tester-run.sh`，随 kit release 单独发布）：本地校验 kit → 安装/启动/抓 hilog/跑 P1–P4 → 打包回传；默认 dry-run、无设备拒绝执行 | ✅ 当前（2026-09-22）|
+| `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能真机验证清单（M1–M10：权限/连通性/剪贴板/邮件短信拨号/截图/地理编码/窗口安全区/图像与单元格/无障碍/Shell 扩展）：逐项「步骤/期望/证据」+ 探针 hap 与 `tester-run.sh` 用法 | ✅ 当前（2026-09-22）|
 | `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（JsError / exit 254）：当前 kit 重测与校验记录 + 最小 hilog/faultlog/status 取证 + 三个 A/B + 回传清单 | ✅ 当前（2026-09-21）|
 | `2026-09-21-ohos-crash-probes.md` | 启动崩溃探针 P1–P4（壳 / 宿主 dlopen / 宿主入口 dlsym / 逐依赖）：五层定位决策表 + 免安装 14 库自检；4 个未签名 hap 挂在 `device-test-kit` release | ✅ 当前（2026-09-21）|
 | `2026-09-21-ohos-device-report-template.md` | 下一轮真机回传一页模板（填补空白即可）：kit 身份/重签/安装/启动/探针 P1–P4/附件清单，供机器解析归档 | ✅ 当前（2026-09-21）|
