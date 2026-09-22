@@ -28,6 +28,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
+| `2026-09-22-ohos-arkts-abc-version-history.md` | abc 版本史与 SDK 映射研究：version 字段/isa.yaml 对照、es2abc 与 `compatibleSdkVersion` 接线、可下载 SDK 清单、设备查询命令；结论：现有 SDK 26 工具链把 `compatibleSdkVersion` 设为 18–23 即产出设备可接受的 `13.0.1.0`（推荐 22 重建壳）| ✅ 当前（2026-09-22）|
 | `2026-09-19-ohos-code-audit.md` | 主审计报告 §1–§37：五仓库代码/批次审计、真机前硬化、Blazor 与无障碍、S 系列（S1–S5）收官、T6/T8 补丁（要点见下节）| ✅ 当前主参考（2026-09-21）|
 | `2026-09-22-ohos-maui-coverage-matrix.md` | MAUI on OpenHarmony 覆盖矩阵：切片/宿主/套件/演示只读审计——已实现（39 handlers 等）、部分（附代码证据）、未实现、SDK 阻塞与 Top-10 缺口 | ✅ 当前（2026-09-22）|
 | `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描（A1–A8、B1–B7、C1–C8）：23 项全部解决（22 项修复 + B6 构造性修复）、另 16 个区域无发现；修复均未经真机验证 | ✅ 当前（2026-09-21）|
