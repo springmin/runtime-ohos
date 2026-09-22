@@ -31,19 +31,31 @@
 
 | probe | asset | size (bytes) | sha256 |
 |---|---|---|---|
-| P1 shell-only | `hello-mauiapp-probe1-unsigned.hap` | 11988 | `92ef933cf7e0eadce1b415f67362dbba0f533dfff8cbbde89ee0eb6c4dcbeac4` |
-| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 178492 | `70bbc687ba1f131185d72eae6b7dfaddf934d8a296726c792385b901eac9d7b0` |
-| P3 host-entry | `hello-mauiapp-probe3-unsigned.hap` | 186002 | `5727e00f11c960b060628441b6119702027aa38414d25ddb0e7a4ea823486f3a` |
-| P4 per-dependency | `hello-mauiapp-probe4-unsigned.hap` | 177466 | `209c8b10de4dd963a5f454c2586fb294c57fea22828856fd799289d8d62303fc` |
+| P1 shell-only | `hello-mauiapp-probe1-unsigned.hap` | 12004 | `bec893c2ea6120b360b45e5b7a61593d5799b0702d31856afaeba1f724c0a951` |
+| P2 host-dlopen | `hello-mauiapp-probe2-unsigned.hap` | 178520 | `692ee1d75cc09b3c34869c7966d2477898fc39aab3d0b79d926f61657bc744a0` |
+| P3 host-entry | `hello-mauiapp-probe3-unsigned.hap` | 186026 | `dc27f81b1a5deff141311641e2ddd4e20e0f2d30fea43be72ff9539ae2be1c61` |
+| P4 per-dependency | `hello-mauiapp-probe4-unsigned.hap` | 186314 | `a2978e225465aeb8a7ad539e80bd6dd0b2b48369968a4705c3e83d60f2f06c3b` |
 
-P2, P3 and P4 embed the **current kit host** `libopenharmonyhost.so` (the FIX-A pinch-export build,
-`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/`,
-sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B; byte-identical
-to the pack copy in all three haps), so their `dlopen`/`dlsym` results reflect the shipped artifact
-rather than the earlier pre-pinch host.
+> **2026-09-22 rebuild — built with `compatibleSdkVersion 18` (abc `13.0.1.0`), safe on the
+> older device now:** all four haps were rebuilt with the toolchain setting the kit now uses
+> (`compatibleSdkVersion 18` + `useNormalizedOHMUrl=false`, mirrored from
+> `ohos-workload/scripts/build-arkts-shell.sh`), so each hap's `ets/modules.abc` header (bytes
+> 0x0c–0x0f) reads `13.0.1.0` instead of `24.0.0.0`. The abc-version branch (§4.0b) no longer
+> applies to them, so they are **safe to run on the older API≤23/API 24 device**. Only
+> `ets/modules.abc` changed in P1–P3; P4 additionally swapped its shim for the full-path
+> dependency probe (§1). All four stay **unsigned**. The four assets were replaced in place
+> (`gh release upload --clobber`); the other `device-test-kit` assets were not modified.
 
-Download (uploaded to the existing `device-test-kit` tag; P3 and P4 are new asset names and none of
-the pre-existing assets were modified):
+P2, P3 and P4 embed the same `libopenharmonyhost.so` payload as before the rebuild — the FIX-A
+pinch-export build (`Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/hosts/arm64-v8a/` at probe-build
+time), sha256 `0c15a68ad46ca099d2ed510b9b3372565c7f0707641d1bfb63d26c1504dc3989`, 150432 B — so
+their `dlopen`/`dlsym` results reflect that artifact rather than the earlier pre-pinch host. The
+preview.24 pack host has since been refreshed again (`2bcc9049…3433`, 187296 B, 2026-09-22), so
+these probes deliberately still exercise the FIX-A host; compare against the current kit host
+when the pack moves.
+
+Download (uploaded to the existing `device-test-kit` tag; the four probe assets were replaced in
+place on 2026-09-22 with the abc-`13.0.1.0` rebuild, no other asset touched):
 
 ```text
 https://github.com/springmin/sdk-ohos/releases/download/device-test-kit/hello-mauiapp-probe1-unsigned.hap
@@ -52,10 +64,11 @@ https://github.com/springmin/sdk-ohos/releases/download/device-test-kit/hello-ma
 https://github.com/springmin/sdk-ohos/releases/download/device-test-kit/hello-mauiapp-probe4-unsigned.hap
 ```
 
-Local build trees (scratch, not committed): `/data/storage/el2/base/tmp/opencode/pa/` (P1/P2),
+Local build trees (scratch, not committed): the abc-`13.0.1.0` rebuild lives in
+`/data/storage/el2/base/tmp/opencode/pd1/` (`probe1`…`probe4` + `build-probe.sh`, `make-hap*.py`,
+`verify-haps.py`, `shim/`); it was copied from `/data/storage/el2/base/tmp/opencode/pa/` (P1/P2),
 `/data/storage/el2/base/tmp/opencode/rc/probe3/` (P3) and
-`/data/storage/el2/base/tmp/opencode/rz/probe4/` (P4) — the P3/P4 trees are copies of the `qb/`
-probe tree; the `qb/` originals were not modified.
+`/data/storage/el2/base/tmp/opencode/rz/probe4/` (P4) — those originals were not modified.
 All four haps are **unsigned**; bundle names are legal and identical in profile and `module.json`
 (`com.example.hellomauiapp.probe1` / `com.example.hellomauiapp.probe2` /
 `com.example.hellomauiapp.probe3` / `com.example.hellomauiapp.probe4`) — **no rename, no
@@ -175,6 +188,13 @@ getter crash (no result line after `PROBE3 PAGE_ABOUT_TO_APPEAR`) points at the 
   `PROBE4|host|skipped`.
 - Proves: the exact missing dependency (if any) — or that all 14 files resolve, which rules out the
   missing-file branch for P2/P3 — without depending on the host dlopen succeeding.
+- New in the 2026-09-22 rebuild: when a name's plain `dlopen(name)` fails, the shim also tries the
+  three system lib dirs by full path — `/system/lib64/<name>`, `/system/lib64/ndk/<name>`,
+  `/system/lib64/platformsdk/<name>` — and logs one extra line per attempt, stopping at the first
+  hit: `PROBE4|<name>|path|<dir>/<name>|ok` (found there) or
+  `PROBE4|<name>|path|<dir>/<name>|FAIL|<dlerror text>`. This pins whether a failing dependency is
+  really absent or just invisible to the app's plain soname lookup, and names the path when it
+  exists.
 - The shim itself is minimal (soname `libprobe4.so`, `NEEDED libc.so` only, it does not link the
   host), so P4 still runs when the host's dependencies are unavailable.
 
@@ -188,13 +208,19 @@ PROBE4|deps|14/14
 PROBE4|host|ok|hostpath=/data/…/libs/arm64-v8a/libopenharmonyhost.so; expected_host_sha256=0c15a68a…3989; napi_module_register=0x…
 ```
 
-or, when a dependency fails:
+or, when a dependency fails (the three `|path|` lines follow only a failed name; a hit short-circuits
+the remaining dirs):
 
 ```text
 PROBE4|<name>|FAIL|<dlerror text>
+PROBE4|<name>|path|/system/lib64/<name>|FAIL|<dlerror text>
+PROBE4|<name>|path|/system/lib64/ndk/<name>|ok
 PROBE4|deps|13/14
 PROBE4|host|skipped
 ```
+
+(`/system/lib64/ndk/<name>|ok` above means the file exists under `ndk` but the plain soname lookup
+could not see it; if all three `|path|` lines FAIL, the file is absent from those dirs too.)
 
 ## 2. Install and start (tester)
 
@@ -287,6 +313,10 @@ Interpretation for the P4 result string:
 - any `PROBE4|<name>|FAIL|<text>` (followed by `PROBE4|host|skipped`) → **`<name>` is the exact
   dependency the loader cannot find**; that is the one to package into `libs/arm64-v8a/` (or fix
   its producer). Send the FAIL line verbatim.
+- `PROBE4|<name>|path|<dir>/<name>|ok` (printed after a failing name) → the file **does exist** at
+  `<dir>`; the app's soname search path / linker namespace is the problem rather than a missing
+  file — send the `ok` path. All three `|path|…|FAIL` lines instead → the file is missing from
+  those system dirs too, so bundle it into `libs/arm64-v8a/` (or fix its provider).
 - `PROBE4|deps|14/14` but `PROBE4|host|FAIL|<text>` → all dependency files exist, yet the linker
   still refuses the host (missing symbol, bad relocation, namespace denial); the `host|FAIL` text
   is the root cause.
@@ -411,10 +441,14 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
   openjdk@17 — the same environment used by `ohos-workload/scripts/build-arkts-shell.sh`
   (that script lives in the `ohos-workload` repo, not `runtime-ohos`).
 - `arkCompile`: hvigor `entry:default@CompileArkTS` produced `ets/modules.abc`
-  (P1 `2536eb34253231643b52ed851aa0e7182ee9d2f2b6af9538cd074c7c845940c1`, 9052 B;
-  P2 `253ba65b573eef80995ef2016a4385f180cdea72ccb68fabcebb0790a63b2ab5`, 9496 B;
-  P3 `3ed7a5a7e2d045f097f520b8eb6fd0275c13e00b457071ebe09c90a44382c643`, 9508 B;
-  P4 `ae6e30acd9538d0f1d6096fe3ac776ec87f71e71ced08d49d255d20a460113ff`, 9732 B).
+  (P1 `11cbbf5dc88c811497b676b829336d44cef7b79956425a057b6dd4e8df76cdbd`, 9068 B;
+  P2 `e50586941523be26d988a34cd2e073a17059952bc3a7b6764b3a9f2bed9fd588`, 9524 B;
+  P3 `76d532f7b0ec34660bae5af3e90f75fe9f7e0e6e327f6ca4d2c5a1f09ad759b3`, 9532 B;
+  P4 `b0de61628f6c822f109dbad57581c849322527c16eec5147df3818d1444639aa`, 9756 B) —
+  the rebuilt header bytes 0x0c–0x0f read `0d 00 01 00` = `13.0.1.0`. The generated project
+  mirrors `build-arkts-shell.sh` (`compatibleSdkVersion '18'` → es2abc
+  `--target-api-version=18`, and `useNormalizedOHMUrl: false`, so the abc entry records are
+  bundle-prefixed: `com.example.hellomauiapp.probeN/entry/ets/entryability/EntryAbility`).
 - hvigor's `PackageHap` step fails on this machine with the known missing
   `toolchains/lib/app_packing_tool.jar` (SDK packaging jar absent), so all four haps were assembled
   manually with `python3 -m zipfile`-style code in the same layout as
@@ -426,11 +460,13 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
   `3fbf5f9a5b46d84a8acec4e8a86ec62ba131ca8f878c19bae2460afb3874267e`, 22848 B; built from
   `shim/probe3_shim.c` with the SDK clang, `NEEDED libc.so` only) and for P4
   `libs/arm64-v8a/libprobe4.so` (sha256
-  `49ef6b03ab49fee718bc5d9a7e9dc3610e8aeaefabf983497335e0aedb168dec`, 14088 B; built from
-  `shim/probe4_shim.c`, `NEEDED libc.so` only; on this host the SDK-bundled clang-15 could not run
-  its own `lld` (libxml2 load error), so the harmonybrew clang 23.1.1 was used against the same
-  SDK sysroot with the same `-shared -fPIC` flags), plus the host `.so` (the P2/P3/P4 copies are
-  byte-identical to the pack copy, sha256 `0c15a68a…3989`).
+  `b4ec37e1b040baa4c2d609ac30763d60e95668b997658ffa5acb35a410d45208`, 22912 B; rebuilt
+  2026-09-22 from `shim/probe4_shim.c` incl. the per-name full-path probe, with the harmonybrew
+  clang 23.1.1 + lld 23.1.1 against the SDK sysroot
+  (`--target=aarch64-linux-ohos --sysroot=<SDK>/native/sysroot -shared -fPIC --ld-path=<lld>
+  -Wl,-soname,libprobe4.so`); `NEEDED libc.so` only — on this host the SDK-bundled clang-15 still
+  cannot run its own `lld` (libxml2 load error)), plus the host `.so` (the P2/P3/P4 copies all
+  carry the FIX-A host, sha256 `0c15a68a…3989`, 150432 B; see the §0 note).
 - The `module.json` band values are authored (not hvigor-generated) because the local SDK reports
   `26.0.0.18 / Beta` while the kit ships the HarmonyOS 26 band; the hap metadata matches the kit's
   26-band exactly.
@@ -446,5 +482,5 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。
 4. 免安装自检：`hdc shell ls -l /system/lib64/<14 个库名>`（见 §2.1）；缺哪个文件，P4 就会报对应 `FAIL`。
-5. P4 逐库自检：看 `PROBE4|deps|N/14`；任一行 `PROBE4|<库名>|FAIL|<dlerror>` → 该库名就是设备上缺的依赖，先补进 `libs/arm64-v8a/`（如 `libc++_shared.so`）再重跑。P2/P3 若“没有结果行直接崩”，正符合“缺依赖时加载器 SIGSEGV”的现象 —— 由 P4 给出库名。
+5. P4 逐库自检：看 `PROBE4|deps|N/14`；任一行 `PROBE4|<库名>|FAIL|<dlerror>` → 该库名就是设备上缺的依赖，先补进 `libs/arm64-v8a/`（如 `libc++_shared.so`）再重跑。每个 FAIL 的库名后还会跟最多 3 条全路径探测行 `PROBE4|<库名>|path|/system/lib64[/ndk|/platformsdk]/<库名>|ok|FAIL|…`：任一条为 `ok` 说明文件其实在设备上该路径下（只是 soname 搜索不到），回传该 `ok` 路径即可；3 条全 `FAIL` 才是真的缺文件。P2/P3 若“没有结果行直接崩”，正符合“缺依赖时加载器 SIGSEGV”的现象 —— 由 P4 给出库名。
 6. 结论对照：P1 失败 → 设备/框架侧问题；P4 报缺库 → 按库名补包（P1/P2/P3 的正常/崩溃以 P4 为准）；P1/P2/P3/P4 全过 → 崩溃在 .NET 运行时/主启动（宿主 dlopen 与入口均已被排除）。
