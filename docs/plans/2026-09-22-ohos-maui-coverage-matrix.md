@@ -68,7 +68,19 @@
 
 ## 3. 未实现（Not implemented）
 
-- WebAuthenticator（**未落地**：截至本刷新，切片内无 `WebAuthenticator` 实现，诚实降级版本也尚未提交）
+- WebAuthenticator（**诚实降级已落地 2026-09-22**：`OpenHarmonyWebAuthenticator.cs` 抛
+  `Microsoft.Maui.ApplicationModel.FeatureNotSupportedException`（预取消 token 报 `TaskCanceledException`、空 options 报
+  `ArgumentNullException`）并写一条 `[maui]` status；`WebAuthenticator.Default`（`defaultImplementation` 字段，ModuleInitializer
+  安装）与 DI（`UseOpenHarmony` 注册 `IWebAuthenticator`）均解析到该实现，reference-assembly 的
+  `NotImplementedInReferenceAssemblyException` 不再可能露出。对照：rc.1 net11.0 Essentials 的 `Default` 是内部
+  `WebAuthenticatorImplementation`，调用即同步抛 reference 异常）
+  - 真实 OAuth 流程仍缺：① HAP 为 callback scheme 声明 ability skill（`module.json5` `abilities[].skills[].uris`，读回为
+    `SkillUri.scheme/host/port/path/pathStartWith/pathRegex/type`）；skill 是静态清单数据，SDK 26.0.0.18 无运行时 scheme
+    注册 API，`@ohos.app.ability.wantAgent` 只做延迟 Want 的创建/比较/触发（`getWantAgent`/`trigger`/`equal`/`cancel`）；
+    ② 壳 `EntryAbility` 在 `onNewWant`/`onCreate` 把 `want.uri` 转交 managed host（当前模板无 `onNewWant`，
+    `Microsoft.OpenHarmony.Hosting` 无 want 事件）；③ 浏览器 hand-off 可复用现有 viewData want 路径；④ PKCE/state 存储按
+    MAUI 契约为 app 侧职责。工作量 **M**（①–④ 前三件可离设备完成；回调单实例行为与真机浏览器跳转需设备验证）——提交
+    `maui-ohos 783a7fcb`。
 - MediaElement
 - TableView + legacy compatibility renderers + TitleBar + Core Toolbar
 
