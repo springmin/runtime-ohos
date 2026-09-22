@@ -1,7 +1,7 @@
 # OpenHarmony .NET/MAUI 移植最终状态（2026-09-21）
 
 > 一页版收官状态：五仓库（`runtime-ohos` 文档、`ohos-workload` 宿主/壳/脚本/套件、`maui-ohos` 切片、
-> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-22 00:25（CST）** 可核实的事实（含 9 月 21 日晚间真机跟进与 22 日凌晨 kit #5 / 探针 P1–P4 更新，见 §5、§10）。
+> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-22 09:15（CST）** 可核实的事实（含 9 月 21 日晚间真机跟进、22 日凌晨探针 P1–P4 更新与 22 日上午 **kit #7** 刷新，见 §5、§10）。
 > 数字均来自仓库提交、审计报告与 GitHub 实测读取；无法读取或未落名的一律标注，不做推测。
 > 详细依据见主审计报告 `docs/plans/2026-09-19-ohos-code-audit.md`（§1–§37）与索引 `docs/plans/README.md`。
 
@@ -58,30 +58,31 @@
 - **发布前刷新链**：`build-arkts-shell.sh` → 壳归档入包 → `build-host.sh`（`selfsign ok`）→ 校验和 → bundle → release → hap
   （审计 §8、§35.2；hap 均 `verify-app success`）。
 
-## 5. 发布物（2026-09-22 00:12–00:25 读取自 GitHub releases API 与本地重算）
+## 5. 发布物（2026-09-22 08:59–09:10 读取自 GitHub releases API 与本地重算；当前 = kit #7）
 
 | 渠道 | 资产 | 大小（B） | sha256 |
 |---|---|---|---|
-| `workload-1.0.0-preview.24` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,374,768 | `a588ca7a109de8d7f386bb758e99b240244150717d411597d0a7b5465fde63f2` |
-| `workload-1.0.0-preview.24` / `workload-latest` | `SHA256SUMS` | 212 | `b09230d40e4321771ca5a630fd41750b7fb0fa152d7c74d3843d42373adaef45`（内容为当前 bundle 与滚动名两条 `a588ca7a…`；本地 `dist/SHA256SUMS` 重算一致） |
-| `workload-latest` | `openharmony-workload-latest.tar.gz` | 30,374,768 | `a588ca7a…`（同上，逐字节一致） |
-| `device-test-kit`（也在 `workload-latest`；当前 kit #5） | `device-test-kit.tar.gz` | 113,995,310 | `869d1d10ec2e21a65001dd18824597602a227d02568ac42be19edff3a4fbce27`（`.sha256` sidecar 内容实测一致；解包 tree digest `ac8694844d8f8b19713f0059690c19ef39d0b7cabc54c641628cb0e72d8a9cfb`） |
-| `device-test-kit` | `device-test-kit.tar.gz.sha256` | 89 | `c12a0cd73eb4572ed928157b8a4a34bb76cb3afdd31c2175452254db2379c4db` |
+| `workload-1.0.0-preview.24` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,406,412 | `01c782edfe8d556ebd993e509f3c766054e4a551dbeefbe09ce3f729f84c4b51` |
+| `workload-1.0.0-preview.24` / `workload-latest` | `SHA256SUMS` | 212 | `fea1683c97bcee38054418ac7bc879816e89c3fd925294047d0cfc1d4649710c`（内容为当前 bundle 与滚动名两条 `01c782ed…`；本地 `dist/SHA256SUMS` 重算一致） |
+| `workload-latest` | `openharmony-workload-latest.tar.gz` | 30,406,412 | `01c782ed…`（同上，逐字节一致） |
+| `device-test-kit`（也在 `workload-latest`；当前 kit #7） | `device-test-kit.tar.gz` | 114,387,850 | `e7d2cac8215f0a4ddb097858754abf8b499aadd0a53a8d01b7cb48b2aee7bc75`（`.sha256` sidecar 内容实测一致；解包 tree digest `8cac473ab79a26435227502bddb980b74c2bdab9d8d30d77a2958459e00d5f96`） |
+| `device-test-kit` | `device-test-kit.tar.gz.sha256` | 89 | `b1764c3f8d55256c9cadbc58a6eb0c9b2e7218053ddf95aa545aac5bffb4a1f3` |
 | `device-test-kit` | `hello-mauiapp-probe1-unsigned.hap`（P1，壳侧） | 11,988 | `92ef933cf7e0eadce1b415f67362dbba0f533dfff8cbbde89ee0eb6c4dcbeac4` |
 | `device-test-kit` | `hello-mauiapp-probe2-unsigned.hap`（P2，宿主 dlopen） | 178,492 | `70bbc687ba1f131185d72eae6b7dfaddf934d8a296726c792385b901eac9d7b0` |
 | `device-test-kit` | `hello-mauiapp-probe3-unsigned.hap`（P3，宿主入口/dlsym） | 186,002 | `5727e00f11c960b060628441b6119702027aa38414d25ddb0e7a4ea823486f3a` |
 | `device-test-kit` | `hello-mauiapp-probe4-unsigned.hap`（P4，逐依赖） | 177,466 | `209c8b10de4dd963a5f454c2586fb294c57fea22828856fd799289d8d62303fc` |
-| SDK release `v11.0.100-rc.1.26451.109-openharmony` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,374,768 | `a588ca7a…`（GitHub API digest 与本地包重算一致；2026-09-21T16:08:24Z 更新） |
+| SDK release `v11.0.100-rc.1.26451.109-openharmony` | `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,406,412 | `01c782ed…`（GitHub API digest 与本地包重算一致；2026-09-22T01:05:47Z 更新） |
 | SDK release 同上 | `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` | 178,005,544 | `f3a1bba4fd712db5ae231bb4e65cd10ca50c8acb4f0a4d8650681f66c1772c60`（GitHub API digest；未下载核对） |
 
-- `device-test-kit` release 创建于 2026-09-18；kit #5 于 **2026-09-21T16:12:09Z** 更新（sidecar 16:11:47Z，同一 tar.gz 同步到 `workload-latest`），探针 P1–P4 更新于 14:13:24Z / 15:01:33Z / 15:45:09Z / 15:57:59Z（P2–P4 内嵌当前 kit 宿主）。
-- bundle 与滚动 `workload-latest` 指向**同一份** `a588ca7a…`（本地 `dist/`、`.feed/openharmony-workload-latest.tar.gz` 与发布侧 `SHA256SUMS` 重算一致）；SDK release 上同名资产已更新为同一大小与 API digest（2026-09-21T16:08:24Z）。
-- 交付 kit 组成（本地 2026-09-22 00:18 全新解包目录，kit #5）：5 个 hap（26 默认/权限、20 默认/权限、未签名）+ 8 个文档
+- `device-test-kit` release 创建于 2026-09-18；当前 **kit #7** 于 **2026-09-22T01:00:37Z–01:01:45Z** 刷新（tar.gz + sidecar 同批上传，release `updated_at` 01:01:45Z；同一 tar.gz 同步到 `workload-latest`，其 release 01:02:44Z 更新），探针 P1–P4 更新于（2026-09-21）14:13:24Z / 15:01:33Z / 15:45:09Z / 15:57:59Z（P2–P4 内嵌 kit 宿主）。
+- bundle 与滚动 `workload-latest` 指向**同一份** `01c782ed…`（本地 `dist/`、`.feed/openharmony-workload-latest.tar.gz` 与发布侧 `SHA256SUMS` 重算一致）；SDK release 上同名资产已更新为同一大小与 API digest（2026-09-22T01:05:47Z）。
+- 交付 kit 组成（本地 2026-09-22 08:59 全新解包目录，kit #7）：5 个 hap（26 默认/权限、20 默认/权限、未签名）+ 8 个文档
   （`README-交付说明.md`、`快速开始.md`、`文档索引.md`、`最终状态.md`、`真机操作手册.md`、`签名与UDID指南.md`、`自签说明.md`、`验收说明.md`）
-  + `SHA256SUMS`（14 项：5 hap + 8 文档 + `verify-kit.sh`）+ `verify-kit.sh` 自检脚本；2026-09-22 00:18 以本地同哈希 tar.gz 解包复核实测：`sha256sum -c` 14/14 通过、`--expect-tree-digest ac8694…` OK、`.sha256` sidecar 内容 = tar.gz 哈希；整包（114 MB）未从线上重新下载。
-- 当前 5 个 hap 实测：`bundleName=com.example.hellomauiapp`、`minAPIVersion 50002014`、`targetAPIVersion 60101024`、`apiReleaseType Release`、
-  `compileSdkType HarmonyOS`、`compileSdkVersion 6.0.2.130`；`libs/arm64-v8a/` 含 `libopenharmonyhost.so`（`0c15a68a…`）与 `libc++_shared.so`（kit #5 起该 in-kit 副本由 SDK ElfSigner 重签：`flags=0x10`、有效，此前为厂商 PKCS#7 签名，`ohos-workload 732766a`）；`ets/modules.abc` = 119,912 B。
-- 历史对照：本页早期的 kit 快照 114,000,630 / `7ec0475c…`（tree `799dfce2…`）与 bundle 30,374,980 / `638e4932…`，以及审计 §35 的 S 系列快照 bundle 30,325,661 / `639513dc…`、kit 107,510,820 / `537153e0…`，均已被本表（kit #5 / `a588ca7a…`）取代。
+  + `SHA256SUMS`（14 项：5 hap + 8 文档 + `verify-kit.sh`）+ `verify-kit.sh` 自检脚本；2026-09-22 09:08 以本地同哈希 tar.gz 解包复核实测：`sha256sum -c` 14/14 通过、`--expect-tree-digest 8cac473a…` OK、`.sha256` sidecar 内容 = tar.gz 哈希（`b1764c3f…` 与 API digest 一致）；整包（114,387,850 B）未从线上重新下载，以 GitHub API digest 绑定本地同哈希 tar.gz。
+- 当前 5 个 hap 实测：`bundleName=com.example.hellomauiapp`、26 波段 `minAPIVersion 50002014`、`targetAPIVersion 60101024`、`apiReleaseType Release`（api20 波段 `60000020`）、
+  `compileSdkType HarmonyOS`、`compileSdkVersion 6.0.2.130`；`libs/arm64-v8a/` 含 `libopenharmonyhost.so`（kit #7 = 179,104 B / `391bf54d…`，含 BATCH-1/2 Essentials 桥与加固）与 `libc++_shared.so`（kit #5 起该 in-kit 副本由 SDK ElfSigner 重签：`flags=0x10`、有效，此前为厂商 PKCS#7 签名，`ohos-workload 732766a`）；`ets/modules.abc` = 159,224 B（`8ed938e` 加固壳）。
+- 历史对照：本页早期的 kit 快照 114,000,630 / `7ec0475c…`（tree `799dfce2…`）与 bundle 30,374,980 / `638e4932…`，以及审计 §35 的 S 系列快照 bundle 30,325,661 / `639513dc…`、kit 107,510,820 / `537153e0…`，均已被本表（kit #7 / `e7d2cac8…`；bundle `01c782ed…`）取代。
+- **包内 tester 文档不再写死 kit 哈希**：`快速开始.md`、`自签说明.md`、设备校验清单等一律指向 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar；只有本页（包内 `最终状态.md`）记录当次快照数字。
 - 演示工程 `test/hello-maui-app` 多目标（`net11.0-openharmony20.0` / `26.0`），含 S1/T5 Blazor/hybrid 验证页；
   hap 打包走 `-p:OpenHarmonyHapPackage=true` 并注入 5 项权限变体。
 
@@ -120,7 +121,7 @@
 9. **B 语音**：本 SDK 无 Speech Kit，真机同样应如实不可用（审计 §5c）。
 10. **D4 Hot Reload**：设备通道 + 运行时 metadata update，均为硬阻塞（交接状态 §8）。
 11. **签名**：4 个已签 hap 的调试 profile 绑定示例 UDID，其他设备安装报 `9568344`；重签后哈希必变，以随包 `SHA256SUMS` 为准（审计 §35.4）。
-12. **启动崩溃根因**：`JsError` / exit 254 需 P1–P4 探针（或当前 kit #5 重测）的设备日志定论 —— P1 失败 = 壳/设备 SDK 侧；
+12. **启动崩溃根因**：`JsError` / exit 254 需 P1–P4 探针（或当前 kit #7 重测）的设备日志定论 —— P1 失败 = 壳/设备 SDK 侧；
     P1 过、P2 失败 = 宿主 `.so` dlopen；P2 过、P3 失败 = 宿主入口/dlsym；P4 逐依赖点名缺失项；四者全过仍失败 = .NET 运行时/主启动（`docs/plans/2026-09-21-ohos-crash-probes.md` 决策表）。
 
 ## 8. 剩余外部依赖
@@ -134,21 +135,23 @@
    两条无 @ 评论文案仍按约束未发；`#132866` 在本环境 `gh` 查询报 “Could not resolve to a PullRequest”（编号/归属以评审线程为准）。
 3. **hdc 策略**：本环境 `hdc` 被组织策略拦截（`E00C001 Operation restricted by the organization`）；无 hdc 时用文件管理器安装（设备手册 §2/§6）。
    DevEco CLT 26.0.0.999 仅带 hdc、无 hvigor/hvigorw，R3 已取消（审计 §31）。
-4. **发布面待办**：SDK release 上的 bundle 已更新为当前快照（30,374,768 / `a588ca7a…`，2026-09-21T16:08:24Z），无需再跑
-   `publish-workload-release.sh --also-sdk-release <tag>`；kit #5 已于 2026-09-21T16:12:09Z 上传（含重签的 `libc++_shared.so`、lazy-shell、8 条 hilog 诊断；探针 P1–P4 同挂该 release），
-   其 sidecar 与本地 tree digest（`ac8694…`）/包内 14 项校验一致；整包（114 MB）未从线上重新下载解压核对。
+4. **发布面待办**：SDK release 上的 bundle 已更新为当前快照（30,406,412 / `01c782ed…`，2026-09-22T01:05:47Z），无需再跑
+   `publish-workload-release.sh --also-sdk-release <tag>`；kit #7 已于 2026-09-22T01:01:45Z 上传（含 BATCH-1/2 Essentials 桥、announce/window 收尾与加固宿主/壳；探针 P1–P4 同挂该 release），
+   其 sidecar 与本地 tree digest（`8cac473a…`）/包内 14 项校验一致；整包（114,387,850 B）未从线上重新下载解压核对。
 
 ## 9. 核实说明
 
 - **实测读取（2026-09-21 23:05–23:10 CST）**：GitHub releases（bundle/kit/`SHA256SUMS`/`.sha256` sidecar/探针的大小与 sha256、
   SDK release 资产列表与更新时间）、PR 132953/132827、CI run 列表与失败日志；本地：preflight 全绿（256 条 + 像素 PASSED）、
   kit 解包 tree digest 与 14 项校验、5 hap 的 `module.json`/libs 清单、`dist/` 与 `.feed/` bundle 重算、探针哈希。
-- **kit #5 复核（2026-09-22 00:12–00:25 CST）**：本地 kit tar.gz / bundle / `dist/SHA256SUMS` 重算 sha256 与发布侧 API digest 及资产一致；
-  kit 全新解包 `verify-kit.sh --expect-tree-digest ac8694…` OK、14 项 `sha256sum -c` 全过、`.sha256` sidecar 内容 = tar.gz 哈希；探针 P1–P4 大小/哈希读取自 API（P3/P4 为本轮新增资产）。
+- **kit #7 复核（2026-09-22 08:59–09:10 CST）**：本地 kit tar.gz（`e7d2cac8…`）/ bundle（`01c782ed…`）/ `dist/SHA256SUMS`（`fea1683c…`）
+  重算 sha256 与发布侧 API digest 及资产一致；kit 解包 `verify-kit.sh --expect-tree-digest 8cac473a…` OK、14 项 `sha256sum -c` 全过、
+  `.sha256` sidecar 内容 = tar.gz 哈希（`b1764c3f…` 与 API digest 一致）；探针 P1–P4 大小/哈希读取自 API。
+- **哈希入口**：包内 tester 文档（`快速开始.md`、`自签说明.md`、设备校验清单）已去掉固定 kit 哈希，统一指向 `device-test-kit` release 说明的「## Integrity」；本页数字是 2026-09-22 09:10 的快照。
 - **未核实（如实标注）**：T1–T4 与 U1/U2 的编号对应（仅 T5–T8、U3/U4 有落名证据）；V 系列的范围与条目；
   SDK release 上 bundle/SDK 包的**文件本体**（仅 API digest 与本地同哈希 bundle 对照，未下载核对）；kit 整包线上内容（未从线上重新下载，以 sidecar + tree digest 绑定本地同哈希文件）；`#132866` 的仓库归属与状态。
 - **一致性提示**：任何文档中早于本页的计数（如 getting-started 的 191 条、审计 §35 的 208 条与 kit 107,510,820）
-  均为其写作时点快照，以本页数字与随包 `SHA256SUMS` 为准。
+  均为其写作时点快照，以本页数字、`device-test-kit` release 说明的「## Integrity」与随包 `SHA256SUMS` 为准。
 
 ## 10. 真机跟进（on-device follow-up，2026-09-21 晚间）
 
@@ -166,5 +169,5 @@
   `hello-mauiapp-probe2-unsigned.hap`（宿主 dlopen）、`hello-mauiapp-probe3-unsigned.hap`（宿主入口/dlsym）、`hello-mauiapp-probe4-unsigned.hap`（逐依赖预检；P2–P4 内嵌当前 kit 宿主）；
   定位决策表见 `docs/plans/2026-09-21-ohos-crash-probes.md`，最小证据与回传模板见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`。
 - **安全扫描**：仍为 **PASS WITH FINDINGS**；23 个候选项已全部处置（22 修复 + B6 构造性修复），所有修复均未真机验证（`docs/plans/2026-09-21-ohos-security-scan.md`）。
-- **当前基线与待办**：本地 preflight 256 条全绿（含像素套件），CI 门限 ≥224；待测试方用当前 **kit #5** 重测（自行重签），
+- **当前基线与待办**：本地 preflight 256 条全绿（含像素套件），CI 门限 ≥224；待测试方用当前 **kit #7** 重测（自行重签），
   或回传 p7b + p12 + cer + keyAlias，用 `--external` 按其 UDID `60CF7B27…F8A19` 预签（§8 第 1 项）。

@@ -14,21 +14,31 @@ Updated 2026-09-21 (kit #5): §0 records the kit identity check to run before in
 device-aligned profile), and §8 adds the P1–P4 startup-crash probe ladder and the fill-in
 report template to what to return.
 
+Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, not here — §0
+reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
+(`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
+this document.
+
 ## 0. Artifacts
 
 | Artifact | Where |
 |---|---|
 | `hello-maui-app.hap` (~21 MB, 26.0 band, `verify-app` success; siblings `-permissions`, `-api20`, `-api20-permissions`, `-unsigned`) | `ohos-workload/test/hello-maui-app/bin/Release/<tfm>/openharmony-arm64/` or the delivery kit |
-| Delivery kit `device-test-kit.tar.gz` — current **kit #5** (5 haps + 8 zh-CN docs + `SHA256SUMS` + `verify-kit.sh`; sha256 `869d1d10…bce27`, tree digest `ac869484…a9cfb`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
+| Delivery kit `device-test-kit.tar.gz` — current delivery kit (5 haps + 8 zh-CN docs + `SHA256SUMS` + `verify-kit.sh`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity`, mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
 | Workload bundle `openharmony-workload-1.0.0-preview.24.tar.gz` | GitHub release `workload-1.0.0-preview.24` (+ `workload-latest` with `SHA256SUMS`; the SDK release keeps an earlier snapshot) |
 | Host library | `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so` (signed) |
 | ArkTS shells | `packs/.../templates/ets/modules.abc` (headless) and `modules.ui.abc` (UI); preview.24 carries the T6/T8 archive (fingerprint fallback, keep-screen-on) |
 
-**Step 0 — kit identity check (before installing anything).** Run the quickstart's verify chain
-(`verify-kit.sh --anchor-file …` + `--expect-tree-digest …`) and confirm the in-kit version line
-(`最终状态.md`「发布物」 or `README-交付说明.md`「构建基线」) reads `1.0.0-preview.24`. Compare the
-hashes with the release notes for the build you downloaded — re-signed or pre-signed kits
-legitimately differ. The five kit haps are already legal (`bundleName` matches the profile) and
+**Step 0 — kit identity check (before installing anything).** Take the current tarball
+size/sha256 and the extracted-tree digest from the `device-test-kit` release notes
+(`## Integrity`; `workload-latest` mirrors them) or the `.sha256` sidecar. Then run the
+quickstart's verify chain — ① `sha256sum -c device-test-kit.tar.gz.sha256` (or
+`verify-kit.sh --anchor-file …`), ② extract, ③
+`verify-kit.sh --expect-tree-digest <tree digest from the release notes>` — and confirm the
+in-kit version line (`最终状态.md`「发布物」 or `README-交付说明.md`「构建基线」) reads
+`1.0.0-preview.24`. Re-signed or pre-signed kits legitimately differ: compare only against the
+release notes (or the sidecar) of the build you downloaded, never against a value copied into a
+document. The five kit haps are already legal (`bundleName` matches the profile) and
 band-aligned, so **no rename and no `module.json` edit** is needed.
 
 ## 1. Install and launch
@@ -41,10 +51,10 @@ Expected: the app starts; the status file (`<filesDir>/dotnet-status.txt`) conta
 `bridge attached: registered=True`, `[hello-maui-app] starting MAUI application`,
 `[maui] window created (Window), content=ContentPage`.
 
-Kit #5 replaces the earlier rename/band workarounds, so the haps install and start under the
-shipped `bundleName` as-is. `9568344` still means the debug profile does not carry this device's
-UDID (send the UDID, or p7b + p12 + cer + keyAlias for the `--external` pre-sign path in the
-signing guide §4c). If the app exits ~1 s after `aa start` (`exit 254` / `JsError`), go to §8's
+Kit #5 and later replace the earlier rename/band workarounds, so the haps install and start
+under the shipped `bundleName` as-is. `9568344` still means the debug profile does not carry
+this device's UDID (send the UDID, or p7b + p12 + cer + keyAlias for the `--external` pre-sign
+path in the signing guide §4c). If the app exits ~1 s after `aa start` (`exit 254` / `JsError`), go to §8's
 probe ladder instead of retrying.
 
 ## 2. Rendering (pixel expectations)

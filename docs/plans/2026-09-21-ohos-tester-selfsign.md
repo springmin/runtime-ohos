@@ -4,6 +4,10 @@
 我们的包用**自签名证书**签发，其调试 profile 只包含我们机器的 UDID → 你的设备安装会报
 `9568344 install parse profile prop check error`。用**你自己的华为账号自动签名**即可解决。
 
+> 未签名 hap 随 `device-test-kit` release（镜像在 `workload-latest`）交付；下载/解压前先按该
+> release 说明的「## Integrity」小节（整包 sha256、内容树 digest）或 `.tar.gz.sha256` sidecar
+> 校验。本文件与包内文档都不写死哈希 —— 一律以 release notes 为准（重签后哈希必变）。
+
 ## 步骤（约 3 分钟）
 1. DevEco Studio → 新建任意工程（Empty Ability 即可）→ 在 `AppScope/app.json5` 里把 **bundleName 改为
    `com.example.hellomauiapp`**（必须与我们的 hap 一致，否则同样会因属性校验失败）。

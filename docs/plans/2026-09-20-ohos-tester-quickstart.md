@@ -16,15 +16,15 @@ cd device-test-kit
 sh verify-kit.sh \
   --anchor "$(awk '{print $1}' ../device-test-kit.tar.gz.sha256)" \
   --anchor-file ../device-test-kit.tar.gz         # ② 包内逐文件校验 + tar.gz 文件锚定
-sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ 绑定解压内容树（kit #5 当前值见下）
+sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integrity」中的 tree sha256>   # ③ 绑定解压内容树
 # 发布说明没给 tree sha256 时，先打印再人工比对：sh verify-kit.sh --tree-digest
 ```
 
-**先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；`--anchor`（或 `KIT_ANCHOR`）只校验磁盘上的 `.tar.gz` 文件本身是发布件，**不能**证明解压出来的目录与其一致（解压发生在本脚本之外）。因此要绑定"解压后的内容"用内容树摘要：交付方在发布说明里给出 `tree sha256`，用 `--expect-tree-digest <hex>`（或 `KIT_TREE_DIGEST=<hex>`）校验，不匹配会直接失败；发布说明未给出该值时，可用 `--tree-digest` 打印后人工比对。**正确顺序：先校验压缩包（①），再解压，最后校验内容树（③）。**
+**先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；`--anchor`（或 `KIT_ANCHOR`）只校验磁盘上的 `.tar.gz` 文件本身是发布件，**不能**证明解压出来的目录与其一致（解压发生在本脚本之外）。因此要绑定"解压后的内容"用内容树摘要：交付方在 `device-test-kit` release 说明的「## Integrity」小节给出 `tree sha256`（本文件不复述固定值），用 `--expect-tree-digest <hex>`（或 `KIT_TREE_DIGEST=<hex>`）校验，不匹配会直接失败；发布说明未给出该值时，可用 `--tree-digest` 打印后人工比对。**正确顺序：先校验压缩包（①），再解压，最后校验内容树（③）。**
 
-包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）、8 个说明文档与 `verify-kit.sh`；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在发布说明中给出）。
+包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）、8 个说明文档与 `verify-kit.sh`；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在 release 说明「## Integrity」中给出）。
 
-**当前交付 = kit #5**（2026-09-21，基线 `1.0.0-preview.24`）：整包 `sha256 = 869d1d10ec2e21a65001dd18824597602a227d02568ac42be19edff3a4fbce27`，解压内容树 `sha256 = ac8694844d8f8b19713f0059690c19ef39d0b7cabc54c641628cb0e72d8a9cfb`（即 ③ 的参数；包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」）。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
+**哈希一律以发布说明为准，本文不写死**：整包 sha256 与解压内容树 sha256 见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值），③ 的参数就用那里的 tree sha256。示例（kit #7，仅作格式参照 / 以 release notes 为准）：整包 `e7d2cac8…`、内容树 `8cac473a…`；包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
 
 ## 2. 选哪个 hap
 
@@ -38,7 +38,7 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 设备 API ≥26 用默认包；只有 API 20 波段设备才用 api20 包。
 
-当前 **kit #5** 的 5 个 hap 均为合法 `bundleName`（`com.example.hellomauiapp`）且按设备波段打包：**无需改名、无需改 `module.json`**（上轮的重命名/波段手改请勿再带入）。
+当前 kit 的 5 个 hap 均为合法 `bundleName`（`com.example.hellomauiapp`）且按设备波段打包：**无需改名、无需改 `module.json`**（上轮的重命名/波段手改请勿再带入）。
 
 ## 3. 安装
 
@@ -69,7 +69,7 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 失败就记下步骤和现象；完整清单见 `验收说明.md`（A1–K2、N1–N7）。
 
-**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit #5 的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
+**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit（#5 起）的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
 
 ## 6. 回传什么
 
