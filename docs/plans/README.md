@@ -10,11 +10,12 @@
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
 | `2026-09-22-ohos-release-manifest.md` | 2026-09-22 交付物总清单（**快照，不再维护**）：kit #9 的 tar/树摘要、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | 📦 快照（2026-09-22）|
-| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 已签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
+| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 自签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
 | `2026-09-22-ohos-tester-runner.md` | 一条命令跑完一轮真机测试（`tester-run.sh`，随 kit release 单独发布）：本地校验 kit → 安装/启动/抓 hilog/跑 P1–P4 → 打包回传；默认 dry-run、无设备拒绝执行 | ✅ 当前（2026-09-22）|
 | `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能真机验证清单（M1–M10：权限/连通性/剪贴板/邮件短信拨号/截图/地理编码/窗口安全区/图像与单元格/无障碍/Shell 扩展）：逐项「步骤/期望/证据」+ 探针 hap 与 `tester-run.sh` 用法 | ✅ 当前（2026-09-22）|
 | `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（JsError / exit 254）：当前 kit 重测与校验记录 + 最小 hilog/faultlog/status 取证 + 三个 A/B + 回传清单 | ✅ 当前（2026-09-21）|
 | `2026-09-21-ohos-crash-probes.md` | 启动崩溃探针 P1–P4（壳 / 宿主 dlopen / 宿主入口 dlsym / 逐依赖）：五层定位决策表 + 免安装 14 库自检；4 个未签名 hap 挂在 `device-test-kit` release | ✅ 当前（2026-09-21）|
+| `2026-09-22-ohos-startup-crash-rootcause.md` | 启动崩溃根因（测试方证据链）：9568257 自签名被拒属预期；签后启动 `ReferenceError: Cannot find module '…EntryAbility'`（exit 254）= 壳 abc 入口 record 缺陷（E1–E5 + cc-switch 37 vs 1~2 + 华为 FAQ `useNormalizedOHMUrl=false`）；H1/H2 是硬化非本因；修复 = PA1 重建壳 abc | ✅ 当前（2026-09-22）|
 | `2026-09-21-ohos-device-report-template.md` | 下一轮真机回传一页模板（填补空白即可）：kit 身份/重签/安装/启动/探针 P1–P4/附件清单，供机器解析归档 | ✅ 当前（2026-09-21）|
 | `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`）| ✅ 当前（2026-09-21，preview.24）|
 | `2026-09-21-ohos-device-run-playbook.md` | 真机运行操作手册：包内 `sh verify-kit.sh` 校验 → 安装/启动 → hilog 取证 → 5 条冒烟 → 9568344/E00C001 失败分支与回传 | ✅ 当前（2026-09-21）|

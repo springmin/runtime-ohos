@@ -15,12 +15,16 @@
 | SHA-256 | **不做固定约定**：以随包 `SHA256SUMS`（或 kit 的 `.tar.gz.sha256` sidecar）为准；每次重签/重建哈希都会变 |
 | 构建版本 | `.NET/OpenHarmony workload 1.0.0-preview.24` |
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
-| 内含 | 托管应用负载、自签名宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
+| 内含 | 托管应用负载、ELF 由 SDK ElfSigner 签名的宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
 
 校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。
 
-另有**未签名包** `hello-maui-app-unsigned.hap`（与 26 默认包同一负载、同一 bundle name，未做签名）：适合用
-自己的华为开发者账号自助签名后安装，步骤见同包 `自签说明.md`；其哈希同样在 `SHA256SUMS` 中。
+> **签名状态（2026-09-22 真机实测）**：本包 4 个默认 hap 变体（默认 / permissions / api20 / api20-permissions）是
+> **自签名（设备会拒绝，需要重签）** —— 用我方调试证书/调试 profile 签名、profile 只绑定示例设备 UDID，真机安装会报
+> `9568257 fail to verify pkcs7 file` 或 `9568344 install parse profile prop check error`，属**预期**结果，**不是可安装包**。
+
+另有**未签名包** `hello-maui-app-unsigned.hap`（与 26 默认包同一负载、同一 bundle name，未做签名）：**本包唯一可重签安装的变体**，适合用
+自己的华为开发者账号自助签名后安装，步骤见同包 `自签说明.md`（重签一行也在 `快速开始.md` §1 与包内 `签名说明.txt`）；其哈希同样在 `SHA256SUMS` 中。
 
 应用名：`hello-maui-app`；启动后是一个包含大量控件的长列表页面（顶部导航栏标题「Root」）。
 
@@ -59,7 +63,8 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
   带权限的 API 20 变体可由同一命令加 `-p:'OpenHarmonyExtraPermissions="…"'` 产出。
 - **变体摘要**：`module.json` 的 `requestPermissions` 恰为上述 **5 项** ✓；5 个 hap 文件名：
   `hello-maui-app.hap`（默认）、`hello-maui-app-permissions.hap`、`hello-maui-app-api20.hap`、
-  `hello-maui-app-api20-permissions.hap`、`hello-maui-app-unsigned.hap`；大小与 SHA-256 不做固定约定，
+  `hello-maui-app-api20-permissions.hap`、`hello-maui-app-unsigned.hap`（前 4 个自签名、设备会拒绝，需要重签；
+  最后 1 个未签名、是重签安装路径）；大小与 SHA-256 不做固定约定，
   以随包 `SHA256SUMS` 为准（解包后 `sha256sum -c SHA256SUMS` 全过即可），kit 整包与内容树见 `device-test-kit` release 说明的「## Integrity」或 `.tar.gz.sha256` sidecar。
 
 ## 2. 环境要求
@@ -75,7 +80,7 @@ ohos.permission.READ_CONTACTS · ohos.permission.READ_CALENDAR · ohos.permissio
 **方式 A（推荐，仅设备即可）**
 1. 把 `hello-maui-app.hap` 拷到设备（U 盘/文件管理器/局域网）。
 2. 在文件管理器中**打开该 hap**（或用系统"应用安装器"打开）→ 按提示安装。
-3. 安装失败时**记录完整错误文案**（签名错误 / 策略限制 / 未知来源等）并回传。
+3. 安装失败时**记录完整错误文案**（签名错误 / 策略限制 / 未知来源等）并回传；包内 4 个默认 hap 报 `9568257`（自签名被拒）或 `9568344`（profile 未绑定你的 UDID）属预期，先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap`，不必回传该错误本身。
 
 **方式 B（若设备侧允许 hdc）**
 ```bash
@@ -304,7 +309,9 @@ I1 未测（无相机）
 
 ### 8b. 若应用启动即崩（JsError / exit 254）
 
-**先别做 M1–M10**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
+**先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），这是本版 kit 的 ArkTS 壳 abc 入口 record 缺陷（2026-09-22 测试方定论，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**不需要跑 P1–P4**，等 PA1 重建壳后的下一版 kit 重测。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。
+
+**其他启动崩溃先别做 M1–M10**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
 `sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按
 `自签说明.md` 自签），按「五层决策表」回传结论：P1 失败 = 设备/框架/包波段；P2 失败 = 宿主 `.so` dlopen；
 P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` 行里的库名即答案）；P1–P4 全过 = 崩在

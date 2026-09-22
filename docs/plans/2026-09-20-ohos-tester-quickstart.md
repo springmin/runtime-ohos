@@ -22,7 +22,13 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 
 **先校验外层 `.tar.gz.sha256`，再解压**：包内的 `SHA256SUMS` 与文件在同一个压缩包里，只能证明包内自洽；`--anchor`（或 `KIT_ANCHOR`）只校验磁盘上的 `.tar.gz` 文件本身是发布件，**不能**证明解压出来的目录与其一致（解压发生在本脚本之外）。因此要绑定"解压后的内容"用内容树摘要：交付方在 `device-test-kit` release 说明的「## Integrity」小节给出 `tree sha256`（本文件不复述固定值），用 `--expect-tree-digest <hex>`（或 `KIT_TREE_DIGEST=<hex>`）校验，不匹配会直接失败；发布说明未给出该值时，可用 `--tree-digest` 打印后人工比对。**正确顺序：先校验压缩包（①），再解压，最后校验内容树（③）。**
 
-包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个已签 + 1 个未签）、8 个说明文档与 `verify-kit.sh`；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在 release 说明「## Integrity」中给出）。
+包内自带 **`SHA256SUMS`**，含 5 个 hap（4 个**自签名** + 1 个**未签名**）、8 个说明文档、`签名说明.txt` 与 `verify-kit.sh`；**每次重签哈希都会变**，一律以随包的 `SHA256SUMS` / `.sha256` 为准（内容树摘要由发布方在 release 说明「## Integrity」中给出）。
+
+> **签名状态（先读，2026-09-22 真机实测）**：4 个默认 hap 是**自签名（设备会拒绝，需要重签）** —— 用我方调试证书/调试 profile 签名，profile 只绑定示例设备 UDID，
+> 真机安装会报 `9568257 fail to verify pkcs7 file` 或 `9568344 install parse profile prop check error`，**这是预期结果，重试无用**。
+> 能安装的只有 `hello-maui-app-unsigned.hap` **用你自己的华为账号自动签名后**的产物（也可回传 UDID 由我们重签，或改用发布方预签包；详见包内 `签名说明.txt`）。
+> 重签一行（路径/密码换成你的，完整步骤见 `自签说明.md`）：
+> `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -appCertFile <你的>.cer -profileFile <你的>.p7b -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-yourself.hap -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"`
 
 **哈希一律以发布说明为准，本文不写死**：整包 sha256 与解压内容树 sha256 见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值），③ 的参数就用那里的 tree sha256。示例（kit #7，仅作格式参照 / 以 release notes 为准）：整包 `e7d2cac8…`、内容树 `8cac473a…`；包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
 
@@ -30,11 +36,11 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 
 | hap | 用途 |
 |---|---|
-| `hello-maui-app.hap` | **默认包**（无额外权限）：UI、交互、手势、IME、通知、安全区、WebView、无障碍、Hybrid |
-| `hello-maui-app-permissions.hap` | 追加蓝牙/打印/联系人/日历（首次使用弹运行时授权；PRINT 为 system_grant 不弹）|
-| `hello-maui-app-api20.hap` | API 20 波段设备；band 值 `60000020` 解码为**平台 6.0.0 / API 20** |
-| `hello-maui-app-api20-permissions.hap` | 同上，带权限 |
-| `hello-maui-app-unsigned.hap` | **未签名**（同 26 默认包）；用你自己的华为账号自动签名后再装，见 `自签说明.md` |
+| `hello-maui-app.hap` | **默认包**（无额外权限）：UI、交互、手势、IME、通知、安全区、WebView、无障碍、Hybrid；**自签名，设备会拒绝，需要重签** |
+| `hello-maui-app-permissions.hap` | 追加蓝牙/打印/联系人/日历（首次使用弹运行时授权；PRINT 为 system_grant 不弹）；**自签名，设备会拒绝，需要重签** |
+| `hello-maui-app-api20.hap` | API 20 波段设备；band 值 `60000020` 解码为**平台 6.0.0 / API 20**；**自签名，设备会拒绝，需要重签** |
+| `hello-maui-app-api20-permissions.hap` | 同上，带权限；**自签名，设备会拒绝，需要重签** |
+| `hello-maui-app-unsigned.hap` | **未签名**（同 26 默认包）；**本包唯一可重签安装的变体**：用你自己的华为账号自动签名后再装，见 `自签说明.md` |
 
 设备 API ≥26 用默认包；只有 API 20 波段设备才用 api20 包。
 
@@ -45,11 +51,12 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 1. **无需安装 .NET 运行时**：运行时随 hap 打包在 `resources/rawfile/dotnet.zip`。
 2. 把 hap 拷到设备（U 盘/文件管理器/局域网），在**文件管理器中打开**该 hap，按提示安装。
 3. 需要**开发者模式** + 允许调试/外部来源安装（设置 → 安全，各 ROM 名称略有差异）。
-4. 设备允许 hdc 时：`hdc install hello-maui-app.hap`；启动用 `hdc shell aa start -a EntryAbility -b com.example.hellomauiapp`，或直接点桌面图标（首帧为黑色导航栏 + 标题「Root」的长列表）。
+4. 设备允许 hdc 时：先重签（见 §1 签名状态）；`hdc install <重签后的 hap>`；启动用 `hdc shell aa start -a EntryAbility -b com.example.hellomauiapp`，或直接点桌面图标（首帧为黑色导航栏 + 标题「Root」的长列表）。
 
-## 4. 报 `9568344 install parse profile prop check error`
+## 4. 报 `9568257` / `9568344`（自签名被拒 / profile 未绑定你的 UDID）
 
-不是应用缺陷：hap 用调试 profile 签名，**profile 只绑定了示例设备 UDID**。三选一：
+- `9568257 fail to verify pkcs7 file`：4 个默认 hap 是**自签名（设备会拒绝，需要重签）** —— 设备不信任我方调试签名，属预期结果；先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap` 再装（详见包内 `签名说明.txt`）。
+- `9568344 install parse profile prop check error`：调试 profile **只绑定了示例设备 UDID**。三选一：
 
 - 把本机 **UDID** 发回（`hdc shell bm get -u`，或 DevEco Studio → Device Manager → 设备信息）→ 我们按 UDID 重签发新包（哈希会变）；
 - 按 `签名与UDID指南.md` 用 DevEco 自动签名后自助重签；
@@ -69,7 +76,7 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 
 失败就记下步骤和现象；完整清单见 `验收说明.md`（A1–K2、N1–N7）。
 
-**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit（#5 起）的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
+**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`，那是本版 kit 的 ArkTS 壳 abc 入口 record 缺陷（2026-09-22 测试方定论，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**无需跑 P1–P4**，等 PA1 重建壳后的下一版 kit 重测。其他启动崩溃：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit（#5 起）的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
 
 ## 6. 回传什么
 
@@ -101,4 +108,5 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 - 上手（开发）：`docs/plans/2026-09-20-ohos-dotnet-getting-started.md`
 - 启动崩溃取证：`docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`
 - 崩溃探针 P1–P4 与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`（4 个未签名 hap 挂在 `device-test-kit` release）
+- 启动崩溃根因（2026-09-22 定论）：`docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`
 - 回传模板（一页）：`docs/plans/2026-09-21-ohos-device-report-template.md`

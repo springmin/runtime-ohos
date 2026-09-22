@@ -3,6 +3,14 @@
 > Companion to `2026-09-21-ohos-device-crash-diagnostics.md`. The tester's device
 > (OpenHarmony 7.0.0.105 / API 26 / 2in1, UDID `60CF7B27…F8A19`) installs the kit hap but the app
 > exits ~1 s after `aa start` (`exit 254`, `AppKilledReporter` `reason=JsError`).
+>
+> **2026-09-22 update**: the tester's evidence chain (E1–E5 plus the working `cc-switch` abc
+> comparison: 37 vs 1–2 occurrence counts, missing record index entries) pinned the current kit
+> crash to the shell abc entry record — see `2026-09-22-ohos-startup-crash-rootcause.md`. The
+> P1–P4 ladder below still classifies **dlopen / host-entry / .NET-runtime** crashes; branch on
+> the exact exit error first (§4.0). The install error `9568257 fail to verify pkcs7 file` is the
+> expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
+>
 > These four minimal, standalone probes bisect the failure between five layers:
 > **ArkTS shell/device SDK** (P1), **host .so dlopen** (P2), **host entry points / dlsym** (P3),
 > **per-dependency preflight** (P4), **.NET runtime/main startup** (only reached when all four pass).
@@ -276,6 +284,24 @@ Interpretation for the P4 result string:
 
 ## 4. Decision table
 
+### 4.0 Branch on the exit error first: the shell abc entry record
+
+If the app exits ~1 s after `aa start` (`exit 254`) and hilog shows
+
+```text
+ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point
+```
+
+then this is the **shell abc entry-record issue** (the abc's record name/index does not match
+`module.json` `srcEntry`), already root-caused from the tester's E1–E5 experiments and the
+`cc-switch` comparison — see `2026-09-22-ohos-startup-crash-rootcause.md`. It happens **before**
+any host `.so` load, so the P1–P4 ladder below is **not** the tool for it (the P1 shell-only
+probe builds its own abc and can still pass). Kits up to the PA1 shell-abc rebuild carry this
+defect: re-sign, then wait for / retest the rebuilt kit instead of running P1–P4. The P1–P4
+ladder still applies to the other classes (dlopen / missing dependency / host entry / .NET
+runtime). The install error `9568257 fail to verify pkcs7 file` is the expected self-signed
+rejection — re-sign `hello-maui-app-unsigned.hap` (see `自签说明.md`) before judging startup.
+
 P4 is the authoritative row for missing dependencies: `PROBE4|<name>|FAIL|<dlerror>` names the
 exact missing library, and a P2/P3 that dies without any result line is consistent with a missing
 dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
@@ -323,6 +349,9 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 
 ## 6. 给测试方的速用版（中文）
 
+0. **先分类**：安装报 `9568257`（自签名被拒）属预期 —— 先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap` 再装。安装成功后启动即退，若 hilog 报
+   `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`，是本版 kit 的壳 abc 入口 record 缺陷
+   （PA1 重建后的 kit 修复，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**不要跑 P1–P4**；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。
