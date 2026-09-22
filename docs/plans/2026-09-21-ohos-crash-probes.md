@@ -11,9 +11,16 @@
 > see `2026-09-22-ohos-startup-crash-rootcause.md`. The same re-test surfaced a second pre-shell
 > blocker, the abc bytecode version (`24.0.0.0` vs the device's `13.0.1.0` ceiling; hilog shows
 > `export objects of native so is undefined` / `Cannot read property … of undefined`), fixed in
-> kit #11 (`95c89a7`/`ef1c947`, §4.0b). The
+> kit #11 (`95c89a7`/`ef1c947`, §4.0b). The kit #11 re-test then surfaced a third blocker: the
+> host `.so` did not load when the always-loaded ability module imported it, leaving `host`
+> undefined (every guarded call logs `[maui] host export unavailable`; the first unguarded call,
+> `registerXComponent` in the page's `.onLoad`, throws `TypeError` and the process exits 254).
+> Covered in §4.0c; fixed in kit #12 (`ohos-workload 7e71c39` + shell archive `2411a8e`) by keeping
+> the host's hostfxr surface dlopen-only (`build-host.sh` now fails if `libhostfxr` appears in
+> `DT_NEEDED`) and routing every `host.<api>` access through the `hostCall` +
+> `typeof host !== 'undefined'` guard. The
 > P1–P4 ladder below still classifies **dlopen / host-entry / .NET-runtime** crashes; branch on
-> the exact exit error first (§4.0/§4.0b). The install error `9568257 fail to verify pkcs7 file` is the
+> the exact exit error first (§4.0/§4.0b/§4.0c). The install error `9568257 fail to verify pkcs7 file` is the
 > expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
 >
 > These four minimal, standalone probes bisect the failure between five layers:
@@ -335,6 +342,52 @@ Like the entry-record branch, this happens before any host `.so` load, so P1–P
 for it; the ladder still covers dlopen / missing dependency / host entry / .NET runtime crashes.
 Full mapping and background: `2026-09-22-ohos-arkts-abc-version-history.md` §5.
 
+### 4.0c Branch on the exit error first: the host `.so` did not load (`host` is undefined)
+
+If the abc parses (`xxd -l16 modules.abc` = `0d 00 01 00`) and the shell's `[maui]` lines appear
+(the kit #10/#11 pre-shell branches are cleared), but the app still exits — typically at the
+page/render stage — with
+
+```text
+[maui] host export unavailable: <api> …
+Error type:TypeError
+Error message:Cannot read property registerXComponent of undefined
+```
+
+then the static `import host from 'libopenharmonyhost.so'` in the always-loaded ability/page
+module produced an undefined module: the host `.so` failed to load, so every `host.<api>` is
+undefined. The `hostCall` guards log each export once (`host export unavailable`); the first
+unguarded call (`registerXComponent` in the XComponent `onLoad` before kit #12) is then the crash
+site. The load-time surface is the host's `DT_NEEDED` list: the HAP loader resolves it when the
+ability module imports the `.so`, which is **before** `EntryAbility.onCreate` extracts
+`dotnet.zip` into the payload directory, so a payload-only dependency (notably `libhostfxr.so`,
+which lives inside `dotnet.zip`) cannot be satisfied. Huawei's official guidance: every
+`DT_NEEDED` must be inside the HAP or provided by the system, or the app crashes at startup
+(`faqs-jsvm-9`); a failed recursive `DT_NEEDED` load crashes around NAPI module initialisation;
+and an `import` in an always-loaded `.ets` triggers the `dlopen` at app start. "export objects of
+native so is undefined" is the same failure from the ArkTS side.
+
+Check every load-time dependency against both places it can live:
+
+```sh
+unzip -p hello-maui-app.hap libs/arm64-v8a/libopenharmonyhost.so > /tmp/host.so
+readelf -d /tmp/host.so | grep NEEDED                   # the load-time surface
+unzip -l hello-maui-app.hap | grep 'libs/arm64-v8a/'    # ① the hap's own lib dir
+hdc shell ls -l /system/lib64/<name>                    # ② the device system libs (per NEEDED name)
+hdc shell hilog | grep -iE "dlopen|not found|cannot find library|export objects of native so"
+```
+
+Anything named in `NEEDED` that is neither in the hap's `libs/<abi>/` nor on the device is the
+load-time cause. The host must not link a payload library: hostfxr is resolved at `startApp` time
+through the host's own `dlopen`/`dlsym` table, never as a `DT_NEEDED`. Fixed in kit #12
+(`ohos-workload 7e71c39`, shell archive `2411a8e`): the host carries no `libhostfxr` link
+dependency, `scripts/build-host.sh` audits `DT_NEEDED` with `readelf` and fails the build if
+`libhostfxr` appears, and **every** `host.<api>` access in the shell templates is routed through
+`hostCall` + `typeof host !== 'undefined'` (including `registerXComponent`), so a host that fails
+to load degrades to one `host export unavailable` log per API instead of a `TypeError` + exit
+254. Like §4.0/§4.0b, this is a pre/around-host-load branch: the P1–P4 ladder remains for the
+other classes.
+
 P4 is the authoritative row for missing dependencies: `PROBE4|<name>|FAIL|<dlerror>` names the
 exact missing library, and a P2/P3 that dies without any result line is consistent with a missing
 dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
@@ -342,6 +395,7 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 | P1 (shell-only) | P2 (host-dlopen) | P3 (host-entry) | P4 (per-dependency) | Conclusion | Next action |
 |---|---|---|---|---|---|
 | n/a — pre-shell (abc version) | n/a | n/a | n/a | Process exits, hilog shows `export objects of native so is undefined` / `Cannot read property … of undefined` — **abc bytecode version mismatch** (shell abc 24.0.0.0 vs the device's 13.0.1.0 ceiling) | Use a kit from #11 on (shell abc `13.0.1.0`, `compatibleSdkVersion 18`) and re-sign it; compare `xxd -l16 modules.abc` with `hdc shell param get const.ark.version` (§4.0b) |
+| n/a — post-shell (`[maui]` logs, page/render) | n/a | n/a | n/a | `host` is undefined (`[maui] host export unavailable: <api>`; `Cannot read property registerXComponent of undefined` + exit 254) — **the host `.so` failed to load** (load-time `DT_NEEDED` resolution happens at ability import, before `dotnet.zip` is extracted) | Re-sign a kit from #12 on; compare `readelf -d libopenharmonyhost.so \| grep NEEDED` against the hap's `libs/<abi>/` and `hdc shell ls -l /system/lib64/<name>` (§4.0c) |
 | fails (`JsError`, no/failed `PROBE1` chain) | n/a | n/a | n/a | Device/framework issue — plain ArkTS haps built by this toolchain do not run | Re-sign/reinstall, compare with a DevEco Empty Ability build in the same band; kit crash is not host-specific |
 | ok | fails (`…_FAIL=<dlerror>`) | n/a | n/a | Host `.so` dlopen fails — missing library file / unresolved relocation / namespace or signature problem (the `dlerror` text is the root cause) | Fix native packaging per the error (e.g. bundle `libc++_shared.so` / missing system lib / namespace), then rerun P2 |
 | ok | ok (`abs_NOW_OK`) | fails (`dlsym.…=NULL`, `call.…=SKIP`, or no `PROBE3 HOST_ENTRY_RESULT` line) | n/a | Host entry/dlsym mismatch — the `.so` maps but a key export is not resolvable/usable from the app linker namespace | Send the P3 line verbatim (missing/demangled export name); compare the shipped host's symbol table with the kit's expected imports |
@@ -385,8 +439,9 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 
 0. **先分类**：安装报 `9568257`（自签名被拒）属预期 —— 先按 `自签说明.md` 重签 `hello-maui-app-unsigned.hap` 再装。安装成功后启动即退：
    - hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point` → 壳 abc 入口 record 缺陷（**kit #10 已修复**，测试方真机已确认；旧 kit 请换新 kit）；
-   - hilog 报 `export objects of native so is undefined` / `Cannot read property … of undefined` → abc 字节码版本不符（**kit #11 已修复**：`13.0.1.0`；用 `xxd -l16 modules.abc` 与 `hdc shell param get const.ark.version` 对照）。
-   以上两类都发生在宿主加载之前，**不要跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b 与本文 §4.0/§4.0b）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
+   - hilog 报 `export objects of native so is undefined` / `Cannot read property … of undefined` → abc 字节码版本不符（**kit #11 已修复**：`13.0.1.0`；用 `xxd -l16 modules.abc` 与 `hdc shell param get const.ark.version` 对照）；
+   - hilog 有 `[maui]` 日志、但出现 `[maui] host export unavailable: <api>` 或 `Cannot read property registerXComponent of undefined` → 宿主 `.so` 加载失败（壳 `host` 为 undefined；**kit #12 已修复**：宿主无 `libhostfxr` 链接依赖 + 壳全量守卫）；按 §4.0c 用 `readelf -d … | grep NEEDED` 对照 hap `libs/arm64-v8a/` 与设备系统库。
+   以上三类都发生在宿主加载前/后、**不要先跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c 与本文 §4.0/§4.0b/§4.0c）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。

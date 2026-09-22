@@ -1,9 +1,9 @@
 # OpenHarmony .NET/MAUI 移植最终状态（2026-09-21）
 
 > 一页版收官状态：五仓库（`runtime-ohos` 文档、`ohos-workload` 宿主/壳/脚本/套件、`maui-ohos` 切片、
-> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-22 17:30（CST）** 可核实的事实（含 9 月 21 日晚间真机跟进、
-> 22 日凌晨探针 P1–P4 更新、22 日下午的**两个启动根因修复（入口 record + abc 13.0.1.0）**、**kit #11** 刷新与
-> **284 条** preflight 基线，见 §4、§5、§10）。
+> `sdk-ohos` 发布、`aspnetcore-ohos`）截至 **2026-09-22 19:00（CST）** 可核实的事实（含 9 月 21 日晚间真机跟进、
+> 22 日凌晨探针 P1–P4 更新、22 日下午至傍晚的**三个启动阻塞修复（入口 record / abc 13.0.1.0 / host undefined）**、
+> **kit #11** 刷新与 **284 条** preflight 基线，见 §4、§5、§10）。
 > 数字均来自仓库提交、审计报告与 GitHub 实测读取；无法读取或未落名的一律标注，不做推测。
 > 详细依据见主审计报告 `docs/plans/2026-09-19-ohos-code-audit.md`（§1–§37）与索引 `docs/plans/README.md`。
 
@@ -122,10 +122,13 @@
 9. **B 语音**：本 SDK 无 Speech Kit，真机同样应如实不可用（审计 §5c）。
 10. **D4 Hot Reload**：设备通道 + 运行时 metadata update，均为硬阻塞（交接状态 §8）。
 11. **签名**：4 个已签 hap 的调试 profile 绑定示例 UDID，其他设备安装报 `9568344`；重签后哈希必变，以随包 `SHA256SUMS` 为准（审计 §35.4）。
-12. **启动崩溃根因（已修复）**：两个根因均已定位并进入 kit #10/#11 —— ① 壳 abc 入口 record（`ReferenceError: Cannot find module '…EntryAbility'`，
+12. **启动崩溃根因（已修复）**：三个根因均已定位并进入 kit #10/#11/#12 —— ① 壳 abc 入口 record（`ReferenceError: Cannot find module '…EntryAbility'`，
     kit #10 修复、测试方真机复测确认）；② abc 字节码版本 `24.0.0.0` 超出设备 ark runtime `13.0.1.0`
-    （`export objects of native so is undefined` / `Cannot read property … of undefined`，kit #11 以 `compatibleSdkVersion 18` 修复为 `13.0.1.0`）。
-    判读见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0/§4.0b；
+    （`export objects of native so is undefined` / `Cannot read property … of undefined`，kit #11 以 `compatibleSdkVersion 18` 修复为 `13.0.1.0`）；
+    ③ 宿主 `.so` 加载失败使壳 `host` 为 undefined、未守卫的 `host.registerXComponent()` 抛 TypeError（`exit 254`，
+    kit #11 真机复测暴露），修复随 kit #12：宿主无 `libhostfxr` 链接依赖（全部经 dlopen/dlsym）+ `build-host.sh`
+    构建期 DT_NEEDED 审计 + 壳全量 `host.<api>` 守卫（`ohos-workload 7e71c39` + 壳归档 `2411a8e`）。
+    判读见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0/§4.0b/§4.0c；
     P1–P4 阶梯仍用于 dlopen / 缺库 / 宿主入口 / .NET 运行时类崩溃。
 
 ## 8. 剩余外部依赖
@@ -184,5 +187,13 @@
   `compatibleSdkVersion 18` 修复为 `13.0.1.0`（`ohos-workload 95c89a7`/`ef1c947`）。详见
   `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b 与 `docs/plans/2026-09-22-ohos-arkts-abc-version-history.md`。
 - **当前基线与待办**：本地完整 preflight **284** 条全绿（含像素套件），CI 门限 ≥264（`ohos-workload ab09918`，pin `maui-ohos c4ac6a5e`）；
-  待测试方用当前 **kit #11** 重测（自行重签；先看 §7 第 12 项的两个已修复分支），或回传 p7b + p12 + cer + keyAlias，
+  待测试方用 **kit #12** 重测（自行重签；先看 §7 第 12 项的**三个**已修复分支），或回传 p7b + p12 + cer + keyAlias，
   用 `--external` 按其 UDID `60CF7B27…F8A19` 预签（§8 第 1 项）。
+- **第三个启动阻塞与 kit #12（2026-09-22 晚）**：kit #11 真机复测确认 abc 修复生效（`ark_disasm` 可解析 `13.0.1.0`、
+  `[maui]` 日志出现、崩溃推进到页面/渲染阶段），但壳 `host` 为 undefined —— 未守卫的 `host.registerXComponent()`
+  抛 TypeError（`exit 254`，其余调用只记 `[maui] host export unavailable`）。归因：宿主 `.so` 加载失败
+  （加载期 DT_NEEDED 解析早于 `dotnet.zip` 解压；测试方 readelf 清单指认 `libhostfxr.so`，对同哈希 kit #11 产物的
+  逐 hap 复核见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5c 核验注）。修复（`ohos-workload 7e71c39` +
+  壳归档 `2411a8e`，随 kit #12 出包）：宿主不在链接期依赖 `libhostfxr`（全部经 dlopen/dlsym），`build-host.sh`
+  增加构建期 DT_NEEDED 审计（含 `libhostfxr` 即失败），壳模板每个 `host.<api>` 访问纳入 `hostCall` +
+  `typeof host !== 'undefined'` 守卫（含 `registerXComponent`）。详见同 §5c 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0c。
