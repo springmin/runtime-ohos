@@ -1,6 +1,7 @@
 # OpenHarmony .NET/MAUI 真机测试快速上手（外部测试方）
 
 > 拿到交付包后：怎么装、先测什么、回传什么。结论以你设备上的实测为准。
+> 当前发布 = **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2）；主选就是 kit #21 本身（已含 `libIsolation` 与全部安全/性能修复）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。
 
 ## 1. 下载与校验
 
@@ -29,8 +30,17 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 > 能安装的只有 `hello-maui-app-unsigned.hap` **用你自己的华为账号自动签名后**的产物（也可回传 UDID 由我们重签，或改用发布方预签包；详见包内 `签名说明.txt`）。
 > 重签一行（路径/密码换成你的，完整步骤见 `自签说明.md`）：
 > `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -appCertFile <你的>.cer -profileFile <你的>.p7b -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-yourself.hap -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"`
+>
+> **关于包内 `签名说明.txt`**：kit #21 里第三节的「PA1 重建壳的下一版 kit」句是历史文案（源已在 `ohos-workload c6a4cd95e` 修正，随下个 kit 生效；本 kit 不含该缺陷）。判读以 `签名说明` 其余内容与 release notes 为准。
 
-**哈希一律以发布说明为准，本文不写死**：整包 sha256 与解压内容树 sha256 见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值），③ 的参数就用那里的 tree sha256。示例（kit #7，仅作格式参照 / 以 release notes 为准）：整包 `e7d2cac8…`、内容树 `8cac473a…`；包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
+**哈希一律以发布说明为准，本文不写死**：整包 sha256 与解压内容树 sha256 见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值），③ 的参数就用那里的 tree sha256；`tester-run.sh`（v6r2）会把整包摘要与主 hap 摘要写进证据包 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`，可直接对照。当前发布为 **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + tester-run v6r2），包内版本原文见 `最终状态.md`「发布物」/`README-交付说明.md`「构建基线」。重签、预签或重新打包后的哈希必然不同 —— 以发布说明与随包 `SHA256SUMS` 为准。
+
+## 1b. 自 kit #17 以来的变化（速览）
+
+- **安全**：bundleName 白名单校验（发任何 `hdc` 命令前）、hvigor 下载锚定、安装器 https + 哈希锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`。
+- **性能**：交互套件帧分配 **241,688 → 4,504 B/帧**（present/图片/文本/触摸/轮播/rawfile 等热点已修；余 2 项有意保留并在文档中记录）。
+- **启动**：P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。
+- 主选仍是 **kit #21 本身**（已含 `libIsolation` 与全部修复）；对照载荷与探针只在交付方指定时使用。
 
 ## 2. 选哪个 hap
 
@@ -60,7 +70,7 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 
 - 把本机 **UDID** 发回（`hdc shell bm get -u`，或 DevEco Studio → Device Manager → 设备信息）→ 我们按 UDID 重签发新包（哈希会变）；
 - 按 `签名与UDID指南.md` 用 DevEco 自动签名后自助重签；
-- 把 **p7b + p12 + cer + keyAlias**（p12 密码走安全通道）发回 → 我们用 `ohos-workload/scripts/sign-for-device.sh --external --profile … --key … --key-alias <alias> --expect-udid <你的UDID>` 按其 UDID **预签**（p7b 的 `debug-info.device-ids` 必须含该 UDID；细节见 `签名与UDID指南.md` §4c）。
+- 把 **p7b + p12 + cer + keyAlias**（p12 密码走安全通道）发回 → 我们用 `ohos-workload/scripts/sign-for-device.sh --external --profile <你的.p7b> --key <你的.p12> --cert <你的.cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成你的）按其 UDID **预签**（p7b 的 `debug-info.device-ids` 必须含该 UDID；细节见 `签名与UDID指南.md` §4c）。
 
 另：`E00C001 Operation restricted by the organization` = 设备策略关闭了 hdc → 改用文件管理器安装。
 
@@ -76,7 +86,7 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 
 失败就记下步骤和现象；完整清单见 `验收说明.md`（A1–K2、N1–N7）。
 
-**启动即退（约 1 秒退出 / `exit 254` / `JsError`）不按普通失败处理**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`，那是本版 kit 的 ArkTS 壳 abc 入口 record 缺陷（2026-09-22 测试方定论，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**无需跑 P1–P4**，等 PA1 重建壳后的下一版 kit 重测。其他启动崩溃：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit（#5 起）的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
+**启动即退（约 1 秒退出 / `exit 254` / `JsError`）先确认不是旧 kit**：`ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（入口 record 缺陷）已在 kit #10 修复并由真机确认，abc 版本（kit #11）与宿主加载（kit #12）分支也已清除 —— **kit #21 不含这些旧缺陷**（背景见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）。本轮启动相关修复：P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。若在当前 kit 上仍崩：先照 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` 取最小证据，再用 `tester-run.sh`（v6r2）跑 P1–P4 探针阶梯 —— `docs/plans/2026-09-21-ohos-crash-probes.md` 有探针下载地址、五层定位决策表，以及**免安装的 14 库自检**（`hdc shell ls -l /system/lib64/…`）。当前 kit 的 hap 已随包 `libs/arm64-v8a/libc++_shared.so`（SDK ElfSigner 重签，修上轮 P4 指出的缺库分支）并带启动诊断 hilog，请先用本包重测再判读探针。
 
 ## 6. 回传什么
 
@@ -100,6 +110,8 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 **关键字摘录**：`bluetooth` / `print` / `contacts` / `calendar` / `HybridWebView`、`__hwvInvokeDotNet` / `webview`、`eval` / `notification` / `picker`、`camera` / IME 输入法系统日志（完整表见 `验收说明.md` §5b）。
 
 **结果模板**：优先用一页版 `docs/plans/2026-09-21-ohos-device-report-template.md`（照抄填空，含 kit 哈希/版本核对与探针栏；A1–K2、N1–N7 逐项仍按 `验收说明.md` §6）。安装失败附**完整错误文案**；有 hdc 时附 `hdc hilog > log.txt` 片段与各失败项时间点；启动崩溃另附 P1–P4 探针结果与 hilog 崩溃点前后各 200 行。
+
+**tester-run v6r2 证据包**（字段与旧版兼容）：归档内已含 `hilog/hilog-applib.txt`（`SetAppLibPath|appLibPathKey|NativeLibPath|lib path`）、`hilog/hilog-dlopen.txt`（`dlopen|cannot find library|openharmonyhost`）、`device/app-libs-arm64.txt`、`meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`；`--tree-digest` 因 P16 复用已校验摘要明显更快，结果不变。
 
 ## 7. 相关文档
 

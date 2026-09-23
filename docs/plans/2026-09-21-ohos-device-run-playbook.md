@@ -3,6 +3,7 @@
 > 面向拿到 device-test-kit（或已解压目录）、手上有设备/`hdc` 的测试者：照抄命令与顺序即可；结论以设备实测为准。
 > 逐项清单、日志关键字与**回传模板**见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`，重点是 §4b/§5b/§6）；
 > 一页版入口 `docs/plans/2026-09-20-ohos-tester-quickstart.md`（包内名 `快速开始.md`）；kit 内容见 `docs/plans/2026-09-21-ohos-delivery-kit-readme.md`。
+> 当前发布 = **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2，含自 kit #17 起全部安全/性能/启动修复）；数字入口 = release「## Integrity」。
 
 ## 0. 前置
 
@@ -75,10 +76,10 @@ grep -E 'HybridWebView|__hwvInvokeDotNet|webview|bluetooth|print|contacts|calend
 
 | 现象 | 处理 |
 |---|---|
-| `9568344 install parse profile prop check error` | 属**调试 profile 设备绑定**（未含你的 UDID），非应用缺陷。二选一：① 按 `docs/plans/2026-09-21-ohos-tester-selfsign.md` 用你自己的 DevEco 自动签名；② 回传 UDID（`hdc shell bm get -u`，或 DevEco → Device Manager）由签名方重签（哈希会变）|
+| `9568344 install parse profile prop check error` | 属**调试 profile 设备绑定**（未含你的 UDID），非应用缺陷。三选一：① 按 `docs/plans/2026-09-21-ohos-tester-selfsign.md` 用你自己的 DevEco 自动签名；② 回传 UDID（`hdc shell bm get -u`，或 DevEco → Device Manager）由签名方重签（哈希会变）；③ 把 p7b + p12 + cer + keyAlias 走安全通道发回，由我方预签：`sh scripts/sign-for-device.sh --external --profile <你的.p7b> --key <你的.p12> --cert <你的.cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成你的）|
 | `E00C001 Operation restricted by the organization` | 设备策略关闭了 hdc（`const.usb.port.user_hdc.disable=true`）：改用**方式 A**（文件管理器安装）；或由设备管理员放开策略 |
 
-签名与 UDID 完整流程见 `docs/plans/2026-09-19-ohos-signing-and-udid-guide.md`（包内名 `签名与UDID指南.md`）。
+签名与 UDID 完整流程见 `docs/plans/2026-09-19-ohos-signing-and-udid-guide.md`（包内名 `签名与UDID指南.md`）。预签的 p7b 必须把目标 UDID 列入 `debug-info.device-ids`（fail closed：不匹配直接拒绝）；kit #21 包内 `签名说明.txt` 第三节的 PA1 句为历史文案，判读以其余内容与 release notes 为准。
 
 ## 7. 回传什么
 
@@ -86,3 +87,4 @@ grep -E 'HybridWebView|__hwvInvokeDotNet|webview|bluetooth|print|contacts|calend
 2. `log.txt` 片段：两条启动行 + 失败项关键字行（**标注各失败项时间点**）。
 3. 安装失败的**完整错误文案**或截图；严重问题（崩溃/黑屏/无法启动）附步骤与是否可复现。
 4. 无 hdc 时：应用日志区与 A11Y 自检弹窗截图（可选录屏）。
+5. 整轮报告推荐用 `tester-run.sh`（v6r2）生成 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）：自动收录 hilog（含 `hilog-applib.txt`/`hilog-dlopen.txt`）、kmsg、`device/app-libs-arm64.txt` 与 `meta/kit-hap-sha256.txt`，字段与旧版兼容。

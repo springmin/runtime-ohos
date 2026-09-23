@@ -19,6 +19,14 @@ reads the tarball sha256 and the extracted-tree digest from the `device-test-kit
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
 this document.
 
+Updated 2026-09-24 (kit #21): the current kit is #21 — all five haps carry `libIsolation` plus the
+complete security/performance/startup fix set since #17 (frame allocation 241,688 → 4,504 B/frame;
+P17 extraction skip, H7 rawfile fd read, headless abc `13.0.1.0`) and `tester-run.sh` v6r2 now
+collects app-lib/dlopen evidence, kmsg and the XPM/fs-verity probes automatically. The comparison
+payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 remain on the same release.
+Numbers stay in the release notes `## Integrity`; the kit's `签名说明.txt` PA1 sentence is
+historical wording (source fixed, next kit packaging).
+
 ## 0. Artifacts
 
 | Artifact | Where |

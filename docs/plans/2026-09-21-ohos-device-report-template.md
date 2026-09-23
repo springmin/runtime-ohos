@@ -7,9 +7,10 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（期望 `869d1d10…bce27`） |
-| tree digest（实测） | `<...>`（期望 `ac869484…a9cfb`） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`） |
+| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」；`tester-run.sh` v6r2 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v6r2 = `6`） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #21） |
 
 ## 1. 下载与校验
 
@@ -24,10 +25,11 @@ sh verify-kit.sh --expect-tree-digest <上面的 tree digest>
 # 版本原文（最终状态.md / README-交付说明.md「构建基线」）：<...>｜校验结论：<KIT OK / FAIL/WARN 原文>
 ```
 
-## 2. 重签（二选一）
+## 2. 重签（三选一）
 
 - [ ] A. 直接用 kit 内已签 hap（profile 绑定示例 UDID；报 `9568344` 即未绑定你的设备）
 - [ ] B. 自签：用你自己的证书（p7b/UDID）；命令原文：`<...>`（见包内 `自签说明.md` / `签名与UDID指南.md`）；重签后 hap 名 + sha256（可选）：`<name.hap  sha256>`
+- [ ] C. 外部预签：把 **p7b + p12 + cer + keyAlias** 走安全通道发回，由我方按你的 UDID 预签 —— 命令示例：`sh scripts/sign-for-device.sh --external --profile <你的.p7b> --key <你的.p12> --cert <你的.cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成你的；p7b 的 `debug-info.device-ids` 必须含它，fail closed）。
 
 ## 3. 安装
 
@@ -72,6 +74,17 @@ binary-sign-tool display-sign -inFile <cc-switch 的 libs/*.so>
 - 重签 hap 的 `SoInfoSegment` magic 命中数：`<n>`（0 = 本次 sign-app 未做 code signing，检查是否漏了 `-signCode 1`）
 - cc-switch 某个 lib 的 `display-sign` 输出：`<code signature is not found / self-sign / 证书链原文>`
 
+## 4c. app-lib / 别名注册 / 首帧（tester-run v6r2 自动采集；手工命令如下）
+
+```sh
+hdc shell "hilog -x | grep -E 'SetAppLibPath|appLibPathKey|NativeLibPath|lib path'"   # -> hilog/hilog-applib.txt
+hdc shell "hilog -x | grep -E 'dlopen|cannot find library|openharmonyhost'"          # -> hilog/hilog-dlopen.txt
+hdc shell "ls -l /data/storage/el1/bundle/libs/arm64/" > app-libs-arm64.txt          # -> device/app-libs-arm64.txt
+```
+- `appLibPathKey` 行（含 `lib path:` 原文）：`<粘贴 / 未出现>`（出现 `appLibPathKey: <bundle>/<module>` = 模块级 app-lib key 已注册，`libIsolation` 生效）
+- 别名注册行（`[openharmony-host] … bound via alias '…'`，逐字）：`<粘贴 / 未出现>`
+- 首帧判定（`registerXComponent=function` / 首帧出现 / 无 `Load native module failed`）：`<逐条>`
+
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 
 ```sh
@@ -92,6 +105,7 @@ hdc shell aa start -a EntryAbility -b com.example.hellomauiapp.probeN
 - [ ] `hilog-crash.txt` 或 `hilog-filtered.txt`（含崩溃点前后各 200 行）
 - [ ] jscrash 文件名（+ 内容或截图，有则附）
 - [ ] 4 个探针 hap 重签后的 sha256
+- [ ] `tester-report-<时间戳>.tar.gz`（+ `.sha256`；含 `summary.txt`、`hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`device/app-libs-arm64.txt`、`meta/kit-hap-sha256.txt`）
 
 ## 7. 未测项
 

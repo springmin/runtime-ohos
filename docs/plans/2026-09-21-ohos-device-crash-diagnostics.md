@@ -5,6 +5,8 @@
 > 现象：hap 安装成功，`aa start` 后约 1 秒应用退出（exit 254），`AppKilledReporter` 报 `reason=JsError`。
 > 本页只做三件事：**换当前 kit 重测** → **取最小崩溃证据** → **回传 §5 清单**。命令可照抄；结论以设备实测为准。
 > 相关文档（kit 内）：`真机操作手册.md`（校验/安装/取证）、`验收说明.md`（完整清单与模板）、`签名与UDID指南.md`（9568344）。
+>
+> **2026-09-24 更新（kit #21）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；本轮追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`。`tester-run.sh` v6r2 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`device/app-libs-arm64.txt`（§2.4）；整包/内容树数字以 release「## Integrity」为准。包内 `签名说明.txt` 第三节的 PA1 句为历史文案，判读以其余内容与 release notes 为准。
 
 ## 0. 一页摘要
 
@@ -92,6 +94,23 @@ grep -inE "hellomaui|hello-maui|maui|dotnet|openharmonyhost|libentry|dlopen|AppK
 - 优先进沙箱的工具：**DevEco Studio 的文件浏览器（Device File Browser，调试应用可进 `files/`）** → 导出该文件；
 - 只有 `hdc shell` 时试：`hdc -t "$D" shell "ls /data/app/el2/100/base/<bundleName>/files"`；被权限拒绝就跳过并注明；
 - 文件**不存在或没有新内容本身就是证据**（说明宿主可能还没执行到写状态文件）——请在回传里写明。
+
+### 2.4 app-lib / 别名注册 / 首帧（RM1 诊断；tester-run v6r2 自动采集）
+
+```sh
+hdc -t "$D" shell "hilog -x | grep -E 'SetAppLibPath|appLibPathKey|NativeLibPath|lib path'"   # -> hilog/hilog-applib.txt
+hdc -t "$D" shell "hilog -x | grep -E 'dlopen|cannot find library|openharmonyhost'"          # -> hilog/hilog-dlopen.txt
+hdc -t "$D" shell "ls -l /data/storage/el1/bundle/libs/arm64/" > app-libs-arm64.txt
+```
+
+- `appLibPathKey: <bundle>/<module>`（含 `lib path:` 原文）出现 => 模块级 app-lib key 已注册（`libIsolation` 生效）；
+  只有 `default`/app 级路径 => 非隔离安装；完全没有 `appLibPathKey`/`lib path` => 注册代码未跑到（窗口错或应用早退）。
+  `GetEtsHapSoPath` 在 DEBUG 级别，必要时先 `hdc -t "$D" shell hilog -b D`。
+- `[openharmony-host] native module register function bound via alias '…'` 出现 => 宿主 `.so` 已加载并注册到该别名；
+  别名字符串（裸 `openharmonyhost` vs 文件别名 `libopenharmonyhost.so`）是决定性信号。
+- 首帧判定（通过）：`registerXComponent=function`、首帧出现、无 `Load native module failed`。
+
+判读与回退见 `docs/plans/2026-09-23-ohos-native-import-experiment.md` §8.4/§8.5。
 
 ## 3. 三个快速 A/B（各 5 分钟，能跑几个跑几个）
 

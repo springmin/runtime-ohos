@@ -189,8 +189,7 @@ finding. For C the failure line contains the raw string passed to `loadNativeMod
 
 ## 8. RM1: lib-isolation packaging fix + no-rebuild device diagnostics
 
-**Status (2026-09-23):** template changed and the demo publish verified locally; the device half
-is pending the next repack (kit #17 in the playbook's numbering; the current app kit is #16).
+**Status (2026-09-24):** the template change shipped in kit #17 (the `libIsolation` repack) and every kit since (#18–#21) carries it; the current kit is **#21** (headless abc `13.0.1.0` + `tester-run.sh` v6r2). The candidate payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 all remain on the `device-test-kit` release for the next device re-test; the main choice is kit #21 itself. The RM1 device half still needs a re-test run (see §8.4/§8.5).
 **Change:** `ohos-workload` `packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.{22,23,24}/templates/module.json.template`
 now opens the `module` object with `"libIsolation":true` (all three files stay byte-identical).
 The hap staging target `_OpenHarmonyStageHap` reads that template and writes the staged

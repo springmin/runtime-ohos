@@ -12,6 +12,9 @@
 > 未签名 hap 随 `device-test-kit` release（镜像在 `workload-latest`）交付；下载/解压前先按该
 > release 说明的「## Integrity」小节（整包 sha256、内容树 digest）或 `.tar.gz.sha256` sidecar
 > 校验。本文件与包内文档都不写死哈希 —— 一律以 release notes 为准（重签后哈希必变）。
+> 当前发布 = **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2）；包内
+> `签名说明.txt` 第三节的「PA1 重建壳的下一版 kit」句为历史文案（源已修、随下个 kit 生效），
+> 判读以 `签名说明` 其余内容与 release notes 为准。
 
 ## 步骤（约 3 分钟）
 1. DevEco Studio → 新建任意工程（Empty Ability 即可）→ 在 `AppScope/app.json5` 里把 **bundleName 改为
@@ -45,4 +48,4 @@
 - 日志两行：`[maui] openharmony build …` 与 `[maui] accessibility provider status=<n>`（期望 1）
 - 左下角 **A11Y** 角标弹窗内容（状态 + 节点数）
 - `验收说明.md` §4b 的 N1–N7 与 §5b 关键字清单结果
-- 一页回传模板：`docs/plans/2026-09-21-ohos-device-report-template.md`；若启动即崩，先看错误：`ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`）是本版 kit 的壳 abc 入口 record 缺陷，等 PA1 重建壳后的下一版 kit 重测即可，**无需 P1–P4**（`docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；其他崩溃附 `docs/plans/2026-09-21-ohos-crash-probes.md` 的 P1–P4 探针结果（含免安装 14 库自检）
+- 一页回传模板：`docs/plans/2026-09-21-ohos-device-report-template.md`；若启动即崩，`ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`）是旧 kit（kit #10 之前）的壳 abc 入口 record 缺陷，**kit #21 已不含**（修复历史见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；其他崩溃附 `docs/plans/2026-09-21-ohos-crash-probes.md` 的 P1–P4 探针结果（含免安装 14 库自检）与 `tester-run.sh` v6r2 的 app-lib/dlopen 证据

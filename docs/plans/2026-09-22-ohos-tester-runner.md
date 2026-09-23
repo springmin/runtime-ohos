@@ -2,13 +2,14 @@
 
 > 面向拿到 device-test-kit、手上有设备/`hdc` 的测试者：把「校验 kit → 安装 → 启动 → 抓 hilog → 跑 P1–P4 探针 → 打包回传」串成一条命令。
 > `tester-run.sh` 是 `device-test-kit` release 上的**独立资产**（不在 kit 的 `SHA256SUMS` 内，kit 本身无需重下）；脚本默认 **dry-run**，不加动作参数不会碰设备。
+> 当前脚本 = **v6r2**（内嵌 `script_version=6`，2026-09-24）：行为与输出字段对旧调用兼容；`--tree-digest` 复用已校验摘要（P16）明显更快，证据包新增 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`。
 > 逐项清单与判读仍见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`）；探针定义见 `docs/plans/2026-09-21-ohos-crash-probes.md`。
 
 ## 1. 它做什么
 
 | 步骤 | 内容 | 触发参数 |
 |---|---|---|
-| 0 | 定位 kit（解压目录或 `.tar.gz`）：sidecar `sha256sum -c` → `sh verify-kit.sh`（含内容树摘要）→ 可选 `--expect-tree-digest` 绑定解压内容 | 无（总是执行，纯本地）|
+| 0 | 定位 kit（解压目录或 `.tar.gz`）：sidecar `sha256sum -c` → `sh verify-kit.sh`（含内容树摘要，P16 复用已校验摘要）→ 可选 `--expect-tree-digest` 绑定解压内容 | 无（总是执行，纯本地）|
 | 1 | `hdc install -r` 主 hap；记录安装结果码并给出 `9568344` / `9568297` / `E00C001` 提示 | `--install` |
 | 2 | `aa start -b <module.json 里的 bundleName> -a EntryAbility`，数秒后用 `pidof`（回退 `ps -ef`）判定进程存活 | `--start` |
 | 3 | `hilog -r` → 开录 →（若同时加 `--start`）启动应用 → 录 N 秒 → 按关键字过滤 | `--capture [N]`（默认 30 秒）|
@@ -84,6 +85,12 @@ grep -E 'hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|JsError|appspaw
 <D> uninstall <bundle>              # 加了 --probes 时也卸载 4 个 probe 包
 ```
 
+`v6r2` 另在设备窗口内自动采集（无需手工 grep）：`hilog -t kmsg` → `kmsg/`、`xpm_mode`/`require_signatures`、`SoInfoSegment` 命中数，以及 app-lib 证据 ——
+`hilog/hilog-applib.txt`（`SetAppLibPath|appLibPathKey|NativeLibPath|lib path`）、`hilog/hilog-dlopen.txt`（`dlopen|cannot find library|openharmonyhost`）、
+`device/app-libs-arm64.txt`（`ls -l /data/storage/el1/bundle/libs/arm64/`）。判读要点：`appLibPathKey: <bundle>/<module>` 出现 = 模块级 app-lib key 已注册（`libIsolation` 生效）；
+`[openharmony-host] … bound via alias '…'` 出现 = 宿主加载并绑定到该别名；首帧成功信号 = `registerXComponent=function`、首帧出现、无 `Load native module failed`。
+`--extra-probes <dir>` 可把 importprobe/importb/importd 等载荷按与 P1–P4 相同的「装 → 启 → 录」流程一并采集。
+
 ## 6. 回传什么
 
 脚本最后会打印归档绝对路径：
@@ -94,7 +101,7 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 ```
 
 把 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）通过**收到 device-test-kit 的同一渠道**（邮件/IM/工单）发回给交付方；GitHub 用户可在 `springmin/sdk-ohos` 开 issue 附归档。
-归档内固定包含：`summary.txt`（机器可读，`KEY=value`：kit/tree 摘要、bundle、安装/启动/存活结果、每条 hilog 行数、`probe1..probe4` 结果、`failures`）、`hilog/`、`probes/`、`meta/module.json`、`meta/SHA256SUMS`、`device/param-get.txt`、`device/udid.txt`。
+归档内固定包含：`summary.txt`（机器可读，`KEY=value`：`script_version`、kit/tree 摘要、`main_hap_sha256`、bundle、安装/启动/存活结果、每条 hilog 行数、app-lib/dlopen 证据行数、`probe1..probe4` 结果、`failures`）、`hilog/`（含 `hilog-applib.txt`、`hilog-dlopen.txt`）、`probes/`、`kmsg/`、`device/param-get.txt`、`device/udid.txt`、`device/app-libs-arm64.txt`、`meta/module.json`、`meta/SHA256SUMS`、`meta/kit-hap-sha256.txt`。v6r2 的字段/文件对旧版归档是超集，解析方按 `KEY=value` 读即可。
 若安装报 `9568344`，归档里的 UDID 可直接用于重签；`summary.txt` 的 `main_install_result=code:9568344` 即为凭据。
 
 ## 7. 安全说明
@@ -104,6 +111,7 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 - **卸载只认 `--uninstall`**，且只卸载主应用（给 `--probes` 时加 4 个探针包），绝不隐式卸载。
 - `--kit-tar` 缺 sidecar 时**拒绝解压**（fail closed）；校验失败先重新下载，不要带病安装。
 - 探针 hap 未签名，需要先自签（`自签说明.md`）；脚本不做签名、不生成密钥、不上传任何东西。
+- `--extra-probes <dir>`（可重复，或逗号分隔多个目录；重复目录只处理一次）：把目录内全部 `*.hap`（importprobe a–c、importb/importd 载荷等）按 P1–P4 相同的「装 → 启 → 录」流程采集，命中行并入 `probes/probe-all-lines.txt`。
 
 ## 8. 退出码
 
