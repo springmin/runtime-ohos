@@ -119,7 +119,7 @@
                              PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
       <!-- OpenHarmony only: use the local runtime pack for the target RID; host tools
-           resolve their pack from NuGet (the OHOS bootstrap lib dir does not exist on
+           resolve their pack from NuGet (the OpenHarmony bootstrap lib dir does not exist on
            clean hosts). -->
       <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
                            Condition="'$(TargetsOpenHarmony)' == 'true' and

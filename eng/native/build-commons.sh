@@ -140,7 +140,7 @@ build_native()
     elif [[ "$targetOS" == openharmony ]]; then
         # OpenHarmony NDK-style toolchain. The OHOS NDK provides its
         # own CMake toolchain file (ohos.toolchain.cmake) which sets CMAKE_SYSTEM_NAME=OHOS
-        # and selects the aarch64/arm/x86_64 ohos clang wrappers + sysroot.
+        # and selects the aarch64/arm/x86_64 openharmony clang wrappers + sysroot.
         if [[ -z "$OHOS_NDK_HOME" ]]; then
             echo "Error: You need to set the OHOS_NDK_HOME environment variable pointing to the OpenHarmony NDK root."
             exit 1

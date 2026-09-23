@@ -554,7 +554,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 #ifdef TARGET_ANDROID
                             nii->Speed = (int64_t)ecmd.speed;
 #elif defined(TARGET_OPENHARMONY)
-                            // ethtool_cmd_speed() is not in the OHOS UAPI headers; inline it so
+                            // ethtool_cmd_speed() is not in the OpenHarmony UAPI headers; inline it so
                             // speeds above 65535 Mbps are not truncated.
                             nii->Speed = (int64_t)(((uint32_t)ecmd.speed_hi << 16) | ecmd.speed);
 #else
