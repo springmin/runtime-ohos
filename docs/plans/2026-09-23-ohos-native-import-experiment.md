@@ -186,3 +186,91 @@ finding. For C the failure line contains the raw string passed to `loadNativeMod
   the prepared artifacts and the expected bind for each variant, not observed device results.
 * The `device-test-kit` release is concurrently maintained by other work; the "existing assets
   unchanged" check compares against the snapshot taken immediately before this upload.
+
+## 8. RM1: lib-isolation packaging fix + no-rebuild device diagnostics
+
+**Status (2026-09-23):** template changed and the demo publish verified locally; the device half
+is pending the next repack (kit #17 in the playbook's numbering; the current app kit is #16).
+**Change:** `ohos-workload` `packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.{22,23,24}/templates/module.json.template`
+now opens the `module` object with `"libIsolation":true` (all three files stay byte-identical).
+The hap staging target `_OpenHarmonyStageHap` reads that template and writes the staged
+`module.json` after the `@...@` replacements, so no target change was needed.
+
+### 8.1 Key-name provenance (checked against source)
+
+* OH bundle framework `services/bundlemgr/src/module_profile.cpp` parses the key through
+  `MODULE_IS_LIB_ISOLATED`, defined `constexpr const char* MODULE_IS_LIB_ISOLATED = "libIsolation";`
+  (`common_profile.h:434`), into `module.isLibIsolated`; BMS then persists it as `isLibIsolated`
+  (`inner_bundle_info.cpp`).
+* hvigor's `@ohos/hvigor-ohos-plugin` declares `libIsolation?: boolean;` in its module options
+  (`src/options/configure/module-json-options.d.ts:101`); the SDK docs document the same key.
+
+### 8.2 Why this is expected to fix the lookup (source chain)
+
+For a non-isolated hap, BMS `ParserNativeSo` -> `UpdateNativeSoAttrs` (`module_profile.cpp`) sets only
+the **app-level** `nativeLibraryPath` (`libs/<abi>` via `SetNativeLibraryPath` ->
+`baseApplicationInfo_`); the module-level field stays empty. `GetEtsHapSoPath`
+(`ets_native_lib_util.cpp:39-43`) returns early on an empty `hapInfo.nativeLibraryPath`, so no
+`<bundle>/<module>` app-lib key is registered - only `default` (`:136`, `:145-153`). The runtime's
+`requireNapi("openharmonyhost", true, "<bundle>/entry")` therefore misses the app-lib map and falls
+back to the system lib dir (`Load native module failed`).
+
+With `libIsolation:true` the same function takes the isolated branch and sets the **module-level**
+path `<module>/libs/<abi>` (`SetModuleNativeLibraryPath` -> `InnerModuleInfo.nativeLibraryPath`), so
+`GetEtsHapSoPath` builds `appLibPathKey = <bundle>/<module>` and logs
+`appLibPathKey: com.example.hellomauiapp/entry, lib path: ...` - the key the `@app:` record /
+`requireNapi` lookup searches.
+
+### 8.3 Locally verified (demo publish, 26.0 band)
+
+`dotnet publish test/hello-maui-app ... -p:OpenHarmonyHapPackage=true` (the demo publish):
+
+* hap `module.json`, unsigned and signed, read back with `zipfile`: `"libIsolation":true` (a JSON
+  boolean, not a string);
+* `libs/arm64-v8a/` still carries all 14 entries including `libopenharmonyhost.so` - the packing
+  tool keeps the flat layout; the module-folder layout is an install-time BMS effect;
+* `ets/modules.abc` sha256 unchanged
+  (`2d0eb8b4a70b88256d38b2740b07531243d5c28474d36313ef4c81e6baaddc50`, = `dist/ets/modules.abc`);
+* signing step in the publish log: `sign-profile success`, `sign-app success`, `verify-app success`
+  (independently re-run with `hap-sign-tool verify-app`: `hap verify successed!`).
+
+**Build-environment note:** the publish resolves `_OpenHarmonySdkPackDir` to the *installed* workload
+pack (`~/.dotnet/packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.24/`), not the repo pack, and
+`DOTNETSDK_WORKLOAD_PACK_ROOTS` does not override an installed workload. The repack chain must copy
+this one template into the installed pack next to the abc sync (playbook §2), or the produced haps
+stay non-isolated. (The installed copy was synced during this verification; the pre-change file is
+kept at `/data/storage/el2/base/tmp/opencode/rm1/installed-module.json.template.orig`.)
+
+### 8.4 Device diagnostics (no rebuild; work on the already installed app)
+
+Clear the log first (`hdc -t "$D" shell "hilog -r"`), start/warm the app, then run one capture per
+check. These localize the failure on the current non-isolated install without building anything.
+
+| # | Check | Outcome -> meaning |
+|---|---|---|
+| 1 | `hdc -t "$D" shell "hilog -x \| grep -E 'SetAppLibPath\|appLibPathKey\|NativeLibPath\|lib path'"` | an `appLibPathKey: <bundle>/<module>` line -> the per-module key is registered (isolated build); only `default`/app-level paths -> `hapInfo.nativeLibraryPath` was empty, i.e. a non-isolated install (current kits); no `appLibPathKey`/`lib path` line at all -> the registration code did not run (wrong window, or the app died before it). `GetEtsHapSoPath` logs at DEBUG (`ets_native_lib_util.cpp:53-54`), so widen with `hilog -b D` if the level hides it. |
+| 2 | `hdc -t "$D" shell "ls -l /data/storage/el1/bundle/libs/arm64/ \| grep openharmonyhost"` | a match -> the host was extracted to the shared app-level libs dir (current non-isolated behavior); no match -> locate it with `find /data/storage/el1/bundle -name libopenharmonyhost.so 2>/dev/null`: under a module-named folder means isolation already took effect, nowhere means the so was not extracted at all (a different install-time failure). |
+| 3 | `hdc -t "$D" shell "hilog -x \| grep -E 'dlopen\|cannot find library\|openharmonyhost'"` | a `dlopen .../libopenharmonyhost.so` line -> the loader reached dlopen on the hap/app path; `cannot find library`/`No such file` -> the lookup fell back to the system lib dir and the file is absent there (the non-isolated miss); `[openharmony-host] native module register function bound via alias '...'` -> the `.so` loaded and registered under that name, and the alias string is the **decisive signal** for which `nm_modname` (bare `openharmonyhost` vs file alias `libopenharmonyhost.so`) the loader bound. |
+
+### 8.5 Expectation for the lib-isolation build (next repack)
+
+* Check 1 should gain `appLibPathKey: com.example.hellomauiapp/entry` (plus the existing `default`);
+  that registration is the point of RM1 - the VM lookup for the `@app:<bundle>/entry/openharmonyhost`
+  record finally has a key to hit.
+* Check 2's `libs/arm64/` listing is expected to change: the isolated module's so's install under a
+  module-scoped path. Use check 1's `lib path:` string as the ground truth for the exact location
+  rather than the assumed layout.
+* Check 3 should show the host loaded from that path, then the alias line. Either alias
+  (`openharmonyhost` or `libopenharmonyhost.so`) is acceptable at the path level; if one alias binds
+  but `registerXComponent` stays `undefined`, the remaining problem is the record/registration-name
+  half (playbook §2/§3), not the path/key half. Success signal is unchanged from the kit #16 run:
+  `registerXComponent=function`, first frame, no `Load native module failed`.
+
+### 8.6 Fallbacks if lib isolation does not bind
+
+Fixes B/C from `2026-09-23-ohos-napi-import-fix-playbook.md` §3/§4 remain as fallbacks: the dynamic
+`loadNativeModule` shell change (only if probe C binds), and the normalized-OHM-URL +
+`pkgContextInfo.json` packaging route (VM gate `IsNormalizedOhmUrlPack()`; normalized host record
+`@normalized:Y&&&libopenharmonyhost.so&`, with the entry record re-verified on device because the
+normalized entry form regressed before PA1). RM1 supersedes neither; it removes the path/key half of
+the blocker and leaves only the name/record half to the probes.
