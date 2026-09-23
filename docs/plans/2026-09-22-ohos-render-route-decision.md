@@ -48,7 +48,9 @@ compositor（`OpenHarmonyWindowRenderer`）用 `Microsoft.Maui.Graphics` canvas 
 ## 路线无关：设备 bring-up
 
 设备 bring-up 链与渲染路线**无关**：hap 签名/安装 → 壳 abc 入口 record 与字节码版本 → 宿主 `.so` dlopen →
-hostfxr 启动 → 表面握手/首帧，两种路线完全相同。三个启动阻塞已由 kit #12 修复，真机复测在测试方手上；
+hostfxr 启动 → 表面握手/首帧，两种路线完全相同。三个启动阻塞已由 kit #12 修复；**2026-09-23 kit #14 真机已启动并稳定存活、
+到达 XComponent/渲染阶段**（XComponent `AttachToMainTree`/`onLoad` 已触发；黑屏因宿主 napi 注册名与 abc import 记录名
+不匹配、host exports 为空，修复 RH1 进行中）；
 本决议不改变 bring-up 队列，也不改变套件/像素基线。
 
 ## 参考

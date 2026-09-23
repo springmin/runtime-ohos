@@ -197,3 +197,12 @@
   壳归档 `2411a8e`，随 kit #12 出包）：宿主不在链接期依赖 `libhostfxr`（全部经 dlopen/dlsym），`build-host.sh`
   增加构建期 DT_NEEDED 审计（含 `libhostfxr` 即失败），壳模板每个 `host.<api>` 访问纳入 `hostCall` +
   `typeof host !== 'undefined'` 守卫（含 `registerXComponent`）。详见同 §5c 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0c。
+- **kit #14 真机进展（2026-09-23，里程碑）**：应用首次**正常启动并稳定存活**（1 分钟+，主进程 + `:gpu` 进程均在；
+  `hilog` 无 `TypeError`/`JsError`/`exit 254`）—— 前三个既有根因在真机确认修复（入口 record（kit #10）、
+  abc `13.0.1.0`（kit #11）、运行时原生库随 `libs/arm64-v8a/`（kit #13/#14，即 §7 第 12 项第 ③ 分支加载序链的
+  最终落地））；但页面**黑屏**（进程不退出）：设备日志 `Load native module failed, ModuleName:
+  @app:com.example.hellomauiapp/entry/openharmonyhost` + 全部 `[maui] host export unavailable: <api>`、XComponent
+  已 `AttachToMainTree`/`onLoad` —— 宿主 napi 注册名（`nm_modname = "openharmonyhost"`）与 `useNormalizedOHMUrl=false`
+  下 abc 的 import 记录名不匹配 → host exports 为空 → 表面未交给 .NET → 黑屏。修复（RH1：宿主别名注册覆盖两种约定 +
+  标准化壳构建、保留入口 record 的 bundle 名，入口 record 重新核验）**进行中（in flight）**；依据见
+  `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5d/§5e 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0d 及决策表新增行。

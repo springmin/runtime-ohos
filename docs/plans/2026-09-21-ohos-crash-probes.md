@@ -18,7 +18,11 @@
 > Covered in §4.0c; fixed in kit #12 (`ohos-workload 7e71c39` + shell archive `2411a8e`) by keeping
 > the host's hostfxr surface dlopen-only (`build-host.sh` now fails if `libhostfxr` appears in
 > `DT_NEEDED`) and routing every `host.<api>` access through the `hostCall` +
-> `typeof host !== 'undefined'` guard. The
+> `typeof host !== 'undefined'` guard. The kit #14 re-test then cleared every crash (the app now starts
+> and stays alive, zero crash logs) but the screen is black: the host's napi registration name
+> (`nm_modname = "openharmonyhost"`) no longer matches the abc's `useNormalizedOHMUrl=false` import
+> record name (`@app:com.example.hellomauiapp/entry/openharmonyhost`), so the native module never
+> loads and the host exports stay empty — see §4.0d and the table row (fix RH1, in flight). The
 > P1–P4 ladder below still classifies **dlopen / host-entry / .NET-runtime** crashes; branch on
 > the exact exit error first (§4.0/§4.0b/§4.0c). The install error `9568257 fail to verify pkcs7 file` is the
 > expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
@@ -425,6 +429,46 @@ to load degrades to one `host export unavailable` log per API instead of a `Type
 254. Like §4.0/§4.0b, this is a pre/around-host-load branch: the P1–P4 ladder remains for the
 other classes.
 
+### 4.0d Branch on the exit error first: the host's napi registration name (exports empty, black screen)
+
+If the app **starts and stays alive** (no `exit 254`, no `JsError`) but the screen is black, and hilog shows
+
+```text
+Load native module failed, ModuleName: @app:com.example.hellomauiapp/entry/openharmonyhost
+```
+
+together with `[maui] host export unavailable: <api>` for (nearly) every host API, while the XComponent
+lines show the surface was created and mounted:
+
+```text
+AceXcomponent: XComponent[ohos_dotnet_surface] AttachToMainTree …
+AceXcomponent: XComponent[ohos_dotnet_surface] triggers onLoad and OnSurfaceCreated callback
+```
+
+then the host `.so` loaded, but registered its NAPI module under a name the abc does not import. Under
+`useNormalizedOHMUrl=false` (the entry-record fix) the shell's `import host from 'libopenharmonyhost.so'`
+compiles to the record name `@app:<bundleName>/entry/openharmonyhost`, while `host_napi.cpp` registers
+`nm_modname = "openharmonyhost"`; the loader looks up the record name, finds no matching registered
+module (hilog shows the `Load native module failed` line and **no** successful-load line), so `Init`
+never runs and every export is `undefined`. The XComponent surface is created and handed to
+`onLoad`/`OnSurfaceCreated`, but `setNodeContent`/`registerXComponent` are unavailable, so the surface
+is never handed to .NET/MAUI → black screen. The working reference (`cc-switch`, `useNormalizedOHMUrl=true`)
+uses the normalized record `@normalized:Y&&&libentry.so&` with `nm_modname = "libentry.so"` — the names
+match there and it renders. Huawei's NAPI/NDK FAQ states the import name and the registered module name
+must match (module `entry` ↔ `libentry.so` ↔ `nm_modname = "entry"`).
+
+Cross-check on the device / in the shipped kit:
+
+```sh
+hdc shell hilog | grep -E "Load native module failed|host export unavailable|AceXcomponent"
+# the .so registration name and the abc record name must be the same string form
+```
+
+No kit fix has shipped for this branch yet: RH1 (alias registrations covering both naming conventions
+plus a normalized shell build that keeps the corrected bundle name, with the entry record re-verified)
+is **in flight**; the branch lands in the next kit. Like §4.0/§4.0b/§4.0c this is not a P1–P4 case (the
+ladder still covers dlopen / missing dependency / host entry / .NET runtime crashes).
+
 P4 is the authoritative row for missing dependencies: `PROBE4|<name>|FAIL|<dlerror>` names the
 exact missing library, and a P2/P3 that dies without any result line is consistent with a missing
 dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
@@ -433,6 +477,7 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 |---|---|---|---|---|---|
 | n/a — pre-shell (abc version) | n/a | n/a | n/a | Process exits, hilog shows `export objects of native so is undefined` / `Cannot read property … of undefined` — **abc bytecode version mismatch** (shell abc 24.0.0.0 vs the device's 13.0.1.0 ceiling) | Use a kit from #11 on (shell abc `13.0.1.0`, `compatibleSdkVersion 18`) and re-sign it; compare `xxd -l16 modules.abc` with `hdc shell param get const.ark.version` (§4.0b) |
 | n/a — post-shell (`[maui]` logs, page/render) | n/a | n/a | n/a | `host` is undefined (`[maui] host export unavailable: <api>`; `Cannot read property registerXComponent of undefined` + exit 254) — **the host `.so` failed to load** (load-time `DT_NEEDED` resolution happens at ability import, before `dotnet.zip` is extracted) | Re-sign a kit from #12 on; compare `readelf -d libopenharmonyhost.so \| grep NEEDED` against the hap's `libs/<abi>/` and `hdc shell ls -l /system/lib64/<name>` (§4.0c) |
+| n/a — post-shell (abc ok, `[maui]` logs; app **stays alive**, black screen) | n/a | n/a | n/a | App starts and stays alive (no `TypeError`/`JsError`/exit 254), `AceXcomponent` shows the XComponent created/mounted, but the screen is black and hilog shows `Load native module failed, ModuleName: @app:<bundle>/entry/openharmonyhost` plus every `[maui] host export unavailable: <api>` — **the host's napi registration name (`nm_modname`) does not match the abc import record name** under `useNormalizedOHMUrl=false`; the host exports are empty, so `setNodeContent`/`registerXComponent` never hand the surface to .NET | No kit fix yet — RH1 (alias registrations for both conventions + normalized shell build, corrected bundle name kept, entry record re-verified) is **in flight**; verify with the §4.0d logs (`Load native module failed` vs a successful-load line) and the `cc-switch` reference (`@normalized:Y&&&libentry.so&` ↔ `nm_modname = "libentry.so"`) |
 | fails (`JsError`, no/failed `PROBE1` chain) | n/a | n/a | n/a | Device/framework issue — plain ArkTS haps built by this toolchain do not run | Re-sign/reinstall, compare with a DevEco Empty Ability build in the same band; kit crash is not host-specific |
 | ok | fails (`…_FAIL=<dlerror>`) | n/a | n/a | Host `.so` dlopen fails — missing library file / unresolved relocation / namespace or signature problem (the `dlerror` text is the root cause) | Fix native packaging per the error (e.g. bundle `libc++_shared.so` / missing system lib / namespace), then rerun P2 |
 | ok | ok (`abs_NOW_OK`) | fails (`dlsym.…=NULL`, `call.…=SKIP`, or no `PROBE3 HOST_ENTRY_RESULT` line) | n/a | Host entry/dlsym mismatch — the `.so` maps but a key export is not resolvable/usable from the app linker namespace | Send the P3 line verbatim (missing/demangled export name); compare the shipped host's symbol table with the kit's expected imports |
@@ -487,7 +532,8 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
    - hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point` → 壳 abc 入口 record 缺陷（**kit #10 已修复**，测试方真机已确认；旧 kit 请换新 kit）；
    - hilog 报 `export objects of native so is undefined` / `Cannot read property … of undefined` → abc 字节码版本不符（**kit #11 已修复**：`13.0.1.0`；用 `xxd -l16 modules.abc` 与 `hdc shell param get const.ark.version` 对照）；
    - hilog 有 `[maui]` 日志、但出现 `[maui] host export unavailable: <api>` 或 `Cannot read property registerXComponent of undefined` → 宿主 `.so` 加载失败（壳 `host` 为 undefined；**kit #12 已修复**：宿主无 `libhostfxr` 链接依赖 + 壳全量守卫）；按 §4.0c 用 `readelf -d … | grep NEEDED` 对照 hap `libs/arm64-v8a/` 与设备系统库。
-   以上三类都发生在宿主加载前/后、**不要先跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c 与本文 §4.0/§4.0b/§4.0c）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
+   - 应用能启动并**稳定存活、但黑屏**（无崩溃日志），hilog 出现 `Load native module failed, ModuleName: @app:…` 与大量 `[maui] host export unavailable` → napi 注册名与 abc import 记录名不匹配、host exports 为空（**修复进行中**）；按 §4.0d 复核。
+   以上四类都发生在宿主加载前/后、**不要先跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c/§5d/§5e 与本文 §4.0/§4.0b/§4.0c/§4.0d）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。

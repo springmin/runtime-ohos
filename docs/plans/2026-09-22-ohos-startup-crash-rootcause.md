@@ -1,6 +1,7 @@
-# 启动崩溃根因：三个独立阻塞（入口 record / abc 版本 / host undefined；exit 254）
+# 启动崩溃根因：四个独立阻塞（入口 record / abc 版本 / host undefined / napi 注册名；exit 254 与黑屏）
 
-> 2026-09-22 记录测试方真机反馈的完整证据链与结论（一手材料：《OpenHarmony MAUI device-test-kit 真机验证反馈报告》）。
+> 2026-09-22 记录测试方真机反馈的完整证据链与结论（一手材料：《OpenHarmony MAUI device-test-kit 真机验证反馈报告》）；
+> §5d/§5e 为 2026-09-23 kit #14 真机进展（里程碑 + 第四个阻塞，一手材料：《kit #14 真机验证结论》）。
 > **结论先说**：
 > 1. 安装报 `9568257 fail to verify pkcs7 file` 是包内**自签名 hap 的预期拒绝** —— 设备不信任我方调试签名；
 >    必须重签 `hello-maui-app-unsigned.hap`（唯一可重签安装的变体）或用发布方预签包，与启动崩溃无关。
@@ -15,6 +16,14 @@
 >    （`exit 254`）。修复随 kit #12（`ohos-workload 7e71c39` + 壳归档 `2411a8e`）：宿主不在链接期依赖
 >    `libhostfxr`（全部经既有 dlopen/dlsym 表）、`build-host.sh` 增加构建期 DT_NEEDED 审计、壳把每个
 >    `host.<api>` 调用纳入守卫。见 §5c。
+> 5. **里程碑（kit #14，2026-09-23）**：应用首次**正常启动并稳定存活**（60 s+，主进程 + `:gpu` 进程），
+>    **零崩溃日志**（无 `TypeError` / `JsError` / `exit 254`）—— 前三个根因（入口 record、abc `13.0.1.0`、
+>    运行时原生库随 `libs/arm64-v8a/`，对应本文 §5b/§5c）均已在真机确认修复；但页面**黑屏**（进程不退出）。
+>    第四个独立阻塞：宿主 napi 注册名 `nm_modname = "openharmonyhost"` 与 `useNormalizedOHMUrl=false` 下
+>    abc 的 import 记录名 `@app:com.example.hellomauiapp/entry/openharmonyhost` 不匹配 → 设备按记录名
+>    加载 native 模块失败 → 宿主 exports 为空 → XComponent 表面从未交给 .NET → 黑屏；RH1 修复
+>    （别名注册覆盖两种约定 + 标准化壳构建，保留入口 record 修复所用的 bundle 名）**进行中（in flight）**。
+>    见 §5d/§5e。
 
 ## 0. 一手材料与验证环境
 
@@ -228,7 +237,58 @@ kit #11 真机复测确认 abc 修复生效，并暴露第三个独立阻塞：
   记为事实、把“具体缺失哪个加载期依赖”留给设备 hilog 的 `dlopen`/`dlerror` 行确认；kit #12 的守卫
   保证即使宿主再次加载失败也只逐 API 记 `host export unavailable`，不再 `exit 254`。
 
-## 6. 五类错误的关系（避免混淆）
+## 5d. 里程碑：kit #14 启动并稳定存活（2026-09-23）
+
+测试方 kit #14 真机报告（包经 `verify-kit.sh` 树摘要校验通过，abc 被 `ark_disasm` 正常解析）。
+**以下为设备实测（测试方日志）**：
+
+- **首次启动成功且进程稳定存活**：`aa start` 返回 `start ability successfully.`；1 分钟+ 后主进程与
+  `com.example.hellomauiapp:gpu` 进程仍在（`ps` 实测两行；此前各轮均为启动约 1 s 后 `exit 254`）。
+- **零崩溃日志**：`hilog | grep hellomauiapp | grep -iE 'TypeError|JsError|exit with code|PROCESS_KILL|Error message'`
+  为空；无 `AppKilledReporter` / jscrash。
+- **三个既有根因在真机确认修复**（测试方四轮口径，对应本文 §5b/§5c）：① 入口 record（kit #10，
+  `useNormalizedOHMUrl=false` + bundle 前缀 record）；② abc 字节码版本 `13.0.1.0`（kit #11，
+  `compatibleSdkVersion 18`）；③ 运行时原生库不再留在 `dotnet.zip`，随 hap `libs/arm64-v8a/` 打包
+  （kit #13/#14；`libs/` 实测含 `libhostfxr.so` / `libhostpolicy.so` / `libcoreclr.so` / `libclrjit.so`
+  等 13 个 .NET 运行时 `.so` + `libopenharmonyhost.so` + `libc++_shared.so`，`dotnet.zip` 内已无 `.so`，
+  宿主 `DT_NEEDED` 已不含 `libhostfxr.so`）—— 即 §5c 的宿主加载序问题在交付侧的最终落地。
+- 里程碑句：**kit #14 是第一个「启动成功、进程存活、零崩溃日志」的构建**；黑屏是其后暴露的独立问题（§5e），
+  不是崩溃回归。
+
+## 5e. 第四个阻塞：黑屏 —— napi 注册名与 abc import 记录名不匹配（kit #14 暴露；RH1 进行中）
+
+kit #14 的崩溃清零后，新现象是**黑屏（进程不退出）**：
+
+- **设备实测证据（测试方 kit #14 日志）**：
+  - ArkUI 侧 XComponent 已创建、挂树、表面已创建：
+    `AceXcomponent: XComponent[ohos_dotnet_surface] AttachToMainTree …` 与
+    `AceXcomponent: XComponent[ohos_dotnet_surface] triggers onLoad and OnSurfaceCreated callback`；
+  - 同时段 `[maui] host export unavailable: <api>` 覆盖全部宿主 API（`setNodeContent`、`registerXComponent`、
+    `setBundleInfo`、`register*Sink`、`menuCount` …）→ **host exports 整体为空**；
+  - **决定性日志**：`ArkCompiler: [ecmascript] Load native module failed, ModuleName:
+    @app:com.example.hellomauiapp/entry/openharmonyhost`，且全量 hilog 中**只有失败行、无任何成功加载行**
+    （so 的 `Init` 从未被调用）；
+  - 可运行对照工程 `cc-switch`：`useNormalizedOHMUrl=true`，abc 记录名 `@normalized:Y&&&libentry.so&`，
+    so 注册名 `libentry.so` —— 两者匹配，正常渲染。
+- **代码/包内事实**：宿主 `src/OpenHarmonyHost/host_napi.cpp` 的 `g_hostModule.nm_modname` 为裸名
+  `"openharmonyhost"`；kit #14 壳 abc 在 `useNormalizedOHMUrl=false` 下把
+  `import host from 'libopenharmonyhost.so'` 编译为记录名
+  `@app:com.example.hellomauiapp/entry/openharmonyhost`，两者字符串形式不一致。
+- **官方依据（华为，与设备无关的文档证据）**：ArkTS `import xxx from libxxx.so` 后 `xxx` 为
+  undefined / not callable 时，须排查 native 模块注册名与 so / 模块名一致
+  （`napi-faq-about-common-basic`；`use-napi-process` / `faqs-ndk-46`：导入模块名与注册模块名大小写一致，
+  模块名 `entry` ↔ `libentry.so` ↔ `nm_modname = "entry"`）。
+- **机制（设备日志 + 代码推断，非新增设备实验）**：设备按 abc 的 import 记录名查找 native 模块 → 注册名
+  不匹配 → 模块从未初始化（无成功加载日志）→ host exports 为空 → `setNodeContent` / `registerXComponent`
+  均不可用 → 表面虽已创建但从未交给 .NET/MAUI → 黑屏。
+- **修复（RH1，进行中 / in flight；方案，非设备实测）**：宿主侧**别名注册**覆盖两种约定（裸名 +
+  bundle 前缀记录名），并出**标准化壳构建**（`useNormalizedOHMUrl=true` 一侧），同时保留入口 record 修复
+  所用的 bundle 名（`com.example.hellomauiapp`），**入口 record 需重新核验**。**截至本页写作时 RH1 尚未落地**：
+  `ohos-workload` 工作树中 `host_napi.cpp` 仍为 `nm_modname = "openharmonyhost"`，无别名注册；最近提交是
+  kit #15 的 rawfile 资源桥（与 RH1 无关）。RH1 落地后按「so 注册名 ↔ abc import 记录名」对照 +
+  设备 `hilog | grep 'Load native module failed'` 是否消失来复核。
+
+## 6. 六类错误的关系（避免混淆）
 
 | 错误 | 含义 | 是否预期 | 处置 |
 |---|---|---|---|
@@ -237,12 +297,15 @@ kit #11 真机复测确认 abc 修复生效，并暴露第三个独立阻塞：
 | `ReferenceError … EntryAbility` + `exit 254` | 壳 abc 入口 record 缺陷 | **否**（kit #10 前） | kit #10 起已修复；重签新 kit 重测 |
 | `export objects of native so is undefined` / `Cannot read property … of undefined` | 壳 abc 字节码版本高于设备 ark runtime 上限（`24.0.0.0` > `13.0.1.0`） | **否**（kit #11 前） | kit #11 起已修复（`compatibleSdkVersion 18` → `13.0.1.0`）；`xxd -l16 modules.abc` + `hdc shell param get const.ark.version` 复核 |
 | `[maui] host export unavailable: <api>` / `Cannot read property registerXComponent of undefined` + `exit 254` | 宿主 `.so` 加载失败 → 壳 `host` 为 undefined（加载期 DT_NEEDED 在 `dotnet.zip` 解压前解析） | **否**（kit #12 前） | kit #12 起：宿主无 `libhostfxr` 链接依赖（dlopen/dlsym）+ 构建期 DT_NEEDED 审计；壳全部 `host.<api>` 守卫；`readelf -d … \| grep NEEDED` 对照 hap `libs/<abi>/` 与设备系统库（§5c） |
+| `Load native module failed, ModuleName: @app:<bundle>/entry/openharmonyhost` + 全部 `[maui] host export unavailable: <api>`，应用启动后**黑屏但不崩** | napi 注册名（`nm_modname`）与 `useNormalizedOHMUrl=false` 下 abc 的 import 记录名不匹配 → host exports 为空 → XComponent 表面未交给 .NET | **否**（kit #14） | RH1（宿主别名注册覆盖两种约定 + 标准化壳构建、保留 bundle 名）**进行中（in flight）**；复核 so 注册名 ↔ abc 记录名，并用 `hilog \| grep 'Load native module failed'` 看失败行是否消失（§5e） |
 
 ## 7. 参考
 
 - 测试方反馈原文：`ohos-device-test-kit-feedback.md`（2026-09-22；本机 `~/Download/com.haitai.htbrowser/`）
 - 测试方 kit #11 报告：`ohos-device-test-kit-kit11-verification.md`（2026-09-22；同目录；第三个阻塞与官方依据出处）
+- 测试方 kit #14 报告：`ohos-device-test-kit-kit14-verification.md`（2026-09-23；同目录；里程碑、黑屏根因、
+  host exports 为空与 XComponent 日志、`cc-switch` 对照、华为 napi 注册名依据）
 - 自签与重签：`2026-09-21-ohos-tester-selfsign.md`（包内 `自签说明.md`）、`2026-09-19-ohos-signing-and-udid-guide.md`
-- 崩溃探针与决策表：`2026-09-21-ohos-crash-probes.md`（§4.0/§4.0b/§4.0c 已加三个分支）
+- 崩溃探针与决策表：`2026-09-21-ohos-crash-probes.md`（§4.0/§4.0b/§4.0c/§4.0d 已加四个分支）
 - abc 版本史与设备查询：`2026-09-22-ohos-arkts-abc-version-history.md`
 - 交付与状态：`2026-09-21-ohos-delivery-kit-readme.md`、`2026-09-21-ohos-final-status.md`
