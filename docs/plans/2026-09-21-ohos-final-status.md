@@ -217,12 +217,12 @@
   record/name 另一半由候选实验裁定。
 - **里程碑**：kit #14（本页口径；`ohos-workload` 发布说明口径为 kit #16）为第一个「**崩溃清零 + 应用正常启动并稳定存活**」
   （1 分钟+，主进程 + `:gpu`，无 `TypeError`/`JsError`/`exit 254`）的构建；黑屏是其后暴露的独立问题（§10）。
-- **基线**：离设备交互套件现为 **308** 条 `[verify]`（295 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能），CI 门限 **≥288**
-  （`ohos-workload 6d2762d`；§4 的 297/277 为其前值）。
+- **基线**：离设备交互套件现为 **315** 条 `[verify]`（含 MB/H-C2/审计与门禁新增 pin），门限 **floor 295**（套件自报 `[suite]` 行，preflight 与 CI 同源解析）
+  （`ohos-workload 92f7555`/`a10b73e`；§4 的 297/277/308/288 为历史值）。
 - **候选矩阵（选一，设备跑批结果待回传）**：**dynpkg**（`libIsolation` + abc host-binding record + 已确认入口形式）为
   **最强单候选**；其次 **kit #17 单独**（仅 RM1 `libIsolation`，覆盖 path/key 半边）；再次 **normalized**
   （`useNormalizedOHMUrl=true` + `pkgContextInfo.json`，入口 record 形状改变、设备入口解析未证）。`importb`（命名空间静态 import）与
-  `importd`（动态加载 D1/D2）为其余探针载荷。候选载荷（dynpkg/normalized/importb/importd）与 kit #17 均在 `device-test-kit` release 上；
-  当前发布 = **kit #17**，数字入口见 `docs/plans/2026-09-22-ohos-release-manifest.md`（2026-09-23 快照），实验依据见
+  `importd`（动态加载 D1/D2）为其余探针载荷。候选载荷（dynpkg/normalized/importb/importd）仍在 `device-test-kit` release 上供对照；
+  **当前发布 = kit #19**（见下条），数字入口见 `docs/plans/2026-09-22-ohos-release-manifest.md`（更新快照），实验依据见
   `docs/plans/2026-09-23-ohos-native-import-experiment.md` §8 与 `docs/plans/2026-09-23-ohos-napi-import-fix-playbook.md` §5。
-- **kit #18（2026-09-23 发布，替代上文 kit #17 口径）**：携带本轮安全 + 性能修复——`ohos-workload 49cd70f3d1..2857837`（11 提交：A1 bundle-name 校验、A2 hvigor sha256 锚定、A3 clobber 门禁 opt-in、H-C2 壳 URL 允许列表 + abc 重建、MB-2 宿主回调守卫、FIX-P1 宿主绘制缓存）、`maui-ohos c730226f93`（MB-1..MB-3/H-C2/FIX-P2）、`sdk-ohos 690134e706`（D-1..D-6/H-C1 安装器与签名加固）；`device-test-kit` = 115,905,186 B / `29be05906a1cfe5a56c47c085414189e6f443768534aedd53a90e978a7fd3996`、tree `7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945`（数字入口见 release manifest）。
+- **kit #18 → kit #19（2026-09-23 发布，替代上文 kit #17 口径）**：kit #18 携带安全 + 性能第一批修复（A1/A2/A3、H-C1/H-C2、D-1..D-6、MB-1..MB-3、FIX-P1/P2）；**kit #19（当前）** 在其上追加 P17 启动解压跳过、H7 rawfile 描述符直读、H8/H11/H12、TLS 加固（H-C3 绝对路径 `dlopen` + H3 探测）、P12 增量签名、PR 评审合规整改与门禁加固（alloc 门禁 13,824 B、CI 缓存/PR 触发、`[suite]` 单一 floor 来源）。`device-test-kit` 与 bundle 的数字入口见 release `## Integrity` 与 `docs/plans/2026-09-22-ohos-release-manifest.md`（本页保持哈希无关）。
