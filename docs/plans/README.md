@@ -9,7 +9,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
-| `2026-09-22-ohos-release-manifest.md` | 2026-09-22 交付物总清单（**快照，不再维护**）：kit 的 tar/树摘要（编号与数值以 release「## Integrity」为准）、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | 📦 快照（2026-09-22）|
+| `2026-09-22-ohos-release-manifest.md` | OpenHarmony 交付物总清单（**已刷新至 kit #21**，2026-09-24 快照）：kit 的 tar/树摘要（编号与数值以 release「## Integrity」为准）、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | ✅ 已刷新（2026-09-24，kit #21）|
 | `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 自签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式 | ✅ 当前（2026-09-21）|
 | `2026-09-22-ohos-tester-runner.md` | 一条命令跑完一轮真机测试（`tester-run.sh`，随 kit release 单独发布）：本地校验 kit → 安装/启动/抓 hilog/跑 P1–P4 → 打包回传；默认 dry-run、无设备拒绝执行 | ✅ 当前（2026-09-22）|
 | `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能真机验证清单（M1–M10：权限/连通性/剪贴板/邮件短信拨号/截图/地理编码/窗口安全区/图像与单元格/无障碍/Shell 扩展）：逐项「步骤/期望/证据」+ 探针 hap 与 `tester-run.sh` 用法 | ✅ 当前（2026-09-22）|

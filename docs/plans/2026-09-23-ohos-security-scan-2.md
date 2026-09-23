@@ -37,7 +37,7 @@
 - **猎手（3+2）。** A：宿主/原生/构建-发布链（`ohos-workload/src/OpenHarmonyHost/**`、packs 模板、Hosting、19 个脚本、`sdk-ohos/eng/ohos-install/**`、五仓 workflows/pipelines）。B：托管/UI 面（`maui-ohos/src/Core/src/Platform/OpenHarmony/**` 109 个 `.cs`、Hosting/Maui.Graphics、3 份 `Index.ets`、harness/demo）。C：`runtime-ohos`/`aspnetcore-ohos` 全 fork delta + 上轮 23 条复核。D（补扫）：`sdk-ohos` 代码签名/ELF 工具链/安装器。E（补扫）：sdk `SelfSign/**`、OHOS 环境默认、AOT 入口、Layout/redist。
 - **PoC 对抗。** 全部在 `/data/storage/el2/base/tmp/opencode/scan2/{poc-a,poc-b,poc-c,poc-d}`，只读、离线、无真机：poc-a 用本地目录源 + 手工 GPF 注入复现 H-C1；poc-b 用 node 原样执行从模板逐字节提取的 `isAppNavigation` 函数体、用 `readelf`/`strings`/`dynsym` 复现 H-C3；poc-c 用 HEAD `ElfSigner.cs` 编译独立驱动 + 真实已签名资产 + 99 例结构化 fuzz + `file://` mock 传输复现 D-1..D-4；poc-d 用 stub `hdc`/`curl`/`node` + guard 仿真复现 A1/A2/A3。
 - **修复批次与纪律。** FIX-P1（宿主性能）、FIX-P2（托管性能）、FIX-WORK（A1/A2/A3/H-C2 壳/packs 重建）、FIX-SDK（D-1..D-6、H-C1、sec-e C1/C2/C3）、FIX-MAUI（MB-1..MB-3、H-C2 managed），每项 reproduce-then-fix、逐项负向回归。
-- **本报告复核。** 写入时重跑（只读、离线）：`sh sdk-ohos/eng/ohos-install/tests/test-installer-verification.sh` → `passed=14 failed=0`；`sh sdk-ohos/eng/ohos-install/tests/test-hostfeed-verification.sh` → `passed=10 failed=0`；`sh ohos-workload/scripts/selftest-tester-run.sh` → `checks: 315, failed: 1`（唯一失败是 "repo working tree unchanged by tester-run.sh" 断言，因为并行进行的 FIX-RESID 在 `OpenHarmonyApp.cs` 留有未提交改动——修复提交时该项为 315/0，详见 §残留风险）。另复跑 H-C2 壳 harness（`node fix-work/h-c2/harness.mjs`）→ `ALL-PASS`。
+- **本报告复核。** 写入时重跑（只读、离线）：`sh sdk-ohos/eng/ohos-install/tests/test-installer-verification.sh` → `passed=14 failed=0`（当时值；当前 tip **43/43**，FIX-R2B 后并入 bundle 外锚用例）；`sh sdk-ohos/eng/ohos-install/tests/test-hostfeed-verification.sh` → `passed=10 failed=0`；`sh ohos-workload/scripts/selftest-tester-run.sh` → `checks: 315, failed: 1`（唯一失败是 "repo working tree unchanged by tester-run.sh" 断言，因为并行进行的 FIX-RESID 在 `OpenHarmonyApp.cs` 留有未提交改动——修复提交时该项为 315/0，详见 §残留风险）。另复跑 H-C2 壳 harness（`node fix-work/h-c2/harness.mjs`）→ `ALL-PASS`。
 
 ## 汇总表
 
@@ -115,7 +115,7 @@
 - **攻击路径。** 用户传 `http://` URL（用法明示支持）或使用攻击者可控镜像且未设 pin → 校验和从同一来源解析（`SHA256SUMS` / `<file>.sha256` / GitHub digest，`install-dotnet-ohos.sh:217-278`）→ MITM/恶意镜像同时替换工件与校验和 → 安装期解包并以用户权限执行 `selfsign`/`dotnet`（RCE），"sha256-verified" 完全失效。`curl` 未限制 `--proto-redir`（`:166`，默认允许 https→http 重定向）；外部 pin 仅可选（`:662`）。
 - **复现（poc-c）。** 篡改 tar.gz + 同目录重生成 SHA256SUMS，经仓库真实函数：`resolve_expected_sha256(tampered)=35c9e9…`=篡改文件 hash、`download_verified` 输出 `sha256 OK` rc=0；解包出的假 `selfsign` 按 `sign_all` 路径立即执行（marker）。
 - **最小修复与落地。** `7f820be9b0`：curl 固定 `--proto '=https' --proto-redir '=https'`（`install-dotnet-ohos.sh:185`）、wget 仅接受支持 `--https-only` 的版本（`:170-171`）；`versions.env` 为 SDK/runtime tarball 与 selfsign 增加外锚 pin（`:62-64`），锚定摘要始终优先、同源自证仅对 pin 的 GitHub release URL 生效（`:242-303`）；用户 URL 必须带显式 pin；已部署 `$INSTALL_DIR/selfsign` 执行前按 pin 复验。
-- **回归。** `eng/ohos-install/tests/test-installer-verification.sh`：本报告复跑 `passed=14 failed=0`；"mismatching anchor refused / same-origin checksums cannot be resolved for non-pinned hosts / selfsign pin" 全部覆盖。
+- **回归。** `eng/ohos-install/tests/test-installer-verification.sh`：本报告复跑 `passed=14 failed=0`（当时值；当前 tip **43/43**）；"mismatching anchor refused / same-origin checksums cannot be resolved for non-pinned hosts / selfsign pin" 全部覆盖。
 
 #### H-C2 B6 白名单放行 `//host` 网络路径引用（低/加固，已修）
 
@@ -240,7 +240,7 @@
 - **H-C3 已修复（低/加固；`3d1f6e45102`/`cfdba659d11`/`d7b730e5030`；策略与验证见 `docs/plans/2026-09-23-ohos-tls-policy.md`）。** OHOS shim 现在只用 `dladdr` 求本库目录后按绝对路径 `dlopen`，找不到即 fail-closed，不回退裸名；另提供 `-linkstaticopenssl` / `/p:LinkStaticOpenSsl=true` 链接 `-fPIC` 静态 OpenSSL。已验：OHOS NDK clang 编译 + 链接（`NEEDED` 仅 `libc.so`）+ 设备端负向测试（decoy `libssl.so.3` 在 `LD_LIBRARY_PATH` 不被选中，放同目录才被选中）。**仍待做**：随包携带 `libssl.so.3`/`libcrypto.so.3` 或启用静态链接开关，并在设备上跑 SslStream/HTTPS 自检；`ReadMe` 中 `ilasm` 的 `System.Security.Cryptography.Native.OpenSsl-Static` 仅在 host 构建链接，不受本开关影响。
 - **MB-2 已收口。** `9256305`（宿主 10 入口守卫 + `ReportCallbackFailure`）+ `92f7555`（harness 负向 pin；315 项全过、像素 PASSED）；设备端 CoreCLR 反向 P/Invoke 终止语义仍属离机不确定项（见下）。
 - **FIX-SDK 的 CLI 已编译验证（`48fdd91aed`）。** `SelfSignCommand.cs` 以本机已装 SDK 的 Roslyn + System.CommandLine 3.0.0 独立编译（nullable + warnings-as-errors），17/17 CLI 用例通过（显式非 ELF 退出 1、目录遍历 sign/skip/count、`--force`、`--strip`、目录符号链接跳过）；签名路径也不再整读非 ELF 输入。`ElfSigner.cs` 另有独立编译 + 14/14 MSTest + 37/6 harness 证据。
-- **binary-sign-tool 无默认 pin（已加可选锚，`6be3596810`）。** fallback 签名器 finder 只选可执行文件；`BINARY_SIGN_TOOL_SHA256=<hex>` 在首次执行前校验、不匹配即失败，未 pin 的回退仅告警（工具随用户自己的 OpenHarmony SDK/harmonybrew 分发，无单一上游摘要可默认固定）；`test-installer-verification.sh` 25/25。
+- **binary-sign-tool 无默认 pin（已加可选锚，`6be3596810`）。** fallback 签名器 finder 只选可执行文件；`BINARY_SIGN_TOOL_SHA256=<hex>` 在首次执行前校验、不匹配即失败，未 pin 的回退仅告警（工具随用户自己的 OpenHarmony SDK/harmonybrew 分发，无单一上游摘要可默认固定）；`test-installer-verification.sh` 当时 25/25（当前 tip **43/43**，FIX-R2B 新增 18 例）。
 - **离机不确定项（未上机，设备安装受策略限制）。** D-1 的最后一跳由已装同源 SDK 的宿主包/obj apphost 签名证据 + Bundler 源码推定，需设备端 `dotnet publish -p:PublishSingleFile=true` 复核；A1 设备端 hdc 拼接/转义与 `sh -c` 行为（stub 按官方 `shell [-b] [COMMAND...]` 语义建模，space/dquote/squote 可注入、escaped 不注入，四种模型界定边界）；H-C2 端到端依赖 ArkWeb 交付原始/解析 URL（location/a 点击、loadUrl、表单/重定向各异）；MB-3 的 `resourceManager` `..` 语义；MB-2 依赖 CoreCLR 反向 P/Invoke 终止语义；D-2 截断产物是否可加载；D-6/C3 边界守卫设备未验证。
 - **A2 的 pin 值**由发布者实测（与 registry `dist.shasum`/`dist.integrity` 及可用缓存交叉核对），后续 tgz 版本变更需同步；`tar` 成员负测已补（`5c2afb1`：解包前拒绝 `../`、绝对与嵌套逃逸成员，27 项本地用例 + `--check-tgz`），真实 tgz 变更后仍需重跑该门。
 - **H-C1 层级本地源不可解析**疑为本 SDK 版本/裁剪特性（NuGet 文档称 3.3+ 支持），需 CI 同 SDK 复核；`$FEED`=`sdk-ohos/eng/ohos-install/.work/feed` 为仓内固定目录，长期残留攻击者副本的可能性未实测。
@@ -282,7 +282,7 @@ sh run-d3.sh && sh run-d3b.sh                                                   
 sh run-d4.sh                                                                         # D-4
 
 # 本报告复核（离线）
-sh sdk-ohos/eng/ohos-install/tests/test-installer-verification.sh   # passed=14 failed=0
+sh sdk-ohos/eng/ohos-install/tests/test-installer-verification.sh   # 当时 passed=14 failed=0；当前 tip 43/43
 sh sdk-ohos/eng/ohos-install/tests/test-hostfeed-verification.sh    # passed=10 failed=0
 sh ohos-workload/scripts/selftest-tester-run.sh                      # checks: 315, failed: 1（工作树断言）
 node fix-work/h-c2/harness.mjs                                       # ALL-PASS

@@ -54,15 +54,15 @@
 - **kit #21 重打包（2026-09-24）**：新 bundle 30,498,612 B / `41d94901…`（130 条目）修复 headless 变体 abc（`24.0.0.0` 3,580 B → `13.0.1.0` **13,572 B** / `70a616363d52be75c673823545d77e01d3fe6f9cbd2f775069a386e808bb162f`）并让 pack 模板 README 指向 `ARKTS_SHELL_VARIANT=headless`（`e995cef`）；hosting/Maui.Graphics 托管在 `1f7ef76` 重建（仅内嵌 source revision 变化：`7bad00b8`/`9a414ce4` → `7f84f019`/`8ae4d394`；无源码变更）；UI/shell abc 211,032 B / `7d513f72…` 与宿主 211,872 B / `33baff42…` 未变。发布后经 API（by-id）与 gh-proxy 下载抽验：三处（`workload-latest`、`workload-1.0.0-preview.24`、SDK release）新 bundle 逐字节一致，`sha256sum -c` 各 2/2 通过。
 - SDK release `v11.0.100-rc.1.26451.109-openharmony`（id **388357742**）：`https://github.com/springmin/sdk-ohos/releases/tag/v11.0.100-rc.1.26451.109-openharmony`；其上随 SDK 发布附带的 workload bundle 已同步为 kit #21 重打包（**30,498,612 B / `41d94901…`**，`SHA256SUMS` 212 B / `3fc29faf…`；变更资产 = bundle + `SHA256SUMS`，其余 33 项不变；SDKREL-21，2026-09-24）。SDK 包 `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` = 178,005,544 B / sha256 `f3a1bba4fd712db5ae231bb4e65cd10ca50c8acb4f0a4d8650681f66c1772c60`、runtime `10b7877f…`、selfsign `85284499…` 三锚逐字节不变，与 `eng/ohos-install/versions.env` 一致。
 
-## 4. 五仓库分支 tip（2026-09-24 快照，远端分支 tip；已 fetch 核对）
+## 4. 五仓库分支 tip（2026-09-24 终检快照，远端分支 tip；已按 fetch/API 与远端 ref 核对）
 
 | 仓库 | 分支 | 短哈希 | 备注 |
 |---|---|---|---|
-| `ohos-workload` | `master` | `1f7ef76` | 宿主/壳/脚本/套件与发布链（headless 变体 abc 重建 `4e5491d`、tester-run v6 `8408a90`、模板 README `e995cef`、pin `236d18a9`） |
-| `maui-ohos` | `feature/openharmony` | `236d18a991` | MAUI 平台切片（文档基线刷新到 315/floor 295；kit #21 pin） |
-| `sdk-ohos` | `feature/openharmony` | `1e8827a87d` | SDK 与 release 宿主（D-1..D-6/H-C1 安装器加固；bundle 外锚在分支工作树推进） |
-| `runtime-ohos` | `feature/openharmony` | `eddd558026` | 本清单提交前的 tip（本页文档提交会前进一格） |
-| `aspnetcore-ohos` | `feature/openharmony` | `eace90c8fb` | aspnetcore 移植 |
+| `ohos-workload` | `master` | `c6a4cd95e` | 宿主/壳/脚本/套件与发布链（headless 变体 abc 重建 `4e5491d`、tester-run v6 `8408a90`、模板 README `e995cef`、pin `236d18a9`；tip 清理签名说明中的过期指引） |
+| `maui-ohos` | `feature/openharmony` | `236d18a99` | MAUI 平台切片（文档基线刷新到 315/floor 295；kit #21 pin） |
+| `sdk-ohos` | `feature/openharmony` | `821330d55` | SDK 与 release 宿主（D-1..D-6/H-C1 安装器加固；bundle 外锚已入库并推送 `821330d55e`，`versions.env` 四锚含 `WORKLOAD_BUNDLE_SHA256`） |
+| `runtime-ohos` | `feature/openharmony` | `5355fbf3d6a` | 本页刷新提交前的 tip（本次文档提交会再前进一格） |
+| `aspnetcore-ohos` | `feature/openharmony` | `eace90c8f` | aspnetcore 移植 |
 
 ## 5. 怎么校验（三步）与 tester-run.sh 一条命令
 
@@ -119,7 +119,7 @@ sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
 | `2026-09-23-ohos-security-scan-2.md` | 五仓库安全扫描 #2（16 条候选，16 修；kit #21 已含全部修复提交；#19–#21 追加 headless abc、bundle 外锚、TLS H-C3 等） |
 | `2026-09-23-ohos-performance-scan.md` | 五仓库性能扫描（31 热点，29 修 + 2 项有意保留；kit #21 已含已修项） |
 | `2026-09-23-ohos-pr-review-compliance.md` | 上游 PR 评审规则遵循（R1–R11、硬违例 0、修复提交与复审计证据；含 #19–#21 追加修复） |
-| `2026-09-23-ohos-upstream-reply-drafts.md` | 未发送的上游回复/催评草稿（arcade#17608、#132953、#132827、#132866），等审批 |
+| `2026-09-23-ohos-upstream-reply-drafts.md` | 未发送的上游回复/催评草稿（#132953、#132827、#132866；arcade#17608 一条已随其合并作废），等审批 |
 | `2026-09-23-ohos-tls-policy.md` | TLS 加固策略（H-C3 绝对路径 `dlopen` + 静态链接开关）与设备负向验证 |
 | `2026-09-21-ohos-final-status.md` | 一页版最终状态（交付主线、批次、真机待证项、§11 收官；已同步 kit #21） |
 | `README.md` | `docs/plans` 文档索引（本目录入口） |
