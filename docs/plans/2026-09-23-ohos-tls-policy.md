@@ -45,8 +45,12 @@ OpenSSL，运行时 `dlopen` 裸名 `libssl.so.3`。构建脚本虽然通过
 
 前置条件：`libcrypto.a` / `libssl.a` 必须以 `-fPIC` 构建（否则链接
 `libSystem.Security.Cryptography.Native.OpenSsl.so` 时报重定位错误，fail-closed）。
-官方 OHOS 构建由 `sdk-ohos/eng/ohos-install/build/ohos-ci-env.sh` 交叉编译
-OpenSSL（`no-shared no-tests -static`），启用该开关前应先跑一次链接验证。
+OpenSSL 的 `linux-aarch64` 配置在 `LIB_CFLAGS` 里始终带 `-fPIC`
+（`Configurations/10-main.conf` 的 `linux-generic32` → `shared_cflag`；
+`Configurations/unix-Makefile.tmpl` 的 `lib`/`shlib` 都用 `$(LIB_CFLAGS)`），
+因此 `sdk-ohos/eng/ohos-install/build/ohos-ci-env.sh` 的
+`no-shared no-tests -static` 产物应可直接链接。本次未在交叉构建上实测链接，
+启用该开关前先跑一次链接 + `readelf -d` 验证。
 
 用法（根构建）：
 
