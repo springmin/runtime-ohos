@@ -1,29 +1,29 @@
 # OpenHarmony .NET/MAUI 交付物清单（2026-09-23 快照）
 
-> **本页是静态快照**（文件名为创建日期；数值于 2026-09-23 随 kit #17 刷新）：只回答「截至该时点，当前交付物有哪些、数字是多少、去哪里取」。
+> **本页是静态快照**（文件名为创建日期；数值于 2026-09-23 随 kit #18 与 FIX-RESID workload bundle 重打包刷新）：只回答「截至该时点，当前交付物有哪些、数字是多少、去哪里取」。
 > 所有数字在 2026-09-23 核对：本地文件重算 sha256 + GitHub release API digest 双向一致；任何重签、预签或重新打包都会改变哈希。
-> kit 编号（#17）是团队跟踪口径，release 本身不带编号；以后续文档与 release 说明为准。
+> kit 编号（#18）是团队跟踪口径，release 本身不带编号；以后续文档与 release 说明为准。
 
-## 1. 当前 kit（kit #17，`device-test-kit` release，RM1 lib-isolation repack；tar.gz + sidecar 上传于 2026-09-23T11:47+08:00）
+## 1. 当前 kit（kit #18，`device-test-kit` release，H-C2 壳 + 守卫宿主/宿主回调 repack；tar.gz + sidecar 上传于 2026-09-23T16:50+08:00）
 
 - 位置：`https://github.com/springmin/sdk-ohos/releases/tag/device-test-kit`（下载前缀 `https://github.com/springmin/sdk-ohos/releases/download/device-test-kit/`）。
-- `device-test-kit.tar.gz`：**115,822,672 B**，sha256 `e09a5b6e6a678629c1ce928d4c9dce5a354d6ace708b27ba62e6d126ecdf3d8a`。
-- `device-test-kit.tar.gz.sha256` 边车（89 B）：内容 = tar.gz 哈希；边车自身 sha256 `094e790fa6df3f7fca0e52b45c559b050efea0317bee3b47d7329656259963e0`。
-- 解压内容树摘要（tree digest，绑定解压后的内容而非仅 tar 包）：`d5e624dcff89a176dc3b02ba3ceb8ac87fe1f7bfe7a65a91a6171a4acea0659b`。
-  验证：解压后在包内执行 `sh verify-kit.sh --expect-tree-digest d5e624dcff89a176dc3b02ba3ceb8ac87fe1f7bfe7a65a91a6171a4acea0659b`。
+- `device-test-kit.tar.gz`：**115,905,186 B**，sha256 `29be05906a1cfe5a56c47c085414189e6f443768534aedd53a90e978a7fd3996`。
+- `device-test-kit.tar.gz.sha256` 边车（89 B）：内容 = tar.gz 哈希；边车自身 sha256 `cb33de1ffcbefaa134683eec2a51315378d63cea8a3654c89f76bc3fc6401ba8`。
+- 解压内容树摘要（tree digest，绑定解压后的内容而非仅 tar 包）：`7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945`。
+  验证：解压后在包内执行 `sh verify-kit.sh --expect-tree-digest 7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945`。
 - 镜像：`workload-latest` release 上的同名资产逐字节同值（大小、sha256 相同；tree digest 同值）。
 - 包内 tester 文档**按设计不写死哈希**：9 个文本文件（8 文档 + `签名说明.txt`）的 64-hex 计数均为 0；校验一律以 release 说明「## Integrity」小节、`.tar.gz.sha256` 边车与随包 `SHA256SUMS` 为准。
 - 本快照的本地复核：tree digest OK；`sha256sum -c SHA256SUMS` **15/15** 通过（5 hap + 9 文档 + `verify-kit.sh`）；发布侧 API digest 与本地同哈希重算一致。
-- kit #17 内容（全新解包实测）：5 个 hap 均带 `"libIsolation": true`（RM1：安装时注册模块级 `<bundle>/<module>` app-lib key）；`ets/modules.abc` = **204,780 B**、头 `13.0.1.0`（非标准化壳 + 静态 host import，入口 record 为 kit #10 已确认形式）；`libs/arm64-v8a/` 含 **14** 个 `.so`（12 个 .NET 运行时原生库 + `libopenharmonyhost.so` 199,584 B 别名宿主 + `libc++_shared.so`）；`dotnet.zip` **253** 项且 **0** 个 `.so`。
-- kit 编号演进（团队跟踪口径，非连续）：#7（22 日凌晨）→ #10（入口 record）→ #11（abc `13.0.1.0`）→ #12（宿主 dlopen-only + 壳 `host` 守卫）→ #14（评审整改 + PI1 + UX 深化；真机崩溃清零/启动存活里程碑——kit #14/#16 口径）→ #15（rawfile 资源桥）→ #16（宿主按两个 napi 名注册）→ **#17（当前：RM1 libIsolation repack）**。
-- release 最后更新 2026-09-23T13:35+08:00（`tester-run.sh` v3 资产）；与旧文档的口径差异：`2026-09-21-ohos-final-status.md` 记录到 kit #14（以该页 §11 为准），本页锚定其后刷新的当前 release（跟踪编号 #17），哈希以当前 release 为准。
+- kit #18 内容（全新解包实测）：5 个 hap 均带 `"libIsolation": true`（RM1：安装时注册模块级 `<bundle>/<module>` app-lib key）；`ets/modules.abc` = **205,352 B**、头 `13.0.1.0`（H-C2 固定模板重建：非标准化壳 + 静态 host import + 拒绝 `//host` 网络路径引用，入口 record 为 kit #10 已确认形式）；`libs/arm64-v8a/` 含 **14** 个 `.so`（12 个 .NET 运行时原生库 + `libopenharmonyhost.so` 211,872 B 别名宿主 + `libc++_shared.so`）；`dotnet.zip` **253** 项且 **0** 个 `.so`；`Microsoft.OpenHarmony.Hosting.dll` = **34,816 B** / `d776b1d5811e28149bb095b77cf2f4b80049c52f04b5042c3a10271072083ff1`（MB-2 宿主回调守卫）。
+- kit 编号演进（团队跟踪口径，非连续）：#7（22 日凌晨）→ #10（入口 record）→ #11（abc `13.0.1.0`）→ #12（宿主 dlopen-only + 壳 `host` 守卫）→ #14（评审整改 + PI1 + UX 深化；真机崩溃清零/启动存活里程碑——kit #14/#16 口径）→ #15（rawfile 资源桥）→ #16（宿主按两个 napi 名注册）→ #17（RM1 libIsolation repack）→ **#18（当前：H-C2 壳 URL 允许列表 + abc 重建、守卫宿主 + MB-2 宿主回调守卫、FIX-P1 宿主绘制缓存）**。
+- release 最后更新 2026-09-23T16:54+08:00（kit #18 资产 + `tester-run.sh` v4）；与旧文档的口径差异：`2026-09-21-ohos-final-status.md` 记录到 kit #14（以该页 §11 为准），本页锚定其后刷新的当前 release（跟踪编号 #18），哈希以当前 release 为准。
 
 ## 2. `device-test-kit` release 上的全部资产（2026-09-23 快照，15 项）
 
 | 资产 | 大小 (B) | sha256 | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz` | 115,822,672 | `e09a5b6e6a678629c1ce928d4c9dce5a354d6ace708b27ba62e6d126ecdf3d8a` | 当前 kit #17（RM1 libIsolation） |
-| `device-test-kit.tar.gz.sha256` | 89 | `094e790fa6df3f7fca0e52b45c559b050efea0317bee3b47d7329656259963e0` | 整包边车（内容 = 上一行哈希） |
+| `device-test-kit.tar.gz` | 115,905,186 | `29be05906a1cfe5a56c47c085414189e6f443768534aedd53a90e978a7fd3996` | 当前 kit #18（H-C2 壳 + 守卫宿主/宿主回调） |
+| `device-test-kit.tar.gz.sha256` | 89 | `cb33de1ffcbefaa134683eec2a51315378d63cea8a3654c89f76bc3fc6401ba8` | 整包边车（内容 = 上一行哈希） |
 | `dynpkg-haps.tar.gz` | 115,317,981 | `1212d53de6afd8266ab36ac08c5aac5f5fffed662008a4e35e437ffaf19e7650` | 候选载荷（fallback #3）：动态加载 + 包声明；libIsolation + abc host-binding record + 已确认入口形式 |
 | `normalized-haps.tar.gz` | 115,234,685 | `89ee8fa6d8fce27512921d75cecca27bd3f25babd962c133b22817168e86fdbc` | 候选载荷（C）：`useNormalizedOHMUrl=true` + `pkgContextInfo.json` |
 | `importb-haps.tar.gz` | 115,228,059 | `605e34cde42ef25dd7afb3f70a78c6d3d39ce97d5303b2ead421a9f1c0d8a1bd` | 命名空间静态 import 壳的 5 hap（A1/探针 B 载荷） |
@@ -36,7 +36,7 @@
 | `hello-mauiapp-probe3-unsigned.hap` | 222,954 | `43557cfe9c274406ad8cc4985eadace9eb4a7f13d560af2e452491727a5e5b6c` | P3：宿主入口/dlsym |
 | `hello-mauiapp-probe4-unsigned.hap` | 223,178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` | P4：逐依赖预检 |
 | `new-features-device-checklist.md` | 36,911 | `0ee2f1eaeb59ba9cc601e38fab9357e1df0a4069a992cdf6ff84c678f4d00569` | 本轮新功能 M1–M10 真机清单 |
-| `tester-run.sh` | 53,839 | `193409d863ce3f5c256e90e3e5904c0abc5908d6d62d48bb5c9a75053c6f1a1d` | v3：校验 + 安装 + 启动 + 30 s hilog + app-lib/dlopen 证据收集 |
+| `tester-run.sh` | 57,727 | `1075db220c38f3be8a2ae2541a0e391f68f8a09488f943e48ac33a6d712c0a00` | v4：校验 + 安装 + 启动 + 30 s hilog + RM1 无重建 app-lib/dlopen 证据；发任何 hdc 命令前校验 bundle 名（A1） |
 
 - 诊断资产对应关系：`dynpkg-haps.tar.gz` 为候选矩阵中最强单候选（动态加载 + `runtimeOnly.packages`/`file:` 包声明；随包 5 hap 带 libIsolation、abc 新增 host-binding `.record libopenharmonyhost.so`、入口 record 保持已确认形式）；`normalized-haps.tar.gz` 的 normalized 入口 record 的设备解析未证。`importb`/`importd` 分别对应静态命名空间与动态加载实验；三个 `importprobe` hap 无 .NET 载荷，只测三种 import 形式的路由。P1–P4 仍用于 dlopen/缺库/宿主入口/运行时类崩溃的五层定位。
 - 全部数字均为 2026-09-23 读取：release API digest 与本地重算一致（kit、bundle、dynpkg、normalized、importb、importd、tester-run.sh）；`importprobe` a/b/c 的 API digest 与实验文档记录一致。诊断 tarball 内的 hap 均未签名或为陈旧签名，测试方需重签（§6）。
@@ -45,20 +45,21 @@
 
 | 资产 | 大小 (B) | sha256 | 位置 |
 |---|---|---|---|
-| `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,477,923 | `6d8c44802187929f904de86ccde1262061e3cb9f5de428b17b0fc0aed8c18d47` | `workload-1.0.0-preview.24` / `workload-latest` release；SDK release `v11.0.100-rc.1.26451.109-openharmony` |
-| `openharmony-workload-latest.tar.gz` | 30,477,923 | `6d8c44802187929f904de86ccde1262061e3cb9f5de428b17b0fc0aed8c18d47` | `workload-latest` release（与 versioned 逐字节一致） |
+| `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,484,382 | `4ba913c60c969b4ed506087fbf109246be6a93ba9783d06500bd20d2c06d63bb` | `workload-1.0.0-preview.24` / `workload-latest` release |
+| `openharmony-workload-latest.tar.gz` | 30,484,382 | `4ba913c60c969b4ed506087fbf109246be6a93ba9783d06500bd20d2c06d63bb` | `workload-latest` release（与 versioned 逐字节一致） |
 
-- 两名字指向同一份字节；`SHA256SUMS`（212 B，自身 sha256 `7d2297d0cb0f1ef9f58abd24bb126fdcbb27946401b25e7738194c2735781733`）同时列出上述两条，与本地 `dist/SHA256SUMS` 重算一致；本地 `dist/` 与 `.feed/` 的 bundle 重算 sha256 与 API digest 一致。
-- SDK release `v11.0.100-rc.1.26451.109-openharmony`：`https://github.com/springmin/sdk-ohos/releases/tag/v11.0.100-rc.1.26451.109-openharmony`，其上的 bundle 资产（preview.24）与 `SHA256SUMS` digest 与上表一致；同 release 的 SDK 包 `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` = 178,005,544 B / sha256 `f3a1bba4fd712db5ae231bb4e65cd10ca50c8acb4f0a4d8650681f66c1772c60`（仅 API digest 读取，未本地复核）。
+- 两名字指向同一份字节；`SHA256SUMS`（212 B，自身 sha256 `18352b1cf1c41eccdf782295363ba5c7a3f50a9bf0add956734f2f8bcbbf7edd`）同时列出上述两条，与本地 `dist/SHA256SUMS` 重算一致；`sha256sum -c` 2/2 通过。
+- **FIX-RESID 重打包（2026-09-23T17:16+08:00）**：旧 bundle 30,477,923 B / `6d8c44802187929f904de86ccde1262061e3cb9f5de428b17b0fc0aed8c18d47` 内的 preview.24 平台包还是修复前托管（`Microsoft.OpenHarmony.Hosting.dll` 32,256 B）；新 bundle（130 条目）内 Ref.20.0/26.0 与 Runtime.20.0/26.0 均为 **34,816 B / `d776b1d5811e28149bb095b77cf2f4b80049c52f04b5042c3a10271072083ff1`**，另含重建的 `Microsoft.OpenHarmony.Maui.Graphics.dll`（16,384 B / `6b5de857fb8f8bd3f19163dce31e99a4ca91f5ccddf907bfe0dc602b9b6c14d6`）。发布后经 release API（by-id）与 gh-proxy 下载各抽验：两个 release 的新 bundle 逐字节一致（30,484,382 B / `4ba913c6…`），包内托管 B/sha256 与上一致。
+- SDK release `v11.0.100-rc.1.26451.109-openharmony`：`https://github.com/springmin/sdk-ohos/releases/tag/v11.0.100-rc.1.26451.109-openharmony`；其上随 SDK 发布附带的 workload bundle 仍为**重打包前**的 preview.24（30,477,923 B / `6d8c4480…`，`SHA256SUMS` 7d2297d0…），本轮未随附（不在 rel-18b 范围；SDK 包 `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` = 178,005,544 B / sha256 `f3a1bba4fd712db5ae231bb4e65cd10ca50c8acb4f0a4d8650681f66c1772c60` 不变，仅 API digest 读取，未本地复核）。
 
-## 4. 五仓库分支 tip（2026-09-23 快照，`git ls-remote` 远端值）
+## 4. 五仓库分支 tip（2026-09-23 快照，远端分支 tip）
 
 | 仓库 | 分支 | 短哈希 | 备注 |
 |---|---|---|---|
-| `ohos-workload` | `master` | `49cd70f3d1` | 宿主/壳/脚本/套件与发布链（libIsolation 模板 + tester-run v3 诊断） |
-| `maui-ohos` | `feature/openharmony` | `11e9751e5c` | MAUI 平台切片（远端 tip；本工作区 checkout `7f712ecb`，未 fetch 到该 tip） |
-| `sdk-ohos` | `feature/openharmony` | `f2ada2dabc` | SDK 与 release 宿主 |
-| `runtime-ohos` | `feature/openharmony` | `520f852eba` | 本清单提交前的 tip（本页文档提交会前进一格） |
+| `ohos-workload` | `master` | `2857837` | 宿主/壳/脚本/套件与发布链（FIX-P1 绘制缓存 + A1/A2/A3/H-C2 + MB-2 hosting 守卫；tester-run v4 诊断） |
+| `maui-ohos` | `feature/openharmony` | `c730226f93` | MAUI 平台切片（MB-1..MB-3 + H-C2 managed；kit #18 pin） |
+| `sdk-ohos` | `feature/openharmony` | `690134e706` | SDK 与 release 宿主（D-1..D-6/H-C1 安装器加固） |
+| `runtime-ohos` | `feature/openharmony` | `60dd07e9fc` | 本清单提交前的 tip（本页文档提交会前进一格） |
 | `aspnetcore-ohos` | `feature/openharmony` | `ad9603db67` | aspnetcore 移植 |
 
 ## 5. 怎么校验（三步）与 tester-run.sh 一条命令
@@ -71,14 +72,14 @@ curl -L -O "$base/device-test-kit.tar.gz" -O "$base/device-test-kit.tar.gz.sha25
 sha256sum -c device-test-kit.tar.gz.sha256          # ① 整包锚定
 tar xzf device-test-kit.tar.gz && cd device-test-kit
 sha256sum -c SHA256SUMS                             # ② 包内 15/15
-sh verify-kit.sh --expect-tree-digest d5e624dcff89a176dc3b02ba3ceb8ac87fe1f7bfe7a65a91a6171a4acea0659b   # ③ 内容树绑定
+sh verify-kit.sh --expect-tree-digest 7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945   # ③ 内容树绑定
 ```
 
-一条命令（校验 + 安装 + 启动 + 录 30 秒 hilog，`tester-run.sh` 默认 dry-run，无设备不动作；需 `hdc`，多设备加 `--device <id>`；v3 另收集 app-lib 路径与 dlopen 证据，`--extra-probes` 可带 importprobe/importb 载荷）：
+一条命令（校验 + 安装 + 启动 + 录 30 秒 hilog，`tester-run.sh` 默认 dry-run，无设备不动作；需 `hdc`，多设备加 `--device <id>`；v4 另收集 app-lib 路径与 dlopen 证据（RM1），并在发任何 `hdc` 命令前校验 bundle 名（A1），`--extra-probes` 可带 importprobe/importb 载荷）：
 
 ```sh
 sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
-  --expect-tree-digest d5e624dcff89a176dc3b02ba3ceb8ac87fe1f7bfe7a65a91a6171a4acea0659b \
+  --expect-tree-digest 7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945 \
   --install --start --capture 30
 ```
 
@@ -89,7 +90,7 @@ sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
 | ① 重签（按你的 UDID） | `hdc shell bm get -u` 的 UDID（或按包内 `自签说明.md` 用 DevEco 自动签名自行完成） | `sh scripts/sign-for-device.sh <UDID>`（多设备逗号分隔） |
 | ② 外部预签（用你的材料） | p7b + p12 + cer + keyAlias（华为材料亦可） | `sh scripts/sign-for-device.sh --external --profile <p7b> --key <p12> --cert <cer> --key-alias <alias> --expect-udid <UDID>`；华为材料可走 `scripts/sign-huawei.sh` |
 
-根因：hap 内调试 profile 的 `debug-info.device-ids` 只含示例 UDID；重签/预签后哈希必变，以新产物随附的 `SHA256SUMS` 为准。kit #17 的 4 个已签 hap 为自签名（默认 `-signCode 1` 会重签 `libs/<abi>/*.so`），诊断 tarball 内的 hap 为陈旧签名或未签名，均需按 §5/自签说明重签。详见 `2026-09-19-ohos-signing-and-udid-guide.md`。
+根因：hap 内调试 profile 的 `debug-info.device-ids` 只含示例 UDID；重签/预签后哈希必变，以新产物随附的 `SHA256SUMS` 为准。kit #18 的 4 个已签 hap 为自签名（默认 `-signCode 1` 会重签 `libs/<abi>/*.so`），诊断 tarball 内的 hap 为陈旧签名或未签名，均需按 §5/自签说明重签。详见 `2026-09-19-ohos-signing-and-udid-guide.md`。
 
 ## 7. SDK 门控清单（快速参考，详见覆盖矩阵 §4）
 
@@ -112,6 +113,8 @@ sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
 | `2026-09-21-ohos-device-report-template.md` | 真机回传一页模板（机器可解析） |
 | `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能 M1–M10 真机验证清单（即 release 上的 `new-features-device-checklist.md`） |
 | `2026-09-22-ohos-maui-coverage-matrix.md` | MAUI 覆盖矩阵与 SDK 阻塞/Top-10 缺口 |
-| `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描（PASS WITH FINDINGS，23 项已处置） |
+| `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描（第一轮；PASS WITH FINDINGS，23 项已处置） |
+| `2026-09-23-ohos-security-scan-2.md` | 五仓库安全扫描 #2（16 条候选，15 修 + 1 文档化决策；kit #18 已含全部修复提交） |
+| `2026-09-23-ohos-performance-scan.md` | 五仓库性能扫描（31 热点，10 已修；kit #18 已含已修项） |
 | `2026-09-21-ohos-final-status.md` | 一页版最终状态（交付主线、批次、真机待证项、§11 收官） |
 | `README.md` | `docs/plans` 文档索引（本目录入口） |

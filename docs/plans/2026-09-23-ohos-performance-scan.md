@@ -9,6 +9,8 @@
 
 **门禁现状：** 现有门禁"不会误报"，但**几乎拦不住 2–4× 的性能回归，且完全不拦分配回归**——帧预算只用掉 **20.6%**、a11y 各项余量 1–100×、alloc/frame 只打印不断言、preflight 阈值 226 < CI 288、pixel 套件在 CI 跑 2 次且无缓存、交互/性能门禁不上 PR、`tolerance=0` 用例脆弱。剩余 21 个热点留档，其中 4 个结构性大项：**DrawView `ChildrenOf` 迭代器（修复后 42,766 B/帧的主要残余）**、H3 TLS 优化（需设备验证）、P12 ElfSigner 每文件 `ReadAllBytes` + 无 `Inputs`/`Outputs`、P16 kit 多遍整读。所有"每帧"数字都是模型实测 × 频率假设，未在真机跑真实 HAP。
 
+**发布：** kit #18（`device-test-kit`，2026-09-23 发布，115,905,186 B / `29be0590…`，maui-ohos pin `c730226f93`）已含本报告全部已修项（FIX-P1 `46b4e0f`、FIX-P2 `8e4de06f` 及其后的 MB/H-C2 修复）；未修项（H3/H7/H8/H10/H11/H12/P16 等）仍留档。
+
 ## 范围与方法
 
 - **实测环境（同机）。** HarmonyOS aarch64（RID `ohos-arm64`，.NET **11.0.0-rc.1.26451.109**），20 core，31 GB RAM；扫描时 31 GB 已用、仅 650 MB free → 分配/缺页类数字偏保守。微基准用 NDK clang 26.0.0.18 + `csc`/`dotnet 11` 编译运行，**不构建任何仓库、不改仓库文件**（除复用已构建的 harness 二进制）。

@@ -225,3 +225,4 @@
   `importd`（动态加载 D1/D2）为其余探针载荷。候选载荷（dynpkg/normalized/importb/importd）与 kit #17 均在 `device-test-kit` release 上；
   当前发布 = **kit #17**，数字入口见 `docs/plans/2026-09-22-ohos-release-manifest.md`（2026-09-23 快照），实验依据见
   `docs/plans/2026-09-23-ohos-native-import-experiment.md` §8 与 `docs/plans/2026-09-23-ohos-napi-import-fix-playbook.md` §5。
+- **kit #18（2026-09-23 发布，替代上文 kit #17 口径）**：携带本轮安全 + 性能修复——`ohos-workload 49cd70f3d1..2857837`（11 提交：A1 bundle-name 校验、A2 hvigor sha256 锚定、A3 clobber 门禁 opt-in、H-C2 壳 URL 允许列表 + abc 重建、MB-2 宿主回调守卫、FIX-P1 宿主绘制缓存）、`maui-ohos c730226f93`（MB-1..MB-3/H-C2/FIX-P2）、`sdk-ohos 690134e706`（D-1..D-6/H-C1 安装器与签名加固）；`device-test-kit` = 115,905,186 B / `29be05906a1cfe5a56c47c085414189e6f443768534aedd53a90e978a7fd3996`、tree `7aa5d4814ef46a525ec395a326acf4478bb1d840d4952276bde12ea73e93f945`（数字入口见 release manifest）。
