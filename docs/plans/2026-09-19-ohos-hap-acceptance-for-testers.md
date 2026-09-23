@@ -307,11 +307,14 @@ I1 未测（无相机）
 `[maui] permission request failed:`、`[maui] ability start failed:`、`[maui] screenshot rejected:`）在 hilog。
 两者都取到最好；只能取其一时请在回传里注明。
 
+**下一批（M11–M13，2026-09-23）**：另有 12 项——真实缺陷修复（窗口 `Activated` 必触发；分组 `CarouselView` 展平且页码一致；阴影按偏移/模糊/颜色渲染；`SecureStorage` 在 HUKS 静默时回退并写一次性状态；应用内资源按 payload 优先 + `resources/rawfile` 兜底解析）、UX 深化（滚动惯性/边缘夹紧、自动隐藏滚动条、焦点环、悬停 Tooltip、键盘加速键、窗口 Overlay 与 `IPlatformApplication.Current`）与原始 HAP 资源桥（`resources/rawfile/**`，8 MiB 上限，缺文件 `FileNotFoundException`）。
+这些项目前**只有离机验证**（编译 + 交互套件源码契约 pin + rawfile scratch 驱动），无真机证据。默认包可直接观察滚动惯性与滚动条（长列表页）；其余需**功能探针 hap**或重打包 hap，没有入口请登记「未测（本包无入口）」，不要判失败。逐项步骤/期望/取证关键字（含加速键键码）见随包《新功能真机验证清单》M11–M13。
+
 ### 8b. 若应用启动即崩（JsError / exit 254）
 
 **先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），这是本版 kit 的 ArkTS 壳 abc 入口 record 缺陷（2026-09-22 测试方定论，见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`），**不需要跑 P1–P4**，等 PA1 重建壳后的下一版 kit 重测。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。
 
-**其他启动崩溃先别做 M1–M10**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
+**其他启动崩溃先别做 M1–M13**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
 `sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按
 `自签说明.md` 自签），按「五层决策表」回传结论：P1 失败 = 设备/框架/包波段；P2 失败 = 宿主 `.so` dlopen；
 P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` 行里的库名即答案）；P1–P4 全过 = 崩在

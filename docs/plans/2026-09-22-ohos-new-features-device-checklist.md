@@ -1,7 +1,7 @@
 # 2026-09-22 新功能真机验证清单（测试者版）
 
 > 面向拿到 `device-test-kit`（kit #7，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
-> 与 `验收说明.md`（A1–K2、N1–N7）互补：A–N 覆盖既有能力，本清单覆盖 **M1–M10**。
+> 与 `验收说明.md`（A1–K2、N1–N7）互补：A–N 覆盖既有能力，本清单覆盖 **M1–M13**（M11–M13 为 2026-09-23 深化批：真实缺陷修复 / UX 深化 / 原始 HAP 资源桥）。
 > 逐项格式：**入口 → 步骤 → 期望 → 证据（抓什么）→ 可能失败**。绝大多数步骤需人工操作：`tester-run.sh` 只能自动**安装 / 启动 / 录 hilog / 跑启动崩溃探针**，触发 UI、切换系统设置、接受弹窗、截图、取沙箱文件都要人工完成。
 
 ---
@@ -36,7 +36,7 @@
 因此：
 
 - **M1–M6、M8、M10 必须配合"功能探针 hap"才能逐项触发**。探针页由交付方构建（最小示意见附录 A，含权限声明命令），已带探针页时按下表逐项点按即可；**若你手上的包没有探针页，请只登记"本包无入口"，不要判失败**，并完成所有能做的间接检查（能启动/不崩、状态文件、module.json）。
-- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #7 上即可完成**。
+- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #7 上即可完成**；M11–M13 深化批里 **M12 的滚动惯性与自动隐藏滚动条在默认演示长列表上直接可测**，M11 的窗口激活需探针页挂 `Window.Created/Activated` 计数，其余项需探针页或重打包 hap——没有入口同样登记「未测（本包无入口）」，不要判失败。
 - 同理，`验收说明.md` §4b 的 N1–N7（蓝牙/打印/联系人/日历等）也以各自界面入口是否存在为准；没有入口的项登记「未测（本包无入口）」，不要判失败。
 
 ### 0.3 证据：两类 `[maui]` 行，别找错地方
@@ -272,6 +272,69 @@ dotnet publish -c Release -r openharmony-arm64 \
 | 6. 若探针页提供搜索框（后续接桥后）| 输入 → `SearchHandler.Query` 更新；回车 → `QueryConfirmed()`；取消 → 清空 | 录屏 |
 
 **可能失败**：底栏/抽屉行为与设置不符；header/footer 行缺失；状态行不出现。**抓**：截图/录屏；`dotnet-status.txt` 的 `[maui] shell search attached …` / `search detached` / `flyout header='…' footer='…'` 行。
+
+---
+
+## M11 真实缺陷修复（PI1 / 2026-09-23）
+
+**入口**：**窗口激活（下表第 1 行）**在 kit 包上即可观察（状态文件 + 探针页计数）；其余 4 项需功能探针页。
+
+**代码行为**：壳三份模板改发 `lifecycle Create=0`；宿主在 `Run` 之前收到 `Create` 时先 `Created`，窗口建好后立即补 `Activated`，两者各恰好一次。分组 `CarouselView`（`ItemsSource` 每项本身是非字符串集合）按「展平到项」物化幻灯片（组头/组尾画不出、只提示一次），页码用同一份展平结果计数。`IView.Shadow` 经宿主画布阴影层按偏移/模糊/单色绘制（跟随圆角），Shadow 变化请求重绘，非纯色画刷不绘制并提示一次。`SecureStorage` 优先 HUKS，HUKS 静默时回退每安装文件密钥并**只写一次**状态行。`OpenAppPackageFile*` 先查 payload 目录（`AppDir`，即解包后的 `dotnet.zip` 负载根），未命中再走 rawfile 桥（M13）。
+
+**本轮前离机验证**：交互套件（308 条 `[verify]`）中的源码契约 pin（逐项见末列）；**无真机证据**。
+
+| 项 | 步骤 | 期望 | 证据 | 本轮前离机验证 |
+|---|---|---|---|---|
+| **窗口 `Activated`**（参考 M7）| ① 启动应用（`tester-run.sh --install --start --capture 30`）后看状态文件；② 探针页读取挂在 `Window.Created` / `Window.Activated` 上的计数（显示 `created=N activated=N`）| `[maui] lifecycle Create (window=…)` 与 `[maui] window created (…), content=…` 都出现、都在 `[maui] lifecycle Foreground` 之前（两行相对顺序取决于壳的 Create 早于还是晚于 `Run`，都算通过）；`Created` 与 `Activated` **各恰好一次**、顺序 Created→Activated（修复前 Create 先到时 Activated 会丢）；无重复 `Created` 异常 | 状态文件两行片段 + 探针页计数截图 | 源码 pin（壳模板 `notifyLifecycle(0)` + 宿主 `_createReceived` / `EnsureWindowActivated`）；无行为测试 |
+| **分组 `CarouselView`** | 探针页打开一个分组 `CarouselView`（`ItemsSource` 每项本身是小集合，如 3 组 × 2 项），左右滑动走完全部页 | 每「项」一页（例中共 6 页），不是每组一页；底部页码点数与页数一致；滑动/循环行为与普通 CarouselView 相同；不崩 | 首/中/末页截图（含页码点）+ `dotnet-status.txt`: `[maui] CarouselView.ItemsSource is grouped (every item is a collection): each group's items are shown as slides; group headers/footers cannot be expressed by this carousel`（一次）| 源码 pin（`MaterializeItems` 展平 + 页码取展平条数）|
+| **阴影** | 探针页两组视图：① `Shadow` 用纯色 Brush（如黑色，`Offset=(6,6)`、`Radius=12`、`Opacity≈0.6`）；② 改用渐变/图片 Brush；③ 运行时改一次 ① 的 Shadow | ① 视图后出现阴影，偏移/模糊/颜色随设定；③ 无须别的交互即重画；圆角视图阴影跟随圆角；② 不画阴影、不崩、只提示一次 | ①/② 截图 + ③ 改动前后截图 + `[maui] IShadow.Paint '<类型名>' is not a solid colour: the OpenHarmony shadow layer carries a single colour, so this shadow was not drawn` | 源码 pin（`DrawShadow` + Shadow mapper 重绘 + 渲染器调用顺序）|
+| **`SecureStorage` 回退** | 探针页（或默认包 F2 入口）写/读/删一个键；杀进程重开再读；看状态文件 | 读回一致、删除后为空（同 F2）；HUKS 静默时读写仍正常、不抛异常；状态行**只写一次**；重启后仍读得到 | 探针页截图 + `[maui] secure storage is using the per-install file key: HUKS is unavailable, values are obfuscated but not hardware-backed`（一次；HUKS 可用时不出现）| 源码 pin + 套件内 SecureStorage 读写行为（未断言该状态行）|
+| **应用内资源解析** | 探针页分别读：① payload 文件（如 `hello-maui-app.dll`）；② 只在 rawfile 的文件（如 `app.json`，详见 M13）；③ payload 与 rawfile 同名的文件；④ 不存在的名字 | ① 有内容；② 有内容（需带 rawfile sink 的壳，见 M13）；③ 读到 **payload** 版本（payload 先查）；④ `FileNotFoundException` 且消息含所查名字 | 探针页文本 + 异常消息截图 + `dotnet-status.txt` 的 `raw file bridge unavailable`（仅旧壳/超限时）| 源码 pin（payload 目录解析 + `FileNotFoundException` 文案）+ rawfile scratch 驱动（payload 命中 / 桥命中 / 缺文件 / 空文件）|
+
+**可能失败**：`Activated` 仍不触发（只有 `Created`）；重复 `Created` 抛错；分组 carousel 把整组当一页（屏上出现集合的 `ToString`）或页码与页数不一致；阴影不画 / 效果泄漏到别的内容 / 改 Shadow 不重画；`SecureStorage` 抛异常或状态行不出现；payload 资源读不到（`AppDir` 错）。**抓**：`dotnet-status.txt` 对应状态行；探针页截图；必要时附 `unzip -p … resources/rawfile/app.json` 对照。
+
+---
+
+## M12 UX 深化（PJ1/PJ2）
+
+**入口**：**滚动惯性/自动隐藏滚动条**在默认演示长列表上直接可测；焦点环、Tooltip、加速键、Overlay 需探针页（Tooltip 需鼠标、加速键需键盘）。
+
+**代码行为**：帧驱动动画循环（有动画才订阅帧，空闲不 tick）驱动滚动惯性（指数摩擦、到边精确夹紧；按下/程序化写入/`ScrollTo`/数据变化取消）与滚动条淡出；滚动条是右缘 4px 圆角细条，内容纵向溢出时出现，停滚约 0.9 秒后约 0.25 秒淡出；焦点环给 `IsFocused` 的非文本平台视图画 3px 内描边（跟随圆角）；Tooltip 监听 `ToolTip` 映射项，悬停 650ms 后在指针附近绘制文本气泡，移开/按下/触摸消失；加速键从键盘监听匹配，修饰键自跟踪并精确匹配，命中后按「Button 点击 / 菜单项激活 / 回调或 Command」派发；窗口 Overlay 由宿主在每帧 present 前绘制 `IWindow.Overlays` 中可见且已初始化的项，`IPlatformApplication.Current` 同期发布。
+
+**本轮前离机验证**：交互套件中的源码契约 pin（逐项见末列）；**无真机证据**。
+
+| 项 | 步骤 | 期望 | 证据 | 本轮前离机验证 |
+|---|---|---|---|---|
+| **滚动惯性 / 边缘夹紧** | 默认长列表：① 快速上滑后松手；② 滑到顶/底后继续甩；③ 惯性滑行中途按一下 | ① 松手后继续滑行并逐渐减速停下；② 到顶/底**精确停住**、不回弹/不越界；③ 按下立即停住；不漂移、不卡死 | 录屏（正常滑动 / 到边 / 中途按下）| 源码 pin（最小甩动速度 320px/s、摩擦 4.5/s、4 秒上限、边缘 clamp）；无真机行为数据 |
+| **自动隐藏滚动条** | 长列表滚动一次，停止后静止看 2 秒 | 滚动时右缘出现 4px、白 35% 透明度的圆角细条（距边 3px）；停滚约 0.9s 后约 0.25s 淡出消失；内容不溢出时不出现；静止时无额外动画/重绘 | 滚动后立即截图 + 约 1.5s 后截图（对照）| 源码 pin（尺寸/停留/淡出常量）|
+| **焦点环** | 探针页：① 对一个非文本控件调用 `Focus()`；② 再 `Unfocus()` 或让另一个控件聚焦 | 聚焦控件四周出现 3px 蓝色描边、跟随圆角、完整在边界内；移焦后消失；其他控件不乱画 | 聚焦前后截图 | 源码 pin（`FocusRing.Draw` + 平台视图 Draw 调用）；真机聚焦链路未验（`Focus()` 返回 false 时登记「未测」，不判失败）|
+| **Tooltip（悬停延迟）** | **接鼠标**：① 悬停在设置了 `ToolTipProperties.SetText` 的控件上约 0.7s；② 移开；③ 悬停未满延迟时按下；④ 改文本后再悬停 | ① 约 650ms 后在指针附近弹出文本气泡；② 立即消失；③ 按下立即消失；④ 新文本生效；不吞点击/滚动 | 带时间戳截图或录屏 | 源码 pin（`ShowDelayMs=650` + SurfacePresent 链）；真机行为未验 |
+| **键盘加速键** | 接键盘：探针页注册一个加速键（如 Ctrl+S，需交付方经切片内部入口接入）；依次按 Ctrl+S、只按 S、Ctrl+Shift+S；再试 Meta 组合 | 只有 Ctrl+S 触发一次（点击/命令计数 +1）；只按 S 与 Ctrl+Shift+S 不触发（修饰键**精确匹配**）；Meta 按 Cmd 与 Windows 语义匹配；无注册时键盘无副作用 | 录屏 + 计数截图 | 源码 pin（修饰键自跟踪、精确匹配、三层派发）；公开 rc.1 面没有元素级集合，真机入口由探针提供 |
+| **窗口 Overlay / `IPlatformApplication.Current`** | 探针页：① 显示 `IPlatformApplication.Current != null`（冒烟）；② `Window.AddOverlay` 加一个自绘半透明 overlay；③ `RemoveOverlay`；④ `IsVisible=false` 再观察 | `Current` 非空且 `Current.Services` 可解析；overlay 画在页面内容之上、移除/隐藏后消失；触摸抬起对 `OpenHarmonyWindowOverlay` 派生 overlay 报 `Tapped`；**已知限制**：overlay 不拦截触摸（底层控件仍收到）| 加/移除前后截图 + 录屏 | 源码 pin（Overlay/宿主 present 链/应用对象发布）；无行为测试 |
+
+**加速键键码（文档，`Key` 名称大小写不敏感）**：字母 A–Z = 2017–2042；数字 0–9 = 2000–2009（也认 D0..D9 / Number0..9）；F1–F12 = 2090–2101；方向键 = 2012–2015；Enter = 2054、Esc = 2070、Tab = 2049、Space = 2050、Backspace = 2055、Delete = 2071、Home = 2081、End = 2082、PageUp/PageDown = 2068/2069、Insert = 2083；`Key` 全为数字时直接按 ArkUI 数字码匹配（子集外的逃生口）。修饰键码：Alt 2045/2046、Shift 2047/2048、Ctrl 2072/2073、Meta 2076/2077（Meta 映射到 Cmd 与 Windows 两个标志）。
+
+**可能失败**：滑动松手即停（惯性未启动）或到边回弹/越界；滚动条不出现或永不淡出（帧循环未退订，注意耗电）；焦点环不画（`Focus()` 未成功属未测）；Tooltip 不弹/延迟不符/移开不消失；加速键多按一个修饰键也触发；overlay 不画/移除后仍在/`Current` 为 null（库内解析平台服务会抛）。**抓**：录屏/截图；`dotnet-status.txt` 的 `IShadow.Paint …`（仅阴影项）；无专用行时以人工观察为准。
+
+---
+
+## M13 原始 HAP 资源桥（`resources/rawfile/**`）
+
+**入口**：功能探针页的 rawfile 读取按钮（约定名如 `m-probe-raw.txt`；包内已有的 `app.json` 也可直接读）。重打包自测：用 zip 工具往 `hello-maui-app-unsigned.hap` 的 `resources/rawfile/` 加自己的文件（**不要动** `module.json` 与 `dotnet.zip`），按同包 `自签说明.md` 重签后安装。
+
+**代码行为**：壳的 `registerRawFileSink` 用 `resourceManager` 读 `resources/rawfile/**`（op 0 读、op 1 探测存在），答案以 base64 单串回传（无临时文件/共享路径）；**8 MiB** 上限在三处生效（壳编码前、宿主参数、托管解码）；缺失（`9001005`）映射为「未找到」；缺文件在托管侧按约定抛 `FileNotFoundException`；旧壳/无 sink 退化为 `null`/`false`，并写一次 `[maui] raw file bridge unavailable (rc=-1)`（3 秒超时）。
+
+| 步骤 | 期望 | 证据 |
+|---|---|---|
+| 1. 探针页读包内 rawfile（如 `app.json`，或重打包加入的 `m-probe-raw.txt`）| 返回内容与 hap 内条目一致；空文件返回空流、不抛异常 | 探针页文本截图 + `unzip -p hello-maui-app-unsigned.hap resources/rawfile/app.json` 对照 |
+| 2. `AppPackageFileExistsAsync(同一名字)` | `true` | 探针页截图 |
+| 3. 读一个不存在的名字（如 `nope.txt`）| `FileNotFoundException`，消息含所查名字（`App package file 'nope.txt' was not found.`）；**不挂起** | 异常消息截图 |
+| 4. （重打包 hap）加入/替换 `resources/rawfile/m-probe-raw.txt` 并重签安装后再读 | 读到重打包后的新内容（rawfile 随 hap 走，不经过 payload 解包）| `unzip -l` 的条目 + 探针页截图 |
+| 5. （可选，交付方探针）放一个 >8 MiB 的文件读它 | 与缺失一样得到 `FileNotFoundException`；状态行 `[maui] raw file bridge unavailable (rc=-3)`（一次）；不崩 | 状态文件 + 探针页截图 |
+
+**可能失败**：旧壳上读到 `null`/`false` 并出现一次 `rc=-1` 行（登记「本包壳不支持」，不算失败）；超限不立即拒绝（长时间等待）；重打包后条目没进去或缺文件消息不含所查名字。**抓**：`dotnet-status.txt` 的 `raw file bridge unavailable` 行；hilog 壳侧 `[maui] rawfile read failed: <msg>`（读取异常时，一次）；**缺文件属正常答案、不写任何日志**。
+
+**本轮前离机验证**：rawfile 桥的 scratch 驱动已覆盖 payload 命中（不走桥）、桥命中、缺文件 `FileNotFoundException`、空文件；宿主新符号与壳类型检查通过。真机与重打包 hap 均未验证。
 
 ---
 
