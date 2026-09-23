@@ -1564,3 +1564,17 @@ ohos-workload 一次成功（`9a17d3b..e77c803`）。
 - **结论**：**PASS WITH FINDINGS** —— 23 项候选（A1–A8 / B1–B7 / C1–C8）全部解决：22 项修复 + B6 构造性修复；另 16 个区域无发现；修复均为离机验证（真机安装受组织策略限制）。
 - **报告**：`docs/plans/2026-09-21-ohos-security-scan.md` —— 覆盖五仓（`runtime-ohos` / `aspnetcore-ohos` / `ohos-workload` / `maui-ohos` / `sdk-ohos`），含逐项证据、独立复核与残余风险。
 - **修复与跟进提交区间**：`ohos-workload dc6b66b..3d8e7d0`（16 提交）· `maui-ohos c90a018e..be5d471f`（6）· `sdk-ohos d57e58e2..ebd82459b0`（2）；`runtime-ohos` 文档：`8a600e49fa4`/`0adc3edc4d0`（C1/C5）、`a363616fe4f`（树摘要）、`c82becfe18a`（argv 残余）、`b131c0ca319`（独立复核记录）。
+
+## 41. 评审整改（REV/RA/RB/RC-A..D）· 真实缺陷修复（PI1）· UX 深化（PJ1/PJ2）· kit #14 发布（2026-09-23）
+
+- **REV（评审意见受理/分派）**：把 runtime 与切片两侧的评审意见逐条落成可执行项并分派到 RA/RB/RC-*；本轮未见 REV 独立提交。
+- **RA（`ohos-workload a8d5318`）**：六份 pack RID 图的顶层 `openharmony` 改为 `{"#import":["any"]}`（与 `sdk-ohos 737fc2a767` 镜像 runtime `be8e6f6988d` 后逐字节一致）；六份 `Sdk.targets` 注明 arm64-only 为有意（无 openharmony-x64 runtime pack），待 x64 runtime pack 发布后一起放宽（runtime review R2/R9）。
+- **RB（`maui-ohos 31daa37c`）**：切片按 TFM 门控（`**\OpenHarmony\**` 只编入 OpenHarmony TFM，此前会编进所有平台）；新增 `PublicAPI/net-openharmony` 首个基线；以 `SupportedPlatform` 取代死 CA1418 NoWarn、恢复 `TreatWarningsAsErrors=true`（仅 5 个已知 ID 降级为 `WarningsNotAsErrors`），并注明冻结 `ohos_host_*` ABI。
+- **RC-A（`sdk-ohos`）**：`pr/ohos-sdk-rids 6396aa870a` 与 `pr/ohos-sdk-sandbox 8f89a22b3d` 删除仅 fork 用的旧版 RID 图覆盖并对齐 `GenerateLayout.targets`；两分支经 API（force=false）更新，远端 tree/commit 与本地一致。
+- **RC-B（`runtime-ohos`）**：`e996eff4e24` 把 shims 并入 linux TFM 组（删 `LibrariesOpenHarmonyShimsTfm`，修 sfx-src 丢 60 个 facade 的 workaround）；`60be4cf85c8` 从本地 runtime/apphost pack 列表移除 `openharmony-arm`（对齐 N13，RID 仍可寻址）。
+- **RC-C（`ohos-workload deaab95`）**：删 9 个项目死 CA1418 NoWarn，改一次性 `<SupportedPlatform Include="openharmony" />`；`TreatWarningsAsErrors=false` 的范围与退出条件写明。
+- **RC-D（`sdk-ohos f2ada2dabc`）**：`build-ohos-all` 补记 aspnetcore NoWarn 抑制清单（31 码/30 唯一，供上游对照）。
+- **PI1 真实缺陷修复（`maui-ohos 87ceb75f` + `ohos-workload 2bd0571`）**：`OpenAppPackageFile*` 改按 `AppDir`（解包后的 dotnet.zip 负载根）解析；`Window.Activated` 在 Create 早于 Run 到达时补触发一次（壳模板改发 lifecycle Create=0，preview.22/23/24 三份一致）；分组 `CarouselView` 物化为逐项幻灯片；`IShadow` 经宿主画布阴影层绘制；SecureStorage 注记补齐。
+- **PJ1/PJ2 UX 深化（`maui-ohos`）**：`d5f45ecb` 帧驱动动画循环 + 滚动惯性/滚动条 + 焦点环（共享 ticker，空闲零开销）；`8430ac06` 桌面 Tooltip（延迟/锚定/SurfacePresent 绘制）与键盘加速键（修饰键自跟踪、精确匹配、三层派发）；`852f9219` 随 kit #14 发布 `IPlatformApplication.Current` 与 `IWindowOverlay` 宿主。
+- **验证与 kit #14 发布**：交互套件 **297 条 `[verify]`、0 Unhandled**（README 期望 297，CI 门限 **≥277**，`ohos-workload 2f43bb4`），本地 preflight 门限仍 ≥226；`device-test-kit` release 于 2026-09-23T07:35+08:00 刷新为 kit #14（`workload-latest` 镜像同值；数字见 `2026-09-22-ohos-release-manifest.md`）——5 hap 的 `ets/modules.abc` = 201,228 B（头 `13.0.1.0`）、`libs/arm64-v8a` 14 个 `.so`（12 个运行时原生 + 宿主 + `libc++_shared`）、`dotnet.zip` 253 项 0 `.so`；包内 `SHA256SUMS` 15/15、tree digest 校验 OK。
+- **不确定项（如实）**：以上均为离设备证据（编译/套件/API）；Tooltip、加速键、动画与滚动条的**真机**行为，以及 sdk-ohos 两 PR 分支的上游评审结果待定；RC-B 的 shims TFM 对齐按提交记录**未在构建层验证**（本检出无 runtime 构建环境）。

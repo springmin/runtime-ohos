@@ -1,52 +1,52 @@
-# OpenHarmony .NET/MAUI 交付物清单（2026-09-22 快照）
+# OpenHarmony .NET/MAUI 交付物清单（2026-09-23 快照）
 
-> **本页是 2026-09-22 的静态快照，不会再维护**：只回答「截至该时点，当前交付物有哪些、数字是多少、去哪里取」。
-> 所有数字在 2026-09-22 核对：本地文件重算 sha256 + GitHub release API digest 双向一致；任何重签、预签或重新打包都会改变哈希。
-> kit 编号（#9）是团队跟踪口径，release 本身不带编号；以后续文档与 release 说明为准。
+> **本页是静态快照**（文件名为创建日期；数值于 2026-09-23 刷新）：只回答「截至该时点，当前交付物有哪些、数字是多少、去哪里取」。
+> 所有数字在 2026-09-23 核对：本地文件重算 sha256 + GitHub release API digest 双向一致；任何重签、预签或重新打包都会改变哈希。
+> kit 编号（#14）是团队跟踪口径，release 本身不带编号；以后续文档与 release 说明为准。
 
-## 1. 当前 kit（kit #9，`device-test-kit` release，2026-09-22T02:27Z 刷新）
+## 1. 当前 kit（kit #14，`device-test-kit` release，2026-09-23T07:35+08:00 刷新）
 
 - 位置：`https://github.com/springmin/sdk-ohos/releases/tag/device-test-kit`（下载前缀 `https://github.com/springmin/sdk-ohos/releases/download/device-test-kit/`）。
-- `device-test-kit.tar.gz`：**114,387,779 B**，sha256 `4bf775e1bf1019335061a580c435e7260263c4bdf374968eee803463639001bc`。
-- `device-test-kit.tar.gz.sha256` 边车（89 B）：内容 = tar.gz 哈希；边车自身 sha256 `dc244decd88965b5580f71473bedfc6ca7521a9a1c87b1df3cdbd01caeb6ea2b`。
-- 解压内容树摘要（tree digest，绑定解压后的内容而非仅 tar 包）：`2257d74f5d25a07258f798708b70c0d10f70bf6651192653fbeb57f3545cc269`。
-  验证：解压后在包内执行 `sh verify-kit.sh --expect-tree-digest 2257d74f5d25a07258f798708b70c0d10f70bf6651192653fbeb57f3545cc269`。
+- `device-test-kit.tar.gz`：**115,778,096 B**，sha256 `5155e173ecf4552e13c64e07be94012c5d594cafd12456a84378790e0dcb23a8`。
+- `device-test-kit.tar.gz.sha256` 边车（89 B）：内容 = tar.gz 哈希；边车自身 sha256 `21dc7b0588d9be9cc0c85812fcc61bf61af276fe204f708a2b239a5f852ce197`。
+- 解压内容树摘要（tree digest，绑定解压后的内容而非仅 tar 包）：`8f1d2890b56e2944bd69545569ffdd90c5afad9ff564912b522d89b69e693a64`。
+  验证：解压后在包内执行 `sh verify-kit.sh --expect-tree-digest 8f1d2890b56e2944bd69545569ffdd90c5afad9ff564912b522d89b69e693a64`。
 - 镜像：`workload-latest` release 上的同名资产逐字节同值（大小、sha256 相同；tree digest 同值）。
-- 包内 tester 文档**按设计不写死哈希**：校验一律以 release 说明「## Integrity」小节、`.tar.gz.sha256` 边车与随包 `SHA256SUMS` 为准。
-- 本快照的本地复核：tree digest OK；`sha256sum -c SHA256SUMS` **14/14** 通过（5 hap + 8 文档 + `verify-kit.sh`）；包内文档 64-hex 计数 0。
-- 与旧文档的口径差异：`2026-09-21-ohos-final-status.md` / 设备清单里的 kit #7 指 2026-09-22T01:01Z 快照；本页锚定其后 02:27Z 刷新的当前 release（跟踪编号 #9），哈希以当前 release 为准。
+- 包内 tester 文档**按设计不写死哈希**：9 个文本文件（8 文档 + `签名说明.txt`）的 64-hex 计数均为 0；校验一律以 release 说明「## Integrity」小节、`.tar.gz.sha256` 边车与随包 `SHA256SUMS` 为准。
+- 本快照的本地复核：tree digest OK；`sha256sum -c SHA256SUMS` **15/15** 通过（5 hap + 9 文档 + `verify-kit.sh`）；发布侧 API digest 与本地同哈希重算一致。
+- 与旧文档的口径差异：`2026-09-21-ohos-final-status.md` 记录到 kit #12（启动崩溃三修复）；本页锚定其后刷新的当前 release（跟踪编号 #14，含评审整改、真实缺陷修复与 UX 深化），哈希以当前 release 为准。
 
-## 2. `device-test-kit` release 上的全部资产（2026-09-22 快照）
+## 2. `device-test-kit` release 上的全部资产（2026-09-23 快照）
 
 | 资产 | 大小 (B) | sha256 |
 |---|---|---|
-| `device-test-kit.tar.gz` | 114,387,779 | `4bf775e1bf1019335061a580c435e7260263c4bdf374968eee803463639001bc` |
-| `device-test-kit.tar.gz.sha256` | 89 | `dc244decd88965b5580f71473bedfc6ca7521a9a1c87b1df3cdbd01caeb6ea2b` |
+| `device-test-kit.tar.gz` | 115,778,096 | `5155e173ecf4552e13c64e07be94012c5d594cafd12456a84378790e0dcb23a8` |
+| `device-test-kit.tar.gz.sha256` | 89 | `21dc7b0588d9be9cc0c85812fcc61bf61af276fe204f708a2b239a5f852ce197` |
 | `tester-run.sh` | 32,226 | `f02b0d40daf625bf8a8d1726f6edf58fc49291d7bea996970b8f5b8f6a06cf8d` |
 | `new-features-device-checklist.md` | 36,911 | `0ee2f1eaeb59ba9cc601e38fab9357e1df0a4069a992cdf6ff84c678f4d00569` |
-| `hello-mauiapp-probe1-unsigned.hap`（P1 纯壳） | 11,988 | `92ef933cf7e0eadce1b415f67362dbba0f533dfff8cbbde89ee0eb6c4dcbeac4` |
-| `hello-mauiapp-probe2-unsigned.hap`（P2 宿主 dlopen） | 178,492 | `70bbc687ba1f131185d72eae6b7dfaddf934d8a296726c792385b901eac9d7b0` |
-| `hello-mauiapp-probe3-unsigned.hap`（P3 宿主入口/dlsym） | 186,002 | `5727e00f11c960b060628441b6119702027aa38414d25ddb0e7a4ea823486f3a` |
-| `hello-mauiapp-probe4-unsigned.hap`（P4 逐依赖） | 177,466 | `209c8b10de4dd963a5f454c2586fb294c57fea22828856fd799289d8d62303fc` |
+| `hello-mauiapp-probe1-unsigned.hap`（P1 纯壳） | 12,004 | `bec893c2ea6120b360b45e5b7a61593d5799b0702d31856afaeba1f724c0a951` |
+| `hello-mauiapp-probe2-unsigned.hap`（P2 宿主 dlopen） | 215,384 | `5bdce033d00a561dc22dd4196a4f17aa2e5d6df025682adbe98c30836f6c1960` |
+| `hello-mauiapp-probe3-unsigned.hap`（P3 宿主入口/dlsym） | 222,954 | `43557cfe9c274406ad8cc4985eadace9eb4a7f13d560af2e452491727a5e5b6c` |
+| `hello-mauiapp-probe4-unsigned.hap`（P4 逐依赖） | 223,178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` |
 
 ## 3. Workload bundle（versioned + rolling + SDK release）
 
 | 资产 | 大小 (B) | sha256 | 位置 |
 |---|---|---|---|
-| `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,406,412 | `01c782edfe8d556ebd993e509f3c766054e4a551dbeefbe09ce3f729f84c4b51` | `workload-latest` release；SDK release `v11.0.100-rc.1.26451.109-openharmony` |
-| `openharmony-workload-latest.tar.gz` | 30,406,412 | `01c782edfe8d556ebd993e509f3c766054e4a551dbeefbe09ce3f729f84c4b51` | `workload-latest` release（与 versioned 逐字节一致） |
+| `openharmony-workload-1.0.0-preview.24.tar.gz` | 30,467,938 | `2a1726583aa541849cd34dfb3a203bef5c030df46940312fe4d5689403f7dd28` | `workload-1.0.0-preview.24` / `workload-latest` release；SDK release `v11.0.100-rc.1.26451.109-openharmony` |
+| `openharmony-workload-latest.tar.gz` | 30,467,938 | `2a1726583aa541849cd34dfb3a203bef5c030df46940312fe4d5689403f7dd28` | `workload-latest` release（与 versioned 逐字节一致） |
 
-- 两名字指向同一份字节；`workload-latest` 上的 `SHA256SUMS`（212 B，自身 sha256 `fea1683c97bcee38054418ac7bc879816e89c3fd925294047d0cfc1d4649710c`）同时列出上述两条，与本地 `dist/SHA256SUMS` 重算一致。
+- 两名字指向同一份字节；`SHA256SUMS`（212 B，自身 sha256 `0ead59eb7e5e8b1bfe28cc588e7f6959b309a75efe1d9d6a58fd6d7cd3757f1d`）同时列出上述两条，与本地 `dist/SHA256SUMS` 重算一致。
 - SDK release `v11.0.100-rc.1.26451.109-openharmony`：`https://github.com/springmin/sdk-ohos/releases/tag/v11.0.100-rc.1.26451.109-openharmony`，其上的 bundle 资产 digest 与上表一致；同 release 的 SDK 包 `dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` = 178,005,544 B / sha256 `f3a1bba4fd712db5ae231bb4e65cd10ca50c8acb4f0a4d8650681f66c1772c60`（仅 API digest 读取，未本地复核）。
 
-## 4. 五仓库分支 tip（2026-09-22 快照，`git ls-remote` 与本地 `rev-parse` 一致）
+## 4. 五仓库分支 tip（2026-09-23 快照，`git ls-remote`/GitHub ref API 与本地 `rev-parse` 一致）
 
 | 仓库 | 分支 | 短哈希 | 备注 |
 |---|---|---|---|
-| `ohos-workload` | `master` | `a48d6ee` | 宿主/壳/脚本/套件与发布链 |
-| `maui-ohos` | `feature/openharmony` | `6a4062b` | MAUI 平台切片 |
-| `sdk-ohos` | `feature/openharmony` | `9ad6a1f` | SDK 与 release 宿主 |
-| `runtime-ohos` | `feature/openharmony` | `5e29a38` | 本清单提交前的 tip（本页文档提交会前进一格） |
+| `ohos-workload` | `master` | `deaab95` | 宿主/壳/脚本/套件与发布链 |
+| `maui-ohos` | `feature/openharmony` | `31daa37c` | MAUI 平台切片（TFM 门控 + PublicAPI 基线） |
+| `sdk-ohos` | `feature/openharmony` | `f2ada2dabc` | SDK 与 release 宿主 |
+| `runtime-ohos` | `feature/openharmony` | `60be4cf85c8` | 本清单提交前的 tip（本页文档提交会前进一格） |
 | `aspnetcore-ohos` | `feature/openharmony` | `ad9603d` | aspnetcore 移植 |
 
 ## 5. 怎么校验（三步）与 tester-run.sh 一条命令
@@ -58,15 +58,15 @@ base=https://github.com/springmin/sdk-ohos/releases/download/device-test-kit
 curl -L -O "$base/device-test-kit.tar.gz" -O "$base/device-test-kit.tar.gz.sha256"
 sha256sum -c device-test-kit.tar.gz.sha256          # ① 整包锚定
 tar xzf device-test-kit.tar.gz && cd device-test-kit
-sha256sum -c SHA256SUMS                             # ② 包内 14/14
-sh verify-kit.sh --expect-tree-digest 2257d74f5d25a07258f798708b70c0d10f70bf6651192653fbeb57f3545cc269   # ③ 内容树绑定
+sha256sum -c SHA256SUMS                             # ② 包内 15/15
+sh verify-kit.sh --expect-tree-digest 8f1d2890b56e2944bd69545569ffdd90c5afad9ff564912b522d89b69e693a64   # ③ 内容树绑定
 ```
 
 一条命令（校验 + 安装 + 启动 + 录 30 秒 hilog，`tester-run.sh` 默认 dry-run，无设备不动作；需 `hdc`，多设备加 `--device <id>`）：
 
 ```sh
 sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
-  --expect-tree-digest 2257d74f5d25a07258f798708b70c0d10f70bf6651192653fbeb57f3545cc269 \
+  --expect-tree-digest 8f1d2890b56e2944bd69545569ffdd90c5afad9ff564912b522d89b69e693a64 \
   --install --start --capture 30
 ```
 
