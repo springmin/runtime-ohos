@@ -206,3 +206,22 @@
   下 abc 的 import 记录名不匹配 → host exports 为空 → 表面未交给 .NET → 黑屏。修复（RH1：宿主别名注册覆盖两种约定 +
   标准化壳构建、保留入口 record 的 bundle 名，入口 record 重新核验）**进行中（in flight）**；依据见
   `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5d/§5e 与 `docs/plans/2026-09-21-ohos-crash-probes.md` §4.0d 及决策表新增行。
+
+## 11. 最终收官（2026-09-23，本页最后一节）
+
+- **四个真机根因（按确认顺序）**：① **入口 record**（`ReferenceError: Cannot find module '…EntryAbility'`）—— kit #10 修复并真机复测确认；
+  ② **abc `13.0.1.0`**（壳 abc `24.0.0.0` 超出设备 ark runtime）—— kit #11 以 `compatibleSdkVersion 18` 修复；
+  ③ **运行时原生库随 `libs/arm64-v8a/`**（宿主 dlopen 缺库/加载序）—— kit #13/#14 落地。①②③ 合流后**崩溃清零**；
+  ④ **napi/app-lib path**（黑屏阻塞 #4）—— 非隔离 hap 的模块级 native path 为空（`<bundle>/<module>` app-lib key 未注册）
+  叠加 abc host import 记录名与宿主注册名不匹配；kit #16（别名宿主）与 kit #17（RM1 `libIsolation`）分别覆盖两半边，
+  record/name 另一半由候选实验裁定。
+- **里程碑**：kit #14（本页口径；`ohos-workload` 发布说明口径为 kit #16）为第一个「**崩溃清零 + 应用正常启动并稳定存活**」
+  （1 分钟+，主进程 + `:gpu`，无 `TypeError`/`JsError`/`exit 254`）的构建；黑屏是其后暴露的独立问题（§10）。
+- **基线**：离设备交互套件现为 **308** 条 `[verify]`（295 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能），CI 门限 **≥288**
+  （`ohos-workload 6d2762d`；§4 的 297/277 为其前值）。
+- **候选矩阵（选一，设备跑批结果待回传）**：**dynpkg**（`libIsolation` + abc host-binding record + 已确认入口形式）为
+  **最强单候选**；其次 **kit #17 单独**（仅 RM1 `libIsolation`，覆盖 path/key 半边）；再次 **normalized**
+  （`useNormalizedOHMUrl=true` + `pkgContextInfo.json`，入口 record 形状改变、设备入口解析未证）。`importb`（命名空间静态 import）与
+  `importd`（动态加载 D1/D2）为其余探针载荷。候选载荷（dynpkg/normalized/importb/importd）与 kit #17 均在 `device-test-kit` release 上；
+  当前发布 = **kit #17**，数字入口见 `docs/plans/2026-09-22-ohos-release-manifest.md`（2026-09-23 快照），实验依据见
+  `docs/plans/2026-09-23-ohos-native-import-experiment.md` §8 与 `docs/plans/2026-09-23-ohos-napi-import-fix-playbook.md` §5。
