@@ -95,10 +95,11 @@
 2. **#132953**：rerun（osx-arm64 sccache 偶发）→ 7 天内请求重批 → 请 reviewer resolve 4 条 outdated thread（`runtime.json` 已回退、`any` 已 import、`__PortableTargetOS` 已删）。
 3. **#132827**：请复评并 resolve 6 条 outdated thread（引 `6ed2f9ab9a6`）。
 4. **#132866**：第三次请求答复 3 个 scope 问题（illink 归属 / S1c codesign 上游 / 提交粒度），解除 N1–N16 排队。
+5. **#19–#21 追加修复（本轮落地）：** headless abc `24.0.0.0` → `13.0.1.0`（`ohos-workload 4e5491d`，随 kit #21；模板 README 指向 `ARKTS_SHELL_VARIANT=headless`，`e995cef`）与 workload bundle 外锚 `WORKLOAD_BUNDLE_SHA256`（`sdk-ohos/eng/ohos-install/versions.env:74`；锚优先/`WORKLOAD_SHA256` 覆盖告警与回归用例见 `install-dotnet-ohos.sh`、`tests/test-installer-verification.sh`——该批在 sdk 分支工作树，提交待推）。
 
 ## ⑦ 不确定项
 
-- **sdk V7 未改小项**：`GenerateBundledVersions.targets:295`/`:315` 把 openharmony 置于追加社区 RID 首位；仅美观，最小修复 = 移到 openbsd 之后（未改码）。
-- **workload pack 无 graph sha256 自动校验**：三份字节已一致并有 diff/json 复核，但未在 pack 脚本加等值断言（audit-3 建议 1 的剩余半句）。
-- **ohos-workload 本地 `a10b73e` 未推**（另一代理在发布/回归，gate 基线再调整）；本报告以 `686bf89`（origin）为审计 tip。
+- **sdk V7 未改小项**：`GenerateBundledVersions.targets:295`/`:315` 把 openharmony 置于追加社区 RID 首位；仅美观，最小修复 = 移到 openbsd 之后（本轮 R2b 复核仍未改）。
+- **workload pack 无 graph sha256 自动校验**：三份字节已一致并有 diff/json 复核，但未在 pack 脚本加等值断言（audit-3 建议 1 的剩余半句；本轮 R2b 复核仍未改）。
+- **`a10b73e` 已推（原「未推」已解决）**：alloc 门禁基线提交已随 `origin/master` 推送；本报告审计 tip 当时为 `686bf89`，当前 `ohos-workload master = 1f7ef76`（headless abc `4e5491d`、tester-run v6 `8408a90`、模板 README `e995cef`）。
 - osx-arm64 失败判为 sccache 偶发（仅日志，未复跑）；maui 公共 API 仅类型级对账（成员级未逐条）；R7 注释统计含主观性；设备未验证项见安全/性能报告。
