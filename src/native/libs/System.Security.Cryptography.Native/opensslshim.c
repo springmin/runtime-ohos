@@ -2,6 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+// dladdr() is declared in the OpenHarmony headers only when _GNU_SOURCE (or
+// _BSD_SOURCE) is defined, and it must be defined before the first system
+// header. The native libraries build already passes -D_GNU_SOURCE on Linux
+// targets; keep this here so the shim can be built stand-alone as well.
+#if defined(TARGET_OPENHARMONY) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <assert.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -10,8 +18,11 @@
 
 #if defined(__OpenBSD__)
 #include <dirent.h>
-#include <limits.h>
 #include <stdlib.h>
+#endif
+
+#if defined(__OpenBSD__) || defined(TARGET_OPENHARMONY)
+#include <limits.h>
 #endif
 
 #include "opensslshim.h"
@@ -59,6 +70,66 @@ static void DlOpen(const char* libraryName)
         dlclose(libsslNew);
     }
 }
+
+#if defined(TARGET_OPENHARMONY)
+// OpenHarmony applications can ship more than one copy of OpenSSL (for example a
+// third-party native SDK that bundles its own libssl.so.3). Opening a bare
+// soname would go through the dynamic linker's search path, so any library that
+// happens to be on that path could silently become the process-wide OpenSSL (and
+// therefore the TLS trust anchor). To keep the choice under the runtime's
+// control, a distro-agnostic build on OpenHarmony only opens the sibling library
+// that lives in the same directory as this shim, by absolute path. If that file
+// is not present, loading fails (fail-closed); there is deliberately no fallback
+// to a bare soname. Deploy libssl.so.3 and libcrypto.so.3 next to this library.
+static int GetSiblingLibraryPath(const char* libraryName, char* libraryPath, size_t libraryPathSize)
+{
+    Dl_info info;
+    if ((dladdr((const void*)&GetSiblingLibraryPath, &info) == 0) || (info.dli_fname == NULL))
+    {
+        return -1;
+    }
+
+    const char* lastSlash = strrchr(info.dli_fname, '/');
+    if (lastSlash == NULL)
+    {
+        // The shim itself was loaded by a name without a directory, so its
+        // location cannot be trusted to build an absolute path from.
+        return -1;
+    }
+
+    size_t directoryLength = (size_t)(lastSlash - info.dli_fname);
+    size_t libraryNameLength = strlen(libraryName);
+
+    // <directory>/<libraryName> plus the terminating NUL
+    if ((directoryLength + 1 + libraryNameLength + 1) > libraryPathSize)
+    {
+        return -1;
+    }
+
+    memcpy(libraryPath, info.dli_fname, directoryLength);
+    libraryPath[directoryLength] = '/';
+    memcpy(libraryPath + directoryLength + 1, libraryName, libraryNameLength + 1);
+    return 0;
+}
+
+static void DlOpenSibling(const char* libraryName)
+{
+    char libraryPath[PATH_MAX];
+    if (GetSiblingLibraryPath(libraryName, libraryPath, sizeof(libraryPath)) != 0)
+    {
+        fprintf(stderr, "OpenSSL shim: cannot determine the directory of this library; refusing to open '%s' by name\n", libraryName);
+        return;
+    }
+
+    DlOpen(libraryPath);
+}
+
+// Resolve every candidate next to this shim on OpenHarmony; other platforms
+// keep the historical soname-based lookup.
+#define DlOpenCandidate(name) DlOpenSibling(name)
+#else
+#define DlOpenCandidate(name) DlOpen(name)
+#endif
 
 #if defined(__OpenBSD__)
 // OpenBSD's base system ships LibreSSL, which does not implement the full
@@ -157,7 +228,7 @@ static void OpenLibraryOnce(void)
 #else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
         strcat(soName, versionOverride);
-        DlOpen(soName);
+        DlOpenCandidate(soName);
 #endif
     }
 
@@ -228,18 +299,18 @@ static void OpenLibraryOnce(void)
     if (libssl == NULL)
     {
         // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
+        DlOpenCandidate(MAKELIB("3"));
     }
 
     if (libssl == NULL)
     {
-        DlOpen(MAKELIB("1.1"));
+        DlOpenCandidate(MAKELIB("1.1"));
     }
 
     // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
     if (libssl == NULL)
     {
-        DlOpen(MAKELIB("4"));
+        DlOpenCandidate(MAKELIB("4"));
     }
 }
 
@@ -264,6 +335,9 @@ void InitializeOpenSSLShim(void)
     if (!OpenLibrary())
     {
         fprintf(stderr, "No usable version of libssl was found\n");
+#if defined(TARGET_OPENHARMONY)
+        fprintf(stderr, "OpenHarmony resolves libssl/libcrypto by absolute path from this library's directory; deploy libssl.so.3 and libcrypto.so.3 next to it\n");
+#endif
         abort();
     }
 

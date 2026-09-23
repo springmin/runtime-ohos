@@ -236,7 +236,7 @@
 
 ## 残留风险
 
-- **H-C3 未修复（低/加固，文档化决策）。** OHOS portable 构建导致 TLS shim 裸名 `dlopen`。最小修复选项：(a) OHOS 强制非 portable（`-portablebuild=false`/`FEATURE_DISTRO_AGNOSTIC_SSL=0`）+ 链接校验过的静态 OpenSSL（`.a` 需 `-fPIC`）；(b) 保留 shim 但随包发布 `libssl.so.3`/`libcrypto.so.3`，用 `dladdr` 求本库目录后绝对路径 `dlopen`，未知路径拒绝。复核：`readelf -d` 期望 NEEDED ssl/crypto 或全静态 SSL 符号；设备 SslStream/HTTPS 自检 + "投放 fake `libssl.so.3` 不被选中"负向测试。不确定项：真机是否自带 `libssl.so.3`（无则属功能缺陷）；OHOS linker namespace 对裸名的搜索顺序；`ilasm` 等其它消费者同配置。
+- **H-C3 已修复（低/加固；策略与验证见 `docs/plans/2026-09-23-ohos-tls-policy.md`）。** OHOS shim 现在只用 `dladdr` 求本库目录后按绝对路径 `dlopen`，找不到即 fail-closed，不回退裸名；另提供 `-linkstaticopenssl` / `/p:LinkStaticOpenSsl=true` 链接 `-fPIC` 静态 OpenSSL。已验：OHOS NDK clang 编译 + 链接（`NEEDED` 仅 `libc.so`）+ 设备端负向测试（decoy `libssl.so.3` 在 `LD_LIBRARY_PATH` 不被选中，放同目录才被选中）。**仍待做**：随包携带 `libssl.so.3`/`libcrypto.so.3` 或启用静态链接开关，并在设备上跑 SslStream/HTTPS 自检；`ReadMe` 中 `ilasm` 的 `System.Security.Cryptography.Native.OpenSsl-Static` 仅在 host 构建链接，不受本开关影响。
 - **MB-2 已收口。** `9256305`（宿主 10 入口守卫 + `ReportCallbackFailure`）+ `92f7555`（harness 负向 pin；315 项全过、像素 PASSED）；设备端 CoreCLR 反向 P/Invoke 终止语义仍属离机不确定项（见下）。
 - **FIX-SDK 的 CLI 未编译。** `SelfSignCommand.cs` 因本机 restore 不可达（Arcade SDK 11.0.0-beta.26452.110 / System.CommandLine 不在本地 NuGet 缓存、feeds 不可达）仅审阅未编译；`ElfSigner.cs` 本身经独立编译 + 14/14 MSTest + 37/6 harness 验证。
 - **离机不确定项（未上机，设备安装受策略限制）。** D-1 的最后一跳由已装同源 SDK 的宿主包/obj apphost 签名证据 + Bundler 源码推定，需设备端 `dotnet publish -p:PublishSingleFile=true` 复核；A1 设备端 hdc 拼接/转义与 `sh -c` 行为（stub 按官方 `shell [-b] [COMMAND...]` 语义建模，space/dquote/squote 可注入、escaped 不注入，四种模型界定边界）；H-C2 端到端依赖 ArkWeb 交付原始/解析 URL（location/a 点击、loadUrl、表单/重定向各异）；MB-3 的 `resourceManager` `..` 语义；MB-2 依赖 CoreCLR 反向 P/Invoke 终止语义；D-2 截断产物是否可加载；D-6/C3 边界守卫设备未验证。
