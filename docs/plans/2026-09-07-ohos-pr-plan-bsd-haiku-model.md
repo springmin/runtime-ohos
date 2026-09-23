@@ -78,8 +78,12 @@ refreshed to the current 11-file set and references dotnet/arcade#17608.
 
 **Arcade review round 2 (2026-09-21):** jkotas reviewed #17608 and asked for the
 long name; renamed the CMake variable `OHOS` → `OPENHARMONY` in `4975a234c`
-(reply `discussion_r4066587172`). The checks re-ran after the rename and are
-**10/10 green** (2026-09-21T22:39Z).
+(reply `discussion_r4066587172`). The checks after the rename were **11/11
+green** and the PR was **MERGED 2026-09-23T18:36:22Z** by @akoeplinger
+(approved 18:35Z) as the squash commit `fff3b6bbfb2` — now arcade `main` HEAD.
+The three `eng/common` files (toolchain.cmake +15/-1, init-distro-rid.sh
++11/-4, init-os-and-arch.sh +8/-0) ride the normal arcade→runtime sync; no
+runtime-side action needed.
 
 **End-to-end validation (2026-09-22):** `ohos-full-build` run `35659586206`
 (sdk-ohos, all three feature branches) **success in 46m27s** — the runtime +
