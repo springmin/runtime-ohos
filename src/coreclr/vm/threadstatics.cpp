@@ -1022,8 +1022,11 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for linux/windows arm
 #elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
     // Optimization is disabled for linux/x86
-#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
-    // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64) && !defined(TARGET_OPENHARMONY)
+    // Optimization is disabled for linux musl arm64. OpenHarmony is excluded
+    // from this early-out: it is built with native (non-emulated) TLS, so it
+    // takes the IsValidTLSResolver() probe below and only enables the fast
+    // path when the probe proves the resolver is static.
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64)
     // Optimization is disabled for linux musl riscv64
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)

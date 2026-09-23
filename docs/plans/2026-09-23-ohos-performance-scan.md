@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | H1 | 每次 `draw_text` 新建 Font+Brush（+TextBlob） | `ohos-workload/src/OpenHarmonyHost/openharmony_host.c:2308-2336` | 54.8 µs/文本；缓存 Font+Brush→22.6（-59%），再缓存 blob→12.6 µs（-77%）；30 文本/帧 1.65→0.38 ms | **已修** `46b4e0f` |
 | H2 | `draw_present` 每帧 mmap/munmap + 逐行 memcpy | `openharmony_host.c:2465-2510` | 常驻映射 0.66 ms/帧(15.4 GB/s) vs 每帧重建 6.99 ms/帧(1.45 GB/s，~2580 次缺页)；修复后缓存 0.74 vs mmap 5.34 ms | **已修** `46b4e0f` |
-| H3 | OHOS(musl/arm64) 编译期关闭 TLS 优化 → 线程静态访问慢路径 | `runtime-ohos/src/coreclr/vm/threadstatics.cpp:1025-1026,1036`；`jitinterface.cpp:1228,1442-1453`；`jit/helperexpansion.cpp:1048-1051 vs 1077-1111` | [推断] 线程静态访问多 3–4 指令 + 1 分支 → 静态字段密集代码 1.5–3× | 未修（须设备验证） |
+| H3 | OHOS(musl/arm64) 编译期关闭 TLS 优化 → 线程静态访问慢路径 | `runtime-ohos/src/coreclr/vm/threadstatics.cpp:1025-1026,1036`；`jitinterface.cpp:1228,1442-1453`；`jit/helperexpansion.cpp:1048-1051 vs 1077-1111` | [推断] 线程静态访问多 3–4 指令 + 1 分支 → 静态字段密集代码 1.5–3× | 探测已实现（OHOS 参与 `IsValidTLSResolver()`，失败保持现状）；设备实测 musl 解析器为动态序列 → probe=0，仍走慢路径，无回归 |
 | H4 | a11y 每帧重建节点表 + 每节点 ≤4 次 native malloc + 4 次 P/Invoke marshal | `maui-ohos/.../OpenHarmonyAccessibility.cs:465-475,481-514,62-87`；`openharmony_host.c:2788-2839` | Refresh **157 KB/帧 + 113 µs**（N=200）；Publish diff+ActionsFor 12.8 KB/帧；合计 220 KB/帧 ≈12.6 MiB/s Gen0@60fps + 每帧约千次 malloc/free | **已修** `8e4de06f` |
 | H5 | 每帧全树递归探测动画（无缓存） | `OpenHarmonyWindowRenderer.cs:350,395-413` ← `OpenHarmonyMauiAppHost.cs:69-72` | N=200 17.7 KB/28 µs；N=500 44.1 KB/71 µs（~88 B/节点迭代器）；空闲也跑 | **已修** `8e4de06f`（0 B 空闲） |
 | H6 | `ActionsFor(role)` 每次新数组 + 接口枚举器 | `OpenHarmonyAccessibility.cs:62-87,506` | 108 B、105 ns/次 → N=200 每次发布 21.6 KB + 21 µs | **已修** `8e4de06f`（bitmask） |
@@ -108,7 +108,7 @@
 5. **P17 启动解压跳过。** 已解压目录存在且 zip 大小/mtime 未变则跳过（写 marker），处理升级/半解压。预期每次冷启省 16 MB copy + 40 MB inflate + 253 次建文件（0.3–1 s）。
 6. **P16 kit 摘要/压缩复用。** 树摘要复用已验证的 `SHA256SUMS` 内容（不再逐文件读）；证据包只记录已打包 hap 的 hash/路径。预期每次 kit 省 2–3 遍 110 MB 读 + 1 次 deflate（≈3.4 s）。
 7. **H7 rawfile fd 直读/分块。** 用已有 `{fd,offset,length}` 走 native `pread`（或 256 KiB 分块 + 复用缓冲）。预期拷贝 4→1、瞬态 -98%、UI 不阻塞（35–48 ms/8 MiB → 接近无感）。
-8. **H3 TLS resolver（需设备验证）。** 让 OHOS 走 `IsValidTLSResolver()` 指令序列探测，静态解析器才启用、失败保持现状；`DOTNET_JitDisasm` 看是否出现 `mrs TP` 直取。注意与安全 H-C3（TLS 裸名 dlopen）同域，建议一并处理并上机。
+8. **H3 TLS resolver（已实现，设备实测 probe=0）。** OHOS 现走 `IsValidTLSResolver()` 指令序列探测，静态解析器才启用、失败保持现状；实测 musl 的 TLSDESC 解析器为动态序列（`mrs TPIDR_EL0` + 每线程不同地址），probe 返回 0，OHOS 仍走慢路径（无回归）。与安全 H-C3（TLS 裸名 dlopen）一并处理，详见 `docs/plans/2026-09-23-ohos-tls-policy.md`。
 9. **H8 close_range 探测缓存。** 首次探测后缓存结果；不可用时改读 `/proc/self/fd` 只处理真实打开的 fd。预期 spawn -8 ms/次。
 10. **H11 `WriteStatus` 尾部重建。** 只读文件尾部 64 KiB 重建，或每 32 行才 Trim 一次。预期 1.2 ms→~40 µs/行，消除 763 KB/行。
 11. **H12 a11y id→index / 查询去线性。** native 维护 id→index（发布时增量建）；拷贝只在容量不足时 realloc。预期长列表查询 O(N²)→O(N)/O(1)（N=500 9.6 ms → <1 ms）。

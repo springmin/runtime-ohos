@@ -70,7 +70,24 @@ src/native/libs/build-native.sh arm64 Release -os openharmony -arch arm64 \
 OHOS：`initDistroRid openharmony` 返回空 RID（实测 `__DistroRid=<>`），会把
 `TargetRid` 置空，影响打包路径。
 
-## 4. 验证记录（2026-09-23）
+## 4. 附：TLS 静态访问快路径（H3）
+
+`src/coreclr/vm/threadstatics.cpp` 原来对 `TARGET_LINUX_MUSL && TARGET_ARM64`
+直接关闭 JIT 优化；现改为 OHOS 不早退、参与 `IsValidTLSResolver()` 指令序列
+探测（静态解析器才启用，失败保持数组间接），其它平台不变。
+
+设备实测（OHOS arm64 + NDK clang 15.0.4，`-fno-emulated-tls`，harness 见
+`/data/storage/el2/base/tmp/opencode/fix-tls/tls/`）：
+
+- `GetTLSResolverAddress` 指令序列匹配预置检查；
+- 但 musl 的 TLSDESC 解析器是动态解析器：
+  `stp x1,x2,[sp,#-16]!; mrs x1, TPIDR_EL0; ldr x0,[x0,#8]; ...`，
+  且 `t_ProbeThreadStatic` 的地址每线程不同；
+- `IsValidTLSResolver()` 实测返回 0 → OHOS 仍走 `_NOJITOPT` 数组间接路径，
+  行为与修复前一致；只有未来 musl 提供静态解析器（或换 libc）时才会启用
+  快路径。
+
+## 5. 验证记录（2026-09-23）
 
 ```sh
 # 编译 shim（OHOS NDK clang 15.0.4 + 目标 sysroot）
@@ -90,6 +107,15 @@ clang-15 --target=aarch64-linux-ohos --sysroot=$NDK/sysroot \
 #  OHOS 默认              -> -DFEATURE_DISTRO_AGNOSTIC_SSL=1, CMAKE_STATIC_LIB_LINK=0
 #  OHOS -linkstaticopenssl -> -DFEATURE_DISTRO_AGNOSTIC_SSL=0, CMAKE_STATIC_LIB_LINK=1
 #  linux -linkstaticopenssl-> 开关被忽略（保持 1/0）
+
+# H3 分支选择（从 threadstatics.cpp 机械抽取 CanJITOptimizeTLSAccess 编译运行）
+#  linux musl arm64（无 OHOS）      -> 0   （早退保留，非 OHOS 不变）
+#  OHOS + 探测成功                  -> 1   （只有探测通过才启用）
+#  OHOS + 探测失败                  -> 0   （fail-closed）
+
+# H3 设备实测：由 asmhelpers.S 抽出的 GetTLSResolverAddress/探测体
+#  probe(before/after TLS access)=0；resolver code 首 4 字 = a9bf0be1 d53bd041
+#  f9400400 a9400800（动态解析器），故保持慢路径。
 ```
 
 未做：全量 OHOS 交叉构建、`-linkstaticopenssl` 的真实 `.a` 链接、设备端
