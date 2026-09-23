@@ -209,7 +209,7 @@ SDK 的 `oh-uni-package.json` 只描述 SDK 自身（`apiVersion/platformVersion
 
 | 构建配置 | 产物 | 头部 version | 备注 |
 |---|---|---|---|
-| 三项均 `26.0.0`（build-arkts-shell.sh 默认） | `dist/ets/modules.abc` 15:09 | `18 00 00 00` = 24.0.0.0 | 当前 kit 的壳 abc 就是它 |
+| 三项均 `26.0.0`（build-arkts-shell.sh 默认） | `dist/ets/modules.abc` 15:09 | `18 00 00 00` = 24.0.0.0 | 当时 kit 的壳 abc 就是它（kit #11 起改为 `compatibleSdkVersion 18` 的 `13.0.1.0`）|
 | `compileSdkVersion 26.0.0` + `compatibleSdkVersion '18'` + `targetSdkVersion 26.0.0` | `entry/build/.../loader_out/default/ets/modules.abc` 15:37:28（14,708 B）与 `dist/ets/modules.abc` 15:40:33（191,072 B） | `0d 00 01 00` = **13.0.1.0** | 该次 `@CompileArkTS` **成功**；仅在 `@PackageHap` 因缺 `app_packing_tool.jar` 失败（与本问题无关，.NET workload 打包不走这步）；hvigor 缓存 `project-config.json` 记录 `compatibleSdkVersion: 18` |
 
 > 说明：工作区同时有其他构建在跑，文件时间/大小以实际为准；两个版本的头部字节已独立 hexdump 确认。

@@ -75,6 +75,7 @@
 | `workload-latest` | `openharmony-workload-latest.tar.gz` | 与 bundle 逐字节一致 |
 | `device-test-kit`（也在 `workload-latest`） | `device-test-kit.tar.gz` + `.tar.gz.sha256` sidecar | release 说明「## Integrity」或 sidecar |
 | `device-test-kit` | `hello-mauiapp-probe{1..4}-unsigned.hap`（P1 壳侧、P2 宿主 dlopen、P3 宿主入口/dlsym、P4 逐依赖） | release 说明 / API digest |
+| `device-test-kit` | 对照载荷 `dynpkg-haps.tar.gz` / `normalized-haps.tar.gz` / `importb-haps.tar.gz` / `importd-haps.tar.gz` 与 `hello-mauiapp-importprobe-{a,b,c}-unsigned.hap` | release 说明 / API digest（按交付方指示取用）|
 | SDK release `v11.0.100-rc.1.26451.109-openharmony` | `openharmony-workload-1.0.0-preview.24.tar.gz`、`dotnet-sdk-11.0.100-rc.1.26451.109-openharmony-arm64.tar.gz` | GitHub API digest |
 
 - `device-test-kit` release 创建于 2026-09-18；当前 **kit #21** 于 **2026-09-24** 刷新（tar.gz + sidecar + tester-run v6r2 同批上传，同一 tar.gz 同步到 `workload-latest` 与 SDK release；具体时间与哈希见 release 说明「## Integrity」）。kit 编号演进：#7（22 日凌晨）→ #10（入口 record 修复）→ #11（abc `13.0.1.0`）→ #12（宿主 dlopen-only + 壳 `host` 守卫）→ … → #14（评审整改 + 真实缺陷修复 + UX 深化）→ #15/#16/#17（rawfile 资源桥 / 别名宿主 / RM1 `libIsolation`）→ #18（安全/性能第一批）→ #19（启动/TLS/评审合规）→ #20（最终热点回填）→ **#21（当前：headless abc `13.0.1.0` 修复 + tester-run v6r2）**；探针 P1–P4（已随 preview.24 宿主重建）仍挂该 release。
@@ -87,6 +88,7 @@
   `compileSdkType HarmonyOS`、`compileSdkVersion 6.0.2.130`；`libs/arm64-v8a/` 含 14 个 `.so` = 12 个 .NET 运行时原生库（`libcoreclr`/`libclrjit`/`libhostfxr`/…）+ `libopenharmonyhost.so`（含 BATCH-1/2 Essentials 桥与加固）+ `libc++_shared.so`（kit #5 起该 in-kit 副本由 SDK ElfSigner 重签：`flags=0x10`、有效，此前为厂商 PKCS#7 签名，`ohos-workload 732766a`）；`dotnet.zip` 253 项且 0 个 `.so`（运行时原生库只随 hap `libs/<abi>/` 提供）；壳归档 `ets/modules.abc` 为加固壳（kit #14 快照 = 201,228 B，五 hap 同值），自 kit #10 起入口 record 走非标准化 OHM URL（`useNormalizedOHMUrl=false`，`c2c4a9a`/`6e55ae6`），自 kit #11 起 abc 头为 `13.0.1.0`（`compatibleSdkVersion 18`，`95c89a7`/`ef1c947`）。文件大小与哈希以随包 `SHA256SUMS` 为准。
 - 历史对照：本页早期与审计 §35 的 S 系列 kit/bundle 快照（含当时大小与哈希）均已被当前快照取代，不再复述。
 - **包内 tester 文档不再写死 kit 哈希**：`快速开始.md`、`自签说明.md`、设备校验清单、`验收说明.md` 等一律指向 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar；本页只锚定快照日期（2026-09-24），不记录当次快照数字。
+- **预签入口（占位）**：收到 p7b + p12 + cer + keyAlias（走安全通道）后由我方预签 —— `sh scripts/sign-for-device.sh --external --profile <p7b> --key <p12> --cert <cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成目标设备；p7b 的 `debug-info.device-ids` 必须含它，fail closed）。kit #21 包内 `签名说明.txt` 第三节的 PA1 句为历史文案（源已在 `ohos-workload c6a4cd95e` 修正，随下个 kit 生效），判读以其余内容与 release notes 为准。
 - 演示工程 `test/hello-maui-app` 多目标（`net11.0-openharmony20.0` / `26.0`），含 S1/T5 Blazor/hybrid 验证页；
   hap 打包走 `-p:OpenHarmonyHapPackage=true` 并注入 5 项权限变体。
 

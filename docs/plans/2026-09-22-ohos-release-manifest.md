@@ -16,6 +16,7 @@
 - 本快照的本地复核：tree digest OK；`sha256sum -c SHA256SUMS` **15/15** 通过（5 hap + 9 文档 + `verify-kit.sh`）；发布侧 API digest 与本地同哈希重算一致；gh-proxy 下载端到端复验 KIT OK。
 - kit #21 内容（全新解包实测）：5 个 hap 均带 `"libIsolation": true`（RM1：安装时注册模块级 `<bundle>/<module>` app-lib key）；`ets/modules.abc` = **211,032 B**、头 `13.0.1.0`（`7d513f72…`，H-C2 固定模板重建）；`libs/arm64-v8a/` 含 **14** 个 `.so`（12 个 .NET 运行时原生库 + `libopenharmonyhost.so` **215,968 B** / `e0df7c2bdca61556b39090a85d8055c27e437a782ceba54dbf178a2e68368b76`，pack 内为 211,872 B / `33baff42…` + `libc++_shared.so`）；`dotnet.zip` **253** 项且 **0** 个 `.so`（15,974,592/15,974,558 B）；`Microsoft.OpenHarmony.Hosting.dll` = **35,840 B** / `7f84f019b509931c22e487a334237569e6d98350b9ada71ac9c368fde18ee83d`（在 `1f7ef76` 随源修订重建，相对 kit #20 仅内嵌 source revision 变化）。
 - 本版（kit #21 发布波次）另修复 **headless 变体 abc**（位于 workload bundle / SDK packs 的模板，不在 kit hap 内）：`modules.headless.abc` 旧 stub 3,580 B / `24.0.0.0`（超出设备 ark runtime）→ **13,572 B** / `70a616363d52be75c673823545d77e01d3fe6f9cbd2f775069a386e808bb162f` / `13.0.1.0`（`ohos-workload 4e5491d`），模板 README 指向 `ARKTS_SHELL_VARIANT=headless`（`e995cef`）。
+- kit #21 包内 `签名说明.txt` 第三节的「PA1 重建壳的下一版 kit」句为**历史文案**（源已在 `ohos-workload c6a4cd95e` 修正，随下个 kit 生效；本 kit 不含该缺陷）；测试方判读以 `签名说明` 其余内容 + release notes 为准。
 - kit 编号演进（团队跟踪口径，非连续）：#7（22 日凌晨）→ #10（入口 record）→ #11（abc `13.0.1.0`）→ #12（宿主 dlopen-only + 壳 `host` 守卫）→ #14（评审整改 + PI1 + UX 深化）→ #15（rawfile 资源桥）→ #16（宿主按两个 napi 名注册）→ #17（RM1 libIsolation repack）→ #18（安全/性能第一批）→ #19（启动/TLS/评审合规）→ #20（最终热点回填 H10/P16/P9/P10/P19）→ **#21（当前：headless abc `24.0.0.0` → `13.0.1.0` 修复 + tester-run v6r2 + slice pin `236d18a9`）**。
 - release 最后更新 2026-09-24（kit #21 资产 + `tester-run.sh` v6r2）；`2026-09-21-ohos-final-status.md` §11 已同步到 kit #21，本页与之一致锚定当前 release。
 
@@ -36,7 +37,7 @@
 | `hello-mauiapp-probe2-unsigned.hap` | 215,384 | `5bdce033d00a561dc22dd4196a4f17aa2e5d6df025682adbe98c30836f6c1960` | P2：宿主 dlopen |
 | `hello-mauiapp-probe3-unsigned.hap` | 222,954 | `43557cfe9c274406ad8cc4985eadace9eb4a7f13d560af2e452491727a5e5b6c` | P3：宿主入口/dlsym |
 | `hello-mauiapp-probe4-unsigned.hap` | 223,178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` | P4：逐依赖预检 |
-| `new-features-device-checklist.md` | 36,911 | `0ee2f1eaeb59ba9cc601e38fab9357e1df0a4069a992cdf6ff84c678f4d00569` | 本轮新功能 M1–M10 真机清单 |
+| `new-features-device-checklist.md` | 36,911 | `0ee2f1eaeb59ba9cc601e38fab9357e1df0a4069a992cdf6ff84c678f4d00569` | 本轮新功能 M1–M13 真机清单 |
 | `tester-run.sh` | 60,429 | `a7db7d8c78ccdf4ac9d2112972e7739ac788a65772d4374cc8fcf54c7230d884` | v6r2（内嵌 script version 6，2026-09-24；仓库脚本 commit `8408a90`）：校验 + 安装 + 启动 + 30 s hilog + RM1 无重建 app-lib/dlopen 证据；发任何 hdc 命令前校验 bundle 名（A1）；复用已校验摘要产出 kit 摘要（P16） |
 
 - 诊断资产对应关系：`dynpkg-haps.tar.gz` 为候选矩阵中最强单候选（动态加载 + `runtimeOnly.packages`/`file:` 包声明；随包 5 hap 带 libIsolation、abc 新增 host-binding `.record libopenharmonyhost.so`、入口 record 保持已确认形式）；`normalized-haps.tar.gz` 的 normalized 入口 record 的设备解析未证。`importb`/`importd` 分别对应静态命名空间与动态加载实验；三个 `importprobe` hap 无 .NET 载荷，只测三种 import 形式的路由。P1–P4 仍用于 dlopen/缺库/宿主入口/运行时类崩溃的五层定位。
@@ -90,7 +91,7 @@ sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
 | 路径 | 测试方提供 | 交付方执行 |
 |---|---|---|
 | ① 重签（按你的 UDID） | `hdc shell bm get -u` 的 UDID（或按包内 `自签说明.md` 用 DevEco 自动签名自行完成） | `sh scripts/sign-for-device.sh <UDID>`（多设备逗号分隔） |
-| ② 外部预签（用你的材料） | p7b + p12 + cer + keyAlias（华为材料亦可） | `sh scripts/sign-for-device.sh --external --profile <p7b> --key <p12> --cert <cer> --key-alias <alias> --expect-udid <UDID>`；华为材料可走 `scripts/sign-huawei.sh` |
+| ② 外部预签（用你的材料） | p7b + p12 + cer + keyAlias（华为材料亦可） | `sh scripts/sign-for-device.sh --external --profile <p7b> --key <p12> --cert <cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成目标设备；p7b 的 `debug-info.device-ids` 必须含它，fail closed）；华为材料可走 `scripts/sign-huawei.sh` |
 
 根因：hap 内调试 profile 的 `debug-info.device-ids` 只含示例 UDID；重签/预签后哈希必变，以新产物随附的 `SHA256SUMS` 为准。kit #21 的 4 个已签 hap 为自签名（默认 `-signCode 1` 会重签 `libs/<abi>/*.so`），诊断 tarball 内的 hap 为陈旧签名或未签名，均需按 §5/自签说明重签。详见 `2026-09-19-ohos-signing-and-udid-guide.md`。
 
@@ -113,7 +114,7 @@ sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
 | `2026-09-21-ohos-crash-probes.md` | P1–P4 启动崩溃探针与五层定位决策表 |
 | `2026-09-21-ohos-device-crash-diagnostics.md` | 崩溃最小取证（hilog/faultlog/status）与 A/B 清单 |
 | `2026-09-21-ohos-device-report-template.md` | 真机回传一页模板（机器可解析） |
-| `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能 M1–M10 真机验证清单（即 release 上的 `new-features-device-checklist.md`） |
+| `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能 M1–M13 真机验证清单（即 release 上的 `new-features-device-checklist.md`；kit #21 已同步） |
 | `2026-09-22-ohos-maui-coverage-matrix.md` | MAUI 覆盖矩阵与 SDK 阻塞/Top-10 缺口 |
 | `2026-09-21-ohos-security-scan.md` | 五仓库安全扫描（第一轮；PASS WITH FINDINGS，23 项已处置） |
 | `2026-09-23-ohos-security-scan-2.md` | 五仓库安全扫描 #2（16 条候选，16 修；kit #21 已含全部修复提交；#19–#21 追加 headless abc、bundle 外锚、TLS H-C3 等） |

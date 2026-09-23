@@ -24,6 +24,8 @@
 >    加载 native 模块失败 → 宿主 exports 为空 → XComponent 表面从未交给 .NET → 黑屏；RH1 修复
 >    （别名注册覆盖两种约定 + 标准化壳构建，保留入口 record 修复所用的 bundle 名）**进行中（in flight）**。
 >    见 §5d/§5e。
+>
+> **2026-09-24 状态（kit #21）**：四个启动阻塞均已在 kit #10/#11/#12/#16（+ #17 `libIsolation` repack）修复；当前发布 = **kit #21**（headless 变体 abc `13.0.1.0` 修复 + `tester-run.sh` v6r2），§5d/§5e 的「进行中」均为当时快照。设备侧诊断（app-lib 键、别名注册行、首帧）已并入 `tester-run.sh`，见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` §2.4。
 
 ## 0. 一手材料与验证环境
 
