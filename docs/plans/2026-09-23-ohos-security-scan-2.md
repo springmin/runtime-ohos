@@ -13,7 +13,7 @@
 | 本轮候选 | 16（高 1 · 中 6 · 低/加固 9） |
 | 已修复 | 15（含 H-C2 三维:壳 + managed + abc 重建） |
 | 文档化决策（未修） | 1（H-C3，低/加固） |
-| 部分修复（进行中） | MB-2 宿主侧两个入口（FIX-RESID，见 §残留风险） |
+| 部分修复（进行中） | 无 —— MB-2 宿主侧已收口（`9256305` 守卫 + `92f7555` pin，315 项全过） |
 | PoC 报告 | 5 份（poc-a/b/c/d + sec-d/e 内置复现），全部 Reproduced 或 Unsafe-to-run |
 | 上轮复核 | 23/23（21 有效 + B5 改名 + B6 部分） |
 
@@ -49,7 +49,7 @@
 | D-4 | 中 | 安装器接受 http + 校验和同源自证 → MITM RCE | CWE-494 / 319 | Reproduced | 已修 | sdk `7f820be9b0` |
 | H-C2 | 低/加固（原中，PoC 降级） | B6 白名单放行 `//host` 网络路径引用 | CWE-183 / 184 / 20 | 判定缺陷 Reproduced；端到端设备未验证 | 已修（壳 + managed + abc 重建） | ow `0bb7119` + maui `c730226f93` + ow `1063374` |
 | MB-1 | 低 | WebView 审批表无界增长 | CWE-400 | 代码级确认（负向 pin） | 已修 | maui `c730226f93` |
-| MB-2 | 低 | 反向 P/Invoke 逃逸异常 → CoreCLR fail-fast | CWE-248 / 755 | 代码级确认（负向 pin） | **部分**：maui 侧 12 入口已修；宿主 `OnTouch/OnFrame` 进行中 | maui `c730226f93` + FIX-RESID（进行中） |
+| MB-2 | 低 | 反向 P/Invoke 逃逸异常 → CoreCLR fail-fast | CWE-248 / 755 | 代码级确认（负向 pin） | **已修**：maui 12 入口 + 宿主 10 入口守卫 + 负向 pin（315 项全过） | maui `c730226f93` + ohos-workload `9256305`/`92f7555` |
 | MB-3 | 低 | rawfile/包内文件路径 `..`、rooted、UNC | CWE-22 / 20 | 代码级确认（13 负例 + 5 正例） | 已修 | maui `c730226f93` |
 | A3 | 低 | `release-all.sh` 默认弱化 C4 clobber 摘要守卫 | CWE-345 | Reproduced（修复不完整） | 已修 | ow `683162a` |
 | D-5 | 低 | `--force` 重签每轮 +4 KB；安装全量重签 | CWE-404 / 20 | Reproduced | 已修（force 幂等） | sdk `b3f5afa293` |
@@ -130,12 +130,12 @@
 - **证据。** `maui-ohos/src/Core/src/Platform/OpenHarmony/OpenHarmonyWebViewHandler.cs:36,230-241,268-283`；壳 `Index.ets:314-315,1095-1098`。
 - **修复与回归。** `c730226f93`：插入时清过期；上限 **64**（8× 活跃集，键上界 64×8 KiB=512 KiB；`MaxApprovedNavigations`，`OpenHarmonyWebViewHandler.cs:41,357-375`）；满时淘汰最接近过期项；完成/失败页面事件也清理；一次性语义不变（负向 pin mb1 5 项 + 308 检查）。
 
-#### MB-2 反向 P/Invoke 逃逸异常（低，部分修复）
+#### MB-2 反向 P/Invoke 逃逸异常（低，已修）
 
 - **攻击路径。** 页面发 `__RawMessage|{…}`、恶意 BLE 外设发特征值、或宿主触摸/帧回调进入应用代码后抛出（JsonException 等）→ 异常从反向 P/Invoke 逃逸进 native 栈，CoreCLR fail-fast 终止进程且应用无法捕获。
 - **证据。** `OpenHarmonyWebViewHandler.cs:343-347`、`OpenHarmonyBluetoothGatt.cs:640`、`OpenHarmonyApp.cs:994,1046`；既有正确模式 `OpenHarmonyAccessibility.cs:237-252`。
 - **修复与回归（maui 侧）。** `c730226f93`：12 个可运行应用代码的入口全部 try/catch，统一走 `OpenHarmonyStatus.NativeCallbackFailed`（扁平化、600 字符上限、128 键去重，避免日志洪泛），覆盖 WebView JS 消息（`__RawMessage`/`JsMessage`/Navigating）、hybrid invoke、BLE value/state/MTU、电池/显示、已发现设备、剪贴板/网络、传感器、菜单、主题；只完成有界 Task 的入口不在 native 帧上运行应用代码（全部 `RunContinuationsAsynchronously`）。负向 harness 8 项 mb2 + "reported to status (flattened) bytes=936"。
-- **残余（FIX-RESID，进行中）。** 报告写入时 HEAD 的宿主侧 `OpenHarmonyApp.cs:994-1003`（`OnTouchNative`）、`:1046-1055`（`OnFrameNative`）仍直接 `handlers?.Invoke(args)`，无 try/catch；FIX-RESID 工作树已有未提交守卫（`ReportCallbackFailure`/`FlattenCallbackMessage`，diff +180/-53），harness 负向 pin 待补。**提交后需把状态改为"已修"。**
+- **宿主侧收口（FIX-RESID，已提交）。** `ohos-workload 9256305`：`OpenHarmonyApp.cs` 10 个原生→托管入口（Pinch/Lifecycle/Touch/TextInput/TextSubmitted/WebEvent/PickerResult/KeystoreResult/Frame/Surface）统一 try/catch + `ReportCallbackFailure`（单行、600 字符截断、按 boundary+异常类型去重、128 键上限，走既有 `dotnet-status.txt`；`OnNodeNative` 无应用回调未改），Touch/Frame 热路径正常路径零新增分配；`92f7555`：harness 负向 pin（mb2 slice 7 + status 落日志 + host 10 入口/10 源守卫/10 状态行），交互套件 **315 项全过（floor 288）**、像素 PASSED。
 
 #### MB-3 rawfile/包内文件路径穿越（低，已修）
 
@@ -235,7 +235,7 @@
 ## 残留风险
 
 - **H-C3 未修复（低/加固，文档化决策）。** OHOS portable 构建导致 TLS shim 裸名 `dlopen`。最小修复选项：(a) OHOS 强制非 portable（`-portablebuild=false`/`FEATURE_DISTRO_AGNOSTIC_SSL=0`）+ 链接校验过的静态 OpenSSL（`.a` 需 `-fPIC`）；(b) 保留 shim 但随包发布 `libssl.so.3`/`libcrypto.so.3`，用 `dladdr` 求本库目录后绝对路径 `dlopen`，未知路径拒绝。复核：`readelf -d` 期望 NEEDED ssl/crypto 或全静态 SSL 符号；设备 SslStream/HTTPS 自检 + "投放 fake `libssl.so.3` 不被选中"负向测试。不确定项：真机是否自带 `libssl.so.3`（无则属功能缺陷）；OHOS linker namespace 对裸名的搜索顺序；`ilasm` 等其它消费者同配置。
-- **MB-2 宿主侧两个入口未修（FIX-RESID 进行中）。** 报告写入时 HEAD：`OpenHarmonyApp.cs:994-1003`（`OnTouchNative`）、`:1046-1055`（`OnFrameNative`）无守卫；工作树已有未提交 `ReportCallbackFailure`/`FlattenCallbackMessage` 实现（+180/-53）与 `OpenHarmonyBridge.OnPinch` 等入口守卫；harness 负向 pin 待补。提交后本项应改为"已修"。
+- **MB-2 已收口。** `9256305`（宿主 10 入口守卫 + `ReportCallbackFailure`）+ `92f7555`（harness 负向 pin；315 项全过、像素 PASSED）；设备端 CoreCLR 反向 P/Invoke 终止语义仍属离机不确定项（见下）。
 - **FIX-SDK 的 CLI 未编译。** `SelfSignCommand.cs` 因本机 restore 不可达（Arcade SDK 11.0.0-beta.26452.110 / System.CommandLine 不在本地 NuGet 缓存、feeds 不可达）仅审阅未编译；`ElfSigner.cs` 本身经独立编译 + 14/14 MSTest + 37/6 harness 验证。
 - **离机不确定项（未上机，设备安装受策略限制）。** D-1 的最后一跳由已装同源 SDK 的宿主包/obj apphost 签名证据 + Bundler 源码推定，需设备端 `dotnet publish -p:PublishSingleFile=true` 复核；A1 设备端 hdc 拼接/转义与 `sh -c` 行为（stub 按官方 `shell [-b] [COMMAND...]` 语义建模，space/dquote/squote 可注入、escaped 不注入，四种模型界定边界）；H-C2 端到端依赖 ArkWeb 交付原始/解析 URL（location/a 点击、loadUrl、表单/重定向各异）；MB-3 的 `resourceManager` `..` 语义；MB-2 依赖 CoreCLR 反向 P/Invoke 终止语义；D-2 截断产物是否可加载；D-6/C3 边界守卫设备未验证。
 - **A2 的 pin 值**由发布者实测（与 registry `dist.shasum`/`dist.integrity` 及可用缓存交叉核对），后续 tgz 版本变更需同步；`tar` 对 `../` 成员处置未测。
@@ -286,4 +286,4 @@ node fix-work/h-c2/harness.mjs                                       # ALL-PASS
 
 ## 方法注
 
-本轮采用与上轮一致的"猎手候选 → PoC 对抗 → reproduce-then-fix → 复核"流水线；3 名猎手覆盖三面 + 2 名补扫猎手覆盖 sdk 深面，4 份独立 PoC 报告（poc-a..d）与 2 份补扫报告（sec-d/e）交叉验证。修复提交与验证证据在各自的提交信息与本报告表格中给出；本报告是扫描窗口快照，FIX-RESID 完成后应更新 MB-2 状态。
+本轮采用与上轮一致的"猎手候选 → PoC 对抗 → reproduce-then-fix → 复核"流水线；3 名猎手覆盖三面 + 2 名补扫猎手覆盖 sdk 深面，4 份独立 PoC 报告（poc-a..d）与 2 份补扫报告（sec-d/e）交叉验证。修复提交与验证证据在各自的提交信息与本报告表格中给出；本报告是扫描窗口快照，MB-2 的宿主侧收口（`9256305`/`92f7555`，315 项）已回填。
