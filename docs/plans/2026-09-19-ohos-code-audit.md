@@ -1578,3 +1578,24 @@ ohos-workload 一次成功（`9a17d3b..e77c803`）。
 - **PJ1/PJ2 UX 深化（`maui-ohos`）**：`d5f45ecb` 帧驱动动画循环 + 滚动惯性/滚动条 + 焦点环（共享 ticker，空闲零开销）；`8430ac06` 桌面 Tooltip（延迟/锚定/SurfacePresent 绘制）与键盘加速键（修饰键自跟踪、精确匹配、三层派发）；`852f9219` 随 kit #14 发布 `IPlatformApplication.Current` 与 `IWindowOverlay` 宿主。
 - **验证与 kit #14 发布**：交互套件 **297 条 `[verify]`、0 Unhandled**（README 期望 297，CI 门限 **≥277**，`ohos-workload 2f43bb4`），本地 preflight 门限仍 ≥226；`device-test-kit` release 于 2026-09-23T07:35+08:00 刷新为 kit #14（`workload-latest` 镜像同值；数字见 `2026-09-22-ohos-release-manifest.md`）——5 hap 的 `ets/modules.abc` = 201,228 B（头 `13.0.1.0`）、`libs/arm64-v8a` 14 个 `.so`（12 个运行时原生 + 宿主 + `libc++_shared`）、`dotnet.zip` 253 项 0 `.so`；包内 `SHA256SUMS` 15/15、tree digest 校验 OK。
 - **不确定项（如实）**：以上均为离设备证据（编译/套件/API）；Tooltip、加速键、动画与滚动条的**真机**行为，以及 sdk-ohos 两 PR 分支的上游评审结果待定；RC-B 的 shims TFM 对齐按提交记录**未在构建层验证**（本检出无 runtime 构建环境）。
+
+## 42. R7 公共 API 基线的覆盖面结论：切片全树生成尝试（2026-09-23）
+
+- **问题（R7）**：`maui-ohos 31daa37c` 的 `src/Core/src/PublicAPI/net-openharmony/`（Shipped 1 行 + Unshipped
+  **1359 行**）只覆盖 fork 自己的平台切片；R7 要回答是否必须按整棵 MAUI 树重新生成才算收口。
+- **fork 事实**：仓库只跟踪 OH 切片共 **116 个文件**（`git ls-files | wc -l`）。历史是单次「删树 + 切片」提交
+  `e55e1e27`（父提交 = 上游 `1cd2e15b`）：改 26,322 个路径 = 26,320 删 + 2 改；`1cd2e15b` 全树
+  `git ls-tree -r` = **26,322 个 blob**。切片 107 个 `.cs` 中 **55 个引用 `Microsoft.Maui.Controls`**。
+- **全树生成尝试（离机，scratch worktree）**：物化 `1cd2e15b` 全部 26,322 个 blob，按上游真实入口跑
+  `-p:PublicApiType=Generate`：
+  - 失败是**结构性**的：Essentials **31** 个错误；Core **1,546** 个错误——切片文件依赖 `Microsoft.Maui.Controls`，
+    而 Core 不能引用 Controls（生成器按项目/程序集边界解析公共表面）。
+  - 去掉切片再试仍失败：**538** 个错误（切片外的上游 Core/Essentials 公共表面在该 checkout 中也不自洽）。
+- **结论**：现有 **1359 行** `net-openharmony` 基线在实质上覆盖了 fork 自身的公共表面（116 个文件即 fork 的
+  全部编译/公共面）；「形式上完整」需要改变生成层级或切片形态，不是补跑参数能解决的。
+- **正式收口路径（L+，暂不启动）**：① 生成提升到 Controls 层级、按层级逐级产出 `PublicAPI`（需上游暴露生成
+  入口，或 fork 维护分层基线）；② 把切片重构成 Core-compatible（消除对 Controls 的 55 处依赖，使 Core 单项目可
+  生成）。触发条件：**上游集成（切片并入上游）或切片独立打包**时启动；当前不阻塞发布，基线随切片演进维护。
+- **环境注记**：上游 `maui-ohos eng/Versions.props:119` 固定 `MonoApiToolsMSBuildTasksPackageVersion=0.5.0`，该包
+  在本环境不可获取（离线）；本轮用 **0.6.0** 以 `-p:` 覆盖后运行（仅替换包版本，生成入口不变）。上述错误数为
+  0.6.0 下的结果；若上游包恢复可获取，应在 CI 用 0.5.0 重跑复核。
