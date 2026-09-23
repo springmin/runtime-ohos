@@ -6,16 +6,16 @@
 
 ## Verdict
 
-**PASS WITH FINDINGS（已修 / 已决策）。** 本轮 3+2 猎手结构共产生 **16 条**新候选（A1–A3、MB-1–MB-3、H-C1–H-C3、D-1–D-6、D 系列补扫的 C3），其中 **15 条已修复**，**1 条（H-C3，TLS shim 裸名 `dlopen`）降级为低/加固并按文档化决策保留**。5 份独立 PoC 对抗复核：D-1、H-C1、A1、A2、A3 均为 **Reproduced**；H-C2 判定逻辑缺陷 **Reproduced**（端到端依赖 ArkWeb 交付语义，设备未验证，严重度由中降为低/加固）；H-C3 构建/二进制级 **Reproduced**。上轮 23 条逐条复核：**21 条保持有效、B5 保持有效但符号改名（`IsSafeRelativePath` → `IsSafeAssetLayoutPart`）、B6 出现新变种（H-C2）且已修复**。
+**PASS WITH FINDINGS（16/16 已修）。** 本轮 3+2 猎手结构共产生 **16 条**新候选（A1–A3、MB-1–MB-3、H-C1–H-C3、D-1–D-6、D 系列补扫的 C3），**16 条已修复**：H-C3 按低/加固策略修复（TLS shim 改绝对路径 `dlopen` + 静态链接开关），其余 15 条如前。5 份独立 PoC 对抗复核：D-1、H-C1、A1、A2、A3 均为 **Reproduced**；H-C2 判定逻辑缺陷 **Reproduced**（端到端依赖 ArkWeb 交付语义，设备未验证，严重度由中降为低/加固）；H-C3 构建/二进制级 **Reproduced**。上轮 23 条逐条复核：**21 条保持有效、B5 保持有效但符号改名（`IsSafeRelativePath` → `IsSafeAssetLayoutPart`）、B6 出现新变种（H-C2）且已修复**。
 
 | 指标 | 数值 |
 |---|---|
 | 本轮候选 | 16（高 1 · 中 6 · 低/加固 9） |
-| 已修复 | 15（含 H-C2 三维:壳 + managed + abc 重建） |
-| 文档化决策（未修） | 1（H-C3，低/加固） |
+| 已修复 | 16（含 H-C2 三维:壳 + managed + abc 重建；H-C3 绝对路径 dlopen + 静态链接开关） |
+| 文档化决策（未修） | 0 —— H-C3 已按文档化策略修复 |
 | 部分修复（进行中） | 无 —— MB-2 宿主侧已收口（`9256305` 守卫 + `92f7555` pin，315 项全过） |
 | PoC 报告 | 5 份（poc-a/b/c/d + sec-d/e 内置复现），全部 Reproduced 或 Unsafe-to-run |
-| 上轮复核 | 23/23（21 有效 + B5 改名 + B6 部分） |
+| 上轮复核 | 23/23（21 有效 + B5 改名 + B6 新变种 H-C2 已修） |
 
 **设备状态：** 所有修复均未上机（设备安装受组织策略限制）；设备可见结论一律标注设备未验证。
 
@@ -25,7 +25,7 @@
 
 | 仓库 | 分支 | 对上游 delta（扫描时） | 本轮提交 |
 |---|---|---|---|
-| `runtime-ohos` | `feature/openharmony` | 69 commits（窗口 delta；另有上游继承提交未审） | 无安全代码变更（本轮仅文档/审计记录） |
+| `runtime-ohos` | `feature/openharmony` | 69 commits（窗口 delta；另有上游继承提交未审） | 扫描窗口无安全代码变更（仅文档/审计记录）；后随修复 `3d1f6e45102`/`cfdba659d11`/`d7b730e5030`（H-C3 + H3 探测） |
 | `aspnetcore-ohos` | `feature/openharmony` | 8 files vs upstream | 无（RID/打包/TFM 接线，无运行时安全代码） |
 | `ohos-workload` | `master` | 75 commits（窗口 delta） | `46b4e0f`(FIX-P1 宿主性能，兼修 effects/present/图片) `d43dfb5`/`195dd3e`(slice pin) `81b9264`(A1) `0bb7119`(H-C2 壳) `4b74c4c`(A2) `683162a`(A3) `1063374`(H-C2 abc 重建) |
 | `maui-ohos` | `feature/openharmony` | 34 commits（窗口 delta） | `8e4de06f`(FIX-P2 托管性能) `c730226f93`(MB-1/MB-2/MB-3/H-C2 managed) |
@@ -56,8 +56,8 @@
 | A3 | 低 | `release-all.sh` 默认弱化 C4 clobber 摘要守卫 | CWE-345 | Reproduced（修复不完整） | 已修 | ow `683162a` |
 | D-5 | 低 | `--force` 重签每轮 +4 KB；安装全量重签 | CWE-404 / 20 | Reproduced | 已修（force 幂等） | sdk `b3f5afa293` |
 | D-6 | 低 | 畸形 ELF 自引用 shstrtab → 未捕获异常 | CWE-20 | Reproduced | 已修（设备未验证） | sdk `b3f5afa293` |
-| C3（sec-e） | 低 | 显式非 ELF 入参 fail-open、退出码 0 | CWE-390 / 754 | Reproduced | 已修（CLI 未编译验证） | sdk `b3f5afa293` |
-| H-C3 | 低/加固 | TLS shim 裸名 `dlopen("libssl.so")` | CWE-427 | Reproduced（构建/二进制级） | **未修复——文档化决策** | — |
+| C3（sec-e） | 低 | 显式非 ELF 入参 fail-open、退出码 0 | CWE-390 / 754 | Reproduced | 已修（CLI 已编译验证 `48fdd91aed`） | sdk `b3f5afa293` |
+| H-C3 | 低/加固 | TLS shim 裸名 `dlopen("libssl.so")` | CWE-427 | Reproduced（构建/二进制级）；修复后设备负向验证 | **已修**（绝对路径 dlopen + 静态链接开关） | runtime `3d1f6e45102` / `cfdba659d11` / `d7b730e5030` |
 
 ## 逐条详情
 
@@ -166,13 +166,13 @@
 
 - **复现。** `dotnet selfsign <file>` 对显式传入的非 ELF64 只累加 `not-elf`，`failed==0` → 进程返回 0 并打印 `not-elf=1`（`SelfSignCommand.cs:52-63,80-93`）；只看退出码的门禁会放行未签名/无效工件。
 - **修复。** `b3f5afa293`：显式命名的非 ELF64 计为失败并退出 1（`SelfSignCommand.cs:87-90,70`）；目录扫描内的非 ELF 仍按 `not-elf` 分类（合理，非静默放行）。
-- **残余。** `SelfSignCommand.cs` 因本机 restore 不可达（Arcade SDK / System.CommandLine 不在本地 NuGet 缓存，feeds 不可达）**未编译验证**，仅经审阅；`ElfSigner.cs` 已独立编译并测试。
+- **残余。** `SelfSignCommand.cs` 已按 `48fdd91aed` 独立编译（本机已装 SDK 的 Roslyn + System.CommandLine 3.0.0）并跑 17/17 CLI 用例（见 §残留风险）；设备端未验证；`ElfSigner.cs` 已独立编译并测试。
 
-#### H-C3 TLS shim 裸名 `dlopen`（低/加固，未修复——文档化决策）
+#### H-C3 TLS shim 裸名 `dlopen`（低/加固，已修）
 
 - **证据（代码）。** `runtime-ohos/src/native/libs/build-native.sh:35,58` `__PortableBuild=1` → `-DFEATURE_DISTRO_AGNOSTIC_SSL=1`（OHOS 未排除）；`src/native/libs/System.Security.Cryptography.Native/CMakeLists.txt:100-105` 编入 `opensslshim.c`；`extra_libs.cmake:34` portable 分支只链 `${CMAKE_DL_LIBS}`，**不链** `OPENSSL_CRYPTO_LIBRARY/OPENSSL_SSL_LIBRARY`；`opensslshim.c:39` `LIBNAME "libssl.so"`、`:52-54` `dlopen(name, RTLD_LAZY)`，裸名序列 `libssl.so.<DOTNET_OPENSSL_VERSION_OVERRIDE>` → `.3` → `.1.1` → `.4`。
 - **证据（二进制，poc-b）。** 发行包 `11.0.0-rc.1.26451.109` 的 `libSystem.Security.Cryptography.Native.OpenSsl.so`：`readelf -d` 仅 NEEDED `libc.so`；UND `SSL_/EVP_/X509_` 计数 0；strings 含 `libssl.so.3/1.1/4`、`DOTNET_OPENSSL_VERSION_OVERRIDE`；fork 自编静态 OpenSSL 3.3.1（`docs/plans/2026-08-13-ohos-cross-compile.md:166,485-486` 以 `OPENSSL_*_LIBRARY=*.a` 传入）只满足 find_package/头文件，未参与链接（与 CMake 注释"uses the OpenSSL built for OHOS"不符）。
-- **影响与决策。** 设备上先被搜索到的同名库（应用自带/第三方 native 模块）会成为 .NET 的 TLS 实现与信任锚；无跨应用路径、需同信任域/系统能力，且 runtime pack 与 OHOS 26 SDK sysroot 均无 `libssl/libcrypto`（缺库时首次 TLS fail-closed）。**本轮按低/加固不修，作为文档化决策记录**；最小修复与复核建议见 §残留风险。
+- **影响与修复。** 修复前设备上先被搜索到的同名库（应用自带/第三方 native 模块）会成为 .NET 的 TLS 实现与信任锚；无跨应用路径、需同信任域/系统能力，且 runtime pack 与 OHOS 26 SDK sysroot 均无 `libssl/libcrypto`（缺库时首次 TLS fail-closed）。**已修（低/加固策略）**：`3d1f6e45102` shim 改用 `dladdr` 求本库目录后按绝对路径 `dlopen`，找不到即 fail-closed、不回退裸名；同时提供 `-linkstaticopenssl` / `/p:LinkStaticOpenSsl=true` 以 `FEATURE_DISTRO_AGNOSTIC_SSL=0` + `CMAKE_STATIC_LIB_LINK=1` 链接静态 OpenSSL（硬化 shim 仍默认）。`cfdba659d11` 同批启用 H3 TLS resolver 探测门控；`d7b730e5030` 记录静态归档 `-fPIC` 保证。策略、编译/链接证据与设备负向测试见 `docs/plans/2026-09-23-ohos-tls-policy.md`。
 - **CWE。** CWE-427（不受控搜索路径元素）；CWE-1104 次要。
 
 ## 上轮 23 条复核（A1–A8 / B1–B7 / C1–C8）
@@ -236,14 +236,15 @@
 
 ## 残留风险
 
-- **H-C3 已修复（低/加固；策略与验证见 `docs/plans/2026-09-23-ohos-tls-policy.md`）。** OHOS shim 现在只用 `dladdr` 求本库目录后按绝对路径 `dlopen`，找不到即 fail-closed，不回退裸名；另提供 `-linkstaticopenssl` / `/p:LinkStaticOpenSsl=true` 链接 `-fPIC` 静态 OpenSSL。已验：OHOS NDK clang 编译 + 链接（`NEEDED` 仅 `libc.so`）+ 设备端负向测试（decoy `libssl.so.3` 在 `LD_LIBRARY_PATH` 不被选中，放同目录才被选中）。**仍待做**：随包携带 `libssl.so.3`/`libcrypto.so.3` 或启用静态链接开关，并在设备上跑 SslStream/HTTPS 自检；`ReadMe` 中 `ilasm` 的 `System.Security.Cryptography.Native.OpenSsl-Static` 仅在 host 构建链接，不受本开关影响。
+- **H-C3 已修复（低/加固；`3d1f6e45102`/`cfdba659d11`/`d7b730e5030`；策略与验证见 `docs/plans/2026-09-23-ohos-tls-policy.md`）。** OHOS shim 现在只用 `dladdr` 求本库目录后按绝对路径 `dlopen`，找不到即 fail-closed，不回退裸名；另提供 `-linkstaticopenssl` / `/p:LinkStaticOpenSsl=true` 链接 `-fPIC` 静态 OpenSSL。已验：OHOS NDK clang 编译 + 链接（`NEEDED` 仅 `libc.so`）+ 设备端负向测试（decoy `libssl.so.3` 在 `LD_LIBRARY_PATH` 不被选中，放同目录才被选中）。**仍待做**：随包携带 `libssl.so.3`/`libcrypto.so.3` 或启用静态链接开关，并在设备上跑 SslStream/HTTPS 自检；`ReadMe` 中 `ilasm` 的 `System.Security.Cryptography.Native.OpenSsl-Static` 仅在 host 构建链接，不受本开关影响。
 - **MB-2 已收口。** `9256305`（宿主 10 入口守卫 + `ReportCallbackFailure`）+ `92f7555`（harness 负向 pin；315 项全过、像素 PASSED）；设备端 CoreCLR 反向 P/Invoke 终止语义仍属离机不确定项（见下）。
-- **FIX-SDK 的 CLI 未编译。** `SelfSignCommand.cs` 因本机 restore 不可达（Arcade SDK 11.0.0-beta.26452.110 / System.CommandLine 不在本地 NuGet 缓存、feeds 不可达）仅审阅未编译；`ElfSigner.cs` 本身经独立编译 + 14/14 MSTest + 37/6 harness 验证。
+- **FIX-SDK 的 CLI 已编译验证（`48fdd91aed`）。** `SelfSignCommand.cs` 以本机已装 SDK 的 Roslyn + System.CommandLine 3.0.0 独立编译（nullable + warnings-as-errors），17/17 CLI 用例通过（显式非 ELF 退出 1、目录遍历 sign/skip/count、`--force`、`--strip`、目录符号链接跳过）；签名路径也不再整读非 ELF 输入。`ElfSigner.cs` 另有独立编译 + 14/14 MSTest + 37/6 harness 证据。
+- **binary-sign-tool 无默认 pin（已加可选锚，`6be3596810`）。** fallback 签名器 finder 只选可执行文件；`BINARY_SIGN_TOOL_SHA256=<hex>` 在首次执行前校验、不匹配即失败，未 pin 的回退仅告警（工具随用户自己的 OpenHarmony SDK/harmonybrew 分发，无单一上游摘要可默认固定）；`test-installer-verification.sh` 25/25。
 - **离机不确定项（未上机，设备安装受策略限制）。** D-1 的最后一跳由已装同源 SDK 的宿主包/obj apphost 签名证据 + Bundler 源码推定，需设备端 `dotnet publish -p:PublishSingleFile=true` 复核；A1 设备端 hdc 拼接/转义与 `sh -c` 行为（stub 按官方 `shell [-b] [COMMAND...]` 语义建模，space/dquote/squote 可注入、escaped 不注入，四种模型界定边界）；H-C2 端到端依赖 ArkWeb 交付原始/解析 URL（location/a 点击、loadUrl、表单/重定向各异）；MB-3 的 `resourceManager` `..` 语义；MB-2 依赖 CoreCLR 反向 P/Invoke 终止语义；D-2 截断产物是否可加载；D-6/C3 边界守卫设备未验证。
-- **A2 的 pin 值**由发布者实测（与 registry `dist.shasum`/`dist.integrity` 及可用缓存交叉核对），后续 tgz 版本变更需同步；`tar` 对 `../` 成员处置未测。
+- **A2 的 pin 值**由发布者实测（与 registry `dist.shasum`/`dist.integrity` 及可用缓存交叉核对），后续 tgz 版本变更需同步；`tar` 成员负测已补（`5c2afb1`：解包前拒绝 `../`、绝对与嵌套逃逸成员，27 项本地用例 + `--check-tgz`），真实 tgz 变更后仍需重跑该门。
 - **H-C1 层级本地源不可解析**疑为本 SDK 版本/裁剪特性（NuGet 文档称 3.3+ 支持），需 CI 同 SDK 复核；`$FEED`=`sdk-ohos/eng/ohos-install/.work/feed` 为仓内固定目录，长期残留攻击者副本的可能性未实测。
 - **上轮遗留（保持）。** `hap-sign-tool` argv password 仅在"无 tty 且无 `script(1)`"时残留；预摘要 GitHub release 资产需显式 sha256 pin；`npx` 传递依赖未固定；B1/B3/B6/B7 与 a11y/hybrid 流程设备未验证；应用自身文档内 XSS 不设防；B5 "一个 shell docId 每文档"；B6 POST 表单经 `loadUrl` 变 GET。
-- **门禁/流程风险（与性能报告交叉引用）。** 交互/性能门禁不上 PR、preflight 阈值弱于 CI、alloc/帧无断言（详见 `2026-09-23-ohos-performance-scan.md` §门禁余量分析）。
+- **门禁/流程风险（已随性能后置批次修复，交叉引用）。** 交互/性能门禁不上 PR、preflight 阈值弱于 CI、alloc/帧无断言均已修（`d4d7cb7`/`d336bba`/`57d18c0`/`abd3451`，tar 成员负测 `5c2afb1`）；仅像素 `tolerance=0` 用例与 2 条 KNOWN 按策略保留（`d4d7cb7` 文档化，不得随意外删/放松）。详见 `2026-09-23-ohos-performance-scan.md` §门禁余量分析。
 
 ## 覆盖声明与命令
 
