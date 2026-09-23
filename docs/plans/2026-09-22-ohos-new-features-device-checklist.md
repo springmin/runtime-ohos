@@ -281,7 +281,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 **代码行为**：壳三份模板改发 `lifecycle Create=0`；宿主在 `Run` 之前收到 `Create` 时先 `Created`，窗口建好后立即补 `Activated`，两者各恰好一次。分组 `CarouselView`（`ItemsSource` 每项本身是非字符串集合）按「展平到项」物化幻灯片（组头/组尾画不出、只提示一次），页码用同一份展平结果计数。`IView.Shadow` 经宿主画布阴影层按偏移/模糊/单色绘制（跟随圆角），Shadow 变化请求重绘，非纯色画刷不绘制并提示一次。`SecureStorage` 优先 HUKS，HUKS 静默时回退每安装文件密钥并**只写一次**状态行。`OpenAppPackageFile*` 先查 payload 目录（`AppDir`，即解包后的 `dotnet.zip` 负载根），未命中再走 rawfile 桥（M13）。
 
-**本轮前离机验证**：交互套件（308 条 `[verify]`）中的源码契约 pin（逐项见末列）；**无真机证据**。
+**本轮前离机验证**：交互套件（315 条 `[verify]`）中的源码契约 pin（逐项见末列）；**无真机证据**。
 
 | 项 | 步骤 | 期望 | 证据 | 本轮前离机验证 |
 |---|---|---|---|---|

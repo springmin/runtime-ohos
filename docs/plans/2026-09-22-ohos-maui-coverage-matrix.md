@@ -101,9 +101,9 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **284** 条 `[verify]`（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能；
-  `fb533f0` 新增 9 条 audit 检查，`6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内），CI workflow 下限
-  **264**（284-20）。
+- `test/maui-platform-verify` 期望 **315** 条 `[verify]`、门限 **floor 295**（套件自报 `[suite]` 行，preflight 与 CI 同源解析；
+  历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
+  `fb533f0` 新增 9 条 audit 检查，`6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内）。
 - 切片 pin：`ohos-workload` `ab09918`（2026-09-22，与本矩阵同批）将 interaction workflow 固定到
   `maui-ohos` `c4ac6a5e8c0ed4f2138a7b5d06faf8b92940bdb3`（BLE GATT / settings-AppInfo / IApplication /
   列表补齐 tip），下限 264。演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
