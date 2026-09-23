@@ -28,6 +28,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
+| `2026-09-23-ohos-napi-import-fix-playbook.md` | NAPI 导入形式修复作战手册（黑屏阻塞 #4）：问题复盘、候选修复 A（壳 import 形式，含精确 diff/重建/验证/入包发布链）/ B（`loadNativeModule` 动态加载）/ C（打包侧 pkgContextInfo 待研究落地），以及结果决策表与回滚步骤 | 🔄 待实验定形（2026-09-23）|
 | `2026-09-22-ohos-render-route-decision.md` | 渲染路线决议（PJ4）：保持自绘合成器路线（单 XComponent + canvas + 自绘 IView/materializer + 影子无障碍树），不转原生 ArkUI 控件；附理由、混合路线与 UX 深度自实现清单（PJ1/PJ2 进行中，文本编辑/窗口 overlay/阴影未接） | ✅ 决议（2026-09-22）|
 | `2026-09-22-ohos-elf-signing-research.md` | OHOS ELF 代码签名研究（PE1）：app 内 `.so` 的凭证是 HAP code signing block（`SoInfoSegment`，app 证书/Profile），不是文件内 `.codesign`；keyless self-sign（flags=0x10）只属独立二进制/PC 场景；新发现 payload 库不经 hap 签名、SDK 厂商 DevID 证书签名被我方重签为 keyless 两个问题；含工具矩阵、真机 kmsg/签名块检查命令与修复排序 | ✅ 当前（2026-09-22）|
 | `2026-09-22-ohos-arkts-abc-version-history.md` | abc 版本史与 SDK 映射研究：version 字段/isa.yaml 对照、es2abc 与 `compatibleSdkVersion` 接线、可下载 SDK 清单、设备查询命令；结论：现有 SDK 26 工具链把 `compatibleSdkVersion` 设为 18–23 即产出设备可接受的 `13.0.1.0`（推荐 22 重建壳）| ✅ 当前（2026-09-22）|
