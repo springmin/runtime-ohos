@@ -24,8 +24,9 @@
 #include <fcntl.h>
 
 #if defined(__linux__)
-#if !defined(HAVE_CLOSE_RANGE)
+// Also provides SYS_getdents64 for the /proc/self/fd fallback in SetCloexecForAllFdsFallback.
 #include <sys/syscall.h>
+#if !defined(HAVE_CLOSE_RANGE)
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
 // architectures using the generic syscall table (asm-generic/unistd.h),
@@ -229,11 +230,11 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
-#if HAVE_FDWALK
-// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
-static int SetCloexecForFd(void* context, int fd)
+#if HAVE_FDWALK || (defined(__linux__) && defined(SYS_getdents64))
+// Sets FD_CLOEXEC on one open descriptor >= 3. Never closes; see RestrictHandleInheritance.
+// Only defined where a bulk helper below can call it, so no build warns about it being unused.
+static void SetCloexecForFdValue(int fd)
 {
-    (void)context;
     if (fd >= 3)
     {
         int flags = fcntl(fd, F_GETFD);
@@ -242,7 +243,106 @@ static int SetCloexecForFd(void* context, int fd)
             fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
         }
     }
+}
+#endif
+
+#if HAVE_FDWALK
+// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
+static int SetCloexecForFd(void* context, int fd)
+{
+    (void)context;
+    SetCloexecForFdValue(fd);
     return 0;
+}
+#endif
+
+#if defined(__linux__) && defined(SYS_getdents64)
+// Linux lists the open descriptors in /proc/self/fd, so the fallback can touch only the real
+// ones instead of fcntl()ing every number up to RLIMIT_NOFILE (tens of thousands of calls on
+// a device with a high limit).
+//
+// This runs inside the forked child, where malloc is not safe (another thread may have held
+// the allocator lock at fork time), so the listing is read with getdents64 into a stack buffer
+// and no libc directory state is allocated.
+struct SetCloexecProcDirent
+{
+    unsigned long long d_ino;
+    long long d_off;
+    unsigned short d_reclen;
+    unsigned char d_type;
+    char d_name[1];
+};
+
+// Returns false when the listing could not be read completely, so the caller can fall back to
+// the rlimit scan.
+static bool SetCloexecForOpenFdsProc(void)
+{
+    int dirFd;
+    do
+    {
+        dirFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    } while (dirFd < 0 && errno == EINTR);
+    if (dirFd < 0)
+    {
+        return false;
+    }
+
+    bool complete = true;
+    char buffer[4096];
+    for (;;)
+    {
+        long bytes;
+        do
+        {
+            bytes = syscall(SYS_getdents64, dirFd, buffer, sizeof(buffer));
+        } while (bytes < 0 && errno == EINTR);
+        if (bytes < 0)
+        {
+            complete = false;
+            break;
+        }
+        if (bytes == 0)
+        {
+            break;
+        }
+        for (long offset = 0; offset < bytes;)
+        {
+            struct SetCloexecProcDirent* entry = (struct SetCloexecProcDirent*)(void*)(buffer + offset);
+            if (entry->d_reclen == 0)
+            {
+                complete = false;
+                break;
+            }
+            // The names are decimal fd numbers; "." / ".." and any malformed name are skipped.
+            int fd = 0;
+            bool isNumber = entry->d_name[0] != '\0';
+            for (const char* name = entry->d_name; *name != '\0'; name++)
+            {
+                if (*name < '0' || *name > '9')
+                {
+                    isNumber = false;
+                    break;
+                }
+                fd = fd * 10 + (*name - '0');
+                if (fd > (1 << 20))
+                {
+                    isNumber = false;
+                    break;
+                }
+            }
+            if (isNumber)
+            {
+                SetCloexecForFdValue(fd);
+            }
+            offset += entry->d_reclen;
+        }
+        if (!complete)
+        {
+            break;
+        }
+    }
+    close(dirFd);
+    return complete;
 }
 #endif
 
@@ -252,6 +352,13 @@ static int SetCloexecForFd(void* context, int fd)
 // report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
 static void SetCloexecForAllFdsFallback(void)
 {
+#if defined(__linux__) && defined(SYS_getdents64)
+    // Touch only the descriptors that are actually open when the kernel exposes them.
+    if (SetCloexecForOpenFdsProc())
+    {
+        return;
+    }
+#endif
     struct rlimit rl;
     int maxFd;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY)
@@ -283,6 +390,31 @@ static void SetCloexecForAllFdsFallback(void)
     }
 }
 
+#if !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range))
+// The close_range availability answer is probed once per process, in the parent, and cached;
+// the fork child sees the cached value, so a kernel or policy that refuses the syscall costs
+// one failed call for the lifetime of the process instead of one per spawn.
+// -1 = not probed yet, 0 = unavailable, 1 = available.
+static volatile int s_closeRangeAvailable = -1;
+
+// Probing with descriptor UINT_MAX is side-effect free: CLOSE_RANGE_CLOEXEC on a descriptor
+// that is not open only asks the kernel whether the syscall is supported. The probe must not
+// run on OpenHarmony (see RestrictHandleInheritance) because its seccomp policy raises SIGSYS.
+static void ProbeCloseRange(void)
+{
+    if (s_closeRangeAvailable >= 0)
+    {
+        return;
+    }
+#if HAVE_CLOSE_RANGE
+    int rc = close_range(UINT_MAX, UINT_MAX, CLOSE_RANGE_CLOEXEC);
+#else
+    int rc = (int)syscall(__NR_close_range, UINT_MAX, UINT_MAX, CLOSE_RANGE_CLOEXEC);
+#endif
+    s_closeRangeAvailable = rc == 0 ? 1 : 0;
+}
+#endif
+
 static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
 {
     // FDs 0-2 are stdin/stdout/stderr; this method must be called AFTER the dup2 calls.
@@ -295,7 +427,16 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     // TARGET_OPENHARMONY: the OpenHarmony seccomp policy traps close_range (SIGSYS);
     // use the fallback until the syscall is allowed.
-    if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+    bool restricted = false;
+    if (s_closeRangeAvailable != 0)
+    {
+        restricted = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) == 0;
+        if (!restricted)
+        {
+            s_closeRangeAvailable = 0;   // remember for the next spawn
+        }
+    }
+    if (!restricted)
     {
         SetCloexecForAllFdsFallback();
     }
@@ -303,7 +444,16 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
     // TARGET_OPENHARMONY: same seccomp restriction as above; use the fallback.
-    if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+    bool restricted = false;
+    if (s_closeRangeAvailable != 0)
+    {
+        restricted = syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) == 0;
+        if (!restricted)
+        {
+            s_closeRangeAvailable = 0;   // remember for the next spawn
+        }
+    }
+    if (!restricted)
     {
         SetCloexecForAllFdsFallback();
     }
@@ -778,6 +928,16 @@ static int32_t ForkAndExecProcessInternal(
     (void)! pipe2(waitForChildToExecPipe, O_CLOEXEC);
 #else
     (void)! SystemNative_Pipe(waitForChildToExecPipe, PAL_O_CLOEXEC);
+#endif
+
+#if !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range))
+    if (inheritedFdCount >= 0)
+    {
+        // One-time probe in the parent: the fork child only reads the cached answer instead of
+        // paying a failed close_range call on every spawn. Never probed on OpenHarmony, where
+        // the syscall raises SIGSYS.
+        ProbeCloseRange();
+    }
 #endif
 
     // The fork child must not be signalled until it calls exec(): our signal handlers do not
