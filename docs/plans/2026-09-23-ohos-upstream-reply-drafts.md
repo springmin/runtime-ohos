@@ -1,10 +1,10 @@
-# 上游评论草稿（4 条，英文，可直接粘贴）· 2026-09-23
+# 上游评论草稿（3 条有效 + 1 条已作废，英文，可直接粘贴：Draft A–C）· 2026-09-23
 
 > **⚠ 状态：全部「待用户许可，未发送」（ALL DRAFTS UNSENT — awaiting user approval）。**
 > **未经用户明确许可，不得在本文件之外发布、粘贴或引用这些文本。**
 > 来源：2026-09-23 上游 PR 评审扫描（`pr-rev` 报告第 50 行（③）四条要点）。
 > 约束：正文**不含任何 @ 提及**；每条含提交/行号证据 + 请求 reviewer 的具体动作。发布时只复制对应代码块内内容，不要带出本页框架文字。
-> 对象：`dotnet/runtime#132953`、`dotnet/runtime#132827`、`dotnet/runtime#132866`（tracking issue）、`dotnet/arcade#17608`。
+> 对象：`dotnet/runtime#132953`、`dotnet/runtime#132827`、`dotnet/runtime#132866`（tracking issue）；原 `dotnet/arcade#17608` 草稿已随该 PR 合并作废（见 Draft D）。
 > 发送前逐条核对文末「发送前置检查清单」。
 
 ---
@@ -30,7 +30,7 @@ Requested actions:
 2. Once the rerun is green, a re-approval on `be8e6f6988d` would be appreciated — the existing approval covers `cece42439a1` only, and the head has changed since.
 3. The four review threads (`eng/build.sh`, `eng/native/build-commons.sh`, `eng/native/configureplatform.cmake`, `PortableRuntimeIdentifierGraph.json`) are addressed in code but still open/outdated; please resolve them if the current head looks good.
 
-Note: the `eng/common` OpenHarmony support that the OHOS cross build consumes is in dotnet/arcade#17608 (still awaiting review). This PR does not vendor any `eng/common` change, so it is complete without it; we will re-sync `eng/common` after arcade merges.
+Note: the `eng/common` OpenHarmony support that the OHOS cross build consumes has now merged in dotnet/arcade#17608 (`fff3b6bb`, 2026-09-24) and will flow into this repo through the regular arcade sync. This PR does not vendor any `eng/common` change, so it is complete without it; with that dependency resolved, a rerun and re-review would be appreciated.
 ```
 
 ---
@@ -74,29 +74,16 @@ Requested action: please answer the three questions above so the queue can be un
 
 ---
 
-## Draft D — `dotnet/arcade#17608`（复评）
+## Draft D — `dotnet/arcade#17608`（已作废）
 
-- 状态：**待用户许可，未发送**
-- 目标 PR head：`4975a234c`（分支 `eng-common-openharmony`）
-
-```text
-Thanks for the naming feedback — the toolchain variable is now unified on `OPENHARMONY` in `eng/common/cross/toolchain.cmake` (`4975a234c`: `unset` / `set` / `elseif` / condition at lines 9, 40, 210, 325), while `OHOS_ARCH` and the NDK's own `ohos.toolchain.cmake` path keep the toolchain's naming.
-
-The branch adds OpenHarmony support in three files vs `main` (`9e0228806`): `eng/common/cross/toolchain.cmake`, `eng/common/native/init-distro-rid.sh`, `eng/common/native/init-os-and-arch.sh` (34 insertions / 5 deletions).
-
-Why this matters on the runtime side: the OpenHarmony cross build in dotnet/runtime#132953 (head `be8e6f6988d`) depends on this `eng/common` support. The vendored `eng/common` in that PR head currently has no OpenHarmony references (verified: `git grep -l -i openharmony be8e6f6988d -- eng/common/` returns nothing), so the runtime side cannot land the cross-build path until this merges; we will re-sync `eng/common` afterwards.
-
-Requested actions:
-1. Please re-review and approve so it can merge.
-2. The single review thread (`eng/common/cross/toolchain.cmake`) is addressed in `4975a234c` and can be resolved.
-3. If you would prefer a different variable shape, a one-line note is enough and I will adjust.
-```
+- **作废（2026-09-24）：** `dotnet/arcade#17608` 已**批准并合并**（`fff3b6bb`，2026-09-24 02:36 +08；head `4975a234c`，分支 `eng-common-openharmony`）。该草稿不再需要，不再有可发送内容。
+- 后续：`eng/common` OpenHarmony 支持将随 arcade 同步自动进入各仓；runtime#132953 的跨仓依赖随之解除，可复评/重跑（见 `2026-09-23-ohos-pr-review-compliance.md` §①/§⑥）。
 
 ---
 
 ## 发送前置检查清单（发送时逐条确认）
 
 1. 用户明确许可发送（当前为未发送）。
-2. 已重新 `gh api` 拉取最新评论/评审事件，确认没有他人新回复（09-23 19:20 快照后无变化）。
+2. 已重新 `gh api` 拉取最新评论/评审事件，确认没有他人新回复（发送时重拉；2026-09-24 arcade#17608 已合并，Draft D 已作废）。
 3. 未引入任何 @ 提及（本轮已校验）。
 4. #132953 的 rerun 若已由他人触发且已绿，把 Draft A 第 1 条改成「rerun 已绿」的完成式再发。

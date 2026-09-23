@@ -5,16 +5,16 @@
 **方法：** `scan2/audit-{1,2,3}/report.md` 的偏差/违例清单逐项对账修复提交，并跑脚本化复审计（grep / sha256 / `json.load` 等值 / three-dot diff 静默 / `eng/common` 树哈希 / `gh api` 远端 ref 清单）；证据输出在 `/data/storage/el2/base/tmp/opencode/compliance/`。
 **结论：** 硬违例 0（审计发现的唯一硬违例 V1 已修且复核清零）；R1–R11 全合规；有意保留 5 项、结构性 4 类、未改小项 2 个（均非评审要求，见 §④/§⑤/§⑦）。
 
-## ① 上游评审状态摘要（2026-09-23 中午，引 pr-rev）
+## ① 上游评审状态摘要（2026-09-23 中午快照；arcade#17608 行更新至 2026-09-24 合并，引 pr-rev）
 
 | 对象 | head | 状态 | 未 resolve thread | CI（head 上 check-runs） |
 |---|---|---|---|---|
 | runtime#132953 | `be8e6f6988d` | REVIEW_REQUIRED（jkotas 09-10 批准被新提交作废） | 4/10（全部 outdated） | 5 红：Monitor Helix、Build Analysis/Insights、**osx-arm64**（sccache 片段 11，判偶发）、父 runtime |
 | runtime#132827 | `6ed2f9ab9a6` | REVIEW_REQUIRED（09-15 起停滞） | 6/7（全部 outdated） | 4 红：Monitor Helix、Build Analysis/Insights、父 runtime |
 | #132866 | — | tracking issue（6 评论；3 个 scope 问题自 09-14 无答复） | n/a | — |
-| arcade#17608 | `4975a234c` | MERGEABLE，待批准（已改 `OPENHARMONY` 长名） | 1/1（outdated） | — |
+| arcade#17608 | `4975a234c` | **已批准并合并**：`fff3b6bb`（2026-09-24 02:36 +08）；`eng/common` 支持将随 arcade 同步自动进入 | 1/1（outdated） | — |
 
-- 全量检索 `author:springmin`：上游 PR 仅 runtime#132953/#132827 + arcade#17608；其余 18 个 `pr/ohos-*` 为本地预备分支、无上游 PR。09-22 起三 PR/issue 无新评论；4 条回复/催评草稿已写未发（pr-rev §4③）。
+- 全量检索 `author:springmin`：上游 PR 仅 runtime#132953/#132827 + arcade#17608；其余 18 个 `pr/ohos-*` 为本地预备分支、无上游 PR。09-22 起三 PR/issue 无新评论（截至 09-23 中午）；arcade#17608 于 09-24 批准并合并；4 条回复/催评草稿已写未发（arcade 一条已作废，见 `2026-09-23-ohos-upstream-reply-drafts.md`；pr-rev §4③）。
 
 ## ② 规则表 R1–R11（来源评审/约定）
 
@@ -91,15 +91,15 @@
 
 ## ⑥ 待上游动作（评论草稿在 pr-rev，未发送）
 
-1. **arcade#17608 合并** → `eng/common` OpenHarmony 支持同步回 runtime#132953（唯一跨仓前置）。
+1. **arcade#17608：已合并，无需动作**（`fff3b6bb`，2026-09-24 02:36 +08）→ `eng/common` OpenHarmony 支持将随 arcade 同步自动进入；同步落地后 runtime#132953 可复评/重跑（不再构成跨仓前置）。
 2. **#132953**：rerun（osx-arm64 sccache 偶发）→ 7 天内请求重批 → 请 reviewer resolve 4 条 outdated thread（`runtime.json` 已回退、`any` 已 import、`__PortableTargetOS` 已删）。
 3. **#132827**：请复评并 resolve 6 条 outdated thread（引 `6ed2f9ab9a6`）。
 4. **#132866**：第三次请求答复 3 个 scope 问题（illink 归属 / S1c codesign 上游 / 提交粒度），解除 N1–N16 排队。
-5. **#19–#21 追加修复（本轮落地）：** headless abc `24.0.0.0` → `13.0.1.0`（`ohos-workload 4e5491d`，随 kit #21；模板 README 指向 `ARKTS_SHELL_VARIANT=headless`，`e995cef`）与 workload bundle 外锚 `WORKLOAD_BUNDLE_SHA256`（`sdk-ohos/eng/ohos-install/versions.env:74`；锚优先/`WORKLOAD_SHA256` 覆盖告警与回归用例见 `install-dotnet-ohos.sh`、`tests/test-installer-verification.sh`——该批在 sdk 分支工作树，提交待推）。
+5. **#19–#21 追加修复（本轮落地）：** headless abc `24.0.0.0` → `13.0.1.0`（`ohos-workload 4e5491d`，随 kit #21；模板 README 指向 `ARKTS_SHELL_VARIANT=headless`，`e995cef`）与 workload bundle 外锚 `WORKLOAD_BUNDLE_SHA256`（`sdk-ohos/eng/ohos-install/versions.env:74`；锚优先/`WORKLOAD_SHA256` 覆盖告警与回归用例见 `install-dotnet-ohos.sh`、`tests/test-installer-verification.sh`——该批已入库并推送：`sdk-ohos 821330d55e`（`versions.env` 四锚）。
 
 ## ⑦ 不确定项
 
 - **sdk V7 未改小项**：`GenerateBundledVersions.targets:295`/`:315` 把 openharmony 置于追加社区 RID 首位；仅美观，最小修复 = 移到 openbsd 之后（本轮 R2b 复核仍未改）。
 - **workload pack 无 graph sha256 自动校验**：三份字节已一致并有 diff/json 复核，但未在 pack 脚本加等值断言（audit-3 建议 1 的剩余半句；本轮 R2b 复核仍未改）。
-- **`a10b73e` 已推（原「未推」已解决）**：alloc 门禁基线提交已随 `origin/master` 推送；本报告审计 tip 当时为 `686bf89`，当前 `ohos-workload master = 1f7ef76`（headless abc `4e5491d`、tester-run v6 `8408a90`、模板 README `e995cef`）。
+- **`a10b73e` 已推（原「未推」已解决）**：alloc 门禁基线提交已随 `origin/master` 推送；本报告审计 tip 当时为 `686bf89`，当前 `ohos-workload master = c6a4cd95e`（headless abc `4e5491d`、tester-run v6 `8408a90`、模板 README `e995cef`、pin `236d18a9`；tip 清理签名说明中的过期指引）。
 - osx-arm64 失败判为 sccache 偶发（仅日志，未复跑）；maui 公共 API 仅类型级对账（成员级未逐条）；R7 注释统计含主观性；设备未验证项见安全/性能报告。
