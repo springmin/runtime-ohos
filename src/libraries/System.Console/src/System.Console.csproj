@@ -11,7 +11,9 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == '' and '$(TargetsOpenHarmony)' != 'true'">SR.PlatformNotSupported_SystemConsole</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- OpenHarmony compiles with a neutral TFM, so CA1416 cannot see the unix coverage and
-         flags the unix ConsolePal; the suppression drops out once the TFM mapping lands. -->
+         flags the unix ConsolePal. Exit condition: delete this suppression once OpenHarmony
+         builds with a platform TFM (TargetPlatformIdentifier non-empty); the condition below
+         keeps it to the neutral-TFM case until then. -->
     <NoWarn Condition="'$(TargetsOpenHarmony)' == 'true' and '$(TargetPlatformIdentifier)' == ''">$(NoWarn);CA1416</NoWarn>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
