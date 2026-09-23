@@ -29,7 +29,7 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 > 真机安装会报 `9568257 fail to verify pkcs7 file` 或 `9568344 install parse profile prop check error`，**这是预期结果，重试无用**。
 > 能安装的只有 `hello-maui-app-unsigned.hap` **用你自己的华为账号自动签名后**的产物（也可回传 UDID 由我们重签，或改用发布方预签包；详见包内 `签名说明.txt`）。
 > 重签一行（路径/密码换成你的，完整步骤见 `自签说明.md`）：
-> `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -appCertFile <你的>.cer -profileFile <你的>.p7b -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-yourself.hap -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"`
+> `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -signCode 1 -appCertFile <你的>.cer -profileFile <你的>.p7b -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-yourself.hap -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"`
 >
 > **关于包内 `签名说明.txt`**：kit #21 里第三节的「PA1 重建壳的下一版 kit」句是历史文案（源已在 `ohos-workload c6a4cd95e` 修正，随下个 kit 生效；本 kit 不含该缺陷）。判读以 `签名说明` 其余内容与 release notes 为准。
 

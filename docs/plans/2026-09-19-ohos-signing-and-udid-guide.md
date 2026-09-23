@@ -127,7 +127,7 @@ sh scripts/sign-for-device.sh --show-profile-devices --huawei ~/Documents/ohos/c
    配合 `config/material/{fd,ac,ce}` 就地解密：解密助手临时生成在私有 `mktemp -d`（0700，退出/信号时删除），
    加密密码经环境变量传入、明文只留在进程内存；不再写入共享目录（旧版 `…/ohos-pwd.txt` 缓存已移除）。
    encryptedPassword 可通过第四个参数或 `OHOS_ENC_PWD` 环境变量传入；
-3. `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign` 用对方的
+3. `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -signCode 1` 用对方的
    p12/cer/p7b 签名（`--pwd-input-mode` 时加 `-pwdInputMode 1` 并省略 `-keyPwd/-keystorePwd`，
    由终端提示输入密码，第 2 步的解密随之跳过）；
 4. **`hap-sign-tool verify-app` 通过后才打印路径与 SHA-256**（失败即 `die`，不会给出未验证的产物）。

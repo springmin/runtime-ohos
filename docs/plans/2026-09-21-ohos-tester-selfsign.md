@@ -23,7 +23,7 @@
    → Studio 会生成 `*.p12` / `*.cer` / `*.p7b`（目录通常在 `~/Documents/ohos/config/`，含 `material/` 子目录）。
 3. 用同一 SDK 的 `hap-sign-tool` 给我们的未签名 hap 签名（把下面路径换成你的）：
    ```bash
-   hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign \
+   hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -signCode 1 \
      -appCertFile <你的>.cer -profileFile <你的>.p7b \
      -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-signed.hap \
      -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>" -signCode 1
