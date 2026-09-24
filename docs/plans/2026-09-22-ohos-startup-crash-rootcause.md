@@ -26,6 +26,7 @@
 >    见 §5d/§5e。
 >
 > **2026-09-24 状态（kit #21）**：四个启动阻塞均已在 kit #10/#11/#12/#16（+ #17 `libIsolation` repack）修复；当前发布 = **kit #21**（headless 变体 abc `13.0.1.0` 修复 + `tester-run.sh` v6r2），§5d/§5e 的「进行中」均为当时快照。设备侧诊断（app-lib 键、别名注册行、首帧）已并入 `tester-run.sh`，见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` §2.4。
+> **2026-09-24 设备证据修正（新增）**：当前发布已前进到 **kit #22**（设备里程碑回灌：宿主按需 dlsym、`resources.index`、ZIP offset/mkdir、DevEco 工程布局；见 `2026-09-24-ohos-device-milestone.md`）；旧 #4（libIsolation/napi path）降级为「**无害加固、非关键**」——真实直接链 5 项、回灌映射与边界见 §5f。
 
 ## 0. 一手材料与验证环境
 
@@ -289,6 +290,35 @@ kit #14 的崩溃清零后，新现象是**黑屏（进程不退出）**：
   `ohos-workload` 工作树中 `host_napi.cpp` 仍为 `nm_modname = "openharmonyhost"`，无别名注册；最近提交是
   kit #15 的 rawfile 资源桥（与 RH1 无关）。RH1 落地后按「so 注册名 ↔ abc import 记录名」对照 +
   设备 `hilog | grep 'Load native module failed'` 是否消失来复核。
+
+## 5f. 2026-09-24 设备证据修正（真机完整运行；旧 #4 降级为无害加固）
+
+测试方 kit #17→#18 + 5 项本地修复后，在设备（HUAWEI MateBook Pro HAD-W24 / HarmonyOS 7.0.0.105 /
+API 26 / arm64-v8a）**首次完整运行成功**：`managed app hello-maui-app.dll started (UI shell)`、
+进程持续存活（主进程 + `:gpu`）、XComponent `native OnSurfaceCreated` 回调触发、ArkUI 渲染层工作
+（`AceAppBar: callNative`）、`SmartGC: app cold start just finished`、无崩溃（无 `TypeError` /
+`JsError` / `exit 254`）。**边界：这是 kit #18 + 测试方本地修复链的结果，stock kit #22 尚未上机。**
+
+**对 §5d/§5e 第四阻塞（黑屏）的修正**：
+
+- 旧 #4 的两个半边 —— RM1 `libIsolation`（模块级 app-lib `<bundle>/<module>` key）与 RH1
+  nm 别名/注册名 —— **并非本次失败的关键**：成功运行的整份日志中没有 `Load native module failed`
+  阻断；两项保留为**无害加固**（不撤、不回滚）。
+- **直接链是另外 5 项**（按设备证据顺序）：① 宿主 `.so` dlopen 失败（设备缺 10 个系统库 + 62 个符号，
+  含 IME `OH_InputMethodProxy_ShowKeyboard`）→ ② `dotnet publish` 的 HAP 缺 `resources.index`
+  （`GetRawFileContent failed, name is empty`）→ ③ `fs.copyFile(zip.fd)` 忽略 `getRawFd` 的
+  offset/length（`BusinessError 900003`）→ ④ 解压前缺 mkdir（`BusinessError 900002`）→
+  ⑤ abc 由 DevEco 新建工程编译（hvigor `00302013`）。完整证据见
+  `2026-09-24-ohos-device-milestone.md` §2。
+- **libhostfxr 的 dlopen 候选 1/2 已由设备验证**：经宿主自身目录（`libs/arm64-v8a/`，namespace 允许）
+  成功加载，未回退到解压目录（§5c 的候选逻辑生效）。
+- **回灌映射（随 kit #22）**：`ohos-workload 64c989b`（宿主 NEEDED 5 库 + 可选 API dlsym + 门禁）·
+  `61e6e81`/`4dd12a2`（ZIP offset / mkdir）+ `76a6f7a`（abc 重建）· `0f26b74`（`resources.index` via restool）·
+  `019ddae`（DevEco 工程布局 + 00302013 诊断）；里程碑 §3 有权重与回归证据。
+- **仍未验证**：stock kit #22、无 hilog/libnative_window 环境分支、`resources.index` legacy（579 B）与
+  RestoolV2（707 B）的设备兼容、其余功能面与对照载荷 —— 见里程碑 §5/§6。
+
+> §5b–§5e 保留当时的判断、证据与时间线，不改写；本节只做增量修正。
 
 ## 6. 六类错误的关系（避免混淆）
 
