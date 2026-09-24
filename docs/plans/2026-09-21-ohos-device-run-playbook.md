@@ -3,7 +3,7 @@
 > 面向拿到 device-test-kit（或已解压目录）、手上有设备/`hdc` 的测试者：照抄命令与顺序即可；结论以设备实测为准。
 > 逐项清单、日志关键字与**回传模板**见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`，重点是 §4b/§5b/§6）；
 > 一页版入口 `docs/plans/2026-09-20-ohos-tester-quickstart.md`（包内名 `快速开始.md`）；kit 内容见 `docs/plans/2026-09-21-ohos-delivery-kit-readme.md`。
-> 当前发布 = **kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；`tester-run.sh` v6r2 未变，含自 kit #17 起全部安全/性能/启动修复）；数字入口 = release「## Integrity」；里程碑与复测判定点见 `docs/plans/2026-09-24-ohos-device-milestone.md`。
+> 当前发布 = **kit #23**（2026-09-24，工具刷新：强化后的 `verify-kit.sh` 与 `tester-run.sh` v7 入包；hap 负载与 #22 相同：宿主按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局，已含自 kit #17 起全部安全/性能/启动修复）；数字入口 = release「## Integrity」；里程碑与复测判定点见 `docs/plans/2026-09-24-ohos-device-milestone.md`。
 
 ## 0. 前置
 
@@ -19,6 +19,8 @@ sh verify-kit.sh            # 或：sh verify-kit.sh <kit-dir>
 ```
 
 期望最后一行 `KIT OK`。出现 `FAIL/WARN`（校验和不符、缺 hap/文档）时**先重新下载解压**，不要带病安装。
+
+> **kit #23 的 `verify-kit.sh` 更严（旧包会 FAIL 属预期）**：除逐文件校验外还逐 hap 断言 `resources.index`（缺/空 = FAIL）、abc 版本 `13.0.1.0` 与当前壳大小、`libs/arm64-v8a` 14 个 `.so`、`dotnet.zip` 不含 `.so`、宿主 ELF 依赖白名单（FAIL → 退出码 1；WARN → 仍 `KIT OK`）。kit #22 全部通过；**kit #21 及更早的包会被明确报 FAIL（真实缺陷，不是误报）**——检修旧包用其自带 verify-kit，强化结果用 kit #22+（当前 #23）。可选参数 `--expected-abc` / `--host-deps`。
 
 ## 2. 安装（二选一）
 
@@ -36,7 +38,7 @@ hdc install hello-maui-app.hap                      # API 20 设备换成 hello-
 hdc shell aa start -a EntryAbility -b com.example.hellomauiapp
 ```
 
-或直接点桌面图标。首帧应为**黑色导航栏 + 标题「Root」**的长列表；若黑屏/闪退，先记录并走第 7 节回传。2026-09-24 里程碑：kit #18 + 测试方 5 项本地修复已跑到 `managed app hello-maui-app.dll started (UI shell)`、进程存活、无崩溃；**stock kit #22 的首次设备复测就是本轮**（失败分支判定见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6）。
+或直接点桌面图标。首帧应为**黑色导航栏 + 标题「Root」**的长列表；若黑屏/闪退，先记录并走第 7 节回传。2026-09-24 里程碑：kit #18 + 测试方 5 项本地修复已跑到 `managed app hello-maui-app.dll started (UI shell)`、进程存活、无崩溃；**stock kit #22（#23 为同负载工具刷新）的首次设备复测就是本轮**（失败分支判定见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6）。
 
 ## 4. 采集证据（有 hdc 时）
 
@@ -87,4 +89,4 @@ grep -E 'HybridWebView|__hwvInvokeDotNet|webview|bluetooth|print|contacts|calend
 2. `log.txt` 片段：两条启动行 + 失败项关键字行（**标注各失败项时间点**）。
 3. 安装失败的**完整错误文案**或截图；严重问题（崩溃/黑屏/无法启动）附步骤与是否可复现。
 4. 无 hdc 时：应用日志区与 A11Y 自检弹窗截图（可选录屏）。
-5. 整轮报告推荐用 `tester-run.sh`（v6r2）生成 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）：自动收录 hilog（含 `hilog-applib.txt`/`hilog-dlopen.txt`）、kmsg、`device/app-libs-arm64.txt` 与 `meta/kit-hap-sha256.txt`，字段与旧版兼容。
+5. 整轮报告推荐用 `tester-run.sh`（v7）生成 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）：自动收录 hilog（含 `hilog-applib.txt`/`hilog-dlopen.txt`/**`hilog-bootstrap.txt`**）、kmsg、`device/app-libs-arm64.txt`、**`device/payload-files.txt`/`device/payload-marker.txt`**、`meta/kit-hap-sha256.txt` 与 **`meta/kit-selfcheck.txt`**，字段与旧版兼容；若 `summary.txt` 报 `kit_index_ok=no` 请换 kit #22+ 再测，`bootstrap_errors`/`rawfile_errors>0` 时附 `hilog-bootstrap.txt`（不影响退出码）。

@@ -2,9 +2,9 @@
 
 > 面向拿到 device-test-kit、手上有设备/`hdc` 的测试者：把「校验 kit → 安装 → 启动 → 抓 hilog → 跑 P1–P4 探针 → 打包回传」串成一条命令。
 > `tester-run.sh` 是 `device-test-kit` release 上的**独立资产**（不在 kit 的 `SHA256SUMS` 内，kit 本身无需重下）；脚本默认 **dry-run**，不加动作参数不会碰设备。
-> 当前脚本 = **v6r2**（内嵌 `script_version=6`，2026-09-24）：行为与输出字段对旧调用兼容；`--tree-digest` 复用已校验摘要（P16）明显更快，证据包新增 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`。
+> 当前脚本 = **v7**（内嵌 `script_version=7`，2026-09-24；仓库脚本与 release 资产同为 **71,834 B** / `10c42f9e…`）：行为与输出字段对旧调用兼容；v6r2 起 `--tree-digest` 复用已校验摘要（P16）明显更快、证据包含 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征、设备侧 payload 状态与 kit hap 自检（见 §5、§6）。
 > 逐项清单与判读仍见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`）；探针定义见 `docs/plans/2026-09-21-ohos-crash-probes.md`。
-> 当前发布相关：**kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、HAP `resources.index`、ZIP/mkdir、DevEco 工程布局）；`tester-run.sh` 本身与 #21 逐字节相同（v6r2）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22 尚未上机**，本轮归档即首次复测证据。
+> 当前发布相关：**kit #23**（2026-09-24 发布，工具刷新：强化后的 `verify-kit.sh` 与 `tester-run.sh` v7 入包；hap 内容与 kit #22 相同、本轮重打包重签，哈希以随包 `SHA256SUMS` 为准；整包 tar.gz 实测 **116,008,927 B**，其余数字入口见 release「## Integrity」；kit 内强化 verify-kit 自检 **0 FAIL / 0 WARN**）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22 负载（#23 为工具刷新）尚未上机**，本轮归档即首次复测证据。
 
 ## 1. 它做什么
 
@@ -18,6 +18,8 @@
 | 5 | 采集 hilog/探针日志、`module.json`、`param get` + UDID、kit 哈希、`summary.txt`，打包 `tester-report-<时间戳>.tar.gz` | 有设备动作时总是执行 |
 
 `--device <id>` 会让每条 hdc 命令都带 `-t <id>`；`--out <dir>` 改报告目录（默认 `./tester-report`）；`--hap <hap>` 用指定 hap 代替 kit 默认包（可重复，主包取第一个）。
+
+> **verify-kit 深度断言（kit #23 起；旧包会 FAIL 属预期）**：kit #23 包内的 `verify-kit.sh` 除 `SHA256SUMS` 校验与 5 hap 摘要外，还逐 hap 断言：`resources.index` 存在且非空（缺失/0 B = FAIL）、`ets/modules.abc` 的 PANDA 版本 `13.0.1.0`（FAIL）与当前壳大小（`212952` UI/壳、`15608` headless；默认仅 WARN，`--expected-abc` 固定后 FAIL）、`libs/arm64-v8a` 恰 14 个 `.so`（少 = FAIL，多 = WARN）、`resources/rawfile/dotnet.zip` 不含 `.so`（FAIL）且 253 项（漂移 WARN）、宿主 ELF 的 `DT_NEEDED` ⊆ `host-deps.conf` 白名单且无 `libhostfxr.so`、动态未定义符号不触 IME/NativeWindow/Vibrator/Sensor/Location/NetConn/AT/ImageSource/Pixelmap/`OH_LOG_` 名单（命中 = FAIL）。判定：FAIL → 退出码 1；WARN → 打印但保持 `KIT OK`。**对已发布的 kit #22 这些断言全部通过**（index 579/707 B、abc 212952 B、libs=14、DT_NEEDED=5、denylist 0、dotnet.zip 253/0）；**对 kit #21 及更早的包，新 verify-kit 会明确报 FAIL（缺 index、旧宿主 NEEDED、denylist 命中）并以 1 退出 —— 那是旧包的真实缺陷，不是新脚本误报**；检修旧包请用该包自带的 `verify-kit.sh`，要得到强化结果请用 kit #22+（当前 #23）。新增参数 `--expected-abc <bytes[,bytes]>`、`--host-deps <file>`（env `KIT_EXPECTED_ABC` / `KIT_HOST_DEPS`）；`--anchor`/`--anchor-file`/`--tree-digest`/`--expect-tree-digest` 语义不变。校验器自身有 60 项本地 selftest（交付方仓库脚本 `scripts/selftest-verify-kit.sh`，不需要设备/binutils；kit 内不含该脚本）。
 
 ## 2. 下载与自检
 
@@ -86,11 +88,25 @@ grep -E 'hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|JsError|appspaw
 <D> uninstall <bundle>              # 加了 --probes 时也卸载 4 个 probe 包
 ```
 
-`v6r2` 另在设备窗口内自动采集（无需手工 grep）：`hilog -t kmsg` → `kmsg/`、`xpm_mode`/`require_signatures`、`SoInfoSegment` 命中数，以及 app-lib 证据 ——
+`v6r2` 起在设备窗口内自动采集（v7 沿用；无需手工 grep）：`hilog -t kmsg` → `kmsg/`、`xpm_mode`/`require_signatures`、`SoInfoSegment` 命中数，以及 app-lib 证据 ——
 `hilog/hilog-applib.txt`（`SetAppLibPath|appLibPathKey|NativeLibPath|lib path`）、`hilog/hilog-dlopen.txt`（`dlopen|cannot find library|openharmonyhost`）、
 `device/app-libs-arm64.txt`（`ls -l /data/storage/el1/bundle/libs/arm64/`）。判读要点：`appLibPathKey: <bundle>/<module>` 出现 = 模块级 app-lib key 已注册（`libIsolation` 生效）；
 `[openharmony-host] … bound via alias '…'` 出现 = 宿主加载并绑定到该别名；首帧成功信号 = `registerXComponent=function`、首帧出现、无 `Load native module failed`。
 `--extra-probes <dir>` 可把 importprobe/importb/importd 等载荷按与 P1–P4 相同的「装 → 启 → 录」流程一并采集。
+
+`v7` 再增三类采集（全部缺失容忍，不改退出码）：
+
+- **bootstrap/rawfile 失败特征** → `hilog/hilog-bootstrap.txt`：对所有已录制 hilog 窗口再过滤 `GetRawFileContent|bootstrap failed|bootstrap retry|BusinessError|900002|900003|ZIP entry|destination path|Load native module failed|symbol not found|cannot find library|Museum|MUSL-LDSO|check ns accessible`；计数写入 `summary.txt` 的 `bootstrap_capture`（ok/not_captured）、`bootstrap_lines`、`bootstrap_errors`、`rawfile_errors`、`libload_errors`（无录制窗口记 `<unavailable>`）。
+- **设备侧 payload 状态** → `device/payload-files.txt`（`ls -l <filesDir>/` 中 `dotnet|payload` 行）与 `device/payload-marker.txt`（`<filesDir>/dotnet.marker` 首行）；`summary.txt` 记 `payload_present`（yes/no）、`payload_files`（行数）、`payload_marker`（ok/empty）。
+- **kit hap 自检**（本地，dry-run 也打印，设备轮才归档）→ `meta/kit-selfcheck.txt`：逐 kit hap 的 `resources.index` 有无/大小、`libs/arm64-v8a` 计数、`ets/modules.abc` 头版本；`summary.txt` 记 `kit_index_ok`（yes/no）。
+
+**判读建议（v7 新键；均为提示性，不改退出码）**：
+
+| 键/文件 | 含义与处置 |
+|---|---|
+| `bootstrap_errors>0` / `rawfile_errors>0` / `libload_errors>0` | bootstrap/rawfile/库加载路径出现失败特征（原文在 `hilog/hilog-bootstrap.txt`，请随归档回传）。常见对照：`GetRawFileContent failed, name is empty` + `kit_index_ok=no` = hap 缺 `resources.index`（早于 kit #22 的旧包，换当前 kit）；`ZIP entry`/`destination path` = 解压/路径问题；`Load native module failed`/`symbol not found`/`cannot find library` = 宿主/依赖加载问题（转 P1–P4 阶梯）|
+| `kit_index_ok=no` | 当前 kit 至少一个 hap 缺 `resources.index`：换 **kit #22+（当前 #23）** 再测（这类包会在托管 bootstrap 前失败）。`<unavailable>` = 本机缺 `python3`/`unzip` 或 kit 无 hap，自检未完成，不影响安装流程 |
+| `payload_present=no` | 未见 `<filesDir>/dotnet` 或 `dotnet.marker`：**首次启动前属正常**；应用已启动仍为 no（尤其伴随 `bootstrap_errors>0`）= payload 尚未解包成功。`payload_marker=empty` = payload 可能只写了一半（无 marker）|
 
 ## 6. 回传什么
 
@@ -102,7 +118,7 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 ```
 
 把 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）通过**收到 device-test-kit 的同一渠道**（邮件/IM/工单）发回给交付方；GitHub 用户可在 `springmin/sdk-ohos` 开 issue 附归档。
-归档内固定包含：`summary.txt`（机器可读，`KEY=value`：`script_version`、kit/tree 摘要、`main_hap_sha256`、bundle、安装/启动/存活结果、每条 hilog 行数、app-lib/dlopen 证据行数、`probe1..probe4` 结果、`failures`）、`hilog/`（含 `hilog-applib.txt`、`hilog-dlopen.txt`）、`probes/`、`kmsg/`、`device/param-get.txt`、`device/udid.txt`、`device/app-libs-arm64.txt`、`meta/module.json`、`meta/SHA256SUMS`、`meta/kit-hap-sha256.txt`。v6r2 的字段/文件对旧版归档是超集，解析方按 `KEY=value` 读即可。
+归档内固定包含：`summary.txt`（机器可读，`KEY=value`：`script_version`（v7 = `7`）、kit/tree 摘要、`main_hap_sha256`、bundle、安装/启动/存活结果、每条 hilog 行数、app-lib/dlopen 证据行数、**v7：`bootstrap_capture`/`bootstrap_lines`/`bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/`payload_files`/`payload_marker`/`kit_index_ok`**、`probe1..probe4` 结果、`failures`）、`hilog/`（含 `hilog-applib.txt`、`hilog-dlopen.txt`、**`hilog-bootstrap.txt`**）、`probes/`、`kmsg/`、`device/param-get.txt`、`device/udid.txt`、`device/app-libs-arm64.txt`、**`device/payload-files.txt`、`device/payload-marker.txt`**、`meta/module.json`、`meta/SHA256SUMS`、`meta/kit-hap-sha256.txt`、**`meta/kit-selfcheck.txt`**。v7 的字段/文件对旧版归档是超集，解析方按 `KEY=value` 读即可。
 若安装报 `9568344`，归档里的 UDID 可直接用于重签；`summary.txt` 的 `main_install_result=code:9568344` 即为凭据。
 
 ## 7. 安全说明

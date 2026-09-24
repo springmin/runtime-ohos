@@ -19,7 +19,7 @@ reads the tarball sha256 and the extracted-tree digest from the `device-test-kit
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
 this document.
 
-Updated 2026-09-24 (kit #21, historical snapshot — superseded by the kit #22 note below): the current kit is #21 — all five haps carry `libIsolation` plus the
+Updated 2026-09-24 (kit #21, historical snapshot — superseded by the kit #22/#23 notes below): the current kit is #21 — all five haps carry `libIsolation` plus the
 complete security/performance/startup fix set since #17 (frame allocation 241,688 → 4,504 B/frame;
 P17 extraction skip, H7 rawfile fd read, headless abc `13.0.1.0`) and `tester-run.sh` v6r2 now
 collects app-lib/dlopen evidence, kmsg and the XPM/fs-verity probes automatically. The comparison
@@ -33,16 +33,24 @@ API through dlopen/dlsym, every hap carries `resources.index` (restool legacy on
 RestoolV2 on API 20), the bootstrap copies the payload ZIP by offset/length and mkdirs the payload
 directory before inflating, and the generated shell project mirrors DevEco (`modelVersion 6.0.2`,
 00302013 diagnostics). The 2026-09-24 device milestone (kit #18 + five local fixes, first full run)
-is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit #22 has not been on a device yet**,
-so the checks below remain open — use the milestone §6 decision points (A host load / B bootstrap /
-C milestone regression) as the first pass/fail gates.
+is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit #22 (and #23, its tool refresh) has
+not been on a device yet**, so the checks below remain open — use the milestone §6 decision points
+(A host load / B bootstrap / C milestone regression) as the first pass/fail gates.
+
+Updated 2026-09-24 (kit #23 — current): a **tool refresh of kit #22** (identical haps): the bundled
+`verify-kit.sh` gains per-hap deep assertions (see Step 0), and the bundled `tester-run.sh` is **v7**
+(`script_version=7`) — it additionally collects `hilog/hilog-bootstrap.txt` (bootstrap/rawfile/libload
+failure signatures + `summary.txt` counts), `device/payload-files.txt`/`payload-marker.txt` and
+`meta/kit-selfcheck.txt` (`kit_index_ok`). Judgement: `kit_index_ok=no` means the kit predates #22 —
+re-download the current kit; `bootstrap_errors`/`rawfile_errors`>0 are reportable signatures (see
+`hilog-bootstrap.txt`) and do not fail the round by themselves.
 
 ## 0. Artifacts
 
 | Artifact | Where |
 |---|---|
 | `hello-maui-app.hap` (~21 MB, 26.0 band, `verify-app` success; siblings `-permissions`, `-api20`, `-api20-permissions`, `-unsigned`) | `ohos-workload/test/hello-maui-app/bin/Release/<tfm>/openharmony-arm64/` or the delivery kit |
-| Delivery kit `device-test-kit.tar.gz` — current delivery kit (5 haps + 8 zh-CN docs + `SHA256SUMS` + `verify-kit.sh`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity`, mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
+| Delivery kit `device-test-kit.tar.gz` — current delivery kit (**kit #23**, a tool refresh of #22: 5 haps + 8 zh-CN docs + `SHA256SUMS` + the hardened `verify-kit.sh`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity`, mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
 | Workload bundle `openharmony-workload-1.0.0-preview.24.tar.gz` | GitHub release `workload-1.0.0-preview.24` (+ `workload-latest` with `SHA256SUMS`; the SDK release keeps an earlier snapshot) |
 | Host library | `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so` (signed) |
 | ArkTS shells | `packs/.../templates/ets/modules.abc` (headless) and `modules.ui.abc` (UI); preview.24 carries the T6/T8 archive (fingerprint fallback, keep-screen-on) |
@@ -58,6 +66,11 @@ in-kit version line (`最终状态.md`「发布物」 or `README-交付说明.md
 release notes (or the sidecar) of the build you downloaded, never against a value copied into a
 document. The five kit haps are already legal (`bundleName` matches the profile) and
 band-aligned, so **no rename and no `module.json` edit** is needed.
+
+The kit #23 verifier also asserts the payload facts per hap (`resources.index` present/non-empty,
+abc `13.0.1.0` + current size, 14 libs, `dotnet.zip` composition, host ELF dependency policy):
+`FAIL` exits 1, `WARN` stays `KIT OK`. It passes on kit #22 and **reports real defects on kit #21
+and older (they will FAIL — expected, not a tool bug)**; use the kit's own verifier for an old kit.
 
 ## 1. Install and launch
 
@@ -274,4 +287,7 @@ traces, and record them in the fill-in template `2026-09-21-ohos-device-report-t
 P4 per-dependency; its decision table names the failing layer, and its P4 section has a
 no-app 14-library self-check (`hdc shell ls -l /system/lib64/...`). The probe haps are
 unsigned and live on the same `device-test-kit` release. With those, the port validation is
-complete and the remaining work is upstream API approval only.
+complete and the remaining work is upstream API approval only. `tester-run.sh` v7 already packs
+the app-lib/bootstrap/payload/kit-selfcheck evidence into `tester-report-<stamp>.tar.gz`; quote
+its `summary.txt` keys (`bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/
+`payload_marker`/`kit_index_ok`) in the report.

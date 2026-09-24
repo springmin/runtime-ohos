@@ -6,7 +6,7 @@
 > 本页只做三件事：**换当前 kit 重测** → **取最小崩溃证据** → **回传 §5 清单**。命令可照抄；结论以设备实测为准。
 > 相关文档（kit 内）：`真机操作手册.md`（校验/安装/取证）、`验收说明.md`（完整清单与模板）、`签名与UDID指南.md`（9568344）。
 >
-> **2026-09-24 更新（kit #22）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。`tester-run.sh` v6r2 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`device/app-libs-arm64.txt`（§2.4）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
+> **2026-09-24 更新（kit #23）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局（kit #23 = 同负载工具刷新：强化 `verify-kit.sh` + `tester-run.sh` v7 入包）。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。`tester-run.sh` v7 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt`（§2.4–§2.5）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
 
 ## 0. 一页摘要
 
@@ -44,7 +44,7 @@ sh verify-kit.sh --tree-digest
 
 ### 1.2 安装与启动
 
-沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#22）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
+沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#23，#22 同负载）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
 
 ```sh
 hdc install hello-maui-app.hap
@@ -94,7 +94,7 @@ grep -inE "hellomaui|hello-maui|maui|dotnet|openharmonyhost|libentry|dlopen|AppK
 - 只有 `hdc shell` 时试：`hdc -t "$D" shell "ls /data/app/el2/100/base/<bundleName>/files"`；被权限拒绝就跳过并注明；
 - 文件**不存在或没有新内容本身就是证据**（说明宿主可能还没执行到写状态文件）——请在回传里写明。
 
-### 2.4 app-lib / 别名注册 / 首帧（RM1 诊断；tester-run v6r2 自动采集）
+### 2.4 app-lib / 别名注册 / 首帧（RM1 诊断；tester-run v7 自动采集）
 
 ```sh
 hdc -t "$D" shell "hilog -x | grep -E 'SetAppLibPath|appLibPathKey|NativeLibPath|lib path'"   # -> hilog/hilog-applib.txt
@@ -110,6 +110,20 @@ hdc -t "$D" shell "ls -l /data/storage/el1/bundle/libs/arm64/" > app-libs-arm64.
 - 首帧判定（通过）：`registerXComponent=function`、首帧出现、无 `Load native module failed`。
 
 判读与回退见 `docs/plans/2026-09-23-ohos-native-import-experiment.md` §8.4/§8.5。
+
+### 2.5 bootstrap / rawfile / payload（v7 新采集；黑屏或早退时的第一手证据）
+
+```sh
+hdc -t "$D" shell "hilog -x | grep -E 'GetRawFileContent|bootstrap failed|bootstrap retry|BusinessError|900002|900003|ZIP entry|destination path|Load native module failed|symbol not found|cannot find library'"   # -> hilog/hilog-bootstrap.txt
+hdc -t "$D" shell "ls -l /data/storage/el2/base/haps/entry/files/" | grep -E 'dotnet|payload'   # -> device/payload-files.txt
+hdc -t "$D" shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"                   # -> device/payload-marker.txt
+```
+
+- `summary.txt` 对应键：`bootstrap_errors`/`rawfile_errors`/`libload_errors`（命中计数）与 `payload_present`/`payload_marker`，另有本地 hap 自检键 `kit_index_ok`（`meta/kit-selfcheck.txt`）。这些键**只提示、不改退出码**。
+- `GetRawFileContent failed, name is empty` + `kit_index_ok=no` => hap 缺 `resources.index`（早于 kit #22 的旧包），**换当前 kit 再测**，不是设备问题。
+- `ZIP entry`/`destination path` => 启动解压/路径问题（对照 kit #22 的 ZIP offset/mkdir 修复）。
+- `Load native module failed`/`symbol not found`/`cannot find library` => 宿主/依赖加载问题，转 P1–P4 阶梯（§5）。
+- `payload_present=no` 在**首次启动前属正常**；应用已启动仍为 no（尤其伴随 `bootstrap_errors>0`）说明 payload 未解包成功；`payload_marker=empty` = 可能只写了一半。
 
 ## 3. 三个快速 A/B（各 5 分钟，能跑几个跑几个）
 
