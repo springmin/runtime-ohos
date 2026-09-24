@@ -37,11 +37,11 @@
 | `hello-mauiapp-probe2-unsigned.hap` | 215,384 | `5bdce033d00a561dc22dd4196a4f17aa2e5d6df025682adbe98c30836f6c1960` | P2：宿主 dlopen |
 | `hello-mauiapp-probe3-unsigned.hap` | 222,954 | `43557cfe9c274406ad8cc4985eadace9eb4a7f13d560af2e452491727a5e5b6c` | P3：宿主入口/dlsym |
 | `hello-mauiapp-probe4-unsigned.hap` | 223,178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` | P4：逐依赖预检 |
-| `new-features-device-checklist.md` | 51,825 | `7d923af9e8bb5b0d37e4e52c3e20f5d1f2ab56a83e64cbf3c180a944a46fbd35` | 本轮新功能 M1–M13 真机清单（资产仍为 2026-09-24 kit #21 重传版；仓库页已同步到 kit #22 口径）|
+| `new-features-device-checklist.md` | 52,580 | `8d30542087d70eac1d51bdc41bf00962e6cab95dec0a0014554de088188c6c54` | 本轮新功能 M1–M13 真机清单（2026-09-24 与仓库文档同步重传，kit #22 口径）|
 | `tester-run.sh` | 60,429 | `a7db7d8c78ccdf4ac9d2112972e7739ac788a65772d4374cc8fcf54c7230d884` | v6r2（内嵌 script version 6，2026-09-24；仓库脚本 commit `8408a90`；kit #22 未变）：校验 + 安装 + 启动 + 30 s hilog + RM1 无重建 app-lib/dlopen 证据；发任何 hdc 命令前校验 bundle 名（A1）；复用已校验摘要产出 kit 摘要（P16） |
 
 - 诊断资产对应关系：`dynpkg-haps.tar.gz` 为候选矩阵中最强单候选（动态加载 + `runtimeOnly.packages`/`file:` 包声明；随包 5 hap 带 libIsolation、abc 新增 host-binding `.record libopenharmonyhost.so`、入口 record 保持已确认形式）；`normalized-haps.tar.gz` 的 normalized 入口 record 的设备解析未证。`importb`/`importd` 分别对应静态命名空间与动态加载实验；三个 `importprobe` hap 无 .NET 载荷，只测三种 import 形式的路由。P1–P4 仍用于 dlopen/缺库/宿主入口/运行时类崩溃的五层定位。
-- 全部数字均为 2026-09-24 读取：release API digest 与本地重算一致（kit、bundle、dynpkg、normalized、importb、importd、tester-run.sh）；本轮 kit #22 变化 **2 项**：`device-test-kit.tar.gz` 与 `.sha256` 边车；其余 **13 项**（探针 hap、诊断 tarball、dynpkg/importb/importd/normalized、`checklist`、`tester-run.sh`）与上一快照逐字节同值（`dtk_assets_unchanged=13`；`tester-run.sh` 与仓库副本逐字节一致，故未重传）。`importprobe` a/b/c 的 API digest 与实验文档记录一致。诊断 tarball 内的 hap 均未签名或为陈旧签名，测试方需重签（§6）。
+- 全部数字均为 2026-09-24 读取：release API digest 与本地重算一致（kit、bundle、dynpkg、normalized、importb、importd、tester-run.sh）；本轮 kit #22 变化 **3 项**：`device-test-kit.tar.gz`、`.sha256` 边车与 `checklist`（2026-09-24 与文档同步重传）；其余 **12 项**（探针 hap、诊断 tarball、dynpkg/importb/importd/normalized、`tester-run.sh`）与上一快照逐字节同值（`dtk_assets_unchanged=12`；`tester-run.sh` 与仓库副本逐字节一致，故未重传）。`importprobe` a/b/c 的 API digest 与实验文档记录一致。诊断 tarball 内的 hap 均未签名或为陈旧签名，测试方需重签（§6）。
 
 ## 3. Workload bundle（versioned + rolling + SDK release）
 
