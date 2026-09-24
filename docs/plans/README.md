@@ -9,6 +9,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
+| `2026-09-24-ohos-nativeaot-maui-slice.md` | MAUI 平台切片可发现性（回应 NativeAOT 阻塞 #4.2）：main=上游镜像不合并的原因、`feature/openharmony` + `ohos-slice-1.0.1` 源码包（含 sha256）、类型名对照（`UseOpenHarmony`/`OpenHarmonyMauiAppHost`/`OpenHarmonyBlazorWebViewHandler`）、csproj 源码包含与 TFM 门控接线、构建/下载验证 | ✅ 当前（2026-09-24）|
 | `2026-09-24-ohos-device-milestone.md` | **真机里程碑**：kit #17→#18 + 测试方 5 项本地修复后首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；结果与证据、根因链 5 项、我们侧回灌（commit 映射）、kit #22 指纹、仍未验证清单与 stock kit #22 复测判定点 | ✅ 里程碑（2026-09-24）|
 | `2026-09-22-ohos-release-manifest.md` | OpenHarmony 交付物总清单（**已刷新至 kit #22**，2026-09-24 快照）：kit 的 tar/树摘要（编号与数值以 release「## Integrity」为准）、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | ✅ 已刷新（2026-09-24，kit #22）|
 | `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 自签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式；含「自 kit #17 以来的变化」速览与设备里程碑提示 | ✅ 当前（kit #23，2026-09-24）|
