@@ -91,7 +91,7 @@
 
 ## ⑥ 待上游动作（评论草稿在 pr-rev，未发送）
 
-1. **arcade#17608：已合并，无需动作**（`fff3b6bb`，2026-09-24 02:36 +08）→ `eng/common` OpenHarmony 支持将随 arcade 同步自动进入；同步落地后 runtime#132953 可复评/重跑（不再构成跨仓前置）。
+1. **arcade#17608：已合并（`fff3b6bb`，2026-09-23T18:36Z），`eng/common` 尚未同步进 runtime main**：截至 2026-09-24 03:00Z（gh api 只读复核），eng/common 最近提交仍 `8f610270`（09-15），main 上 arcade#17608 涉及的三处文件（`cross/toolchain.cmake`、`native/init-distro-rid.sh`、`native/init-os-and-arch.sh`）无 openharmony/ohos 命中——同步只是时间问题，不构成 #132953 跨仓前置。**三 PR 现状态：**#132953 `be8e6f6988d` 仍 REVIEW_REQUIRED、4 条 outdated 未 resolve、osx-arm64 仍红且**未 rerun**（等待项：rerun + resolve + 复批，草稿 A 已更新）；#132827 `6ed2f9ab9a6` 仍 REVIEW_REQUIRED、6 条 outdated 未 resolve、09-21T09:01Z 后无新活动；#132866 无新答复（6 评论，最后 springmin 09-14T03:19Z）。
 2. **#132953**：rerun（osx-arm64 sccache 偶发）→ 7 天内请求重批 → 请 reviewer resolve 4 条 outdated thread（`runtime.json` 已回退、`any` 已 import、`__PortableTargetOS` 已删）。
 3. **#132827**：请复评并 resolve 6 条 outdated thread（引 `6ed2f9ab9a6`）。
 4. **#132866**：第三次请求答复 3 个 scope 问题（illink 归属 / S1c codesign 上游 / 提交粒度），解除 N1–N16 排队。
