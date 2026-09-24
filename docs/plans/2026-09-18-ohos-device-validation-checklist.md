@@ -33,9 +33,9 @@ API through dlopen/dlsym, every hap carries `resources.index` (restool legacy on
 RestoolV2 on API 20), the bootstrap copies the payload ZIP by offset/length and mkdirs the payload
 directory before inflating, and the generated shell project mirrors DevEco (`modelVersion 6.0.2`,
 00302013 diagnostics). The 2026-09-24 device milestone (kit #18 + five local fixes, first full run)
-is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit #22 (and #23, its tool refresh) has
-not been on a device yet**, so the checks below remain open — use the milestone §6 decision points
-(A host load / B bootstrap / C milestone regression) as the first pass/fail gates.
+is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit (from #22 on; #23 tool refresh, #24
+payload-in-libs) has not been on a device yet**, so the checks below remain open — use the milestone §6
+decision points (A host load / B bootstrap / C milestone regression) as the first pass/fail gates.
 
 Updated 2026-09-24 (kit #24 — current): **payload-in-libs + explicit W^X=0 + exec-memory probe**: the
 hap `libs/arm64-v8a/` now carries the whole payload plus `.dotnet-payload.json` (the runtime starts
@@ -43,7 +43,7 @@ in place from the signed bundle directory; `dotnet.zip` stays as the fallback; t
 from ~32.7 MB to ~75.3 MB). The host pins `DOTNET_EnableWriteXorExecute=0` on both launch paths and
 adds the `xwe.txt` A/B switch plus the one-shot `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…` line (token 1
 anonymous RWX, 2 anonymous RW->RX, 3 memfd RX, 4 file RX; `OK` or errno). The bundled
-`tester-run.sh` is still **v7** (`script_version=7`) and collects `hilog/hilog-execmem.txt`
+`tester-run.sh` is now **v8** (`script_version=8`) and collects `hilog/hilog-execmem.txt`
 (`execmem_capture`/`execmem_lines` in `summary.txt`) on top of `hilog/hilog-bootstrap.txt`,
 `device/payload-files.txt`/`payload-marker.txt` and `meta/kit-selfcheck.txt`
 (`kit_index_ok`, `payload=yes|no`). With payload-in-libs, `payload_present=no` is normal (that key
@@ -297,7 +297,7 @@ traces, and record them in the fill-in template `2026-09-21-ohos-device-report-t
 P4 per-dependency; its decision table names the failing layer, and its P4 section has a
 no-app 14-library self-check (`hdc shell ls -l /system/lib64/...`). The probe haps are
 unsigned and live on the same `device-test-kit` release. With those, the port validation is
-complete and the remaining work is upstream API approval only. `tester-run.sh` v7 already packs
-the app-lib/bootstrap/payload/kit-selfcheck evidence into `tester-report-<stamp>.tar.gz`; quote
+complete and the remaining work is upstream API approval only. `tester-run.sh` v8 already packs
+the app-lib/bootstrap/payload/kit-selfcheck/exec-memory evidence into `tester-report-<stamp>.tar.gz`; quote
 its `summary.txt` keys (`bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/
-`payload_marker`/`kit_index_ok`) in the report.
+`payload_marker`/`kit_index_ok`/`execmem_capture`/`execmem_lines`) in the report.

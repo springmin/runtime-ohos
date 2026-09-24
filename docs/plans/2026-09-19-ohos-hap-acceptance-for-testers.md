@@ -287,7 +287,7 @@ I1 未测（无相机）
 > M7、M9 现在就能测。（§4b 的 N1–N7 同理以各自入口是否存在为准；没有入口的项按同一口径登记。）
 > 完整细节与取证关键字见同批交付的《新功能真机验证清单》（若未随包，本节即可满足填写）。
 >
-> **当前 kit（#24，2026-09-24）**：自 #17 起的全部安全/性能/启动修复都已在本包（bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`），并在 kit #22 追加**设备里程碑回灌**——宿主 `DT_NEEDED` 收窄为 5 库（缺库设备也能 dlopen）、可选系统 API 全部按需 dlsym、HAP 内 `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #23 为工具刷新（强化 verify-kit + `tester-run.sh` v7）。**kit #24**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（`hilog/hilog-execmem.txt`），不含上轮 seccomp 拦截器（请用 stock kit）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #24）尚未上机**，本轮即首次复测。主选为 kit #24 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
+> **当前 kit（#24，2026-09-24）**：自 #17 起的全部安全/性能/启动修复都已在本包（bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`），并在 kit #22 追加**设备里程碑回灌**——宿主 `DT_NEEDED` 收窄为 5 库（缺库设备也能 dlopen）、可选系统 API 全部按需 dlsym、HAP 内 `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #23 为工具刷新（强化 verify-kit + `tester-run.sh` v7）。**kit #24**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（`tester-run.sh` v8 采集为 `hilog/hilog-execmem.txt`），不含上轮 seccomp 拦截器（请用 stock kit）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #24）尚未上机**，本轮即首次复测。主选为 kit #24 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
 
 | # | 能力 | 步骤 | 期望 | 未通过时抓什么 |
 |---|---|---|---|---|
@@ -322,7 +322,7 @@ I1 未测（无相机）
 `sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按
 `自签说明.md` 自签），按「五层决策表」回传结论：P1 失败 = 设备/框架/包波段；P2 失败 = 宿主 `.so` dlopen；
 P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` 行里的库名即答案）；P1–P4 全过 = 崩在
-.NET 运行时/主启动。探针与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`。`tester-run.sh` v7 会自动采集
+.NET 运行时/主启动。探针与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`。`tester-run.sh` v8 会自动采集
 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`（`OHOS_DOTNET probe:`/`xwe=` 行，kit #24）、`device/app-libs-arm64.txt`、
 `device/payload-files.txt`/`payload-marker.txt` 与 `meta/kit-selfcheck.txt`（含别名注册行
 `[openharmony-host] … bound via alias '…'`、首帧判定、`kit_index_ok` 与 payload-in-libs `payload=yes|no`；`kit_index_ok=no` 请换 kit #22+ 再测），无需手工 grep。JIT/探针判定表与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。

@@ -2,7 +2,7 @@
 
 > 面向拿到 device-test-kit、手上有设备/`hdc` 的测试者：把「校验 kit → 安装 → 启动 → 抓 hilog → 跑 P1–P4 探针 → 打包回传」串成一条命令。
 > `tester-run.sh` 是 `device-test-kit` release 上的**独立资产**（不在 kit 的 `SHA256SUMS` 内，kit 本身无需重下）；脚本默认 **dry-run**，不加动作参数不会碰设备。
-> 当前脚本 = **v7**（内嵌 `script_version=7`；kit #24 版脚本大小/摘要以 release 资产页与 `gh api` 查询为准，本文不写死）：行为与输出字段对旧调用兼容；v6r2 起 `--tree-digest` 复用已校验摘要（P16）明显更快、证据包含 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征、设备侧 payload 状态与 kit hap 自检，并采集 execmem 证据（`hilog/hilog-execmem.txt`；见 §5、§6）。
+> 当前脚本 = **v8**（内嵌 `script_version=8`；kit #24 版脚本 73,375 B / `6ca2093e…`，发布资产与仓库副本同哈希；其余数字以 release 资产页与 `gh api` 为准）：行为与输出字段对旧调用兼容；v6r2 起 `--tree-digest` 复用已校验摘要（P16）明显更快、证据包含 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征、设备侧 payload 状态与 kit hap 自检；v8 再增 exec-memory 证据采集（`hilog/hilog-execmem.txt`，`summary.txt` 记 `execmem_capture`/`execmem_lines`；见 §5、§6）。
 > 逐项清单与判读仍见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`）；探针定义见 `docs/plans/2026-09-21-ohos-crash-probes.md`。
 > 当前发布相关：**kit #24**（2026-09-24 发布；payload-in-libs + 显式 W^X=0 + exec-memory 探针；hap 内 `libs/arm64-v8a/` 原地携带 payload + `.dotnet-payload.json`，`dotnet.zip` 回退；整包 tar.gz 数字入口见 release「## Integrity」；kit 内强化 verify-kit 自检应报 0 FAIL / 0 WARN）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #24）尚未上机**，本轮归档即首次复测证据。JIT A/B 与判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
 
@@ -88,20 +88,20 @@ grep -E 'hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|JsError|appspaw
 <D> uninstall <bundle>              # 加了 --probes 时也卸载 4 个 probe 包
 ```
 
-`v6r2` 起在设备窗口内自动采集（v7 沿用；无需手工 grep）：`hilog -t kmsg` → `kmsg/`、`xpm_mode`/`require_signatures`、`SoInfoSegment` 命中数，以及 app-lib 证据 ——
+`v6r2` 起在设备窗口内自动采集（v7/v8 沿用；无需手工 grep）：`hilog -t kmsg` → `kmsg/`、`xpm_mode`/`require_signatures`、`SoInfoSegment` 命中数，以及 app-lib 证据 ——
 `hilog/hilog-applib.txt`（`SetAppLibPath|appLibPathKey|NativeLibPath|lib path`）、`hilog/hilog-dlopen.txt`（`dlopen|cannot find library|openharmonyhost`）、
 `device/app-libs-arm64.txt`（`ls -l /data/storage/el1/bundle/libs/arm64/`）。判读要点：`appLibPathKey: <bundle>/<module>` 出现 = 模块级 app-lib key 已注册（`libIsolation` 生效）；
 `[openharmony-host] … bound via alias '…'` 出现 = 宿主加载并绑定到该别名；首帧成功信号 = `registerXComponent=function`、首帧出现、无 `Load native module failed`。
 `--extra-probes <dir>` 可把 importprobe/importb/importd 等载荷按与 P1–P4 相同的「装 → 启 → 录」流程一并采集。
 
-`v7` 再增三类采集（全部缺失容忍，不改退出码）：
+`v7` 起再增三类采集（v8 沿用；全部缺失容忍，不改退出码）：
 
 - **bootstrap/rawfile 失败特征** → `hilog/hilog-bootstrap.txt`：对所有已录制 hilog 窗口再过滤 `GetRawFileContent|bootstrap failed|bootstrap retry|BusinessError|900002|900003|ZIP entry|destination path|Load native module failed|symbol not found|cannot find library|Museum|MUSL-LDSO|check ns accessible`；计数写入 `summary.txt` 的 `bootstrap_capture`（ok/not_captured）、`bootstrap_lines`、`bootstrap_errors`、`rawfile_errors`、`libload_errors`（无录制窗口记 `<unavailable>`）。
 - **设备侧 payload 状态** → `device/payload-files.txt`（`ls -l <filesDir>/` 中 `dotnet|payload` 行）与 `device/payload-marker.txt`（`<filesDir>/dotnet.marker` 首行）；`summary.txt` 记 `payload_present`（yes/no）、`payload_files`（行数）、`payload_marker`（ok/empty）。**kit #24 起 payload 在 hap `libs/arm64-v8a/` 原地运行**，这些键只反映回退布局的 filesDir 解包：`payload_present=no` 属常态；本地 kit 自检的 `payload=yes|no`（marker 是否在包内）才是 payload-in-libs 信号。
 - **kit hap 自检**（本地，dry-run 也打印，设备轮才归档）→ `meta/kit-selfcheck.txt`：逐 kit hap 的 `resources.index` 有无/大小、`libs/arm64-v8a` 计数与 `.dotnet-payload.json`（`payload=yes|no`）、`ets/modules.abc` 头版本；`summary.txt` 记 `kit_index_ok`（yes/no）。
-- **exec-memory 证据**（kit #24）→ `hilog/hilog-execmem.txt`：把同一批 hilog 窗口按 `OHOS_DOTNET probe:|xwe=` 过滤，保留 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…` 与 `[openharmony-host] … xwe=0|1 source=…` 行；`summary.txt` 记 `execmem_capture`（ok/not_captured）、`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑）。判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
+- **exec-memory 证据**（v8 / kit #24）→ `hilog/hilog-execmem.txt`：把同一批 hilog 窗口按 `OHOS_DOTNET probe:|xwe=` 过滤，保留 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…` 与 `[openharmony-host] … xwe=0|1 source=…` 行；`summary.txt` 记 `execmem_capture`（ok/not_captured）、`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑）。判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
 
-**判读建议（v7 新键；均为提示性，不改退出码）**：
+**判读建议（v7/v8 新键；均为提示性，不改退出码）**：
 
 | 键/文件 | 含义与处置 |
 |---|---|
@@ -121,7 +121,7 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 ```
 
 把 `tester-report-<时间戳>.tar.gz`（连同 `.sha256`）通过**收到 device-test-kit 的同一渠道**（邮件/IM/工单）发回给交付方；GitHub 用户可在 `springmin/sdk-ohos` 开 issue 附归档。
-归档内固定包含：`summary.txt`（机器可读，`KEY=value`：`script_version`（v7 = `7`）、kit/tree 摘要、`main_hap_sha256`、bundle、安装/启动/存活结果、每条 hilog 行数、app-lib/dlopen 证据行数、`bootstrap_capture`/`bootstrap_lines`/`bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/`payload_files`/`payload_marker`/`kit_index_ok`、**`execmem_capture`/`execmem_lines`（kit #24）**、`probe1..probe4` 结果、`failures`）、`hilog/`（含 `hilog-applib.txt`、`hilog-dlopen.txt`、`hilog-bootstrap.txt`、**`hilog-execmem.txt`**）、`probes/`、`kmsg/`、`device/param-get.txt`、`device/udid.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`、`device/payload-marker.txt`、`meta/module.json`、`meta/SHA256SUMS`、`meta/kit-hap-sha256.txt`、`meta/kit-selfcheck.txt`。v7 的字段/文件对旧版归档是超集（kit #24 起 `hilog-execmem.txt` 与两个 execmem 键为新增），解析方按 `KEY=value` 读即可。
+归档内固定包含：`summary.txt`（机器可读，`KEY=value`：`script_version`（v8 = `8`）、kit/tree 摘要、`main_hap_sha256`、bundle、安装/启动/存活结果、每条 hilog 行数、app-lib/dlopen 证据行数、`bootstrap_capture`/`bootstrap_lines`/`bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/`payload_files`/`payload_marker`/`kit_index_ok`、**`execmem_capture`/`execmem_lines`（v8 / kit #24）**、`probe1..probe4` 结果、`failures`）、`hilog/`（含 `hilog-applib.txt`、`hilog-dlopen.txt`、`hilog-bootstrap.txt`、**`hilog-execmem.txt`**）、`probes/`、`kmsg/`、`device/param-get.txt`、`device/udid.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`、`device/payload-marker.txt`、`meta/module.json`、`meta/SHA256SUMS`、`meta/kit-hap-sha256.txt`、`meta/kit-selfcheck.txt`。v8 的字段/文件对旧版归档是超集（v7 起新增 bootstrap/payload/kit 自检，v8 再增 `hilog-execmem.txt` 与两个 execmem 键），解析方按 `KEY=value` 读即可。
 若安装报 `9568344`，归档里的 UDID 可直接用于重签；`summary.txt` 的 `main_install_result=code:9568344` 即为凭据。
 
 ## 7. 安全说明

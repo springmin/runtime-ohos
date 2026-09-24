@@ -3,7 +3,7 @@
 > 回应你的《ohos-kit22-verification-summary.md》（kit #22/#23，本机 `~/Download/com.haitai.htbrowser/`）§4/§6/§7。
 > 结论先行：host 链路已全通（你的 §6 与我们一致）；JIT 是否可用改由 kit #24 的 **HAP 域探针 + W^X A/B** 判定；
 > NativeAOT 三项阻塞（平台切片 / ilc pack / SDK RID）已闭环，仍是主路线。
-> **kit #24（数字入口见 release「## Integrity」；本文写定时 kit #24 仍在发布流程中，拿到后以 release 说明与随包 `SHA256SUMS` 为准）。**
+> **kit #24（已发布 2026-09-24）**：tar **195,163,589 B** / `dfa90e80…`；解压树 **`fa0dbc0f…`**；5 个 hap 各 **~75.28 MB**（zip **277** 条 = 23 + 253 payload + marker；`libs/arm64-v8a` **268** 项 = 14 `.so` + 253 payload + `.dotnet-payload.json`）；abc **215,680 B** / `0def57e0…`（headless **18,308 B** / `25ab7a9e…`）；hap 内宿主 **224,160 B** / `ad879dc1…`（pack 220,064 B / `19d9d4b4…`）；`tester-run.sh` = **v8**（73,375 B / `6ca2093e…`）。数字入口 = release「## Integrity」；拿到后仍以 release 说明与随包 `SHA256SUMS` 为准。
 
 ## 1. 里程碑与我们的闭环（回应三项请求）
 
@@ -26,18 +26,20 @@
    端到端验证，运行输出 `hello aot openharmony`；离线条件（仅 aot-packs feed）已复测。
 4. **JIT 复核装置（kit #24）**：runtime-ohos `678ac21836c`（`TARGET_OPENHARMONY` 默认 `EnableWriteXorExecute=0`）
    + SDK 烘焙 + 宿主两条启动路径显式设置；A/B 开关 `<filesDir>/xwe.txt`（首字节 `1` = 强制 W^X=1）；
-   exec-memory 探针每进程一次，输出 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…`（`tester-run.sh` 采集为 `hilog/hilog-execmem.txt`）。
+   exec-memory 探针每进程一次，输出 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…`（`tester-run.sh` **v8** 采集为
+   `hilog/hilog-execmem.txt`，`summary.txt` 记 `execmem_capture`/`execmem_lines`）。
 5. **payload-in-libs**：hap `libs/arm64-v8a/` 直接携带 253 个 payload 文件 + `.dotnet-payload.json`
-   （依据：唯一允许 dlopen 的路径 = el1 `libs/`）；`dotnet.zip` 保留为回退；签名 hap 由 ~32.7 MB 增至 ~75.3 MB。
+   （依据：唯一允许 dlopen 的路径 = el1 `libs/`）；`dotnet.zip` 保留为回退；签名 hap 由 ~32.7 MB 增至 ~75.28 MB
+   （实测每 hap `libs/arm64-v8a` 268 项 = 14 `.so` + 253 payload + marker，zip 277 条；5 个签名 hap 75,282,591–75,282,688 B、未签名 73,117,836 B；`verify-kit.sh` 逐 hap 断言 marker）。
    kit #24 **不含** seccomp 拦截器（不再需要；它会 strip `PROT_EXEC`）：请用 stock kit 测，不要叠加旧本地补丁。
 6. **策略与部署文档**：部署模型对比 `docs/plans/2026-09-24-ohos-runtime-deployment-models.md`（A 自包含 + C NativeAOT 为主）；
    JIT 策略 `docs/plans/2026-09-24-ohos-runtime-strategy.md`（解释器 spike 有界；ACL 引用更正；Mono 不做）。
 
 ## 2. 下一步操作（拿到 kit #24 后）
 
-1. 校验/重签/安装同 `快速开始.md` §1/§3；`verify-kit.sh` 会额外断言每个 hap 的 `.dotnet-payload.json`（缺失/不一致 = FAIL）。
-2. 一条命令取证：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
-   → 证据包 `hilog/hilog-execmem.txt` 含 `xwe=` 与 `probe:` 行；`summary.txt` 有 `execmem_capture`/`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑）。
+1. 校验/重签/安装同 `快速开始.md` §1/§3；`verify-kit.sh` 会额外断言每个 hap 的 `.dotnet-payload.json`（缺失/不一致 = FAIL；kit #24 包内 `verify-kit.sh` = 53,997 B / `01e9ded7…`）。
+2. 一条命令取证（`tester-run.sh` **v8**：73,375 B / `6ca2093e…`）：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
+   → 证据包 `hilog/hilog-execmem.txt` 含 `xwe=` 与 `probe:` 行；`summary.txt` 有 `execmem_capture`/`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑），kit 自检另给 `payload=yes|no`。
 3. 先读 `probe:` 行（token：**1**=匿名 `mmap(RWX)` · **2**=匿名 `RW→RX` · **3**=`memfd`+RX · **4**=文件 RX；每项为 `OK` 或失败 `errno`；定义见 `ohos-workload/docs/openharmony-hap-packaging.md` §Executable memory）：
    - `1=OK`：匿名 RWX 在 HAP 域可用 ⇒ JIT（默认 W^X=0）应可用。报证：managed app 运行（`managed app hello-maui-app.dll started (UI shell)`）+ 无 `SEGV_ACCERR`；若仍 `SEGV_ACCERR`，附 `xwe=` 行、`probe:` 行与崩溃点前后 200 行。
    - `1≠OK`（如 `1=1/12/13/38`）：HAP 域拒绝匿名可执行 ⇒ JIT 在本固件不可用；附 probe 行与固件版本，转 NativeAOT（§4）。

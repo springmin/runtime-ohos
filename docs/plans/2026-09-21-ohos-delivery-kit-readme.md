@@ -38,7 +38,7 @@ sh verify-kit.sh --expect-tree-digest <发布说明中的 tree sha256>   # ③ �
 
 > **verify-kit 更严（kit #23 起，#24 再加 payload-in-libs）**：`FAIL` 会以退出码 1 失败；`WARN` 只打印、结果仍是 `KIT OK`。对 kit #22 上述（#23 版）断言全部通过；**对 kit #21 及更早的包会明确报 FAIL（缺 `resources.index`、旧宿主依赖等真实缺陷，非误报）** —— 检修旧包用其自带 verify-kit，强化结果用 kit #22+（当前 #24）。
 
-`tester-run.sh`（当前 **v7**，内嵌 `script_version=7`）可把以上步骤串成一条命令，并把 `meta/kit-hap-sha256.txt`/`main_hap_sha256` 写进证据包；v7 新增 `hilog/hilog-bootstrap.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt` 与 `summary.txt` 的 `bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/`payload_marker`/`kit_index_ok` 等键；**kit #24 再增 `hilog/hilog-execmem.txt` 与 `execmem_capture`/`execmem_lines`**（判定：`kit_index_ok=no` → 换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`，不影响退出码；`payload_present=no` 在 kit #24 起属正常 —— payload 在 hap `libs/` 原地运行；JIT 判定见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`）。`--tree-digest` 因 P16 复用已校验摘要明显更快（结果不变）。
+`tester-run.sh`（当前 **v8**，内嵌 `script_version="8 (2026-09-24)"`）可把以上步骤串成一条命令，并把 `meta/kit-hap-sha256.txt`/`main_hap_sha256` 写进证据包；v7 新增 `hilog/hilog-bootstrap.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt` 与 `summary.txt` 的 `bootstrap_errors`/`rawfile_errors`/`libload_errors`/`payload_present`/`payload_marker`/`kit_index_ok` 等键；**v8（kit #24）再增 `hilog/hilog-execmem.txt` 与 `execmem_capture`/`execmem_lines`，kit 自检另加 `payload=yes|no`**（判定：`kit_index_ok=no` → 换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`，不影响退出码；`payload_present=no` 在 kit #24 起属正常 —— payload 在 hap `libs/` 原地运行；JIT 判定见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`）。`--tree-digest` 因 P16 复用已校验摘要明显更快（结果不变）。
 
 ## 安装
 1. 把 hap 拷到设备，在文件管理器中打开 → 按提示安装（需允许调试/外部来源安装）。
