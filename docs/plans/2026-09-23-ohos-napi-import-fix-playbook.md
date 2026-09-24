@@ -9,6 +9,14 @@
 **Legend:** ✅ confirmed (local evidence, or already landed) · ⏳ pending (device result or
 in-flight research). Keep this doc hash-free; sizes/versions only.
 
+> **2026-09-24 device-evidence correction (important):** the device now runs end-to-end with
+> kit #18 + five local fixes; the successful log shows the host so serving its exports and the
+> black-screen chain was the host `.so` dlopen on the reduced image + the bootstrap fixes
+> (`resources.index` / ZIP offset / mkdir) + the hvigor abc build — **not** this playbook's
+> record/registration-name route. Candidates A/B/C were not used on device; RH1/RM1 stay as
+> harmless hardening. Back-port (kit #22) and evidence: `2026-09-24-ohos-device-milestone.md` and
+> `2026-09-22-ohos-startup-crash-rootcause.md` §5f; the rest of this playbook is a fallback route.
+
 > 摘要（中文）：黑屏阻塞 #4 的修复作战手册。问题 = 非标准化壳 abc 的 host 导入记录
 > `@app:<bundle>/entry/openharmonyhost` 与宿主注册名不匹配。候选修复 A（壳 import 形式，
 > 已构建命名空间导入变体）、B（`loadNativeModule` 动态加载）、C（打包侧 pkgContextInfo /

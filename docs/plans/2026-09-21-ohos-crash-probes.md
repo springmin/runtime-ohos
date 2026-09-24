@@ -27,12 +27,20 @@
 > the exact exit error first (§4.0/§4.0b/§4.0c). The install error `9568257 fail to verify pkcs7 file` is the
 > expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
 >
-> **2026-09-24 update (kit #21):** all four branches above are fixed in the current kit — entry
+> **2026-09-24 update (kit #22):** all four branches above are fixed in the current kit — entry
 > record (#10), abc bytecode version (#11), host `.so` load (#12), and the host napi
 > registration-name mismatch (RH1 alias registrations, kit #16, plus the RM1 `libIsolation` repack,
 > kit #17). The startup perf fixes ship as well (P17 extraction skip, H7 rawfile fd read, headless
-> abc `13.0.1.0`). The P1–P4 ladder stays valid for any remaining dlopen / missing-dependency /
-> host-entry / .NET-runtime crash; `tester-run.sh` v6r2 additionally collects the app-lib evidence
+> abc `13.0.1.0`). **Device evidence correction (2026-09-24):** the successful device run
+> (`managed app hello-maui-app.dll started (UI shell)`, see `2026-09-24-ohos-device-milestone.md`)
+> showed the RH1/RM1 name/path halves were **not** the critical blocker; the direct chain was the
+> host `.so` dlopen on a reduced system image (10 missing libraries + 62 symbols), the missing
+> `resources.index` (`GetRawFileContent failed`), the ZIP offset/length copy error (900003), the
+> pre-inflate mkdir error (900002), and the hvigor abc build (00302013). Kit #22 back-ports all
+> five (host `DT_NEEDED` whitelist of 5 + on-demand dlsym; restool `resources.index`; range copy;
+> mkdir; DevEco `modelVersion 6.0.2` layout) and keeps RH1/RM1 as harmless hardening. The P1–P4
+> ladder stays valid for any remaining dlopen / missing-dependency / host-entry / .NET-runtime
+> crash; `tester-run.sh` v6r2 additionally collects the app-lib evidence
 > (`hilog/hilog-applib.txt`, `hilog/hilog-dlopen.txt`, `device/app-libs-arm64.txt`) automatically.
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
 >
@@ -476,7 +484,9 @@ hdc shell hilog | grep -E "Load native module failed|host export unavailable|Ace
 Unlike the shell branches, this one is fixed: RH1 (alias registrations covering both naming
 conventions plus a normalized shell build that keeps the corrected bundle name, with the entry
 record re-verified) shipped in kit #16 and the RM1 `libIsolation` repack in kit #17 — both are in
-the current kit (#21). The diagnostic is part of `tester-run.sh` v6r2 (`hilog-applib` /
+the current kit (#22) and are **kept as harmless hardening**: the 2026-09-24 device run showed the
+black-screen chain was the host dlopen + bootstrap issues, not this name/path half (see
+`2026-09-24-ohos-device-milestone.md` §2). The diagnostic is part of `tester-run.sh` v6r2 (`hilog-applib` /
 `hilog-dlopen` / `app-libs-arm64.txt`). Like §4.0/§4.0b/§4.0c this is not a P1–P4 case (the
 ladder still covers dlopen / missing dependency / host entry / .NET runtime crashes).
 
@@ -488,12 +498,12 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
 |---|---|---|---|---|---|
 | n/a — pre-shell (abc version) | n/a | n/a | n/a | Process exits, hilog shows `export objects of native so is undefined` / `Cannot read property … of undefined` — **abc bytecode version mismatch** (shell abc 24.0.0.0 vs the device's 13.0.1.0 ceiling) | Use a kit from #11 on (shell abc `13.0.1.0`, `compatibleSdkVersion 18`) and re-sign it; compare `xxd -l16 modules.abc` with `hdc shell param get const.ark.version` (§4.0b) |
 | n/a — post-shell (`[maui]` logs, page/render) | n/a | n/a | n/a | `host` is undefined (`[maui] host export unavailable: <api>`; `Cannot read property registerXComponent of undefined` + exit 254) — **the host `.so` failed to load** (load-time `DT_NEEDED` resolution happens at ability import, before `dotnet.zip` is extracted) | Re-sign a kit from #12 on; compare `readelf -d libopenharmonyhost.so \| grep NEEDED` against the hap's `libs/<abi>/` and `hdc shell ls -l /system/lib64/<name>` (§4.0c) |
-| n/a — post-shell (abc ok, `[maui]` logs; app **stays alive**, black screen) | n/a | n/a | n/a | App starts and stays alive (no `TypeError`/`JsError`/exit 254), `AceXcomponent` shows the XComponent created/mounted, but the screen is black and hilog shows `Load native module failed, ModuleName: @app:<bundle>/entry/openharmonyhost` plus every `[maui] host export unavailable: <api>` — **the host's napi registration name (`nm_modname`) does not match the abc import record name** under `useNormalizedOHMUrl=false`; the host exports are empty, so `setNodeContent`/`registerXComponent` never hand the surface to .NET | Fixed — RH1 (alias registrations covering both conventions, entry record kept) shipped in kit #16 and the RM1 `libIsolation` repack in kit #17; both are in the current kit (#21). Verify with the §4.0d logs (`Load native module failed` vs the alias line `[openharmony-host] … bound via alias '…'`) and the `cc-switch` reference (`@normalized:Y&&&libentry.so&` ↔ `nm_modname = "libentry.so"`) |
+| n/a — post-shell (abc ok, `[maui]` logs; app **stays alive**, black screen) | n/a | n/a | n/a | App starts and stays alive (no `TypeError`/`JsError`/exit 254), `AceXcomponent` shows the XComponent created/mounted, but the screen is black and hilog shows `Load native module failed, ModuleName: @app:<bundle>/entry/openharmonyhost` plus every `[maui] host export unavailable: <api>` — **the host's napi registration name (`nm_modname`) does not match the abc import record name** under `useNormalizedOHMUrl=false`; the host exports are empty, so `setNodeContent`/`registerXComponent` never hand the surface to .NET | Fixed — RH1 (alias registrations covering both conventions, entry record kept) shipped in kit #16 and the RM1 `libIsolation` repack in kit #17; both are in the current kit (#22) as **harmless hardening** (2026-09-24 device evidence: the observed blocker chain was host dlopen + bootstrap — see `2026-09-24-ohos-device-milestone.md` §2). Verify with the §4.0d logs (`Load native module failed` vs the alias line `[openharmony-host] … bound via alias '…'`) and the `cc-switch` reference (`@normalized:Y&&&libentry.so&` ↔ `nm_modname = "libentry.so"`) |
 | fails (`JsError`, no/failed `PROBE1` chain) | n/a | n/a | n/a | Device/framework issue — plain ArkTS haps built by this toolchain do not run | Re-sign/reinstall, compare with a DevEco Empty Ability build in the same band; kit crash is not host-specific |
 | ok | fails (`…_FAIL=<dlerror>`) | n/a | n/a | Host `.so` dlopen fails — missing library file / unresolved relocation / namespace or signature problem (the `dlerror` text is the root cause) | Fix native packaging per the error (e.g. bundle `libc++_shared.so` / missing system lib / namespace), then rerun P2 |
 | ok | ok (`abs_NOW_OK`) | fails (`dlsym.…=NULL`, `call.…=SKIP`, or no `PROBE3 HOST_ENTRY_RESULT` line) | n/a | Host entry/dlsym mismatch — the `.so` maps but a key export is not resolvable/usable from the app linker namespace | Send the P3 line verbatim (missing/demangled export name); compare the shipped host's symbol table with the kit's expected imports |
 | ok | ok | ok (`abs_NOW_OK` + all dlsyms `0x…` + both getter calls) | ok (`deps\|14/14` + `host\|ok`) | Everything below the managed runtime works; the kit crash happens in .NET runtime/main startup | Continue with the kit's `dotnet-status.txt` + hilog evidence; host dlopen and entry points are ruled out |
-| n/a — post-host (abc ok; host loaded or not) | n/a | n/a | n/a | `runtime/coreclr` `dlopen` fails with **fs-verity / XPM (codesigning)** errors (`unsigned file`, `is not protected by dmverity`, `lib_no_signed event waken: -9(E_HM_PERM)`, path = the extracted payload natives) — the payload natives were extracted at runtime from `dotnet.zip` and are **not covered by the HAP code signature** | Fixed by staging the runtime natives into `libs/<abi>/` (**PF1**), shipped in the current kit (#21 stages all 12 runtime natives + the host there); confirm with the kmsg probe in `2026-09-22-ohos-elf-signing-research.md` (Tester checklist / §6) and re-sign with `-signCode 1` |
+| n/a — post-host (abc ok; host loaded or not) | n/a | n/a | n/a | `runtime/coreclr` `dlopen` fails with **fs-verity / XPM (codesigning)** errors (`unsigned file`, `is not protected by dmverity`, `lib_no_signed event waken: -9(E_HM_PERM)`, path = the extracted payload natives) — the payload natives were extracted at runtime from `dotnet.zip` and are **not covered by the HAP code signature** | Fixed by staging the runtime natives into `libs/<abi>/` (**PF1**), shipped in the current kit (#22 stages all 12 runtime natives + the host there); confirm with the kmsg probe in `2026-09-22-ohos-elf-signing-research.md` (Tester checklist / §6) and re-sign with `-signCode 1` |
 | ok | dies with **no result line** (or a `dlopen` crash right after `PROBE2 PAGE_ABOUT_TO_APPEAR`) | dies / n/a | `<name>\|FAIL\|<dlerror>` + `deps\|<n>/14` + `host\|skipped` | A dependency of the host is missing; the loader crashed the host dlopen instead of returning a `dlerror`. P4 names the dependency | Package `<name>` into `libs/arm64-v8a/` (for `libc++_shared.so`) or fix its provider, then rerun P4 → P2/P3 |
 | ok | n/a (not reached) | n/a | `deps\|<n>/14` with **several** `FAIL` lines, no `host` line | More than one dependency is missing (or one library drags the rest) | Fix every `PROBE4\|<name>\|FAIL` name, then rerun P4; the host is deliberately not loaded |
 | ok | partial (EntryAbility chain ok, no page lines, `LOAD_CONTENT_FAIL`/`JsError`) | n/a | n/a | ArkTS NAPI/page-load path is the failure point, not the host binary | Send the `LOAD_CONTENT_FAIL` JSON and jscrash lines |
@@ -543,9 +553,9 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
    - hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point` → 壳 abc 入口 record 缺陷（**kit #10 已修复**，测试方真机已确认；旧 kit 请换新 kit）；
    - hilog 报 `export objects of native so is undefined` / `Cannot read property … of undefined` → abc 字节码版本不符（**kit #11 已修复**：`13.0.1.0`；用 `xxd -l16 modules.abc` 与 `hdc shell param get const.ark.version` 对照）；
    - hilog 有 `[maui]` 日志、但出现 `[maui] host export unavailable: <api>` 或 `Cannot read property registerXComponent of undefined` → 宿主 `.so` 加载失败（壳 `host` 为 undefined；**kit #12 已修复**：宿主无 `libhostfxr` 链接依赖 + 壳全量守卫）；按 §4.0c 用 `readelf -d … | grep NEEDED` 对照 hap `libs/arm64-v8a/` 与设备系统库。
-   - 应用能启动并**稳定存活、但黑屏**（无崩溃日志），hilog 出现 `Load native module failed, ModuleName: @app:…` 与大量 `[maui] host export unavailable` → napi 注册名与 abc import 记录名不匹配、host exports 为空（**kit #16 别名注册 + kit #17 `libIsolation` 已修复，当前 kit #21 含两者**）；按 §4.0d 复核（`[openharmony-host] … bound via alias '…'` 出现即加载绑定成功）。
+   - 应用能启动并**稳定存活、但黑屏**（无崩溃日志），hilog 出现 `Load native module failed, ModuleName: @app:…` 与大量 `[maui] host export unavailable` → napi 注册名与 abc import 记录名不匹配、host exports 为空（kit #16 别名 + kit #17 `libIsolation` 保留为**无害加固**；2026-09-24 设备证据表明黑屏直接链是宿主加载与 bootstrap，**kit #22 已回灌**，见 `2026-09-24-ohos-device-milestone.md` §2）；按 §4.0d 复核（`[openharmony-host] … bound via alias '…'` 出现即加载绑定成功）。
    以上四类都发生在宿主加载前/后、**先不要跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c/§5d/§5e 与本文 §4.0/§4.0b/§4.0c/§4.0d）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
-0b. **当前 kit（#21）**已含上述全部修复与启动修复（P17 解压跳过、H7 rawfile fd 直读、headless abc `13.0.1.0`）；`tester-run.sh` v6r2 会自动采集 app-lib 证据与别名注册行（`hilog-applib`/`hilog-dlopen`/`app-libs-arm64`），首帧判定一并写进 `summary.txt`。数字入口 = release「## Integrity」。
+0b. **当前 kit（#22）**已含上述全部修复与启动修复（P17 解压跳过、H7 rawfile fd 直读、headless abc `13.0.1.0`），并回灌设备里程碑修复（宿主 `DT_NEEDED` 5 + 可选 API 按需 dlsym、HAP `resources.index`、ZIP offset/length + mkdir、DevEco 工程布局）；`tester-run.sh` v6r2 会自动采集 app-lib 证据与别名注册行（`hilog-applib`/`hilog-dlopen`/`app-libs-arm64`），首帧判定一并写进 `summary.txt`。数字入口 = release「## Integrity」；里程碑见 `2026-09-24-ohos-device-milestone.md`。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。

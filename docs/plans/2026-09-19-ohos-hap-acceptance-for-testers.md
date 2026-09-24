@@ -17,13 +17,13 @@
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
 | 内含 | 托管应用负载、ELF 由 SDK ElfSigner 签名的宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
 
-校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。当前发布为 **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2）：包内 5 个 hap 均带 `"libIsolation": true`，并含自 kit #17 起的全部安全/性能/启动修复；主选是 kit #21 本身，对照载荷与 P1–P4 探针按交付方指示取用。
+校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。当前发布为 **kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、每个 hap 带 `resources.index`（restool）、ZIP offset/length + mkdir、DevEco 工程布局；`tester-run.sh` 仍为 v6r2）：包内 5 个 hap 均带 `"libIsolation": true`，并含自 kit #17 起的全部安全/性能/启动修复；主选是 kit #22 本身，对照载荷与 P1–P4 探针按交付方指示取用。
 
 > **签名状态（2026-09-22 真机实测）**：本包 4 个默认 hap 变体（默认 / permissions / api20 / api20-permissions）是
 > **自签名（设备会拒绝，需要重签）** —— 用我方调试证书/调试 profile 签名、profile 只绑定示例设备 UDID，真机安装会报
 > `9568257 fail to verify pkcs7 file` 或 `9568344 install parse profile prop check error`，属**预期**结果，**不是可安装包**。
 >
-> **关于包内 `签名说明.txt`**：kit #21 里第三节的「PA1 重建壳的下一版 kit」句是历史文案（源已修，随下个 kit 生效；本 kit 不含该缺陷）。判读以 `签名说明` 其余内容与 release notes 为准。
+> **关于包内 `签名说明.txt`**：kit #22 起「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若你手上副本仍出现该句，按历史文案处理，判读以 `签名说明` 其余内容与 release notes 为准。
 
 另有**未签名包** `hello-maui-app-unsigned.hap`（与 26 默认包同一负载、同一 bundle name，未做签名）：**本包唯一可重签安装的变体**，适合用
 自己的华为开发者账号自助签名后安装，步骤见同包 `自签说明.md`（重签一行也在 `快速开始.md` §1 与包内 `签名说明.txt`）；其哈希同样在 `SHA256SUMS` 中。
@@ -287,7 +287,7 @@ I1 未测（无相机）
 > M7、M9 现在就能测。（§4b 的 N1–N7 同理以各自入口是否存在为准；没有入口的项按同一口径登记。）
 > 完整细节与取证关键字见同批交付的《新功能真机验证清单》（若未随包，本节即可满足填写）。
 >
-> **当前 kit（#21，2026-09-24）**：kit #18–#21 已把自 #17 起的安全/性能/启动修复全部打进本包——bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。主选为 kit #21 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
+> **当前 kit（#22，2026-09-24）**：自 #17 起的全部安全/性能/启动修复都已在本包（bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`），并在 kit #22 追加**设备里程碑回灌**——宿主 `DT_NEEDED` 收窄为 5 库（缺库设备也能 dlopen）、可选系统 API 全部按需 dlsym、HAP 内 `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22 尚未上机**，本轮即首次复测。主选为 kit #22 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
 
 | # | 能力 | 步骤 | 期望 | 未通过时抓什么 |
 |---|---|---|---|---|
@@ -316,7 +316,7 @@ I1 未测（无相机）
 
 ### 8b. 若应用启动即崩（JsError / exit 254）
 
-**先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），那是旧 kit（kit #10 之前）的 ArkTS 壳 abc 入口 record 缺陷，已在 kit #10 修复并获真机确认（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；abc 版本（kit #11）与宿主加载（kit #12）分支也已清除，**kit #21 不含这些旧缺陷**。当前 kit 的启动相关修复：P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。
+**先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），那是旧 kit（kit #10 之前）的 ArkTS 壳 abc 入口 record 缺陷，已在 kit #10 修复并获真机确认（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；abc 版本（kit #11）与宿主加载（kit #12）分支也已清除，**kit #22 不含这些旧缺陷**。当前 kit 的启动相关修复：P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，以及 kit #22 的设备回灌（宿主 5 个 `DT_NEEDED` + 可选 API 全部 dlsym、HAP `resources.index`、ZIP offset/length + mkdir；stock kit #22 未上机）。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。
 
 **其他启动崩溃先别做 M1–M13**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
 `sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按

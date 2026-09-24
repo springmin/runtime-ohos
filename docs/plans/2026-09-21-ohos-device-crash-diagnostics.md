@@ -6,7 +6,7 @@
 > 本页只做三件事：**换当前 kit 重测** → **取最小崩溃证据** → **回传 §5 清单**。命令可照抄；结论以设备实测为准。
 > 相关文档（kit 内）：`真机操作手册.md`（校验/安装/取证）、`验收说明.md`（完整清单与模板）、`签名与UDID指南.md`（9568344）。
 >
-> **2026-09-24 更新（kit #21）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；本轮追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`。`tester-run.sh` v6r2 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`device/app-libs-arm64.txt`（§2.4）；整包/内容树数字以 release「## Integrity」为准。包内 `签名说明.txt` 第三节的 PA1 句为历史文案，判读以其余内容与 release notes 为准。
+> **2026-09-24 更新（kit #22）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。`tester-run.sh` v6r2 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`device/app-libs-arm64.txt`（§2.4）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
 
 ## 0. 一页摘要
 
@@ -44,8 +44,7 @@ sh verify-kit.sh --tree-digest
 
 ### 1.2 安装与启动
 
-沿用你上轮的成功路径（你自己的华为 debug 证书；若当前 kit 仍未带合法 bundleName，按你上次的
-重命名 + module.json 对齐做法处理，**其它文件不要动**）：
+沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#22）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
 
 ```sh
 hdc install hello-maui-app.hap

@@ -1,7 +1,7 @@
 # 2026-09-22 新功能真机验证清单（测试者版）
 
-> 面向拿到 `device-test-kit`（kit #21，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
-> kit #21（2026-09-24）已含自 kit #17 起的全部安全/性能/启动修复，主选就是它本身（`libIsolation` + 全部修复）；对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。
+> 面向拿到 `device-test-kit`（kit #22，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
+> kit #22（2026-09-24）已含自 kit #17 起的全部安全/性能/启动修复，并在设备里程碑回灌中补齐：宿主按需 dlsym、HAP `resources.index`（restool）、ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；主选就是它本身（`libIsolation` + 全部修复）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22 尚未上机**。
 > 与 `验收说明.md`（A1–K2、N1–N7）互补：A–N 覆盖既有能力，本清单覆盖 **M1–M13**（M11–M13 为 2026-09-23 深化批：真实缺陷修复 / UX 深化 / 原始 HAP 资源桥）。
 > 逐项格式：**入口 → 步骤 → 期望 → 证据（抓什么）→ 可能失败**。绝大多数步骤需人工操作：`tester-run.sh` 只能自动**安装 / 启动 / 录 hilog / 跑启动崩溃探针**，触发 UI、切换系统设置、接受弹窗、截图、取沙箱文件都要人工完成。
 
@@ -13,7 +13,7 @@
 
 代码位于 `maui-ohos`（托管切片）与 `ohos-workload`（宿主/ArkTS 壳）；下表路径省略前两个仓名。
 
-| # | 能力 | 托管实现（锚点文件） | kit #21 现有入口 |
+| # | 能力 | 托管实现（锚点文件） | kit #22 现有入口 |
 |---|---|---|---|
 | M1 | 运行时权限（`IPermissions.RequestAsync` / `CheckStatusAsync`）| `maui-ohos:src/Core/src/Platform/OpenHarmony/OpenHarmonyEssentialsUnsupported.cs`（`OpenHarmonyPermissions`）+ `OpenHarmonyEssentialsBridges.cs`（`OpenHarmonyPermissionBridge`）| 无按钮，需功能探针页 |
 | M2 | 连通性（`NetworkAccess` / `ConnectivityChanged`）| `.../OpenHarmonyEssentialsExtras.cs`（`OpenHarmonyConnectivity`）+ `OpenHarmonyEssentialsBridges.cs`（`OpenHarmonyConnectivityBridge`）| 无按钮，需功能探针页 |
@@ -37,7 +37,7 @@
 因此：
 
 - **M1–M6、M8、M10 必须配合"功能探针 hap"才能逐项触发**。探针页由交付方构建（最小示意见附录 A，含权限声明命令），已带探针页时按下表逐项点按即可；**若你手上的包没有探针页，请只登记"本包无入口"，不要判失败**，并完成所有能做的间接检查（能启动/不崩、状态文件、module.json）。
-- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #21 上即可完成**；M11–M13 深化批里 **M12 的滚动惯性与自动隐藏滚动条在默认演示长列表上直接可测**，M11 的窗口激活需探针页挂 `Window.Created/Activated` 计数，其余项需探针页或重打包 hap——没有入口同样登记「未测（本包无入口）」，不要判失败。
+- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #22 上即可完成**；M11–M13 深化批里 **M12 的滚动惯性与自动隐藏滚动条在默认演示长列表上直接可测**，M11 的窗口激活需探针页挂 `Window.Created/Activated` 计数，其余项需探针页或重打包 hap——没有入口同样登记「未测（本包无入口）」，不要判失败。
 - 同理，`验收说明.md` §4b 的 N1–N7（蓝牙/打印/联系人/日历等）也以各自界面入口是否存在为准；没有入口的项登记「未测（本包无入口）」，不要判失败。
 
 ### 0.3 证据：两类 `[maui]` 行，别找错地方
@@ -76,13 +76,14 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 - **安全**：bundleName 白名单校验（发任何 `hdc` 命令前）、hvigor 下载锚定、安装器 https + 哈希锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`。
 - **性能**：套件帧分配 **241,688 → 4,504 B/帧**（present/图片/文本/触摸/轮播/rawfile 等热点已修；余 2 项有意保留并在扫描文档中记录）。
 - **启动**：P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。
-- **签名说明**：kit #21 内 `签名说明.txt` 第三节「PA1 重建壳的下一版 kit」句为历史文案（源已修、随下个 kit 生效；本 kit 不含该缺陷）；判读以其余内容与 release notes 为准。
+- **设备里程碑回灌（kit #22）**：宿主 `DT_NEEDED` 收窄为 5 库（缺库设备不再 dlopen 失败）、可选系统 API 全部按需 dlsym；HAP 内 `resources.index`（restool）；启动解压 ZIP offset/length 分块复制 + 解压前 mkdir；abc 工程对齐 DevEco（`modelVersion 6.0.2`）并带 hvigor 00302013 诊断。真机里程碑见 `docs/plans/2026-09-24-ohos-device-milestone.md`；stock kit #22 尚未上机。
+- **签名说明**：kit #22 起 `签名说明.txt` 的「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若副本仍出现该句，按历史文案处理。
 
 ---
 
 ## M1 运行时权限（Permissions）
 
-**入口**：功能探针页按钮（请求相机/麦克风/定位各一次 + 显示 `CheckStatusAsync` 结果）。kit #21 无入口。
+**入口**：功能探针页按钮（请求相机/麦克风/定位各一次 + 显示 `CheckStatusAsync` 结果）。kit #22 无入口。
 
 **代码行为**：MAUI 权限类型映射为 OH 权限名后，经 `ohos_host_request_permission` 交给壳的 `abilityAccessCtrl.requestPermissionsFromUser`；结果由 `host.permissionResult(id, granted)` 回来；30 秒无应答按拒绝处理。`CheckStatusAsync` 走 `OH_AT_CheckSelfPermission`（不弹窗）。映射：Camera→`ohos.permission.CAMERA`、Microphone→`MICROPHONE`、LocationWhenInUse→`APPROXIMATELY_LOCATION`、LocationAlways→`LOCATION`、StorageRead/Photos→`READ_IMAGEVIDEO`、StorageWrite→`WRITE_IMAGEVIDEO`、Vibrate→`VIBRATE`、NetworkState→`GET_NETWORK_INFO`；未映射类型直接 `Denied`（`CheckStatusAsync` 为 `Unknown`）。
 
@@ -103,7 +104,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 ## M2 连通性（Connectivity）
 
-**入口**：功能探针页（显示 `NetworkAccess` + `ConnectivityChanged` 次数/最后一次值）。kit #21 无入口。
+**入口**：功能探针页（显示 `NetworkAccess` + `ConnectivityChanged` 次数/最后一次值）。kit #22 无入口。
 
 **代码行为**：`NetworkAccess` 读宿主 NDK 级别（0 unknown / 1 none / 2 local / 3 internet）；壳订阅 NetworkKit 的 `netAvailable` / `netLost` / `netCapabilitiesChange` / `netUnavailable`，每次变化推 `host.notifyNetworkAccess`，宿主重读级别后触发 `ConnectivityChanged`。`ConnectionProfiles` **恒为空**（本桥不带传输类型，属预期，不是缺陷）。
 
@@ -120,7 +121,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 ## M3 剪贴板（Clipboard）
 
-**入口**：功能探针页（`HasText` 显示、`GetTextAsync` 按钮、`SetTextAsync` 按钮、`ClipboardContentChanged` 计数）。kit #21 无入口。
+**入口**：功能探针页（`HasText` 显示、`GetTextAsync` 按钮、`SetTextAsync` 按钮、`ClipboardContentChanged` 计数）。kit #22 无入口。
 
 **代码行为**：读写走系统剪贴板（`@ohos.pasteboard`）。`HasText` 是同步值，来自缓存（get/set 与剪贴板 `update` 推送都会刷新，**不弹窗**）；只有显式 `GetTextAsync`（op 1）可能弹 `ohos.permission.READ_PASTEBOARD` 授权；拒绝会被缓存（壳与托管各一层），之后不再弹。`SetTextAsync` 不需要权限。**读必须声明 `READ_PASTEBOARD`**：默认 kit 包未声明，读会返回 `null`（不弹窗、不崩）；探针包请用下面的属性构建：
 
@@ -149,7 +150,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M4 邮件 / 短信 / 拨号
 
-**入口**：功能探针页（`Email.Default.ComposeAsync` / `Sms.Default.ComposeAsync` / `PhoneDialer.Default.Open`）。kit #21 无入口。
+**入口**：功能探针页（`Email.Default.ComposeAsync` / `Sms.Default.ComposeAsync` / `PhoneDialer.Default.Open`）。kit #22 无入口。
 
 **代码行为**：三者都经现有 startAbility 桥（隐式 `ohos.want.action.viewData` Want，kind 0）拉起系统应用：
 
@@ -172,7 +173,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M5 截图（Screenshot）
 
-**入口**：功能探针页（`Screenshot.Default.IsCaptureSupported` + `CaptureAsync`，显示 `Width×Height` 与字节数，并把 PNG `CopyToAsync` 到应用 cache 供取证）。kit #21 无入口。
+**入口**：功能探针页（`Screenshot.Default.IsCaptureSupported` + `CaptureAsync`，显示 `Width×Height` 与字节数，并把 PNG `CopyToAsync` 到应用 cache 供取证）。kit #22 无入口。
 
 **代码行为**：`IsCaptureSupported` 探测宿主是否导出 `ohos_host_screenshot`；不支持时 `CaptureAsync` 返回 `null`。支持时：管理端在临时目录生成 `maui-ohos-screenshot-<guid>.png`，宿主请求壳对主窗口 `snapshot()` 并写成 PNG；管理端轮询 ≤5 秒直到文件是**完整 PNG**（签名 + IHDR 尺寸 + IEND 尾块），读出后**删除临时文件**，返回内存结果；`Width/Height` 取 IHDR。请求 Jpeg 也返回同一份 PNG（本切片无转码器，属记录在案的偏差）。壳侧**包含性规则**：输出路径必须规范化后落在应用的 `tempDir`/`cacheDir` 之下，出现 `..` 或符号链接一律拒绝。
 
@@ -190,7 +191,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M6 地理编码（Geocoding）
 
-**入口**：功能探针页（地址→坐标、坐标→地址各一次，显示条数与首条内容）。kit #21 无入口。
+**入口**：功能探针页（地址→坐标、坐标→地址各一次，显示条数与首条内容）。kit #22 无入口。
 
 **代码行为**：地址→坐标（op 0）与坐标→地址（op 1）经宿主/壳请求 `@ohos.geoLocationManager`，15 秒无应答按"无结果"处理；返回 JSON 被宽容解析（`placeName→FeatureName`、`administrativeArea→AdminArea`、`streetNumber→SubThoroughfare` 等，也接受嵌套 `coordinates` 与 `lat/lon/lng` 拼写）；**任何失败/超时/格式错误都返回空结果，不抛异常**。坐标→地址在壳里按需申请 `ohos.permission.APPROXIMATELY_LOCATION`（需**已声明**才会弹窗；未声明则不弹、返回空）。
 
@@ -208,7 +209,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M7 窗口：生命周期 / 标题 / 安全区
 
-**入口**：kit #21 直接可测（启动 + 观察页面布局）。
+**入口**：kit #22 直接可测（启动 + 观察页面布局）。
 
 **代码行为**：应用启动时窗口先 `Created` 后 `Activated`（`Created` 由 `Run` 或平台 `Create` 事件中先到者触发且**恰好一次**），随后 `Foreground` / `Background` / `Destroy` 各写一行状态。`IWindow.Title` 被映射并**记录**，但本切片没有把它应用到壳的原生窗口（`OpenHarmonyWindowHandler.MapTitle` 只保存值，宿主导出 `ohos_host_set_window_title` 存在但托管未接）——**标题不会改变系统窗口/导航栏文字**，页面自身标题栏照常。安全区：壳上报系统避让区（状态栏/导航栏/刘海，类型 `TYPE_SYSTEM`），每页按 `SafeAreaEdges` 决定是否内缩（默认 Container：避开状态栏/导航栏/刘海；`SoftInput` **未跟踪键盘**，故键盘弹出不改变安全区内缩）。
 
@@ -227,7 +228,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M8 FontImageSource / SwitchCell / EntryCell / ImageButton
 
-**入口**：功能探针页（4 组控件）。kit #21 无入口。
+**入口**：功能探针页（4 组控件）。kit #22 无入口。
 
 **代码行为**：`FontImageSource` 由合成器文字路径绘制（不是位图），按（字形/字体/字号/颜色/缩放）缓存；`ImageButton` 支持 file/stream/URI/FontImageSource 来源、`Aspect`、圆角、边框色/宽、背景色，按下/抬起映射 `IsPressed`，点击触发 `Clicked`；`ListView` 的 `SwitchCell` 渲染为「标签 + Switch」并把切换同步回 `cell.On`，`EntryCell` 渲染为「标签 + Entry」，沿用 Entry 的键盘与 `Completed` 行为。
 
@@ -246,7 +247,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M9 无障碍（Accessibility）
 
-**入口**：kit #21 **直接可测**：壳左下角半透明 `A11Y` 按钮 → 弹出 `Accessibility self-check` 对话框。Announce 需功能探针页。
+**入口**：kit #22 **直接可测**：壳左下角半透明 `A11Y` 按钮 → 弹出 `Accessibility self-check` 对话框。Announce 需功能探针页。
 
 **代码行为**：合成器自绘，无 ArkUI 节点树，因此托管侧构建影子节点树并经宿主注册 ArkUI provider（status：`0` 未附着 / `1` 已附着（理想）/ `2` frame node 被拒 / `3` CUSTOM 节点未创建 / `4` provider 拒绝）。对话框显示 `accessibilityStatus: N (…)`；宿主有新导出时附 `accessibilityNodeCount`。首次发布时写状态行。`SemanticScreenReader.Default.Announce(text)` 走携带文本的 `ohos_host_accessibility_announce`（provider 未附着时不发声、返回失败）；旧宿主回退到只带事件类型的老路径（文本仍记录）。CLICK 动作会回放进普通点击路径。
 
@@ -268,7 +269,7 @@ dotnet publish -c Release -r openharmony-arm64 \
 
 ## M10 Shell 扩展（SearchHandler / FlyoutHeader / FlyoutFooter / TabBarIsVisible / FlyoutBehavior）
 
-**入口**：功能探针页（一个最小 `Shell`：2 个 ShellContent + 页内 `SearchHandler`、`Shell.FlyoutHeader/Footer`、切换 `TabBarIsVisible`/`FlyoutBehavior` 的按钮）。kit #21 无入口（演示页用 FlyoutPage/TabbedPage）。
+**入口**：功能探针页（一个最小 `Shell`：2 个 ShellContent + 页内 `SearchHandler`、`Shell.FlyoutHeader/Footer`、切换 `TabBarIsVisible`/`FlyoutBehavior` 的按钮）。kit #22 无入口（演示页用 FlyoutPage/TabbedPage）。
 
 **代码行为**：`FlyoutBehavior.Disabled` 隐藏汉堡并关闭抽屉；`Locked` 保持抽屉常开；`TabBarIsVisible` 取「当前页及其祖先最近一次显式值，否则 Shell 值，都未设则可见」，切换后重新排布内容；`FlyoutHeader/Footer` 为字符串或 `Label` 时，作为合成器抽屉面板的**首行/末行**纯文本出现（非交互行），富视图/模板本切片不能绘制；`SearchHandler` 的附着/查询/占位符/可见性只在托管侧跟踪并写一条状态行——**当前托管实现未调用宿主的 `ohos_host_shell_search_set`**（宿主/壳的搜索面板接口存在但托管未接），所以**屏上不会出现搜索框**，属记录在案的缺口。
 

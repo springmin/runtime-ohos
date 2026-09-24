@@ -4,6 +4,7 @@
 > `tester-run.sh` 是 `device-test-kit` release 上的**独立资产**（不在 kit 的 `SHA256SUMS` 内，kit 本身无需重下）；脚本默认 **dry-run**，不加动作参数不会碰设备。
 > 当前脚本 = **v6r2**（内嵌 `script_version=6`，2026-09-24）：行为与输出字段对旧调用兼容；`--tree-digest` 复用已校验摘要（P16）明显更快，证据包新增 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`。
 > 逐项清单与判读仍见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`）；探针定义见 `docs/plans/2026-09-21-ohos-crash-probes.md`。
+> 当前发布相关：**kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、HAP `resources.index`、ZIP/mkdir、DevEco 工程布局）；`tester-run.sh` 本身与 #21 逐字节相同（v6r2）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22 尚未上机**，本轮归档即首次复测证据。
 
 ## 1. 它做什么
 

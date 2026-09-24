@@ -121,8 +121,10 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 - 上述所有内容均为**离设备**验证；284 条套件与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
-  此前 `24.0.0.0` 超出设备 ark runtime）。**kit #21 为当前发布**（含自 #17 起全部安全/性能/启动修复；数字见 release「## Integrity」）；
-  详情见 `2026-09-22-ohos-startup-crash-rootcause.md` §5b 与 `2026-09-22-ohos-arkts-abc-version-history.md`。
+  此前 `24.0.0.0` 超出设备 ark runtime）。**kit #22 为当前发布**（含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；数字见 release「## Integrity」）；
+  详情见 `2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5f 与 `2026-09-22-ohos-arkts-abc-version-history.md`。
+  **2026-09-24 设备里程碑**：kit #18 + 测试方 5 项本地修复后首次完整运行成功（`managed app hello-maui-app.dll started (UI shell)`、无崩溃）；
+  旧「黑屏 #4 = napi 记录名」结论已修正为无害加固 —— 直接链见 `2026-09-24-ohos-device-milestone.md` §2，**stock kit #22 尚未上机**。
   P1–P4 阶梯仍适用于 dlopen / 缺库 / 宿主入口 / .NET 运行时类崩溃（判读分支见
   `2026-09-21-ohos-crash-probes.md` §4.0/§4.0b）。
 - 因此本矩阵中"已实现"仅代表代码路径与离设备套件证据，不代表真机行为。
@@ -131,9 +133,9 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 | # | 工作项 | 工作量 / 依赖 | 状态（2026-09-22） |
 |---|---|---|---|
-| 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个根因（含黑屏 #4）已修复；待 kit #21 真机回归 |
+| 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；待 **stock kit #22** 复测（判定点见里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（284 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（kit #21 重签后；套件现为 315/floor 295）|
+| 3 | 真机验证扫尾（284 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #22 重签后；套件现为 315/floor 295）|
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
 Email / Sms / PhoneDialer、Screenshot + Geocoding、Announce / Shell 扩展、

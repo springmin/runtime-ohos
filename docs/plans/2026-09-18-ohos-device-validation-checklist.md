@@ -19,13 +19,23 @@ reads the tarball sha256 and the extracted-tree digest from the `device-test-kit
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
 this document.
 
-Updated 2026-09-24 (kit #21): the current kit is #21 — all five haps carry `libIsolation` plus the
+Updated 2026-09-24 (kit #21, historical snapshot — superseded by the kit #22 note below): the current kit is #21 — all five haps carry `libIsolation` plus the
 complete security/performance/startup fix set since #17 (frame allocation 241,688 → 4,504 B/frame;
 P17 extraction skip, H7 rawfile fd read, headless abc `13.0.1.0`) and `tester-run.sh` v6r2 now
 collects app-lib/dlopen evidence, kmsg and the XPM/fs-verity probes automatically. The comparison
 payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 remain on the same release.
 Numbers stay in the release notes `## Integrity`; the kit's `签名说明.txt` PA1 sentence is
 historical wording (source fixed, next kit packaging).
+
+Updated 2026-09-24 (kit #22): the current kit is #22 — a stock-runnable back-port of the on-device
+milestone fixes: the host ships a 5-soname `DT_NEEDED` whitelist and resolves every optional system
+API through dlopen/dlsym, every hap carries `resources.index` (restool legacy on the device band,
+RestoolV2 on API 20), the bootstrap copies the payload ZIP by offset/length and mkdirs the payload
+directory before inflating, and the generated shell project mirrors DevEco (`modelVersion 6.0.2`,
+00302013 diagnostics). The 2026-09-24 device milestone (kit #18 + five local fixes, first full run)
+is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit #22 has not been on a device yet**,
+so the checks below remain open — use the milestone §6 decision points (A host load / B bootstrap /
+C milestone regression) as the first pass/fail gates.
 
 ## 0. Artifacts
 

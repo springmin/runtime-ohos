@@ -1,6 +1,6 @@
 # 真机测试交付包
 
-构建基线：`.NET/OpenHarmony workload 1.0.0-preview.24`（arm64）。4 个已签 hap 用 SDK 自签材料签名（profile 绑定示例 UDID），1 个未签 hap 供自助签名。当前发布 = **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2，含 `libIsolation` 与自 kit #17 起全部安全/性能/启动修复）；数字入口见 release「## Integrity」。
+构建基线：`.NET/OpenHarmony workload 1.0.0-preview.24`（arm64）。4 个已签 hap 用 SDK 自签材料签名（profile 绑定示例 UDID），1 个未签 hap 供自助签名。当前发布 = **kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、HAP `resources.index`、ZIP/mkdir、DevEco 工程布局；`tester-run.sh` v6r2 未变，含 `libIsolation` 与自 kit #17 起全部安全/性能/启动修复）；数字入口见 release「## Integrity」；里程碑见 `docs/plans/2026-09-24-ohos-device-milestone.md`。
 
 ## 内容
 | 文件 | 说明 |
@@ -18,7 +18,7 @@
 | `SHA256SUMS` | 上述**全部 hap 与文档**的校验和（`sha256sum -c SHA256SUMS` 逐文件校验）|
 | `verify-kit.sh` | 一键自检：校验 SHA256SUMS + 汇总 5 个 hap；`--anchor` 校验外层 `.tar.gz` 文件，`--expect-tree-digest` 绑定解压内容树（`--tree-digest` 打印）|
 
-> 注：kit 内 `签名说明.txt` 第三节的「PA1 重建壳的下一版 kit」句为历史文案（源已修、随下个 kit 生效，本 kit 不含该缺陷）；判读以其余内容与 release notes 为准。
+> 注：kit #22 起 `签名说明.txt` 的「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若副本仍出现该句，按历史文案处理，判读以其余内容与 release notes 为准。
 
 ## 校验（先做）
 ```sh

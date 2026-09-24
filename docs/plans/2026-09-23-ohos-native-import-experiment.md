@@ -189,7 +189,7 @@ finding. For C the failure line contains the raw string passed to `loadNativeMod
 
 ## 8. RM1: lib-isolation packaging fix + no-rebuild device diagnostics
 
-**Status (2026-09-24):** the template change shipped in kit #17 (the `libIsolation` repack) and every kit since (#18–#21) carries it; the current kit is **#21** (headless abc `13.0.1.0` + `tester-run.sh` v6r2). The candidate payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 all remain on the `device-test-kit` release for the next device re-test; the main choice is kit #21 itself. The RM1 device half still needs a re-test run (see §8.4/§8.5).
+**Status (2026-09-24):** the template change shipped in kit #17 (the `libIsolation` repack) and every kit since (#18–#22) carries it; the current kit is **#22** (device-milestone back-port: host on-demand dlsym, `resources.index`, ZIP/mkdir, DevEco layout; `tester-run.sh` v6r2 unchanged). The candidate payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 all remain on the `device-test-kit` release for the next device re-test; the main choice is kit #22 itself. **Correction (2026-09-24):** the successful device run (kit #18 + five local fixes, `managed app hello-maui-app.dll started (UI shell)`) did not depend on RM1/alias; the direct chain was the host dlopen + bootstrap fixes — RM1/RH1 stay as harmless hardening (`2026-09-24-ohos-device-milestone.md` §2). The RM1 device half remains unproven (see §8.4/§8.5).
 **Change:** `ohos-workload` `packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.{22,23,24}/templates/module.json.template`
 now opens the `module` object with `"libIsolation":true` (all three files stay byte-identical).
 The hap staging target `_OpenHarmonyStageHap` reads that template and writes the staged
@@ -252,6 +252,10 @@ check. These localize the failure on the current non-isolated install without bu
 | 3 | `hdc -t "$D" shell "hilog -x \| grep -E 'dlopen\|cannot find library\|openharmonyhost'"` | a `dlopen .../libopenharmonyhost.so` line -> the loader reached dlopen on the hap/app path; `cannot find library`/`No such file` -> the lookup fell back to the system lib dir and the file is absent there (the non-isolated miss); `[openharmony-host] native module register function bound via alias '...'` -> the `.so` loaded and registered under that name, and the alias string is the **decisive signal** for which `nm_modname` (bare `openharmonyhost` vs file alias `libopenharmonyhost.so`) the loader bound. |
 
 ### 8.5 Expectation for the lib-isolation build (next repack)
+
+**2026-09-24 note:** the device milestone run did not test this expectation — the successful run did
+not show a `Load native module failed` block, so the RM1 path/key half remains unproven and is kept
+as harmless hardening (see `2026-09-24-ohos-device-milestone.md` §2/§5).
 
 * Check 1 should gain `appLibPathKey: com.example.hellomauiapp/entry` (plus the existing `default`);
   that registration is the point of RM1 - the VM lookup for the `@app:<bundle>/entry/openharmonyhost`

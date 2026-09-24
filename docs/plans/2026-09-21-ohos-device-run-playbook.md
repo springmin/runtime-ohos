@@ -3,7 +3,7 @@
 > 面向拿到 device-test-kit（或已解压目录）、手上有设备/`hdc` 的测试者：照抄命令与顺序即可；结论以设备实测为准。
 > 逐项清单、日志关键字与**回传模板**见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`，重点是 §4b/§5b/§6）；
 > 一页版入口 `docs/plans/2026-09-20-ohos-tester-quickstart.md`（包内名 `快速开始.md`）；kit 内容见 `docs/plans/2026-09-21-ohos-delivery-kit-readme.md`。
-> 当前发布 = **kit #21**（2026-09-24；headless abc `13.0.1.0` 修复 + `tester-run.sh` v6r2，含自 kit #17 起全部安全/性能/启动修复）；数字入口 = release「## Integrity」。
+> 当前发布 = **kit #22**（2026-09-24；设备里程碑回灌：宿主按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；`tester-run.sh` v6r2 未变，含自 kit #17 起全部安全/性能/启动修复）；数字入口 = release「## Integrity」；里程碑与复测判定点见 `docs/plans/2026-09-24-ohos-device-milestone.md`。
 
 ## 0. 前置
 
@@ -36,7 +36,7 @@ hdc install hello-maui-app.hap                      # API 20 设备换成 hello-
 hdc shell aa start -a EntryAbility -b com.example.hellomauiapp
 ```
 
-或直接点桌面图标。首帧应为**黑色导航栏 + 标题「Root」**的长列表；若黑屏/闪退，先记录并走第 7 节回传。
+或直接点桌面图标。首帧应为**黑色导航栏 + 标题「Root」**的长列表；若黑屏/闪退，先记录并走第 7 节回传。2026-09-24 里程碑：kit #18 + 测试方 5 项本地修复已跑到 `managed app hello-maui-app.dll started (UI shell)`、进程存活、无崩溃；**stock kit #22 的首次设备复测就是本轮**（失败分支判定见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6）。
 
 ## 4. 采集证据（有 hdc 时）
 
@@ -79,7 +79,7 @@ grep -E 'HybridWebView|__hwvInvokeDotNet|webview|bluetooth|print|contacts|calend
 | `9568344 install parse profile prop check error` | 属**调试 profile 设备绑定**（未含你的 UDID），非应用缺陷。三选一：① 按 `docs/plans/2026-09-21-ohos-tester-selfsign.md` 用你自己的 DevEco 自动签名；② 回传 UDID（`hdc shell bm get -u`，或 DevEco → Device Manager）由签名方重签（哈希会变）；③ 把 p7b + p12 + cer + keyAlias 走安全通道发回，由我方预签：`sh scripts/sign-for-device.sh --external --profile <你的.p7b> --key <你的.p12> --cert <你的.cer> --key-alias <alias> --pwd-input-mode --expect-udid 60CF7B27…`（UDID 换成你的）|
 | `E00C001 Operation restricted by the organization` | 设备策略关闭了 hdc（`const.usb.port.user_hdc.disable=true`）：改用**方式 A**（文件管理器安装）；或由设备管理员放开策略 |
 
-签名与 UDID 完整流程见 `docs/plans/2026-09-19-ohos-signing-and-udid-guide.md`（包内名 `签名与UDID指南.md`）。预签的 p7b 必须把目标 UDID 列入 `debug-info.device-ids`（fail closed：不匹配直接拒绝）；kit #21 包内 `签名说明.txt` 第三节的 PA1 句为历史文案，判读以其余内容与 release notes 为准。
+签名与 UDID 完整流程见 `docs/plans/2026-09-19-ohos-signing-and-udid-guide.md`（包内名 `签名与UDID指南.md`）。预签的 p7b 必须把目标 UDID 列入 `debug-info.device-ids`（fail closed：不匹配直接拒绝）；kit #22 起 `签名说明.txt` 的 PA1 历史句已随源修复（`ohos-workload c6a4cd95e`），若副本仍出现该句按历史文案处理。
 
 ## 7. 回传什么
 
