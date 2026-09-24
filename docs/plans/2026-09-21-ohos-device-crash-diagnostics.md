@@ -6,7 +6,7 @@
 > 本页只做三件事：**换当前 kit 重测** → **取最小崩溃证据** → **回传 §5 清单**。命令可照抄；结论以设备实测为准。
 > 相关文档（kit 内）：`真机操作手册.md`（校验/安装/取证）、`验收说明.md`（完整清单与模板）、`签名与UDID指南.md`（9568344）。
 >
-> **2026-09-24 更新（kit #23）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局（kit #23 = 同负载工具刷新：强化 `verify-kit.sh` + `tester-run.sh` v7 入包）。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。`tester-run.sh` v7 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt`（§2.4–§2.5）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
+> **2026-09-24 更新（kit #24）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局（kit #23 = 工具刷新：强化 `verify-kit.sh` + `tester-run.sh` v7 入包）。**kit #24**：payload 进 hap `libs/arm64-v8a/` 原地启动（`.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（§2.6，采集为 `hilog/hilog-execmem.txt`）；不含 seccomp 拦截器。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。JIT 崩溃（`SEGV_ACCERR`）的判定与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`；`tester-run.sh` v7 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt`（§2.4–§2.6）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
 
 ## 0. 一页摘要
 
@@ -119,19 +119,33 @@ hdc -t "$D" shell "ls -l /data/storage/el2/base/haps/entry/files/" | grep -E 'do
 hdc -t "$D" shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"                   # -> device/payload-marker.txt
 ```
 
-- `summary.txt` 对应键：`bootstrap_errors`/`rawfile_errors`/`libload_errors`（命中计数）与 `payload_present`/`payload_marker`，另有本地 hap 自检键 `kit_index_ok`（`meta/kit-selfcheck.txt`）。这些键**只提示、不改退出码**。
+- `summary.txt` 对应键：`bootstrap_errors`/`rawfile_errors`/`libload_errors`（命中计数）与 `payload_present`/`payload_marker`，另有本地 hap 自检键 `kit_index_ok`/`payload=yes|no`（`meta/kit-selfcheck.txt`）。这些键**只提示、不改退出码**。
 - `GetRawFileContent failed, name is empty` + `kit_index_ok=no` => hap 缺 `resources.index`（早于 kit #22 的旧包），**换当前 kit 再测**，不是设备问题。
 - `ZIP entry`/`destination path` => 启动解压/路径问题（对照 kit #22 的 ZIP offset/mkdir 修复）。
 - `Load native module failed`/`symbol not found`/`cannot find library` => 宿主/依赖加载问题，转 P1–P4 阶梯（§5）。
-- `payload_present=no` 在**首次启动前属正常**；应用已启动仍为 no（尤其伴随 `bootstrap_errors>0`）说明 payload 未解包成功；`payload_marker=empty` = 可能只写了一半。
+- **kit #24 起 payload 在 hap `libs/arm64-v8a/` 原地运行**：`payload_present=no` 属常态（这些键只反映回退布局的 filesDir 解包）；`payload_marker=empty` 只在回退布局有意义。真正的 payload-in-libs 信号是 `meta/kit-selfcheck.txt` 的 `payload=yes|no`（marker 缺失 = 该 hap 会回退到被 namespace 拒绝的 data 目录解包，`verify-kit.sh` 直接 FAIL）。
 
-## 3. 三个快速 A/B（各 5 分钟，能跑几个跑几个）
+### 2.6 exec-memory 探针与 JIT 判定（kit #24；崩溃为 `SEGV_ACCERR` 时先看这里）
+
+```sh
+hdc -t "$D" shell "hilog -x | grep -E 'OHOS_DOTNET probe:|xwe='"     # -> hilog/hilog-execmem.txt
+grep -E 'probe:|xwe=' <证据包>/hilog/hilog-execmem.txt               # 归档内同文件
+grep execmem_lines <证据包>/summary.txt                              # 0 = 未捕获，加长 --capture 重跑
+```
+
+- 每个探针 token 为 `OK` 或失败 `errno`：**1** = 匿名 `mmap(RWX)`（W^X=0 的 JIT 路径）· **2** = 匿名 `mmap(RW)`→`mprotect(RX)` · **3** = `memfd` + `mprotect(RX)`（W^X=1 路径）· **4** = 临时文件 `mmap(RX)`。典型 errno：`1` EPERM · `12` ENOMEM · `13` EACCES · `38` ENOSYS。
+- 判定：`1=OK` ⇒ 匿名可执行在 HAP 域可用，JIT（默认 `EnableWriteXorExecute=0`）应可用，报证 = managed app 运行 + 无 `SEGV_ACCERR`；若 `1=OK` 仍 `SEGV_ACCERR`，附 probe 行/xwe 行/崩溃栈继续定位。`1≠OK` ⇒ 本固件 HAP 域拒绝匿名可执行，JIT 不可用，转 NativeAOT。
+- A/B：在 `<filesDir>/xwe.txt` 写入首字节 `1`（DevEco Device File Browser）→ hilog 出现 `xwe=1 source=file`，复现 W^X=1 的同形崩溃；删除后恢复 `xwe=0 source=default`。完整判定表与 NativeAOT 步骤见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
+- 注意 kit #24 **不含 seccomp 拦截器**（不再需要，且会 strip `PROT_EXEC` 破坏 JIT）；请确认未叠加旧本地补丁后再判读。
+
+## 3. 四个快速 A/B（各 5 分钟，能跑几个跑几个）
 
 | # | 问题 | 怎么做 | 结论怎么读 |
 |---|---|---|---|
 | AB-1 | 普通 ArkTS hap 能在这台设备起吗？ | 用 DevEco 新建 Empty Ability 工程（API 波段与设备一致）→ 安装 → `aa start` | 能正常起 → 设备/ArkTS 运行时没问题，焦点回到我们的包；同样 JsError → 设备/固件侧问题优先；两者日志都留着做对照 |
 | AB-2 | 宿主动态库加载了吗？ | 在 §2 的 hilog 里搜 `libopenharmonyhost` / `dlopen` / `libentry` / `[maui] openharmony build` | 有 `[maui] openharmony build ...` → 托管宿主已启动，崩溃在更后面；只有 `libentry.so`/napi 记录、没有 host 行 → 崩在 napi 加载/入口；两者都没有 → 崩在 ArkTS/Ability 阶段，宿主没起来 |
 | AB-3 | 崩溃前最后一行日志是什么？ | 取第一条 `AppKilledReporter`/`JsError` 之前最后的 5–10 行（连同 §2 的 200 行） | 这行通常直接点名失败点（native module 加载失败、abc/运行时版本不符、`pages/Index` 加载失败等）；原样贴回，不用自行解读 |
+| AB-4 | 匿名可执行内存与 W^X 哪条路可用？（kit #24，`SEGV_ACCERR` 时必做）| 读 §2.6 的 `probe:` 行；再按 A/B 写 `<filesDir>/xwe.txt`=首字节 `1` 复跑一轮 | `1=OK` = JIT 可用路径；`xwe=1 source=file` 下复现 `SEGV_ACCERR`、默认 `xwe=0` 下不崩 = 平台 W^X memfd 路径被拒，默认 0 是正确设置；`1≠OK` = HAP 域禁匿名可执行，转 NativeAOT。判定表见交接文档 |
 
 ## 4. 我们已确认在修的两点（你不必排查）
 
@@ -150,6 +164,7 @@ hdc -t "$D" shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"   
 3. [ ] 你实际安装的 `module.json` 原文（从 hap 解出/你改后的那份）+ 重命名后的 bundleName。
 4. [ ] 一个 jscrash 文件名（+ 内容/截图，若有）。
 5. [ ] §2 的 hilog 过滤片段（含崩溃点前后各 200 行）与崩溃时间戳；旧包日志若有也附。
-6. [ ] §3 三条 A/B 的结果（每条一行：通过/失败 + 一句话现象）。
+6. [ ] §3 四条 A/B 的结果（每条一行：通过/失败 + 一句话现象）。
+7. [ ] **JIT 相关（kit #24）**：`hilog-execmem.txt` 原文（`probe:` 行 + `xwe=` 行）与 `summary.txt` 的 `execmem_lines`；做过 A/B 的附两轮对照。判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
 
 > 收到后我们按 `验收说明.md` §6 模板归档；若重测后一切正常，回传 1–2 与一句"已通过"即可。

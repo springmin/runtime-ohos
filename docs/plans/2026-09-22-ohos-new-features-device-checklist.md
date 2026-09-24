@@ -1,7 +1,7 @@
 # 2026-09-22 新功能真机验证清单（测试者版）
 
-> 面向拿到 `device-test-kit`（kit #23，preview.24 基线；工具刷新版，hap 负载与 #22 相同）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
-> kit #23（2026-09-24）已含自 kit #17 起的全部安全/性能/启动修复，并在设备里程碑回灌中补齐：宿主按需 dlsym、HAP `resources.index`（restool）、ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；主选就是它本身（`libIsolation` + 全部修复）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit #22（#23 为同负载工具刷新）尚未上机**。
+> 面向拿到 `device-test-kit`（kit #24，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
+> kit #24（2026-09-24）已含自 kit #17 起的全部安全/性能/启动修复，并在设备里程碑回灌中补齐：宿主按需 dlsym、HAP `resources.index`（restool）、ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #24 再叠加 payload-in-libs（`libs/arm64-v8a/` 原地启动 + `.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 W^X=0 与 exec-memory 探针。主选就是它本身（`libIsolation` + 全部修复）。**kit #24 未新增 UI 入口**——逐项「现有入口/无入口」沿用本清单（标「kit #23 无入口」的项在 #24 同样无入口；运行时与打包层改动见 §0.4/§0.5 与 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #24）尚未上机**。
 > 与 `验收说明.md`（A1–K2、N1–N7）互补：A–N 覆盖既有能力，本清单覆盖 **M1–M13**（M11–M13 为 2026-09-23 深化批：真实缺陷修复 / UX 深化 / 原始 HAP 资源桥）。
 > 逐项格式：**入口 → 步骤 → 期望 → 证据（抓什么）→ 可能失败**。绝大多数步骤需人工操作：`tester-run.sh` 只能自动**安装 / 启动 / 录 hilog / 跑启动崩溃探针**，触发 UI、切换系统设置、接受弹窗、截图、取沙箱文件都要人工完成。
 
@@ -13,7 +13,7 @@
 
 代码位于 `maui-ohos`（托管切片）与 `ohos-workload`（宿主/ArkTS 壳）；下表路径省略前两个仓名。
 
-| # | 能力 | 托管实现（锚点文件） | kit #23 现有入口 |
+| # | 能力 | 托管实现（锚点文件） | kit #23/#24 现有入口 |
 |---|---|---|---|
 | M1 | 运行时权限（`IPermissions.RequestAsync` / `CheckStatusAsync`）| `maui-ohos:src/Core/src/Platform/OpenHarmony/OpenHarmonyEssentialsUnsupported.cs`（`OpenHarmonyPermissions`）+ `OpenHarmonyEssentialsBridges.cs`（`OpenHarmonyPermissionBridge`）| 无按钮，需功能探针页 |
 | M2 | 连通性（`NetworkAccess` / `ConnectivityChanged`）| `.../OpenHarmonyEssentialsExtras.cs`（`OpenHarmonyConnectivity`）+ `OpenHarmonyEssentialsBridges.cs`（`OpenHarmonyConnectivityBridge`）| 无按钮，需功能探针页 |
@@ -37,7 +37,7 @@
 因此：
 
 - **M1–M6、M8、M10 必须配合"功能探针 hap"才能逐项触发**。探针页由交付方构建（最小示意见附录 A，含权限声明命令），已带探针页时按下表逐项点按即可；**若你手上的包没有探针页，请只登记"本包无入口"，不要判失败**，并完成所有能做的间接检查（能启动/不崩、状态文件、module.json）。
-- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #23 上即可完成**；M11–M13 深化批里 **M12 的滚动惯性与自动隐藏滚动条在默认演示长列表上直接可测**，M11 的窗口激活需探针页挂 `Window.Created/Activated` 计数，其余项需探针页或重打包 hap——没有入口同样登记「未测（本包无入口）」，不要判失败。
+- M7 的启动日志与安全区、M9 的 `A11Y` 按钮**在 kit #23/#24 上即可完成**；M11–M13 深化批里 **M12 的滚动惯性与自动隐藏滚动条在默认演示长列表上直接可测**，M11 的窗口激活需探针页挂 `Window.Created/Activated` 计数，其余项需探针页或重打包 hap——没有入口同样登记「未测（本包无入口）」，不要判失败。
 - 同理，`验收说明.md` §4b 的 N1–N7（蓝牙/打印/联系人/日历等）也以各自界面入口是否存在为准；没有入口的项登记「未测（本包无入口）」，不要判失败。
 
 ### 0.3 证据：两类 `[maui]` 行，别找错地方
@@ -67,17 +67,18 @@ sh tester-run.sh --kit-dir ./device-test-kit --capture 60
 sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 ```
 
-归档 `tester-report-<时间戳>.tar.gz` 里有 `hilog/hilog-full.txt`、`hilog/hilog-filtered.txt`、`hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`kmsg/`、`device/app-libs-arm64.txt`、`device/payload-files.txt`、`device/payload-marker.txt`、`meta/kit-hap-sha256.txt`、`meta/kit-selfcheck.txt`、`probes/`、`summary.txt`（含 `script_version`、`main_hap_sha256`、`bootstrap_errors`/`rawfile_errors`/`libload_errors`、`payload_present`/`payload_marker`、`kit_index_ok` 等字段）。截图/录屏与 `dotnet-status.txt` **不在**归档内，需人工另发；失败项请标注发生时间点。
+归档 `tester-report-<时间戳>.tar.gz` 里有 `hilog/hilog-full.txt`、`hilog/hilog-filtered.txt`、`hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`（kit #24：`OHOS_DOTNET probe:`/`xwe=` 行）、`kmsg/`、`device/app-libs-arm64.txt`、`device/payload-files.txt`、`device/payload-marker.txt`、`meta/kit-hap-sha256.txt`、`meta/kit-selfcheck.txt`、`probes/`、`summary.txt`（含 `script_version`、`main_hap_sha256`、`bootstrap_errors`/`rawfile_errors`/`libload_errors`、`payload_present`/`payload_marker`、`kit_index_ok`、`execmem_capture`/`execmem_lines` 等字段）。截图/录屏与 `dotnet-status.txt` **不在**归档内，需人工另发；失败项请标注发生时间点。
 
-`tester-run.sh` 当前为 **v7**（`script_version=7`，2026-09-24；仓库与 release 资产同为 71,834 B / `10c42f9e…`）：v6r2 的 `--tree-digest` 复用已校验摘要保持不变（P16，实测每轮少读 163.5 MB 量级）、证据包含 `meta/kit-hap-sha256.txt`/`main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征（`hilog-bootstrap.txt` + `bootstrap_errors`/`rawfile_errors`/`libload_errors`）、payload 状态（`payload-files`/`payload-marker` + `payload_present`/`payload_marker`）与 kit hap 自检（`meta/kit-selfcheck.txt` + `kit_index_ok`）。判定：`kit_index_ok=no` → 包早于 kit #22，换当前 kit 再测；`bootstrap_errors`/`rawfile_errors`>0 → 附 `hilog-bootstrap.txt` 回传（不影响退出码）；`payload_present=no` 首次启动前属正常。行为与输出字段对旧调用兼容。
+`tester-run.sh` 当前为 **v7**（`script_version=7`；kit #24 版脚本大小/摘要以 release 资产页「## Integrity」与随附 `gh api` 查询为准，本文不写死）：v6r2 的 `--tree-digest` 复用已校验摘要保持不变（P16，实测每轮少读 163.5 MB 量级）、证据包含 `meta/kit-hap-sha256.txt`/`main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征（`hilog-bootstrap.txt` + `bootstrap_errors`/`rawfile_errors`/`libload_errors`）、payload 状态（`payload-files`/`payload-marker` + `payload_present`/`payload_marker`）与 kit hap 自检（`meta/kit-selfcheck.txt` + `kit_index_ok`/`payload=yes|no`）；**kit #24 再增 execmem 采集**（`hilog-execmem.txt` + `execmem_capture`/`execmem_lines`，判定见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`）。判定：`kit_index_ok=no` → 包早于 kit #22，换当前 kit 再测；`bootstrap_errors`/`rawfile_errors`>0 → 附 `hilog-bootstrap.txt` 回传（不影响退出码）；`payload_present=no` 在 kit #24 起属正常（payload 在 hap `libs/` 原地运行；该键只反映回退布局的 filesDir 解包，kit 自检 `payload=yes|no` 才是 marker 信号）。行为与输出字段对旧调用兼容。
 
 ### 0.5 自 kit #17 以来的变化（速览）与签名说明
 
 - **安全**：bundleName 白名单校验（发任何 `hdc` 命令前）、hvigor 下载锚定、安装器 https + 哈希锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`。
 - **性能**：套件帧分配 **241,688 → 4,504 B/帧**（present/图片/文本/触摸/轮播/rawfile 等热点已修；余 2 项有意保留并在扫描文档中记录）。
 - **启动**：P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `24.0.0.0` → `13.0.1.0`。
-- **设备里程碑回灌（kit #22 起）**：宿主 `DT_NEEDED` 收窄为 5 库（缺库设备不再 dlopen 失败）、可选系统 API 全部按需 dlsym；HAP 内 `resources.index`（restool）；启动解压 ZIP offset/length 分块复制 + 解压前 mkdir；abc 工程对齐 DevEco（`modelVersion 6.0.2`）并带 hvigor 00302013 诊断。真机里程碑见 `docs/plans/2026-09-24-ohos-device-milestone.md`；stock kit #22/#23 尚未上机。
+- **设备里程碑回灌（kit #22 起）**：宿主 `DT_NEEDED` 收窄为 5 库（缺库设备不再 dlopen 失败）、可选系统 API 全部按需 dlsym；HAP 内 `resources.index`（restool）；启动解压 ZIP offset/length 分块复制 + 解压前 mkdir；abc 工程对齐 DevEco（`modelVersion 6.0.2`）并带 hvigor 00302013 诊断。真机里程碑见 `docs/plans/2026-09-24-ohos-device-milestone.md`；stock kit（#22 起）尚未上机。
 - **工具刷新（kit #23）**：`verify-kit.sh` 增加逐 hap 深度断言（`resources.index`/abc/libs/dotnet.zip/宿主依赖；FAIL → 退出码 1，WARN → 仍 `KIT OK`；kit #22 全过，kit #21 及更早会报真实 FAIL）；`tester-run.sh` 升到 v7（新增 bootstrap/rawfile/payload/kit 自检采集，见 §0.4）。
+- **kit #24（payload-in-libs + JIT 判定装置）**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退；签名 hap ~75.3 MB）；`verify-kit.sh` 逐 hap 断言 marker（缺失/不一致 = FAIL）；宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针；`tester-run.sh` 采集 `hilog/hilog-execmem.txt`（`execmem_capture`/`execmem_lines`）；重建壳 abc 期望 `215680`/`18308`。不含 seccomp 拦截器（stock kit 直接测）。详见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
 - **签名说明**：kit #22 起 `签名说明.txt` 的「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若副本仍出现该句，按历史文案处理。
 
 ---

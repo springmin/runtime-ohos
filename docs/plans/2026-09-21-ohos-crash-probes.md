@@ -27,7 +27,7 @@
 > the exact exit error first (§4.0/§4.0b/§4.0c). The install error `9568257 fail to verify pkcs7 file` is the
 > expected rejection of the kit's self-signed haps (re-sign `hello-maui-app-unsigned.hap` first).
 >
-> **2026-09-24 update (kit #23; same payload as #22, tool refresh only):** all four branches above are fixed in the current kit — entry
+> **2026-09-24 update (kit #24: payload-in-libs + explicit W^X=0 + exec-memory probe):** all four branches above are fixed in the current kit — entry
 > record (#10), abc bytecode version (#11), host `.so` load (#12), and the host napi
 > registration-name mismatch (RH1 alias registrations, kit #16, plus the RM1 `libIsolation` repack,
 > kit #17). The startup perf fixes ship as well (P17 extraction skip, H7 rawfile fd read, headless
@@ -38,14 +38,19 @@
 > `resources.index` (`GetRawFileContent failed`), the ZIP offset/length copy error (900003), the
 > pre-inflate mkdir error (900002), and the hvigor abc build (00302013). Kit #22 back-ports all
 > five (host `DT_NEEDED` whitelist of 5 + on-demand dlsym; restool `resources.index`; range copy;
-> mkdir; DevEco `modelVersion 6.0.2` layout) and keeps RH1/RM1 as harmless hardening. The P1–P4
+> mkdir; DevEco `modelVersion 6.0.2` layout) and keeps RH1/RM1 as harmless hardening. Kit #24 adds
+> payload-in-libs (payload starts in place from the signed `libs/<abi>/`) and the JIT verification
+> device (explicit `DOTNET_EnableWriteXorExecute=0`, `xwe.txt` A/B, `OHOS_DOTNET probe:` line).
+> The P1–P4
 > ladder stays valid for any remaining dlopen / missing-dependency / host-entry / .NET-runtime
 > crash; `tester-run.sh` v7 additionally collects the app-lib evidence
 > (`hilog/hilog-applib.txt`, `hilog/hilog-dlopen.txt`, `device/app-libs-arm64.txt`), the
 > bootstrap/rawfile signatures (`hilog/hilog-bootstrap.txt` + `summary.txt` counters), the
-> payload state (`device/payload-files.txt` / `payload-marker.txt`) and a local kit hap
+> payload state (`device/payload-files.txt` / `payload-marker.txt`), the exec-memory evidence
+> (`hilog/hilog-execmem.txt` + `execmem_capture`/`execmem_lines`) and a local kit hap
 > self-check (`meta/kit-selfcheck.txt`, `kit_index_ok`) automatically.
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
+> JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
 > These four minimal, standalone probes bisect the failure between five layers:
 > **ArkTS shell/device SDK** (P1), **host .so dlopen** (P2), **host entry points / dlsym** (P3),
