@@ -17,7 +17,7 @@
 | 目标框架 | `net11.0-openharmony26.0`（arm64）|
 | 内含 | 托管应用负载、ELF 由 SDK ElfSigner 签名的宿主库 `libopenharmonyhost.so`、ArkTS 壳归档 |
 
-校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。当前发布为 **kit #25**（2026-09-25；权限链 `reason`/`usedScene` + Share/Scan 特性探测降级 + AOT 启动路径）：包内 5 个 hap 均带 `"libIsolation": true`，并含自 kit #17 起的全部安全/性能/启动修复；每个 hap 的 `libs/arm64-v8a/` 直接携带 254 个 payload 文件与 `.dotnet-payload.json`（原地启动，`dotnet.zip` 为回退；签名 hap ~75.43 MB）。主选是 kit #25 本身，对照载荷与 P1–P4 探针按交付方指示取用。**注意 `verify-kit.sh` 自 kit #23 起更严（#24 加 payload-in-libs 断言、#25 更新期望值：abc `234620`/`18532`、`dotnet.zip` 254 项、`resources.index` ≤ 2 KiB）**：`FAIL` 会以退出码 1 失败、`WARN` 仍为 `KIT OK`；kit #22 全部断言通过，kit #21 及更早的包会被明确报 FAIL（缺 `resources.index` 等真实缺陷，非误报）——旧包请用其自带 verify-kit。
+校验方式：解包后运行 `sha256sum -c SHA256SUMS`（逐文件校验）；`SHA256SUMS` 由交付方在打包时生成并随包分发。kit 整包与解压内容树的数字见 `device-test-kit` release 说明的「## Integrity」小节（`workload-latest` 镜像同值）或 `.tar.gz.sha256` sidecar。当前发布为 **kit #26**（2026-09-26；P2-INTEROP/TASK-MIG/PLAT-GAP：hosting 桥全量 `LibraryImport`+打包任务程序集化+消费方 KFR/RID 缺口消解）：包内 5 个 hap 均带 `"libIsolation": true`，并含自 kit #17 起的全部安全/性能/启动修复；每个 hap 的 `libs/arm64-v8a/` 直接携带 254 个 payload 文件与 `.dotnet-payload.json`（原地启动，`dotnet.zip` 为回退；签名 hap ~75.47 MB）。主选是 kit #26 本身，对照载荷与 P1–P4 探针按交付方指示取用。**注意 `verify-kit.sh` 自 kit #23 起更严（#24 加 payload-in-libs 断言、#25 更新期望值：abc `234620`/`18532`、`dotnet.zip` 254 项、`resources.index` ≤ 2 KiB；#26 期望值不变）**：`FAIL` 会以退出码 1 失败、`WARN` 仍为 `KIT OK`；kit #22 全部断言通过，kit #21 及更早的包会被明确报 FAIL（缺 `resources.index` 等真实缺陷，非误报）——旧包请用其自带 verify-kit。
 
 > **签名状态（2026-09-22 真机实测）**：本包 4 个默认 hap 变体（默认 / permissions / api20 / api20-permissions）是
 > **自签名（设备会拒绝，需要重签）** —— 用我方调试证书/调试 profile 签名、profile 只绑定示例设备 UDID，真机安装会报
@@ -290,7 +290,7 @@ I1 未测（无相机）
 > M7、M9 现在就能测。（§4b 的 N1–N7 同理以各自入口是否存在为准；没有入口的项按同一口径登记。）
 > 完整细节与取证关键字见同批交付的《新功能真机验证清单》（若未随包，本节即可满足填写）。
 >
-> **当前 kit（#25，2026-09-25）**：自 #17 起的全部安全/性能/启动修复都已在本包（bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`），并在 kit #22 追加**设备里程碑回灌**——宿主 `DT_NEEDED` 收窄为 5 库（缺库设备也能 dlopen）、可选系统 API 全部按需 dlsym、HAP 内 `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #23 为工具刷新（强化 verify-kit + `tester-run.sh` v7）。**kit #24**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（`tester-run.sh` v8 采集为 `hilog/hilog-execmem.txt`），不含上轮 seccomp 拦截器（请用 stock kit）。**kit #25**：权限链 `reason`/`usedScene`（弹窗显示理由文案）+ Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级；`ARKTS_SDK_FLAVOR=harmony` 才启用面板/扫码）+ AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；`libs` 269 项（14 `.so` + 254 payload + marker）、abc 234,620/18,532、宿主 240,544（hap 内）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #25）尚未上机**，本轮即首次复测。主选为 kit #25 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
+> **当前 kit（#26，2026-09-26）**：自 #17 起的全部安全/性能/启动修复都已在本包（bundleName 白名单校验、hvigor/安装器锚定、ElfSigner 数据保全、符号链接跳过、外来签名不静默洗白、URL 允许列表、反向回调守卫、路径规范化、TLS 绝对路径 `dlopen`；帧分配 **241,688 → 4,504 B/帧**；P17 启动跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`），并在 kit #22 追加**设备里程碑回灌**——宿主 `DT_NEEDED` 收窄为 5 库（缺库设备也能 dlopen）、可选系统 API 全部按需 dlsym、HAP 内 `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #23 为工具刷新（强化 verify-kit + `tester-run.sh` v7）。**kit #24**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（`tester-run.sh` v8 采集为 `hilog/hilog-execmem.txt`），不含上轮 seccomp 拦截器（请用 stock kit）。**kit #25**：权限链 `reason`/`usedScene`（弹窗显示理由文案）+ Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级；`ARKTS_SDK_FLAVOR=harmony` 才启用面板/扫码）+ AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；`libs` 269 项（14 `.so` + 254 payload + marker）、abc 234,620/18,532、宿主 240,544（hap 内）。**kit #26**：hosting 桥全量 `LibraryImport`（125 处，`DllImport` 归零；导出契约 118/118 不变；hap 内 hosting DLL 55,808 B）+ hap 打包任务改为 pack 内编译程序集（`tools/Microsoft.OpenHarmony.Tasks.dll`，6 个任务程序集）+ PLAT-GAP 消解（AspNetCore KFR/RID/apphost 缺省化，消费方无需工程级规避）；hap ~75.47 MB、abc/宿主/索引期望值与 #25 相同。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #26）尚未上机**，本轮即首次复测。主选为 kit #26 本身，对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 仍挂在同一 release。
 
 | # | 能力 | 步骤 | 期望 | 未通过时抓什么 |
 |---|---|---|---|---|
@@ -319,7 +319,7 @@ I1 未测（无相机）
 
 ### 8b. 若应用启动即崩（JsError / exit 254）
 
-**先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），那是旧 kit（kit #10 之前）的 ArkTS 壳 abc 入口 record 缺陷，已在 kit #10 修复并获真机确认（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；abc 版本（kit #11）与宿主加载（kit #12）分支也已清除，**kit #25 不含这些旧缺陷**。当前 kit 的启动相关修复：P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，kit #22 的设备回灌（宿主 5 个 `DT_NEEDED` + 可选 API 全部 dlsym、HAP `resources.index`、ZIP offset/length + mkdir）、kit #24 的 payload-in-libs/显式 W^X=0 与 kit #25 的 AOT 启动路径（app export + hostfxr 回退；stock kit #22 起，含 #25，未上机）。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。若崩在 CoreCLR 初始化/JIT（`SEGV_ACCERR`），按 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5 读 `probe:` 行并做 `xwe.txt` A/B。
+**先对错误分类**：若 hilog 报 `ReferenceError: Cannot find module 'ets/entryability/EntryAbility' , which is application Entry Point`（约 1 秒退出 / `exit 254`），那是旧 kit（kit #10 之前）的 ArkTS 壳 abc 入口 record 缺陷，已在 kit #10 修复并获真机确认（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md`）；abc 版本（kit #11）与宿主加载（kit #12）分支也已清除，**kit #26 不含这些旧缺陷**。当前 kit 的启动相关修复：P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，kit #22 的设备回灌（宿主 5 个 `DT_NEEDED` + 可选 API 全部 dlsym、HAP `resources.index`、ZIP offset/length + mkdir）、kit #24 的 payload-in-libs/显式 W^X=0、kit #25 的 AOT 启动路径（app export + hostfxr 回退）与 kit #26 的 LibraryImport hosting 重建（导出契约 118/118 不变；stock kit #22 起，含 #26，未上机）。安装阶段的 `9568257` 是自签名包的预期拒绝（见 §1 签名状态），先重签再谈启动。若崩在 CoreCLR 初始化/JIT（`SEGV_ACCERR`），按 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §4 / `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5 读 `probe:` 行并做 `xwe.txt` A/B。
 
 **其他启动崩溃先别做 M1–M13**：按 §5b 采集 hilog（`hdc shell hilog -r` 后重录）与沙箱 `files/dotnet-status.txt`，然后用
 `sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes` 跑 P1–P4 启动探针（探针 hap 未签名，需先按
@@ -328,7 +328,7 @@ P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` �
 .NET 运行时/主启动。探针与决策表：`docs/plans/2026-09-21-ohos-crash-probes.md`。`tester-run.sh` v8 会自动采集
 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`（`OHOS_DOTNET probe:`/`xwe=` 行，kit #24 起）、`device/app-libs-arm64.txt`、
 `device/payload-files.txt`/`payload-marker.txt` 与 `meta/kit-selfcheck.txt`（含别名注册行
-`[openharmony-host] … bound via alias '…'`、首帧判定、`kit_index_ok` 与 payload-in-libs `payload=yes|no`；`kit_index_ok=no` 请换 kit #22+ 再测），无需手工 grep。JIT/探针判定表与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`；kit #25 的新判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 §8c 与 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`。
+`[openharmony-host] … bound via alias '…'`、首帧判定、`kit_index_ok` 与 payload-in-libs `payload=yes|no`；`kit_index_ok=no` 请换 kit #22+ 再测），无需手工 grep。JIT/探针判定表与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`；kit #25 的判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 §8c，kit #26 的新 payload 首次运行判定点见 §8d；两轮交接分别为 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` 与 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`。
 
 ### 8c. kit #25 新增判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动）
 
@@ -343,3 +343,14 @@ P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` �
 | Share 面板 | 探针页触发分享（多文件分支优先） | OpenHarmony 包：`shareDispatch=False` → 返回不可用/空，**不崩**；HarmonyOS 变体才弹系统分享面板并回报 `shareCompleted` | 界面截图 + 状态行原文 |
 | Scan 返回 | 探针页触发扫码 | OpenHarmony 包：`scanSupported=False` → `IsSupported=false`、`ScanAsync` 空/不可用，**不崩**；HarmonyOS 变体返回 `originalValue` | 界面截图 + 结果原文 |
 | AOT 启动 | 有 NativeAOT hap 则安装启动；否则回归（本 kit 5 hap 为 JIT payload） | AOT hap 经 `lib<stem>.so` 的 `openharmony_app_main` export 启动；JIT payload 走 hostfxr 回退且与 kit #24 行为一致 | 启动两行日志 + 进程存活；AOT 冒烟结果 |
+
+### 8d. kit #26 判定点（新 payload 首次运行 / PLAT-GAP 恢复路径）
+
+> kit #26 未新增 UI 入口，也**不改**权限链/Share/Scan/AOT 的判定口径（§8c 继续有效，只是期望基线从
+> kit #24 换成 kit #25/#26）。新增判定点集中在「新重建的 payload 能正常跑」与「消费方不再需要工程级规避」。
+
+| 判定点 | 怎么测 | 期望 | 回传证据 |
+|---|---|---|---|
+| 新 payload 首次运行 | 重签 → 安装默认 hap → 启动 → 跑 5 条冒烟（`快速开始.md` §5） | 应用正常启动（两行 `[maui]` 日志）、无崩溃；托管 hosting 桥行为与 kit #25 一致（蓝牙/联系人/日历/分享/扫码等入口的调用路径不回归）| 启动两行日志 + `files/dotnet-status.txt`；失败时附 `tester-run.sh` 证据包 |
+| LibraryImport 无 ABI 回归 | 触发任一原生桥（如无障碍 `A11Y`、WebView `Echo/Add`、权限请求） | 回调/返回值正常；无 `EntryPointNotFoundException`/`DllNotFoundException`/参数错乱 | 结果截图 + hilog 关键字（§5b）|
+| PLAT-GAP 消费方路径 | 在装有 kit #26 workload 的机器上 `dotnet publish` 一个引用 `Microsoft.AspNetCore.App`（如 BlazorWebView）的 MAUI 项目 | **不再需要**逐项目 KFR/RID/apphost 规避即可 restore/publish；RID 默认 `openharmony-arm64` | `dotnet publish` 输出 + 项目文件（证明没有本地 workaround）|

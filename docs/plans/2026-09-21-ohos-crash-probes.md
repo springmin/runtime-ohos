@@ -52,19 +52,30 @@
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
-> **2026-09-25 update (kit #25: permission chain + Share/Scan probes + AOT startup path):** the current
-> kit adds the permission declaration chain (`reason`/`usedScene` per permission + a request-point gate in
+> **2026-09-26 update (kit #26: P2-INTEROP/TASK-MIG/PLAT-GAP):** the current kit completes the managed
+> hosting bridge on source-generated `LibraryImport` (125 declarations = 44 hosting + 81 MAUI slice, zero
+> `DllImport`; the 118/118 host export contract is unchanged), moves the hap packaging tasks into the pack
+> (`tools/Microsoft.OpenHarmony.Tasks.dll`, six task assemblies; `OpenHarmony.Hap.targets` split +
+> `PlatformItems.targets`), and closes PLAT-GAP (ASP.NET Core KFR pinned to `11.0.0-rc.1.26425.128`,
+> `RuntimeIdentifier=openharmony-arm64` defaulted, `EnableAppHostPackDownload=false`; consumers no longer
+> need the per-project workaround). Rebuilt artifacts: in-hap hosting DLL 55,808 B, signed hap ~75.47 MB
+> (zip 278 entries; `libs` 269 = 14 `.so` + 254 payload + marker; abc 234,620/18,532 and host 240,544 B in-hap
+> unchanged; index 1588/1780 B; `dotnet.zip` 254/0 `.so`). The P1–P4 ladder, `probe:`/`xwe` verdicts and
+> `tester-run.sh` v8 evidence set are unchanged; the kit #25 judgement points (permission dialog copy /
+> Share panel / Scan return / AOT startup) are in `2026-09-25-ohos-tester-handoff-kit25.md`, and the kit #26
+> incremental points (first run of the rebuilt payload / native-bridge ABI / PLAT-GAP consumer path) are in
+> `2026-09-26-ohos-tester-handoff-kit26.md`. **Stock kit (#22 on, #26 included) still has not been on a
+> device.**
+>
+> **2026-09-25 update (kit #25: permission chain + Share/Scan probes + AOT startup path):** that kit added
+> the permission declaration chain (`reason`/`usedScene` per permission + a request-point gate in
 > the pack targets), the Share/Scan feature probes (shell `canIUse` + variable import; sinks are only
 > registered when the probe succeeds, so they degrade cleanly on the OpenHarmony SDK as
 > `shareDispatch=False`/`scanSupported=False`, and only the `ARKTS_SDK_FLAVOR=harmony` HarmonyOS-SDK
 > variant opens the share panel / returns a scan result), and an AOT startup path (`lib<stem>.so` ->
 > `openharmony_app_main`, with the JIT-only hostfxr path kept as the fallback). Rebuilt artifacts: UI abc
 > `234620` / headless `18532`, hap `libs` 269 = 14 `.so` + 254 payload + `.dotnet-payload.json`, hap zip
-> 278 entries, `resources.index` 1588/1780 B, `dotnet.zip` 254 entries / 0 `.so`. The P1–P4 ladder,
-> `probe:`/`xwe` verdicts and `tester-run.sh` v8 evidence set are unchanged; the kit #25 judgement points
-> (permission dialog copy / Share panel / Scan return / AOT startup) are in
-> `2026-09-25-ohos-tester-handoff-kit25.md`. **Stock kit (#22 on, #25 included) still has not been on a
-> device.**
+> 278 entries, `resources.index` 1588/1780 B, `dotnet.zip` 254 entries / 0 `.so`.
 >
 > These four minimal, standalone probes bisect the failure between five layers:
 > **ArkTS shell/device SDK** (P1), **host .so dlopen** (P2), **host entry points / dlsym** (P3),
@@ -506,7 +517,7 @@ hdc shell hilog | grep -E "Load native module failed|host export unavailable|Ace
 Unlike the shell branches, this one is fixed: RH1 (alias registrations covering both naming
 conventions plus a normalized shell build that keeps the corrected bundle name, with the entry
 record re-verified) shipped in kit #16 and the RM1 `libIsolation` repack in kit #17 — both are in
-the current kit (#25, permission chain + Share/Scan probes + AOT startup on top of #24's payload-in-libs) and are **kept as harmless hardening**: the 2026-09-24 device run showed the
+the current kit (#26, P2-INTEROP LibraryImport hosting + TASK-MIG tasks + PLAT-GAP defaults on top of the #25 permission chain / Share-Scan probes / AOT path and #24's payload-in-libs) and are **kept as harmless hardening**: the 2026-09-24 device run showed the
 black-screen chain was the host dlopen + bootstrap issues, not this name/path half (see
 `2026-09-24-ohos-device-milestone.md` §2). The diagnostic is part of `tester-run.sh` v8 (`hilog-applib` /
 `hilog-dlopen` / `hilog-bootstrap` / `app-libs-arm64.txt` / `payload-*`). Like §4.0/§4.0b/§4.0c this is not a P1–P4 case (the
@@ -577,7 +588,7 @@ dependency (the loader SIGSEGVs the process instead of reporting a `dlerror`).
    - hilog 有 `[maui]` 日志、但出现 `[maui] host export unavailable: <api>` 或 `Cannot read property registerXComponent of undefined` → 宿主 `.so` 加载失败（壳 `host` 为 undefined；**kit #12 已修复**：宿主无 `libhostfxr` 链接依赖 + 壳全量守卫）；按 §4.0c 用 `readelf -d … | grep NEEDED` 对照 hap `libs/arm64-v8a/` 与设备系统库。
    - 应用能启动并**稳定存活、但黑屏**（无崩溃日志），hilog 出现 `Load native module failed, ModuleName: @app:…` 与大量 `[maui] host export unavailable` → napi 注册名与 abc import 记录名不匹配、host exports 为空（kit #16 别名 + kit #17 `libIsolation` 保留为**无害加固**；2026-09-24 设备证据表明黑屏直接链是宿主加载与 bootstrap，**kit #22 已回灌**，见 `2026-09-24-ohos-device-milestone.md` §2）；按 §4.0d 复核（`[openharmony-host] … bound via alias '…'` 出现即加载绑定成功）。
    以上四类都发生在宿主加载前/后、**先不要跑 P1–P4**（见 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5c/§5d/§5e 与本文 §4.0/§4.0b/§4.0c/§4.0d）；其他退出原因才走下面 1–6（P1–P4 仍适用于 dlopen/缺库/宿主入口/.NET 运行时类）。
-0b. **当前 kit（#25：权限链 + Share/Scan 探测降级 + AOT 启动路径；#24 为 payload-in-libs 正式版、#23 为同 #22 负载的工具刷新）**已含上述全部修复与启动修复（P17 解压跳过、H7 rawfile fd 直读、headless abc `13.0.1.0`），并含设备里程碑回灌（宿主 `DT_NEEDED` 5 + 可选 API 按需 dlsym、HAP `resources.index`、ZIP offset/length + mkdir、DevEco 工程布局）与 payload-in-libs（payload 随签名 `libs/arm64-v8a/` 原地运行 + `.dotnet-payload.json`）；`tester-run.sh` v8 会自动采集 app-lib 证据与别名注册行（`hilog-applib`/`hilog-dlopen`/`app-libs-arm64`）、`hilog-bootstrap`（bootstrap/rawfile 失败特征）、`payload-files`/`payload-marker`、`meta/kit-selfcheck`（`kit_index_ok`/`payload=yes|no`）与 exec-memory（`hilog-execmem.txt`），首帧判定一并写进 `summary.txt`。数字入口 = release「## Integrity」；里程碑见 `2026-09-24-ohos-device-milestone.md`；#25 判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 `2026-09-25-ohos-tester-handoff-kit25.md`。
+0b. **当前 kit（#26：P2-INTEROP 全量 `LibraryImport` hosting + TASK-MIG 打包任务程序集化 + PLAT-GAP 消费方缺省化；#25 为权限链 + Share/Scan 探测降级 + AOT 启动路径；#24 为 payload-in-libs 正式版、#23 为同 #22 负载的工具刷新）**已含上述全部修复与启动修复（P17 解压跳过、H7 rawfile fd 直读、headless abc `13.0.1.0`），并含设备里程碑回灌（宿主 `DT_NEEDED` 5 + 可选 API 按需 dlsym、HAP `resources.index`、ZIP offset/length + mkdir、DevEco 工程布局）与 payload-in-libs（payload 随签名 `libs/arm64-v8a/` 原地运行 + `.dotnet-payload.json`）；`tester-run.sh` v8 会自动采集 app-lib 证据与别名注册行（`hilog-applib`/`hilog-dlopen`/`app-libs-arm64`）、`hilog-bootstrap`（bootstrap/rawfile 失败特征）、`payload-files`/`payload-marker`、`meta/kit-selfcheck`（`kit_index_ok`/`payload=yes|no`）与 exec-memory（`hilog-execmem.txt`），首帧判定一并写进 `summary.txt`。数字入口 = release「## Integrity」；里程碑见 `2026-09-24-ohos-device-milestone.md`；#25 判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 `2026-09-25-ohos-tester-handoff-kit25.md`，#26 增量判定点（新 payload 首次运行/原生桥 ABI/PLAT-GAP 恢复路径）见 `2026-09-26-ohos-tester-handoff-kit26.md`。
 1. 用你的自签流程签这四个 hap（bundleName 已合法，**不用改名**，不用改 module.json）。
 2. `hdc install …probe1-unsigned.hap` → `hdc shell aa start -b com.example.hellomauiapp.probe1 -a EntryAbility`；probe2 / probe3 / probe4 同理把后缀换成 `probe2` / `probe3` / `probe4`。
 3. 抓 hilog，回传所有含 `PROBE1` / `PROBE2` / `PROBE3` / `PROBE4` 的行；若退出，再附 `AppKilledReporter`/`JsError` 前后各 200 行。

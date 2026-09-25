@@ -8,7 +8,9 @@
 >
 > **2026-09-24 更新（kit #24）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局（kit #23 = 工具刷新：强化 `verify-kit.sh` + `tester-run.sh` v7 入包）。**kit #24**：payload 进 hap `libs/arm64-v8a/` 原地启动（`.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（§2.6，采集为 `hilog/hilog-execmem.txt`）；不含 seccomp 拦截器。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。JIT 崩溃（`SEGV_ACCERR`）的判定与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`；`tester-run.sh` **v8** 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt`（§2.4–§2.6）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
 >
-> **2026-09-25 更新（kit #25，当前）**：新增权限链（`reason`/`usedScene` + 请求点门禁）、Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级）与 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；启动崩溃判定（`probe:`/`xwe`、P1–P4、bootstrap）**不变**，kit #25 回归点 = JIT hap 仍走 hostfxr 回退正常启动。本轮判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动）见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`。
+> **2026-09-26 更新（kit #26，当前）**：互操作/打包/平台缺口收口 —— hosting 桥全量 `LibraryImport`（125 处，`DllImport` 归零，导出契约 118/118；hap 内 hosting DLL 55,808 B）、hap 打包任务程序集化（pack `tools/Microsoft.OpenHarmony.Tasks.dll`）、AspNetCore KFR/RID/apphost 缺省化（消费方无需工程级规避）；**启动崩溃判定（`probe:`/`xwe`、P1–P4、bootstrap）不变**，kit #26 回归点 = 重建 payload（LibraryImport hosting）仍正常启动、原生桥行为与 #25 一致。kit #25 的权限/Share/Scan/AOT 判定点继续有效（见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`），本轮增量判定点见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §2。
+>
+> **2026-09-25 更新（kit #25）**：新增权限链（`reason`/`usedScene` + 请求点门禁）、Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级）与 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；启动崩溃判定（`probe:`/`xwe`、P1–P4、bootstrap）**不变**，kit #25 回归点 = JIT hap 仍走 hostfxr 回退正常启动。本轮判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动）见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`。
 
 ## 0. 一页摘要
 
@@ -46,7 +48,7 @@ sh verify-kit.sh --tree-digest
 
 ### 1.2 安装与启动
 
-沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#25，权限链 + Share/Scan 探测 + AOT 启动路径，含 #24 payload-in-libs）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
+沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#26，P2-INTEROP/TASK-MIG/PLAT-GAP；权限链/Share-Scan/AOT 沿用 #25，含 #24 payload-in-libs）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
 
 ```sh
 hdc install hello-maui-app.hap
@@ -138,7 +140,7 @@ grep execmem_lines <证据包>/summary.txt                              # 0 = �
 - 每个探针 token 为 `OK` 或失败 `errno`：**1** = 匿名 `mmap(RWX)`（W^X=0 的 JIT 路径）· **2** = 匿名 `mmap(RW)`→`mprotect(RX)` · **3** = `memfd` + `mprotect(RX)`（W^X=1 路径）· **4** = 临时文件 `mmap(RX)`。典型 errno：`1` EPERM · `12` ENOMEM · `13` EACCES · `38` ENOSYS。
 - 判定：`1=OK` ⇒ 匿名可执行在 HAP 域可用，JIT（默认 `EnableWriteXorExecute=0`）应可用，报证 = managed app 运行 + 无 `SEGV_ACCERR`；若 `1=OK` 仍 `SEGV_ACCERR`，附 probe 行/xwe 行/崩溃栈继续定位。`1≠OK` ⇒ 本固件 HAP 域拒绝匿名可执行，JIT 不可用，转 NativeAOT。
 - A/B：在 `<filesDir>/xwe.txt` 写入首字节 `1`（DevEco Device File Browser）→ hilog 出现 `xwe=1 source=file`，复现 W^X=1 的同形崩溃；删除后恢复 `xwe=0 source=default`。完整判定表与 NativeAOT 步骤见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 与 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
-- 注意 kit #24/#25 **不含 seccomp 拦截器**（不再需要，且会 strip `PROT_EXEC` 破坏 JIT）；请确认未叠加旧本地补丁后再判读。
+- 注意 kit #24 起（含 #26）**不含 seccomp 拦截器**（不再需要，且会 strip `PROT_EXEC` 破坏 JIT）；请确认未叠加旧本地补丁后再判读。
 
 ## 3. 四个快速 A/B（各 5 分钟，能跑几个跑几个）
 
@@ -167,6 +169,6 @@ grep execmem_lines <证据包>/summary.txt                              # 0 = �
 4. [ ] 一个 jscrash 文件名（+ 内容/截图，若有）。
 5. [ ] §2 的 hilog 过滤片段（含崩溃点前后各 200 行）与崩溃时间戳；旧包日志若有也附。
 6. [ ] §3 四条 A/B 的结果（每条一行：通过/失败 + 一句话现象）。
-7. [ ] **JIT 相关（kit #24 起，kit #25 沿用）**：`hilog-execmem.txt` 原文（`probe:` 行 + `xwe=` 行）与 `summary.txt` 的 `execmem_lines`；做过 A/B 的附两轮对照。判定表见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
+7. [ ] **JIT 相关（kit #24 起，kit #26 沿用）**：`hilog-execmem.txt` 原文（`probe:` 行 + `xwe=` 行）与 `summary.txt` 的 `execmem_lines`；做过 A/B 的附两轮对照。判定表见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §4 / `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
 
 > 收到后我们按 `验收说明.md` §6 模板归档；若重测后一切正常，回传 1–2 与一句"已通过"即可。
