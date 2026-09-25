@@ -31,6 +31,7 @@
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
+| `2026-09-25-ohos-ms-hmos-compliance.md` | 四域 skill 合规审计与彻底修复报告（ArkTS · NAPI · 互操作/AOT · MSBuild）：30 条 = 违例 13 · 偏差 17，**25 条按最彻底修法已修 / 5 条排期 + 2 项 SDK 基建**；逐条 `文件:行`/规则依据/严重度/最小-最彻底修法/提交与验证数字（交互 326/floor 306、IL 告警 0、118/118 导出契约、selftest 全绿）、外部条件与文档回填、R1–R11 交叉引用 | ✅ 当前（2026-09-25）|
 | `2026-09-24-ohos-runtime-strategy.md` | 运行时策略（JIT 现实核查 → 四条路线）：平台策略/ACL 核实（`ALLOW_EXECUTABLE_FORT_MEMORY` 引用错位、对口权限限 2in1/受邀）、CoreCLR 解释器存在性与最小 spike、NativeAOT 主路线两走法、seccomp/补丁不采用、仍未验证项 | ✅ 决议（2026-09-24）|
 | `2026-09-23-ohos-pr-review-compliance.md` | 上游 PR 评审规则遵循报告：R1–R11 规则表（来源评论/约定）、三份只读审计（runtime / sdk+aspnet / workload+maui）的偏差/违例 → 修复提交 → 脚本化复审计证据（grep/sha256/json/diff/树哈希/远端 ref）、有意保留与结构性清单、待上游动作（arcade 合并 / rerun / 复评 / issue 三问）；结论：硬违例 0、R1–R11 全合规 | ✅ 当前（2026-09-23）|
 | `2026-09-23-ohos-security-scan-2.md` | 五仓库安全扫描 #2（3+2 猎手 + 4 份独立 PoC 对抗）：16 条候选（A1–A3、MB-1–3、H-C1–3、D-1–6、sec-e C3），**16 条全部已修**（含 H-C3 绝对路径 dlopen + 静态链接开关、CLI 已编译验证、binary-sign-tool 可选 pin、tar 成员负测）；上轮 23 条复核 21 有效 / B5 改名 / B6→H-C2 已修；含逐条攻击路径、`文件:行` 证据、复现命令与残留风险 | ✅ 当前（2026-09-23）|
