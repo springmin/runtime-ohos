@@ -10,6 +10,31 @@
 > `systemShare` / `MapComponentController` / `scanBarcode` / `pushService` / `HuaweiID` / `liveViewManager` /
 > `paymentService` / `CoreSpeechKit` **全部 0 命中**。唯一例外是 **`@kit.AdsKit`**（`@ohos.advertising` +
 > `@ohos.identifier.oaid` 存在）。下文「可补齐」一律指 **HarmonyOS SDK + HMS 设备分支**，不代表当前栈可用。
+>
+> **KIT-IMPL 回填（2026-09-25）**：本轮已做可行性实验并落地首批，结论如下（完整报告与日志：
+> `/data/storage/el2/base/tmp/opencode/kit-impl/feasibility-report.md`、`probe-a*/`）：
+>
+> 1. **动态 import 结论**：字面量 `import('@kit.ShareKit')` 等在 OpenHarmony SDK 下是**硬编译错误**
+>    （5 Kit 全部 `10505001 Cannot find module … or its corresponding type declarations`，`typeCheck` 真假皆然；
+>    `@kit.AdsKit` 存在故正常解析，作为阳性对照）；**变量说明符 + 本地结构接口 cast** 可编译
+>    （`CompileArkTS Finished`，abc `13.0.1.0`，224,076 B），运行时在无 Kit 设备抛错并被捕获 → 语言层面只能
+>    做「特性探测 + 优雅降级」，无法在 OpenHarmony SDK 上静态编译 Kit 调用。
+> 2. **HarmonyOS SDK 分支**：本构建机**无** HarmonyOS SDK（仅 `ohos-sdk 26.0.0.18_1/_2`；设备侧 DevEco 用的
+>    `/data/app/sdk.org/sdk_1.0.0/default/hms/ets` 不在本机）。设备侧 DevEco 构建证据：`runtimeOS=HarmonyOS` +
+>    `compatibleSdkVersion 6.1.0(23)` + `hms/ets` → abc **`13.0.1.0`**（11,124 B），**过 13.0.1.0 门禁**。
+>    `build-arkts-shell.sh` 已增 opt-in `ARKTS_SDK_FLAVOR=harmony`（默认 openharmony 不变；SDK 根
+>    `ARKTS_HARMONY_SDK_ROOT`/`DEVECO_SDK_HOME`、`externalApiPaths` 加 `hms/ets`、`runtimeOS=HarmonyOS`、
+>    `compatibleSdkVersion 6.1.0(23)`；abc 头门禁仍为 `13.0.1.0`），selftest T14 覆盖两 flavor 与拒绝路径；
+>    完整构建需在装有 HarmonyOS SDK 的机器执行。
+> 3. **首批已落地（Share + Scan）**：壳侧 `canIUse`/变量 import 探测成功才注册 sink（Share：
+>    `systemShare.SharedData/ShareController.show` 多文件；Scan：`canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')` +
+>    `scanBarcode.startScanForResult`），host 侧 `ohos_host_share_kit_share` / `ohos_host_scan_*`，托管侧
+>    `OpenHarmonyShareKitBridge`（多文件分支）与 `OpenHarmonyScan`（平台扩展）；缺失/失败一律降级并记状态。
+>    harness 新增 kit1/kit2/kit3 三条断言（324 [verify]，floor 304）。OpenHarmony 设备上两个 sink 均不注册，
+>    降级路径已离线验证（`kit3`）。
+> 4. **仍需外部条件**：**Push**（AGC 开通 + 含推送权限 Profile + `1000900010` 排障）、**Account**（一键登录
+>    scope 审批 `1001502014` + 服务端换号）、**Map**（AGC AppKey）、LiveView/Payment（权益/商户）——均未落地；
+>    且全部需要 **HMS 设备** 与 **HarmonyOS SDK 构建**才可真机验收。
 
 ## 1. 能力矩阵
 
@@ -17,8 +42,8 @@
 |---|---|---|---|---|---|---|---|
 | TTS（TextToSpeech） | 链路已接、sink 如实返回不可用（覆盖矩阵 §4；审计 §5c；`OpenHarmonyTextToSpeech.cs:1-9`、`Index.ets:2223`） | **无**：25 Kit 无 Core Speech Kit；`02-development` 检索 `CoreSpeechKit`/`textToSpeech` 0 命中 | 无（技能未提供；本机 SDK 无 `@kit.CoreSpeechKit`/`@ohos.ai.tts`） | 平台扩展（替换现有 TTS sink） | S（待引擎） | 无引擎可用 | **维持门控**（此前判定不变） |
 | Map / POI / 路线 | 未实现（覆盖矩阵 §4；审计 §7/§20） | Map Kit：`hmos-map-kit-{map-creation,poi-search,route-planning}` | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线/导航；需 AGC 开通地图服务 + AppKey | 平台扩展（无 Essentials 对应）/仅文档 | L* | AGC AppKey、HMS 设备 | 维持门控；记录 HarmonyOS 分支 |
-| 系统分享面板 / 多文件 | 文本 + 单文件（隐式 `sendData` Want）；多文件记录在案 no-op（覆盖矩阵 §2 `Share` 行、§4；`OpenHarmonyAppLauncher.cs:22,193`） | Share Kit：`hmos-share-kit-panel-share`（one-sdk 语料） | `import { systemShare } from '@kit.ShareKit'`；`new systemShare.SharedData({ utd, content\|uri })`；`new systemShare.ShareController(data).show(context, opts)`；≤500 条/200KB；起始 4.1.0(11)；手机/平板/2in1 | Essentials `Share` 多文件分支（平台扩展） | M* | HMS 设备；`utd`/uri 语义 | 维持门控；记录 HarmonyOS 分支 |
-| 扫码（默认 / 自定义） | 未实现（无 Essentials 对应；相机 picker 已有） | Scan Kit：`hmos-scan-kit-defaultscan`/`-customscan` | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(ctx)`；`canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')`；默认免 CAMERA、自定义需 `ohos.permission.CAMERA`；起始 4.0.0(10) | 平台扩展（新增） | M* | 设备 syscap | 维持门控；记录 HarmonyOS 分支 |
+| 系统分享面板 / 多文件 | 文本 + 单文件（隐式 `sendData` Want）；多文件记录在案 no-op（覆盖矩阵 §2 `Share` 行、§4；`OpenHarmonyAppLauncher.cs:22,193`） | Share Kit：`hmos-share-kit-panel-share`（one-sdk 语料） | `import { systemShare } from '@kit.ShareKit'`；`new systemShare.SharedData({ utd, content\|uri })`；`new systemShare.ShareController(data).show(context, opts)`；≤500 条/200KB；起始 4.1.0(11)；手机/平板/2in1 | Essentials `Share` 多文件分支（平台扩展） | M* | HMS 设备；`utd`/uri 语义 | **KIT-IMPL 已落地**：壳 `registerShareKitSink` 探测成功才注册；无 Kit 时多文件仍走既有 no-op + 状态；真机验收待 HMS 设备 |
+| 扫码（默认 / 自定义） | 未实现（无 Essentials 对应；相机 picker 已有） | Scan Kit：`hmos-scan-kit-defaultscan`/`-customscan` | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(ctx)`；`canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')`；默认免 CAMERA、自定义需 `ohos.permission.CAMERA`；起始 4.0.0(10) | 平台扩展（新增） | M* | 设备 syscap | **KIT-IMPL 已落地**：壳 `registerScanSink`（canIUse+import 双门）+ 托管 `OpenHarmonyScan`（`IsSupported`/`ScanAsync`）；无 Kit 设备 `IsSupported=false`；真机验收待 HMS 设备 |
 | 远端推送（Push） | 本地通知已实现（覆盖矩阵 §1b BATCH-3 `PostNotifications`）；华为 Push 未实现 | Push Kit：`hmos-push-kit`（+token/notification/background/voip） | `import { pushService } from '@kit.PushKit'`；`pushService.getToken(): Promise<string>`；需 AGC 开通推送 + 含推送权限 Profile；无需 module 权限 | 平台扩展（Push token / 消息） | M* | AGC 开通 + 签名绑定 | 维持门控 |
 | 账号一键登录 | WebAuthenticator 诚实降级（覆盖矩阵 §3：`FeatureNotSupportedException` + status） | Account Kit：`hmos-account-kit-quicklogin-client` | `import { authentication, loginComponentManager } from '@kit.AccountKit'`；`createAuthorizationWithHuaweiIDRequest()` + `scopes=['quickLoginAnonymousPhone']`；`LoginWithHuaweiIDButton`；syscap `SystemCapability.AuthenticationServices.HuaweiID.UIComponent`；设备 Phone/PC2in1/Tablet/TV（TV 自 5.1.1(19)） | 平台扩展 / 仅文档（与 WebAuthenticator 生态不同） | L* | 权限审批（1001502014）+ 服务端换号 | 维持门控 |
 | Live View（实况窗） | 无记录（新评估） | Live View Kit：`hmos-live-view-kit-build-location` | `import { liveViewManager } from '@kit.LiveViewKit'`；`isLiveViewEnabled()`；`startLiveView(view)`；syscap `SystemCapability.LiveView.LiveViewService`；需权益 + 设备开关 + 场景白名单（9 类） | 仅文档（无 MAUI 对应） | L* | 权益审批 | 仅记录 |
@@ -39,8 +64,8 @@
 
 | # | 项 | 是否真能补齐 | 技能内 API 证据（原文） | 最小可交付 / 验收点 |
 |---|---|---|---|---|
-| 1 | 系统分享面板 / 多文件（Share） | **可补齐\***（技能覆盖最完整、无权限申请、直接映射 Essentials `Share`） | `import { systemShare } from '@kit.ShareKit'`；`let controller: systemShare.ShareController = new systemShare.ShareController(data)`；`controller.show(context, {...})`；`new systemShare.SharedData({ utd: utd.UniformDataType.PLAIN_TEXT, content: 'Hello HarmonyOS' })`；`controller.on('shareCompleted', ...)` | 交付：壳 `systemShare` sink + host `ohos_host_share_multi` + `ShareMultipleFilesRequest` 分支；验收：多文件面板弹出、`shareCompleted` 回执、OpenHarmony 上仍走既有 no-op |
-| 2 | 扫码（Scan） | **可补齐\***（默认界面单 API、免 CAMERA 权限、`canIUse` 自检） | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(this.uiContext.getHostContext())`；`const isScanBarCode = canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')` | 交付：平台扩展（默认界面扫码）+ 壳 sink；验收：返回 `result.originalValue`；不支持设备走 syscap 分支 |
+| 1 | 系统分享面板 / 多文件（Share） | **可补齐\* + 首批已落地**（技能覆盖最完整、无权限申请、直接映射 Essentials `Share`） | `import { systemShare } from '@kit.ShareKit'`；`let controller: systemShare.ShareController = new systemShare.ShareController(data)`；`controller.show(context, {...})`；`new systemShare.SharedData({ utd: utd.UniformDataType.PLAIN_TEXT, content: 'Hello HarmonyOS' })`；`controller.on('shareCompleted', ...)` | 交付：壳 `registerShareKitSink` + host `ohos_host_share_kit_share` + `ShareMultipleFilesRequest` 分支；OpenHarmony 上 sink 不注册、仍走既有 no-op；shareCompleted 回执：壳侧 `shareCompleted` 日志（托管 IShare 契约在派发时完成）；真机验收待 HMS 设备 |
+| 2 | 扫码（Scan） | **可补齐\* + 首批已落地**（默认界面单 API、免 CAMERA 权限、`canIUse` 自检） | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(this.uiContext.getHostContext())`；`const isScanBarCode = canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')` | 交付：壳 `registerScanSink` + host `ohos_host_scan_*` + 托管 `OpenHarmonyScan`（`IsSupported`/`ScanAsync`）；验收：返回 `result.originalValue`；不支持设备走 syscap 分支（离线已验证 `IsSupported=false`/`ScanAsync=null`） |
 | 3 | Map（Map Kit） | **可补齐\***（地图 / POI / 路线技能齐全） | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`import { site } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线规划 | 交付：`IMapService`（嵌入 MapComponent 平台视图）或仅 AppLinking 跳花瓣地图；验收：渲染 + POI + WGS84→GCJ02 |
 | 4 | Push（Push Kit） | **可补齐\***（token 链路简单，但依赖 AGC 开通） | `import { pushService } from '@kit.PushKit'`；`pushService.getToken().then((token: string) => ...)` | 交付：token 获取 + 上报；验收：日志出现 token；失败按 1000900010 排查 |
 | 5 | 账号一键登录（Account Kit） | **可补齐\***（门槛最高：权限审批 + 服务端换号） | `import { authentication, loginComponentManager } from '@kit.AccountKit'`；`new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest()`；`authRequest.scopes = ['quickLoginAnonymousPhone']`；`LoginWithHuaweiIDButton({ params: { loginType: loginComponentManager.LoginType.QUICK_LOGIN, ... } })` | 交付：登录页 + 匿名手机号获取 + 服务端换取明文手机号；验收：无 1001502014 / 1001500001 |
@@ -54,14 +79,14 @@
 
 - **Hot Reload**：`hdc` 被组织策略拦截（`E00C001`）；且需 `dotnet watch`/agent、设备通道与运行时 metadata update——三项均不在 Kit 技能覆盖范围（最终状态 §2 D4）。
 - **arm32**：无 32 位设备验证路径；N13/S1a/A1 只发 arm64/x64；启动条件 = 拿到 32 位设备/模拟器（arm32 差距分析 §0）。
-- **HMS Kit 通道（Share/Scan/Map/Push/Account/LiveView/Payment 共性）**：需 ① 以 HarmonyOS SDK（DevEco/HMS）替换 OpenHarmony SDK 并切换 `runtimeOS`；② AGC 侧开通/审批（推送、地图服务 AppKey、一键登录权限、实况窗权益、支付商户）；③ 签名证书指纹绑定 + 含权益的 Profile；④ HMS 设备。属项目级决策，不在本切片单点修复范围。
+- **HMS Kit 通道（剩余 Map/Push/Account/LiveView/Payment 共性）**：需 ① 以 HarmonyOS SDK（DevEco/HMS）替换 OpenHarmony SDK 并切换 `runtimeOS`（**Share/Scan 的 SDK 分支与探测代码已就绪，`ARKTS_SDK_FLAVOR=harmony`**）；② AGC 侧开通/审批（推送、地图服务 AppKey、一键登录权限、实况窗权益、支付商户）；③ 签名证书指纹绑定 + 含权益的 Profile；④ HMS 设备。Share/Scan 已落地降级+探测链路，**真机验收**仍需 ①+④；Push/Account/Map 等需 ①–④ 全部。
 - **WebAuthenticator**：无 Kit 可解，维持诚实降级；工程路径见覆盖矩阵 §3（①–④，前三件可离设备，工作量 M）。
 - **MediaElement**：无 Kit 门控；如落地需在平台层自建 AudioKit/MediaKit/AVSessionKit 播放器（以社区工具包契约为准）。
 - **SecureStorage 硬件路径**：待真机确认 HUKS 应答；否则维持每安装文件密钥（已记录非硬件后备）。
 
 ## 4. 不确定项
 
-1. **探针边界**：本机 SDK 结论为静态文件遍历（0 命中）；动态 `import()` 缺失模块能否过 hvigor 编译未实测——TTS 静态 import 已证 `Cannot find module`（`Index.ets:2223-2225`），接入 HMS Kit 不能假定可绕行。
+1. **探针边界（已解，2026-09-25）**：动态 `import()` 已实测（KIT-IMPL probe a/a2/a3/a4）：**字面量说明符在 OpenHarmony SDK 下是硬编译错误**（5 Kit 全部 `10505001 Cannot find module …`，`typeCheck` 真假皆然；`@kit.AdsKit` 存在故解析正常，阳性对照）；**变量说明符 `import(name)` + 本地结构接口 cast** 可过编译（`CompileArkTS Finished`，abc `13.0.1.0`/224,076 B），运行时缺 Kit 抛错被 catch。因此 OpenHarmony flavor 只能承载「探测 + 降级」，Kit 调用需 HarmonyOS SDK 分支（见文首 KIT-IMPL 回填与 `probe-a*/` 日志）。
 2. **设备差异**：技能仅对 Share（手机/平板/2in1）、Account（Phone/PC2in1/Tablet/TV）、Scan（syscap 自检）、LiveView（syscap）给出设备/能力信息；Map/Push/Payment 的设备清单未标注，真机 `canIUse` 未取证。
 3. **AGC 门槛**：Push `1000900010`（未开通/签名）、Account `1001502014`（未申请 scope 权限）、Map AppKey、LiveView 权益与场景白名单、Payment 商户/证书——均需 AGC 侧人工操作/审批，本环境不可代办。
 4. **Ads 例外**：`@kit.AdsKit` 在 SDK 中存在且 API 可编译（`AdLoader.loadAd` / `advertising.showAd`），但 OpenHarmony 设备是否有广告服务/广告位未证（预期 801 / 21800003）。
@@ -72,3 +97,4 @@
 
 - **可补齐（条件性，仅 HarmonyOS 分支）5 项**：Share、Scan、Map、Push、Account；**仅记录 3 项**：LiveView、Payment、Ads；**维持门控 6 项**：TTS（双否）、Hot Reload、arm32、WebAuthenticator、SecureStorage 兜底、MediaElement。
 - 在当前 OpenHarmony SDK 26.0.0.18 + OpenHarmony 设备上，本轮技能核查**未改变任何既有门控**；新增的确切信息是「这些 Kit 在 HarmonyOS 侧确有其事，且有可引用的 API 证据」，可作为未来切换 HarmonyOS 工具链时的落地清单。
+- **KIT-IMPL 更新（2026-09-25）**：① Share 与 Scan 的**特性探测平台扩展已落地**（壳/宿主/托管/断言），在 OpenHarmony 设备上如实降级、在 HMS 设备上自动启用——不再是纯文档项；② `ARKTS_SDK_FLAVOR=harmony` 已进 `build-arkts-shell.sh`（默认行为不变、abc `13.0.1.0` 门禁保留），完整 HarmonyOS 构建仍需一台装有 HarmonyOS SDK 的机器；③ **Map/Push/Account 仍需外部条件**（AGC 开通/审批：Push `1000900010`、Account `1001502014`、Map AppKey）与 HMS 设备，本环境不可代办；④ 真机验收项：Share 多文件面板与 `shareCompleted`、Scan `originalValue`、HarmonyOS flavor 的 abc 装载（DevEco 证据仅到「6.1.0(23) → 13.0.1.0」）。
