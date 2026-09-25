@@ -19,7 +19,7 @@
 
 **设备状态：** 所有修复均未上机（设备安装受组织策略限制）；设备可见结论一律标注设备未验证。
 
-**发布：** kit #21（`device-test-kit`，2026-09-24；headless abc `13.0.1.0` + tester-run v6r2；壳/宿主/脚本 = `ohos-workload master`，托管面 = `maui-ohos 236d18a9`）已含全部修复；首轮修复随 kit #18/#19 出包（壳/宿主/脚本 = `ohos-workload 49cd70f3d1..2857837`，托管面 = `maui-ohos c730226f93`）；`sdk-ohos` 的安装器/签名加固随 sdk 分支及其 release 链发布。此后 **kit #22**（2026-09-24，设备里程碑回灌：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局）交付且仍未上机（当前已推进至 **kit #24**，payload-in-libs；见 `2026-09-22-ohos-release-manifest.md`），里程碑见 `2026-09-24-ohos-device-milestone.md`。
+**发布：** kit #21（`device-test-kit`，2026-09-24；headless abc `13.0.1.0` + tester-run v6r2；壳/宿主/脚本 = `ohos-workload master`，托管面 = `maui-ohos 236d18a9`）已含全部修复；首轮修复随 kit #18/#19 出包（壳/宿主/脚本 = `ohos-workload 49cd70f3d1..2857837`，托管面 = `maui-ohos c730226f93`）；`sdk-ohos` 的安装器/签名加固随 sdk 分支及其 release 链发布。此后 **kit #22**（2026-09-24，设备里程碑回灌：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局）交付且仍未上机（当前已推进至 **kit #25**，权限链 + Share/Scan 探测 + AOT 启动路径、含 #24 payload-in-libs；见 `2026-09-22-ohos-release-manifest.md` 与 `2026-09-25-ohos-tester-handoff-kit25.md`），里程碑见 `2026-09-24-ohos-device-milestone.md`。
 **#19–#21 追加修复：** headless abc `24.0.0.0` → `13.0.1.0`（`ohos-workload 4e5491d`）、workload bundle 外锚（`WORKLOAD_BUNDLE_SHA256`，`sdk-ohos/eng/ohos-install/versions.env`）、TLS H-C3（`3d1f6e45102`/`cfdba659d11`/`d7b730e5030`）等已随 kit #19–#21 发布或入库。
 
 ## 范围（五仓 + 对上游 delta）

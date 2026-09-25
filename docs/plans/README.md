@@ -3,29 +3,30 @@
 > 本目录是 OpenHarmony .NET/MAUI 移植的过程文档库：测试/交付文档、主审计报告、交接状态与历史批次记录。
 > 「状态（最后更新）」列 = 用途 + 该文件最近一次 git 提交日期。图例：✅ 当前生效 · 🔄 进行中/计划 · ⏳ 待执行 · 📦 阶段快照（已完成工作的记录）。
 > 「包内名」指该文档随设备测试 kit 分发时的文件名。
-> kit 自检：解压后在包内运行 `sh verify-kit.sh`（逐文件校验 `SHA256SUMS` + 5 个 hap 摘要；kit #23 起为强化版：逐 hap 深度断言 `resources.index`/abc/libs/`dotnet.zip`/宿主依赖，**kit #24 再加 `libs/arm64-v8a/.dotnet-payload.json` payload-in-libs 断言**，FAIL → 退出码 1、WARN → 仍 `KIT OK`；对 kit #22 全过、对旧包如实报 FAIL）。
+> kit 自检：解压后在包内运行 `sh verify-kit.sh`（逐文件校验 `SHA256SUMS` + 5 个 hap 摘要；kit #23 起为强化版：逐 hap 深度断言 `resources.index`/abc/libs/`dotnet.zip`/宿主依赖，**kit #24 再加 `libs/arm64-v8a/.dotnet-payload.json` payload-in-libs 断言**，**kit #25 更新期望值（abc `234620`/`18532`、`dotnet.zip` 254 项、`resources.index` ≤ 2 KiB）**，FAIL → 退出码 1、WARN → 仍 `KIT OK`；对 kit #22 全过、对旧包如实报 FAIL）。
 
 ## 面向测试与交付（外部读者优先）
 
 | 文档 | 一句话 | 状态（最后更新）|
 |---|---|---|
 | `2026-09-24-ohos-nativeaot-maui-slice.md` | MAUI 平台切片可发现性（回应 NativeAOT 阻塞 #4.2）：main=上游镜像不合并的原因、`feature/openharmony` + `ohos-slice-1.0.1` 源码包（含 sha256）、类型名对照（`UseOpenHarmony`/`OpenHarmonyMauiAppHost`/`OpenHarmonyBlazorWebViewHandler`）、csproj 源码包含与 TFM 门控接线、构建/下载验证 | ✅ 当前（2026-09-24）|
-| `2026-09-24-ohos-tester-handoff-kit24.md` | **kit #24 测试方交接**：host 里程碑 + 6 项闭环（切片 `ohos-slice-1.0.1`、aot-packs release、NETSDK1203 修复、JIT A/B 与 exec-memory 探针、payload-in-libs、策略文档）；下一步操作、`probe:`×`xwe` 判定表、A/B 指令、NativeAOT 主路线指引（fetch 脚本/NATIVE-AOT.md/期望输出）、仍未验证项 | ✅ 当前（2026-09-24）|
+| `2026-09-25-ohos-tester-handoff-kit25.md` | **kit #25 测试方交接（当前）**：kit #25 指纹（tar 195,567,555/树 `9014b428`/hap ~75.43 MB/libs 269=14+254+marker/abc 234,620/宿主 240,544/118 导出契约）与相对 #24 的 5 项增量（权限链 `reason`/`usedScene`、Share/Scan 探测降级、AOT 启动路径、present 缓存与 targets 加固、打包数字）；本轮判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）；校验与取证步骤、仍未验证边界 | ✅ 当前（2026-09-25）|
+| `2026-09-24-ohos-tester-handoff-kit24.md` | **kit #24 测试方交接（历史）**：host 里程碑 + 6 项闭环（切片 `ohos-slice-1.0.1`、aot-packs release、NETSDK1203 修复、JIT A/B 与 exec-memory 探针、payload-in-libs、策略文档）；`probe:`×`xwe` 判定表（kit #25 沿用）、A/B 指令、NativeAOT 主路线指引 | 📦 快照（2026-09-24）|
 | `2026-09-24-ohos-device-milestone.md` | **真机里程碑**：kit #17→#18 + 测试方 5 项本地修复后首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；结果与证据、根因链 5 项、我们侧回灌（commit 映射）、kit #22 指纹、仍未验证清单与 stock kit #22 复测判定点 | ✅ 里程碑（2026-09-24）|
-| `2026-09-22-ohos-release-manifest.md` | OpenHarmony 交付物总清单（**已刷新至 kit #24**，2026-09-24 快照）：kit 的 tar/树摘要（编号与数值以 release「## Integrity」为准）、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | ✅ 已刷新（2026-09-24，kit #24）|
-| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 自签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式；含「自 kit #17 以来的变化」速览与设备里程碑提示 | ✅ 当前（kit #24，2026-09-24）|
-| `2026-09-22-ohos-tester-runner.md` | 一条命令跑完一轮真机测试（`tester-run.sh` **v8**，随 kit release 单独发布；kit #24 版脚本大小/摘要以 release 资产页为准，本文不写死）：本地校验 kit → 安装/启动/抓 hilog（含 applib/dlopen/bootstrap/execmem 证据）→ 跑 P1–P4 → 打包回传；含 verify-kit 深度断言（#24：payload-in-libs marker）与 v7/v8 新键判读；默认 dry-run、无设备拒绝执行 | ✅ 当前（v8，kit #24，2026-09-24）|
-| `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能真机验证清单（M1–M13：权限/连通性/剪贴板/邮件短信拨号/截图/地理编码/窗口安全区/图像与单元格/无障碍/Shell 扩展 + 真实缺陷修复/UX 深化/rawfile 桥）：逐项「步骤/期望/证据」+ 探针 hap 与 `tester-run.sh` v8 用法（含 bootstrap/payload/execmem/kit 自检采集；kit #24 未新增 UI 入口） | ✅ 当前（kit #24，2026-09-24）|
-| `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（JsError / exit 254）：当前 kit（#24）重测与校验记录 + 最小 hilog/faultlog/status 取证 + §2.4 app-lib/别名/首帧 + §2.5 bootstrap/payload + §2.6 execmem 探针与 JIT 判定（v8 采集） + 四个 A/B + 回传清单；含 2026-09-24 设备证据修正 | ✅ 当前（kit #24，2026-09-24）|
-| `2026-09-21-ohos-crash-probes.md` | 启动崩溃探针 P1–P4（壳 / 宿主 dlopen / 宿主入口 dlsym / 逐依赖）：五层定位决策表 + 免安装 14 库自检；四类历史分支均已在 kit #16/#17 前修复（其中 napi 记录名一路按无害加固保留），kit #24 为当前包（payload-in-libs + execmem 采集）；4 个未签名 hap 挂在 `device-test-kit` release | ✅ 当前（kit #24，2026-09-24）|
-| `2026-09-22-ohos-startup-crash-rootcause.md` | 启动崩溃根因（测试方证据链）：9568257 自签名被拒属预期；签后启动 `ReferenceError: Cannot find module '…EntryAbility'`（exit 254）= 壳 abc 入口 record 缺陷（E1–E5 + cc-switch 37 vs 1~2 + 华为 FAQ `useNormalizedOHMUrl=false`）；H1/H2 是硬化非本因；修复 = PA1 重建壳 abc；四个阻塞均已在 kit #10–#17 修复；**§5f = 2026-09-24 设备证据修正（旧 #4 降级为无害加固、kit #22 回灌；当前 kit #24）** | ✅ 当前（kit #24 注，2026-09-24）|
-| `2026-09-21-ohos-device-report-template.md` | 下一轮真机回传一页模板（填补空白即可）：kit 身份/重签（含 p7b+p12+cer 预签路径）/安装/启动/§4b 验签/§4c app-lib 与首帧（含 v7 起 bootstrap/payload/execmem 栏）/探针 P1–P4/附件清单，供机器解析归档；数字一律指向 release「## Integrity」与 `tester-run.sh` 摘要 | ✅ 当前（kit #24，2026-09-24）|
-| `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`；kit #24 payload-in-libs/execmem 已同步，含强化 verify-kit 说明）| ✅ 当前（kit #24，preview.24）|
-| `2026-09-21-ohos-device-run-playbook.md` | 真机运行操作手册：包内 `sh verify-kit.sh` 校验（#23 起深度断言、#24 加 payload-in-libs）→ 安装/启动 → hilog 取证（v8 含 execmem）→ 5 条冒烟 → 9568344/E00C001 失败分支（含预签路径）与回传；含里程碑提示 | ✅ 当前（kit #24，v8）|
+| `2026-09-22-ohos-release-manifest.md` | OpenHarmony 交付物总清单（**已刷新至 kit #25**，2026-09-25 快照）：kit 的 tar/树摘要（编号与数值以 release「## Integrity」为准）、release 资产（探针/tester-run.sh/新功能清单）、bundle、五仓库分支短哈希、校验三步、两条签名路径、SDK 门控与阅读入口 | ✅ 已刷新（2026-09-25，kit #25）|
+| `2026-09-20-ohos-tester-quickstart.md` | 外部测试方一页版：下载校验 → 选 hap（4 自签 + 1 未签）→ 安装 → 先测 5 条 → 回传格式；含「自 kit #17 以来的变化」速览（至 kit #25）与设备里程碑提示 | ✅ 当前（kit #25，2026-09-25）|
+| `2026-09-22-ohos-tester-runner.md` | 一条命令跑完一轮真机测试（`tester-run.sh` **v8**，随 kit release 单独发布；kit #24/#25 版脚本未变，大小/摘要以 release 资产页为准，本文不写死）：本地校验 kit → 安装/启动/抓 hilog（含 applib/dlopen/bootstrap/execmem 证据）→ 跑 P1–P4 → 打包回传；含 verify-kit 深度断言（#24 payload-in-libs、#25 期望值）与 v7/v8 新键判读；默认 dry-run、无设备拒绝执行 | ✅ 当前（v8，kit #25，2026-09-25）|
+| `2026-09-22-ohos-new-features-device-checklist.md` | 本轮新功能真机验证清单（M1–M13：权限/连通性/剪贴板/邮件短信拨号/截图/地理编码/窗口安全区/图像与单元格/无障碍/Shell 扩展 + 真实缺陷修复/UX 深化/rawfile 桥）：逐项「步骤/期望/证据」+ 探针 hap 与 `tester-run.sh` v8 用法（含 bootstrap/payload/execmem/kit 自检采集；kit #25 未新增 UI 入口，新增 §0.6 判定点：权限弹窗文案/Share 面板/Scan 返回/AOT 启动） | ✅ 当前（kit #25，2026-09-25）|
+| `2026-09-21-ohos-device-crash-diagnostics.md` | 启动崩溃分支（JsError / exit 254）：当前 kit（#25）重测与校验记录 + 最小 hilog/faultlog/status 取证 + §2.4 app-lib/别名/首帧 + §2.5 bootstrap/payload + §2.6 execmem 探针与 JIT 判定（v8 采集） + 四个 A/B + 回传清单；含 2026-09-24 设备证据修正与 kit #25 更新 | ✅ 当前（kit #25，2026-09-25）|
+| `2026-09-21-ohos-crash-probes.md` | 启动崩溃探针 P1–P4（壳 / 宿主 dlopen / 宿主入口 dlsym / 逐依赖）：五层定位决策表 + 免安装 14 库自检；四类历史分支均已在 kit #16/#17 前修复（其中 napi 记录名一路按无害加固保留），kit #25 为当前包（权限链/Share-Scan 探测/AOT 启动 + #24 payload-in-libs + execmem 采集）；4 个未签名 hap 挂在 `device-test-kit` release | ✅ 当前（kit #25，2026-09-25）|
+| `2026-09-22-ohos-startup-crash-rootcause.md` | 启动崩溃根因（测试方证据链）：9568257 自签名被拒属预期；签后启动 `ReferenceError: Cannot find module '…EntryAbility'`（exit 254）= 壳 abc 入口 record 缺陷（E1–E5 + cc-switch 37 vs 1~2 + 华为 FAQ `useNormalizedOHMUrl=false`）；H1/H2 是硬化非本因；修复 = PA1 重建壳 abc；四个阻塞均已在 kit #10–#17 修复；**§5f = 2026-09-24 设备证据修正（旧 #4 降级为无害加固、kit #22 回灌；2026-09-25 更新至 kit #25）** | ✅ 当前（kit #25 注，2026-09-25）|
+| `2026-09-21-ohos-device-report-template.md` | 下一轮真机回传一页模板（填补空白即可）：kit 身份/重签（含 p7b+p12+cer 预签路径）/安装/启动/§4b 验签/§4c app-lib 与首帧（含 bootstrap/payload/execmem 栏）/§4d kit #25 判定点/探针 P1–P4/附件清单，供机器解析归档；数字一律指向 release「## Integrity」与 `tester-run.sh` 摘要 | ✅ 当前（kit #25，2026-09-25）|
+| `2026-09-19-ohos-hap-acceptance-for-testers.md` | 完整验收说明：交付物、安装、A1–K2 与 N1–N7 清单、日志关键字与 status 对照、回传模板（包内名 `验收说明.md`；kit #25 权限链/Share-Scan 判定点与 payload-in-libs/execmem 已同步，含强化 verify-kit 说明）| ✅ 当前（kit #25，preview.24）|
+| `2026-09-21-ohos-device-run-playbook.md` | 真机运行操作手册：包内 `sh verify-kit.sh` 校验（#23 起深度断言、#24 加 payload-in-libs、#25 更新期望值）→ 安装/启动 → hilog 取证（v8 含 execmem）→ 5 条冒烟 → 9568344/E00C001 失败分支（含预签路径）与回传；含里程碑提示与 kit #25 判定点 | ✅ 当前（kit #25，v8）|
 | `2026-09-19-ohos-signing-and-udid-guide.md` | `9568344` 根因（调试 profile 绑定 UDID）与自助/代签重签流程；含华为自动签名材料代签（`scripts/sign-huawei.sh`，包内名 `签名与UDID指南.md`）| ✅ 当前（2026-09-21）|
 | `2026-09-20-ohos-dotnet-getting-started.md` | 第三方开发者英文上手：安装 workload、选 TFM/publish hap、签名与 UDID、故障排查 | ✅ 当前（2026-09-20）|
-| `2026-09-21-ohos-tester-selfsign.md` | 未签名 hap 自助签名（DevEco 自动签名 + hap-sign-tool）；包内名 `自签说明.md`；kit #22 起 `签名说明.txt` 的 PA1 历史句已随源修复 | ✅ 当前（kit #24，preview.24）|
-| `2026-09-21-ohos-delivery-kit-readme.md` | kit 交付包总说明：基线 preview.24、5 hap 用途、安装与 9568344 指路（含预签路径）；包内名 `README-交付说明.md`；kit #24 已同步（payload-in-libs + 强化 verify-kit + v8 execmem） | ✅ 当前（kit #24，preview.24）|
+| `2026-09-21-ohos-tester-selfsign.md` | 未签名 hap 自助签名（DevEco 自动签名 + hap-sign-tool）；包内名 `自签说明.md`；kit #22 起 `签名说明.txt` 的 PA1 历史句已随源修复 | ✅ 当前（kit #25，preview.24）|
+| `2026-09-21-ohos-delivery-kit-readme.md` | kit 交付包总说明：基线 preview.24、5 hap 用途、安装与 9568344 指路（含预签路径）；包内名 `README-交付说明.md`；kit #25 已同步（权限链/Share-Scan 判定点 + payload-in-libs + 强化 verify-kit + v8 execmem） | ✅ 当前（kit #25，preview.24）|
 
 ## 当前状态与规划
 
@@ -48,7 +49,7 @@
 | `2026-09-18-ohos-arkts-essentials-bridge-plan.md` | ArkTS 桥接 Essentials 的集成模式与逐 API 落地管线 | 🔄 计划（2026-09-19）|
 | `2026-09-18-ohos-secure-storage-huks-plan.md` | SecureStorage 改用 HUKS 硬件密钥库的改造计划（当前为 XOR 回退实现）| 🔄 计划（2026-09-18）|
 | `2026-09-18-ohos-openharmony-api-proposal.md` | 上游 API 提案草稿（`OSPlatform.OpenHarmony`、`OperatingSystem.IsOpenHarmony` 等）| 🔄 草稿待上游评审（2026-09-18）|
-| `2026-09-18-ohos-device-validation-checklist.md` | 设备侧验证清单（英文）：每一步含命令与可观察结果；已更新到 kit #24（2026-09-24，payload-in-libs + 显式 W^X=0 + execmem 探针；数字指向 release「## Integrity」；含里程碑 §6 判定点与 v8 采集字段）| ⏳ 待设备（stock kit #22 起复测；里程碑已达成于 kit #18 + 本地修复）|
+| `2026-09-18-ohos-device-validation-checklist.md` | 设备侧验证清单（英文）：每一步含命令与可观察结果；已更新到 kit #25（2026-09-25，权限链 + Share/Scan 探测 + AOT 启动路径；数字指向 release「## Integrity」；含里程碑 §6 判定点与 v8 采集字段）| ⏳ 待设备（stock kit #22 起复测；里程碑已达成于 kit #18 + 本地修复）|
 
 ## 主审计报告要点（`2026-09-19-ohos-code-audit.md`，§1–§37）
 

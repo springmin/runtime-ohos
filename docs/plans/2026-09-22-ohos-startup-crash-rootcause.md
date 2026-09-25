@@ -25,8 +25,8 @@
 >    （别名注册覆盖两种约定 + 标准化壳构建，保留入口 record 修复所用的 bundle 名）**进行中（in flight）**。
 >    见 §5d/§5e。
 >
-> **2026-09-24 状态**：四个启动阻塞均已在 kit #10/#11/#12/#16（+ #17 `libIsolation` repack）修复；当前发布 = **kit #24**（payload-in-libs + 显式 W^X=0 + exec-memory 探针；`tester-run.sh` v8；自 #21 起含 headless 变体 abc `13.0.1.0` 修复），§5d/§5e 的「进行中」均为当时快照。设备侧诊断（app-lib 键、别名注册行、首帧、execmem）已并入 `tester-run.sh`，见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` §2.4–§2.6。
-> **2026-09-24 设备证据修正（新增）**：当前发布已前进到 **kit #24**（#22 设备里程碑回灌（宿主按需 dlsym、`resources.index`、ZIP offset/mkdir、DevEco 工程布局）→ #23 工具刷新 → #24 payload-in-libs + 显式 W^X=0 + exec-memory 探针；见 `2026-09-24-ohos-device-milestone.md` 与 `2026-09-22-ohos-release-manifest.md`）；旧 #4（libIsolation/napi path）降级为「**无害加固、非关键**」——真实直接链 5 项、回灌映射与边界见 §5f。
+> **2026-09-24 状态**：四个启动阻塞均已在 kit #10/#11/#12/#16（+ #17 `libIsolation` repack）修复；当前发布 = **kit #25**（权限链 + Share/Scan 探测降级 + AOT 启动路径；`tester-run.sh` v8；自 #21 起含 headless 变体 abc `13.0.1.0` 修复；#24 起含 payload-in-libs + 显式 W^X=0 + exec-memory 探针），§5d/§5e 的「进行中」均为当时快照。设备侧诊断（app-lib 键、别名注册行、首帧、execmem）已并入 `tester-run.sh`，见 `docs/plans/2026-09-21-ohos-device-crash-diagnostics.md` §2.4–§2.6。
+> **2026-09-24 设备证据修正（新增；2026-09-25 更新至 kit #25）**：当前发布已前进到 **kit #25**（#22 设备里程碑回灌（宿主按需 dlsym、`resources.index`、ZIP offset/mkdir、DevEco 工程布局）→ #23 工具刷新 → #24 payload-in-libs + 显式 W^X=0 + exec-memory 探针 → #25 权限链 + Share/Scan 探测 + AOT 启动路径；见 `2026-09-24-ohos-device-milestone.md`、`2026-09-25-ohos-tester-handoff-kit25.md` 与 `2026-09-22-ohos-release-manifest.md`）；旧 #4（libIsolation/napi path）降级为「**无害加固、非关键**」——真实直接链 5 项、回灌映射与边界见 §5f。
 
 ## 0. 一手材料与验证环境
 

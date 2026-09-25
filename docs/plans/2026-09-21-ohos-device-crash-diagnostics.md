@@ -7,6 +7,8 @@
 > 相关文档（kit 内）：`真机操作手册.md`（校验/安装/取证）、`验收说明.md`（完整清单与模板）、`签名与UDID指南.md`（9568344）。
 >
 > **2026-09-24 更新（kit #24）**：本文所写的三类旧崩溃 —— 入口 record（kit #10）、abc 版本（kit #11）、宿主加载（kit #12）—— 均已在当前 kit 修复；此后追加 P17 跳过重复解压、H7 rawfile 文件描述符直读、headless 变体 abc `13.0.1.0`，并在 kit #22 回灌设备里程碑修复：宿主 `DT_NEEDED` 5 库 + 可选 API 按需 dlsym、HAP `resources.index`（restool）、启动解压 ZIP offset/length + mkdir、DevEco 工程布局（kit #23 = 工具刷新：强化 `verify-kit.sh` + `tester-run.sh` v7 入包）。**kit #24**：payload 进 hap `libs/arm64-v8a/` 原地启动（`.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针（§2.6，采集为 `hilog/hilog-execmem.txt`）；不含 seccomp 拦截器。**2026-09-24 设备证据修正**：黑屏/失败的直接链是宿主加载 + bootstrap 三项（`resources.index` / ZIP offset / mkdir）+ abc 编译，共 5 项，而非旧 #4（`libIsolation`/napi 记录名；已降级为无害加固）—— 见 `docs/plans/2026-09-24-ohos-device-milestone.md` 与 `docs/plans/2026-09-22-ohos-startup-crash-rootcause.md` §5f。JIT 崩溃（`SEGV_ACCERR`）的判定与 NativeAOT 指引见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`；`tester-run.sh` **v8** 会自动采集 `hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`、`device/app-libs-arm64.txt`、`device/payload-files.txt`/`payload-marker.txt`、`meta/kit-selfcheck.txt`（§2.4–§2.6）；整包/内容树数字以 release「## Integrity」为准。`签名说明.txt` 的 PA1 历史句已随源修复（`c6a4cd95e`），若副本仍出现按历史文案处理。
+>
+> **2026-09-25 更新（kit #25，当前）**：新增权限链（`reason`/`usedScene` + 请求点门禁）、Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级）与 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；启动崩溃判定（`probe:`/`xwe`、P1–P4、bootstrap）**不变**，kit #25 回归点 = JIT hap 仍走 hostfxr 回退正常启动。本轮判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动）见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`。
 
 ## 0. 一页摘要
 
@@ -44,7 +46,7 @@ sh verify-kit.sh --tree-digest
 
 ### 1.2 安装与启动
 
-沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#24，payload-in-libs 正式版）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
+沿用你上轮的成功路径（你自己的华为 debug 证书）；当前 kit（#25，权限链 + Share/Scan 探测 + AOT 启动路径，含 #24 payload-in-libs）的 5 个 hap 已是合法 bundleName 与设备波段，**无需改名、无需手改 module.json**，其它文件也不要动：
 
 ```sh
 hdc install hello-maui-app.hap
@@ -135,8 +137,8 @@ grep execmem_lines <证据包>/summary.txt                              # 0 = �
 
 - 每个探针 token 为 `OK` 或失败 `errno`：**1** = 匿名 `mmap(RWX)`（W^X=0 的 JIT 路径）· **2** = 匿名 `mmap(RW)`→`mprotect(RX)` · **3** = `memfd` + `mprotect(RX)`（W^X=1 路径）· **4** = 临时文件 `mmap(RX)`。典型 errno：`1` EPERM · `12` ENOMEM · `13` EACCES · `38` ENOSYS。
 - 判定：`1=OK` ⇒ 匿名可执行在 HAP 域可用，JIT（默认 `EnableWriteXorExecute=0`）应可用，报证 = managed app 运行 + 无 `SEGV_ACCERR`；若 `1=OK` 仍 `SEGV_ACCERR`，附 probe 行/xwe 行/崩溃栈继续定位。`1≠OK` ⇒ 本固件 HAP 域拒绝匿名可执行，JIT 不可用，转 NativeAOT。
-- A/B：在 `<filesDir>/xwe.txt` 写入首字节 `1`（DevEco Device File Browser）→ hilog 出现 `xwe=1 source=file`，复现 W^X=1 的同形崩溃；删除后恢复 `xwe=0 source=default`。完整判定表与 NativeAOT 步骤见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
-- 注意 kit #24 **不含 seccomp 拦截器**（不再需要，且会 strip `PROT_EXEC` 破坏 JIT）；请确认未叠加旧本地补丁后再判读。
+- A/B：在 `<filesDir>/xwe.txt` 写入首字节 `1`（DevEco Device File Browser）→ hilog 出现 `xwe=1 source=file`，复现 W^X=1 的同形崩溃；删除后恢复 `xwe=0 source=default`。完整判定表与 NativeAOT 步骤见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 与 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
+- 注意 kit #24/#25 **不含 seccomp 拦截器**（不再需要，且会 strip `PROT_EXEC` 破坏 JIT）；请确认未叠加旧本地补丁后再判读。
 
 ## 3. 四个快速 A/B（各 5 分钟，能跑几个跑几个）
 
@@ -145,7 +147,7 @@ grep execmem_lines <证据包>/summary.txt                              # 0 = �
 | AB-1 | 普通 ArkTS hap 能在这台设备起吗？ | 用 DevEco 新建 Empty Ability 工程（API 波段与设备一致）→ 安装 → `aa start` | 能正常起 → 设备/ArkTS 运行时没问题，焦点回到我们的包；同样 JsError → 设备/固件侧问题优先；两者日志都留着做对照 |
 | AB-2 | 宿主动态库加载了吗？ | 在 §2 的 hilog 里搜 `libopenharmonyhost` / `dlopen` / `libentry` / `[maui] openharmony build` | 有 `[maui] openharmony build ...` → 托管宿主已启动，崩溃在更后面；只有 `libentry.so`/napi 记录、没有 host 行 → 崩在 napi 加载/入口；两者都没有 → 崩在 ArkTS/Ability 阶段，宿主没起来 |
 | AB-3 | 崩溃前最后一行日志是什么？ | 取第一条 `AppKilledReporter`/`JsError` 之前最后的 5–10 行（连同 §2 的 200 行） | 这行通常直接点名失败点（native module 加载失败、abc/运行时版本不符、`pages/Index` 加载失败等）；原样贴回，不用自行解读 |
-| AB-4 | 匿名可执行内存与 W^X 哪条路可用？（kit #24，`SEGV_ACCERR` 时必做）| 读 §2.6 的 `probe:` 行；再按 A/B 写 `<filesDir>/xwe.txt`=首字节 `1` 复跑一轮 | `1=OK` = JIT 可用路径；`xwe=1 source=file` 下复现 `SEGV_ACCERR`、默认 `xwe=0` 下不崩 = 平台 W^X memfd 路径被拒，默认 0 是正确设置；`1≠OK` = HAP 域禁匿名可执行，转 NativeAOT。判定表见交接文档 |
+| AB-4 | 匿名可执行内存与 W^X 哪条路可用？（kit #24 起，`SEGV_ACCERR` 时必做）| 读 §2.6 的 `probe:` 行；再按 A/B 写 `<filesDir>/xwe.txt`=首字节 `1` 复跑一轮 | `1=OK` = JIT 可用路径；`xwe=1 source=file` 下复现 `SEGV_ACCERR`、默认 `xwe=0` 下不崩 = 平台 W^X memfd 路径被拒，默认 0 是正确设置；`1≠OK` = HAP 域禁匿名可执行，转 NativeAOT。判定表见交接文档 |
 
 ## 4. 我们已确认在修的两点（你不必排查）
 
@@ -165,6 +167,6 @@ grep execmem_lines <证据包>/summary.txt                              # 0 = �
 4. [ ] 一个 jscrash 文件名（+ 内容/截图，若有）。
 5. [ ] §2 的 hilog 过滤片段（含崩溃点前后各 200 行）与崩溃时间戳；旧包日志若有也附。
 6. [ ] §3 四条 A/B 的结果（每条一行：通过/失败 + 一句话现象）。
-7. [ ] **JIT 相关（kit #24）**：`hilog-execmem.txt` 原文（`probe:` 行 + `xwe=` 行）与 `summary.txt` 的 `execmem_lines`；做过 A/B 的附两轮对照。判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
+7. [ ] **JIT 相关（kit #24 起，kit #25 沿用）**：`hilog-execmem.txt` 原文（`probe:` 行 + `xwe=` 行）与 `summary.txt` 的 `execmem_lines`；做过 A/B 的附两轮对照。判定表见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5。
 
 > 收到后我们按 `验收说明.md` §6 模板归档；若重测后一切正常，回传 1–2 与一句"已通过"即可。
