@@ -33,7 +33,8 @@
 >    harness 新增 kit1/kit2/kit3 三条断言（324 [verify]，floor 304）。OpenHarmony 设备上两个 sink 均不注册，
 >    降级路径已离线验证（`kit3`）。
 > 4. **仍需外部条件**：**Push**（AGC 开通 + 含推送权限 Profile + `1000900010` 排障）、**Account**（一键登录
->    scope 审批 `1001502014` + 服务端换号）、**Map**（AGC AppKey）、LiveView/Payment（权益/商户）——均未落地；
+>    scope 审批 `1001502014` + 服务端换号）、**Map**（AGC AppKey；覆盖层 R2-3 已落地）、LiveView/Payment
+>    （权益/商户；LiveView 探测已落地 R2-SHELL-EXT）——**Kit 真调用均未落地**；
 >    且全部需要 **HMS 设备** 与 **HarmonyOS SDK 构建**才可真机验收。
 >
 > **KIT-EXT2 回填（2026-09-25，第二批 Push/Account/Map）**：沿用 Share/Scan 的「变量说明符
@@ -53,15 +54,17 @@
 >    `ohos_host_account_*`；托管 `OpenHarmonyAccount`（`GetQuickLoginAnonymousPhoneAsync`/
 >    `AuthorizeAsync(scopes)`/`IsSupported`），命名 `1001502014`（未申请/未审批 scope）、
 >    `1001500001`（指纹证书不符）、`1001502001/2012/2003/2005/2009/0002/0003`。
-> 3. **Map（尽力）**：`MapComponent` 是 ArkUI 组件，编译期需要组件声明，OpenHarmony SDK 下无法表达
->    （字面量 import 硬错；组件调用无法用动态 cast 生成）。已落地**方案 (b) 能力探测 + 预留 sink**：
->    壳 `probeMapKit`/`registerMapSink` 回 capability bits（bit0 = `@kit.MapKit` 可解析；
->    bit1 = 覆盖层已实现 = 0），host `ohos_host_map_{available,probe,register_result,result}`，托管
->    `OpenHarmonyMap.QueryCapabilitiesAsync`/`IsSupported`（无 Kit 返回 null/false）。**方案 (a)**
->    （壳内 `MapComponent` 覆盖层由托管控制显隐，XComponent/ArkWeb 模式 + MapComponentController
->    的 marker/camera 转发）只能在 `ARKTS_SDK_FLAVOR=harmony` 分支 + AGC AppKey 下构建，落地方案与
->    前置见 `ohos-workload/docs/openharmony-hap-packaging.md`「Kit feature probes and AGC
->    prerequisites」。
+> 3. **Map（方案 (a)+(b) 均已落地）**：`MapComponent` 是 ArkUI 组件，编译期需要组件声明，OpenHarmony SDK 下无法表达
+>    （字面量 import 硬错；组件调用无法用动态 cast 生成）。**方案 (b) 能力探测**：壳
+>    `probeMapKit`/`registerMapSink` 回 capability bits（bit0 = `@kit.MapKit` 可解析；bit1 = 覆盖层已实现），
+>    host `ohos_host_map_{available,command,register_result,result}`，托管 `OpenHarmonyMap.QueryCapabilitiesAsync`/
+>    `MapKitImportable`/`IsSupported`（无 Kit 返回 null/false）。**方案 (a) 覆盖层已落地（R2-3，2026-09-26）**：
+>    覆盖层位于 harmony-flavor 专属模块 `templates/ets/map/MapOverlay.ets`（字面量 `@kit.MapKit`，
+>    `NodeController`/`BuilderNode` 挂载），页面经变量说明符 `'./map/MapOverlay'` 动态导入；托管
+>    `OpenHarmonyMap` 提供 `IsOverlayAvailable`/show/hide/close/区域/标记与 `Ready`/`MarkerClick`/`CameraIdle`；
+>    默认 OpenHarmony flavor 不编译该模块（`IsOverlayAvailable=false`，调用降级不抛），真机点亮需
+>    `ARKTS_SDK_FLAVOR=harmony` 构建 + AGC 地图 AppKey，前置见 `ohos-workload/docs/openharmony-hap-packaging.md`
+>    「Kit feature probes and AGC prerequisites」。
 > 4. **验证与门禁**：host 导出契约 118 → 130（`host-exports.txt` + `nm -D` 全命中）；UI/headless abc
 >    重编（`13.0.1.0`；UI 245,412 B / headless 18,532 B）并同步 preview.22/23/24 的 abc-provenance；
 >    交互套件新增 kit4/kit5/kit6 三条（329 行，floor 309）；OpenHarmony SDK/无 host 环境下三 Kit 的
@@ -69,13 +72,21 @@
 > 5. **仍需外部条件（未变）**：① HarmonyOS SDK 构建（本机无）；② AGC：Push 开通+含推送权益 Profile、
 >    Account 一键登录 scope 审批、Map 地图服务 AppKey；③ 签名证书指纹/包名与 AGC 一致；④ HMS 设备
 >    真机验收。本环境不可代办。
+>
+> **R2-3 回填（2026-09-26，Map 覆盖层）**：**方案 (a) `MapComponent` 覆盖层已落地** —— 覆盖层模块只随
+> `ARKTS_SDK_FLAVOR=harmony` 分支编译（`templates/ets/map/MapOverlay.ets`，字面量 `@kit.MapKit`；页面经变量
+> 说明符 `'./map/MapOverlay'` 动态导入），宿主把预留 probe 折成 `ohos_host_map_command(id, op, args)`（Map 导出数
+> 不变），托管 `OpenHarmonyMap` 增 `IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`；
+> 默认 flavor 的 5 个 hap `IsOverlayAvailable=false`、所有 overlay 调用降级不抛（kit6/kit7 离线断言）。kit #28 门禁 =
+> **334 行/floor 314**（kit7 + kit8/kit9/kit10），UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；
+> 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。
 
 ## 1. 能力矩阵
 
 | 能力 | 我们当前状态（引用覆盖矩阵） | 可用 Kit/技能 | 关键 API（import / 权限 / syscap / 设备） | 落地到 MAUI 的形态 | 工作量 | 风险 | 建议 |
 |---|---|---|---|---|---|---|---|
 | TTS（TextToSpeech） | 链路已接、sink 如实返回不可用（覆盖矩阵 §4；审计 §5c；`OpenHarmonyTextToSpeech.cs:1-9`、`Index.ets:2223`） | **无**：25 Kit 无 Core Speech Kit；`02-development` 检索 `CoreSpeechKit`/`textToSpeech` 0 命中 | 无（技能未提供；本机 SDK 无 `@kit.CoreSpeechKit`/`@ohos.ai.tts`） | 平台扩展（替换现有 TTS sink） | S（待引擎） | 无引擎可用 | **维持门控**（此前判定不变） |
-| Map / POI / 路线 | 方案 (b) 已落地（能力探测 sink；覆盖矩阵 §4）；方案 (a) MapComponent overlay 排期（需 harmony flavor + AGC AppKey） | Map Kit：`hmos-map-kit-{map-creation,poi-search,route-planning}` | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线/导航；需 AGC 开通地图服务 + AppKey | 平台扩展（无 Essentials 对应）/仅文档 | L* | AGC AppKey、HMS 设备 | **KIT-EXT2 方案 (b) 已落地**：壳 `probeMapKit`/`registerMapSink` 能力位 + host `ohos_host_map_*` + 托管 `OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`（no-kit 返 null/false）；方案 (a) MapComponent 覆盖层已排期（需 harmony flavor + AppKey，见打包文档）；真机验收待 HMS 设备 |
+| Map / POI / 路线 | 方案 (a)+(b) 均已落地（覆盖矩阵 §4）；方案 (a) 覆盖层需 harmony flavor + AGC AppKey（默认 flavor 降级不抛） | Map Kit：`hmos-map-kit-{map-creation,poi-search,route-planning}` | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线/导航；需 AGC 开通地图服务 + AppKey | 平台扩展（无 Essentials 对应）/仅文档 | L* | AGC AppKey、HMS 设备 | **KIT-EXT2 方案 (b) + R2-3 方案 (a) 均已落地**：壳 `probeMapKit`/`registerMapSink` 能力位 + host `ohos_host_map_*`（`command`）+ 托管 `OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`/`IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`（no-kit/no-overlay 返 false、调用不抛）；覆盖层需 harmony flavor + AppKey（见打包文档）；真机验收待 HMS 设备 |
 | 系统分享面板 / 多文件 | 文本 + 单文件（隐式 `sendData` Want）；多文件已落地 Share Kit 分支（无 Kit 时记录在案 no-op）（覆盖矩阵 §2 `Share` 行、§4；`OpenHarmonyAppLauncher.cs:22,193`） | Share Kit：`hmos-share-kit-panel-share`（one-sdk 语料） | `import { systemShare } from '@kit.ShareKit'`；`new systemShare.SharedData({ utd, content\|uri })`；`new systemShare.ShareController(data).show(context, opts)`；≤500 条/200KB；起始 4.1.0(11)；手机/平板/2in1 | Essentials `Share` 多文件分支（平台扩展） | M* | HMS 设备；`utd`/uri 语义 | **KIT-IMPL 已落地**：壳 `registerShareKitSink` 探测成功才注册；无 Kit 时多文件仍走既有 no-op + 状态；真机验收待 HMS 设备 |
 | 扫码（默认 / 自定义） | 未实现（无 Essentials 对应；相机 picker 已有） | Scan Kit：`hmos-scan-kit-defaultscan`/`-customscan` | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(ctx)`；`canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')`；默认免 CAMERA、自定义需 `ohos.permission.CAMERA`；起始 4.0.0(10) | 平台扩展（新增） | M* | 设备 syscap | **KIT-IMPL 已落地**：壳 `registerScanSink`（canIUse+import 双门）+ 托管 `OpenHarmonyScan`（`IsSupported`/`ScanAsync`）；无 Kit 设备 `IsSupported=false`；真机验收待 HMS 设备 |
 | 远端推送（Push） | 本地通知已实现（覆盖矩阵 §1b BATCH-3 `PostNotifications`）；华为 Push 探测链路已落地（特性探测：`GetTokenAsync`/`DeleteTokenAsync`；无 AGC/HMS 时 `Unavailable` 降级）——HMS/AGC 真机待验 | Push Kit：`hmos-push-kit`（+token/notification/background/voip） | `import { pushService } from '@kit.PushKit'`；`pushService.getToken(): Promise<string>`；需 AGC 开通推送 + 含推送权限 Profile；无需 module 权限 | 平台扩展（Push token / 消息） | M* | AGC 开通 + 签名绑定 | **KIT-EXT2 已实现（特性探测）**：壳 `@kit.PushKit` 变量探测 + `registerPushSink` + host `ohos_host_push_*` 导出 + 托管 `OpenHarmonyPush`（`GetTokenAsync`/`DeleteTokenAsync`，`1000900010`/`1000900012` 等映射；无 Kit 返 Unavailable）；AGC 开通 + Profile 后真机取 token，待 HMS 设备 |
@@ -101,7 +112,7 @@
 |---|---|---|---|---|
 | 1 | 系统分享面板 / 多文件（Share） | **可补齐\* + 首批已落地**（技能覆盖最完整、无权限申请、直接映射 Essentials `Share`） | `import { systemShare } from '@kit.ShareKit'`；`let controller: systemShare.ShareController = new systemShare.ShareController(data)`；`controller.show(context, {...})`；`new systemShare.SharedData({ utd: utd.UniformDataType.PLAIN_TEXT, content: 'Hello HarmonyOS' })`；`controller.on('shareCompleted', ...)` | 交付：壳 `registerShareKitSink` + host `ohos_host_share_kit_share` + `ShareMultipleFilesRequest` 分支；OpenHarmony 上 sink 不注册、仍走既有 no-op；shareCompleted 回执：壳侧 `shareCompleted` 日志（托管 IShare 契约在派发时完成）；真机验收待 HMS 设备 |
 | 2 | 扫码（Scan） | **可补齐\* + 首批已落地**（默认界面单 API、免 CAMERA 权限、`canIUse` 自检） | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(this.uiContext.getHostContext())`；`const isScanBarCode = canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')` | 交付：壳 `registerScanSink` + host `ohos_host_scan_*` + 托管 `OpenHarmonyScan`（`IsSupported`/`ScanAsync`）；验收：返回 `result.originalValue`；不支持设备走 syscap 分支（离线已验证 `IsSupported=false`/`ScanAsync=null`） |
-| 3 | Map（Map Kit） | **已实现（特性探测，方案 (b)）\***；方案 (a) 覆盖层排期（需 harmony flavor + AGC AppKey） | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`import { site } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线规划 | 交付（b，已落地）：`OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`；交付（a，排期）：`IMapService`（嵌入 MapComponent 覆盖层）或仅 AppLinking 跳花瓣地图；验收：capability bit0=1、渲染 + POI + WGS84→GCJ02 |
+| 3 | Map（Map Kit） | **已实现（特性探测，方案 (a)+(b)）\***（方案 (a) 覆盖层需 harmony flavor + AGC AppKey；默认 flavor 降级不抛） | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`import { site } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线规划 | 交付（b，已落地）：`OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`；交付（a，已落地 R2-3）：`OpenHarmonyMap` overlay（`IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`）；验收：capability bit0/bit1=1、渲染 + POI + WGS84→GCJ02 |
 | 4 | Push（Push Kit） | **已实现（特性探测）\***（`OpenHarmonyPush` 已落地；AGC 开通后真机取 token） | `import { pushService } from '@kit.PushKit'`；`pushService.getToken().then((token: string) => ...)` | 交付：壳 sink + host `ohos_host_push_*` 导出 + 托管 `OpenHarmonyPush`（`GetTokenAsync`/`DeleteTokenAsync`，已落地）；验收：日志出现 token；失败按 1000900010/1000900012 排查 |
 | 5 | 账号一键登录（Account Kit） | **已实现（特性探测）\***（scope 审批 + 服务端换号仍待外部） | `import { authentication, loginComponentManager } from '@kit.AccountKit'`；`new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest()`；`authRequest.scopes = ['quickLoginAnonymousPhone']`；`LoginWithHuaweiIDButton({ params: { loginType: loginComponentManager.LoginType.QUICK_LOGIN, ... } })` | 交付：托管 `OpenHarmonyAccount`（`AuthorizeAsync` + `getQuickLoginAnonymousPhone`，已落地）+ 登录页 + 服务端换取明文手机号；验收：无 1001502014 / 1001500001 |
 | 6 | TTS（Core Speech Kit） | **不能补齐**（技能库与 SDK 双否） | 技能库无 Core Speech Kit；SDK 无 `@kit.CoreSpeechKit`/`@ohos.ai.tts`；sink 注释 `Index.ets:2223`（静态 import `Cannot find module`） | 维持：sink 如实 `-1`；待 SDK 含引擎时替换 sink（S） |
@@ -130,8 +141,9 @@
 
 ## 5. 结论
 
-- **已实现（特性探测）6 项**：Share、Scan、Push、Account、Map（方案 (b)）、LiveView——自「有条件可补齐」转入；真机点亮待 HMS 设备 + AGC 开通/审批；**仅记录 2 项**：Payment、Ads；**维持门控 6 项**：TTS（双否）、Hot Reload、arm32、WebAuthenticator、SecureStorage 兜底、MediaElement。
+- **已实现（特性探测）6 项**：Share、Scan、Push、Account、Map（方案 (a)+(b)）、LiveView——自「有条件可补齐」转入；真机点亮待 HMS 设备 + AGC 开通/审批；**仅记录 2 项**：Payment、Ads；**维持门控 6 项**：TTS（双否）、Hot Reload、arm32、WebAuthenticator、SecureStorage 兜底、MediaElement。
 - 在当前 OpenHarmony SDK 26.0.0.18 + OpenHarmony 设备上，本轮技能核查**未改变任何既有运行时门控**（Kit 真调用仍需 HarmonyOS 分支）；新增的确切信息是「这些 Kit 在 HarmonyOS 侧确有其事，且有可引用的 API 证据」，可作为未来切换 HarmonyOS 工具链时的落地清单。
 - **KIT-IMPL 更新（2026-09-25）**：① Share 与 Scan 的**特性探测平台扩展已落地**（壳/宿主/托管/断言），在 OpenHarmony 设备上如实降级、在 HMS 设备上自动启用——不再是纯文档项；② `ARKTS_SDK_FLAVOR=harmony` 已进 `build-arkts-shell.sh`（默认行为不变、abc `13.0.1.0` 门禁保留），完整 HarmonyOS 构建仍需一台装有 HarmonyOS SDK 的机器；③ **Map/Push/Account 仍需外部条件**（AGC 开通/审批：Push `1000900010`、Account `1001502014`、Map AppKey）与 HMS 设备，本环境不可代办；④ 真机验收项：Share 多文件面板与 `shareCompleted`、Scan `originalValue`、HarmonyOS flavor 的 abc 装载（DevEco 证据仅到「6.1.0(23) → 13.0.1.0」）。
 - **KIT-EXT2 更新（2026-09-25，第二批）**：① **Push/Account** 的探测+降级链路已落地（壳 sink、host `ohos_host_push_*`/`ohos_host_account_*`、托管 `OpenHarmonyPush`/`OpenHarmonyAccount`、错误码映射与断言），**Map** 以方案 (b) 落地能力探测/预留 sink（`MapKitImportable`/`IsSupported`；方案 (a) 覆盖层已排期，需 harmony flavor + AppKey）；② host 导出契约 118 → 130，UI/headless abc 重编并同步三个 pack 的 provenance（`13.0.1.0`），交互套件 329 行/floor 309（新增 kit4/kit5/kit6）；③ 四个新托管入口在 OpenHarmony SDK/无 host 环境全部 `Unavailable`/null 且不抛（离线证据）；④ **外部条件不变**：HarmonyOS SDK 构建、AGC（Push 开通+Profile、Account scope 审批、Map AppKey）、签名指纹一致、HMS 设备。真机验收项新增：`getToken()` 成功与 `1000900010/1000900012` 排障、匿名手机号/authorizationCode 与服务端换号、Map capability bit0=1。
 - **R2-SHELL-EXT 更新（2026-09-26，LiveView + 壳 AOT 桥接）**：① **Live View** 的探测+降级链路已落地（壳 canIUse/`@kit.LiveViewKit` 双门 + `registerLiveViewSink` 的 TIMER 场景 create/update/stop；host `ohos_host_liveview_*`；托管 `OpenHarmonyLiveView` + PublicAPI），host 导出契约 130 → 134，UI/headless abc 重编并同步三个 pack 的 provenance（`13.0.1.0`，UI 264136 B / headless 18532 B），交互套件 330 行/floor 310 → **333 行/floor 313**（新增 kit8/kit9/kit10）；② **壳 `start_app` AOT 桥接**（V1）：host 在 `start_app` 里探测 `<app_dir>/lib<stem>.so` + `openharmony_app_main`，命中即在 bridged app 线程直启（日志 `aot=1`，bridge 注册/lifecycle/NodeContent 全部沿用），缺库/缺符号/分配失败记 `aot=0` 回退 hostfxr——AOT hap 不再只能走 `run_app`，`run_app` 行为不变；`a7` 交互 pin 折入新语义（7 条失败路径 + AOT 探针），`test/aot-smoke/run-local-smoke.sh` 覆盖 one-shot 与 `--bridge` 两条路由（payload + 退出码 7）；③ 降级证据：OpenHarmony SDK 下 sink 不注册、`IsSupported=false`、`Start/Update/Stop` 全部 `Unavailable` 且不抛（kit10 离线断言）；④ **外部条件不变**：真机验收需 HarmonyOS SDK 构建 + AGC 实况窗权益 + 设备实况窗开关 + HMS 设备。
+- **R2-3 更新（2026-09-26，Map 覆盖层）**：① **方案 (a) `MapComponent` 覆盖层已落地**（harmony-flavor 专属模块 `MapOverlay.ets` + 页面变量说明符 `'./map/MapOverlay'` 动态导入；宿主 `ohos_host_map_command(id, op, args)`；托管 `OpenHarmonyMap` 的 `IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`）；② 默认 flavor 下 `IsOverlayAvailable=false`、overlay 调用全部降级不抛（kit6/kit7 离线断言）；③ kit #28 门禁 = 交互套件 **334 行/floor 314**、UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；④ **外部条件不变**：真机点亮需 `ARKTS_SDK_FLAVOR=harmony` 壳 + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。
