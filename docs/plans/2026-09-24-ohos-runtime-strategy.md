@@ -63,7 +63,7 @@
 
 - **前置（关键加载条件）**：解释器加载路径全在 `#ifdef FEATURE_INTERPRETER` 内——`InterpreterJitManager::LoadInterpreter`（`codeman.cpp:3995-4040`）、`GetInterpreterName`（`codeman.cpp:5795-5811`）、开关解析（`eeconfig.cpp:451-484`、`interpreter/interpconfigvalues.h`）。本机 stock RC1 pack 的 `libcoreclr.so` 已实测**不含** `clrinterpreter`/`InterpMode`/`InterpreterName` 任一宽字符串（UTF-16/UTF-32 均无）→ **只把 `libclrinterpreter.so` 叠进 stock pack 不会生效**；必须先有 `-clrinterpreter` 重建的 `libcoreclr.so`（Release 需显式开关；Debug/Checked 默认开）。overlay 脚本会对目标 coreclr 做该检查并告警。
 - 脚本 `scripts/ohos-runtime-clrinterpreter-overlay.sh <libclrinterpreter.so> --pack <runtime-pack.nupkg> [--install-cache]`，或 `--dir <已解开的 shared/publish 目录>`（假定目标 coreclr 已启用 `FEATURE_INTERPRETER`）；目标位置 `runtimes/openharmony-arm64/native/libclrinterpreter.so`（与 `libcoreclr.so` 同目录即可被宿主 `dlopen` 找到）。
-- 应用/设备启动前 setenv：`DOTNET_InterpMode=3`（纯解释，隐含 `DOTNET_ReadyToRun=0`/`DOTNET_EnableHWIntrinsic=0`）；可选 `DOTNET_Interpreter=<MethodSet>`；`DOTNET_InterpreterName` 覆盖库名。JIT 回退路径仍需 `DOTNET_EnableWriteXorExecute=0`，并移除 seccomp 拦截器。
+- 应用/设备启动前注入：`DOTNET_InterpMode=3`（纯解释，隐含 `DOTNET_ReadyToRun=0`/`DOTNET_EnableHWIntrinsic=0`）——宿主已支持从应用沙箱 `<files>/interp.txt`（首字符数字）读取该值（见 §2「设备侧验证」步骤 3）；可选 `DOTNET_Interpreter=<MethodSet>`；`DOTNET_InterpreterName` 覆盖库名。JIT 回退路径仍需 `DOTNET_EnableWriteXorExecute=0`，并移除 seccomp 拦截器。
 - `libc++_shared.so` 必须可解析：解释器 `DT_NEEDED` 与 stock `libcoreclr.so`/`libclrjit.so` 完全一致（`libc++_shared.so, libc.so`），沿用现有 payload/系统解析即可，无新增依赖。
 - **残余 W^X 风险不变**：`Precode::AllocateInterpreterPrecode`（`vm/precode.cpp:237-256`）仍从 `GetNewStubPrecodeHeap()->AllocStub()`（可执行 stub precode 堆）分配 → 纯解释模式仍可能产生匿名 exec 页；`FEATURE_PORTABLE_ENTRYPOINTS` 仅 WASM 默认开启，非 WASM 可行性未验证，仍列为备选。
 
@@ -105,7 +105,7 @@
 
 1. **预签/安装**：按 kit handoff 的签名流程预签/重签 HAP 后 `hdc install` 安装；重签会改变包哈希，以本地重签件为准。
 2. **应用 pack**：解包资产并核对 `sha256sum -c SHA256SUMS`（应全过）。在 payload 的 HAP `libs/arm64-v8a/` 内**替换** `libcoreclr.so`、**新增** `libclrinterpreter.so`（kit #27 的 payload-in-libs 布局 `libs/arm64-v8a/`；kit #28 的 payload 同法。`.dotnet-payload.json` 只锚入口程序集/`dotnet.zip`，不锚 native 库），随后重新打包签名。已解开的本地布局可直接用 `scripts/ohos-runtime-clrinterpreter-overlay.sh <pack>/native/libclrinterpreter.so --dir <layout>`（脚本会核对目标 coreclr 含 `clrinterpreter`/`InterpMode` 宽字符串并打印 `coreclr interpreter support: YES`）。
-3. **env（coreclr 初始化前进入应用进程）**：`DOTNET_InterpMode=3`、`DOTNET_EnableWriteXorExecute=0`（后者宿主自 kit #24 起默认已 `setenv`；前者需宿主/启动路径注入——若开关未生效，判定点 ② 不会成立，等同回 JIT 路径）；可选 `DOTNET_InterpreterName`（负对照用）。
+3. **env（coreclr 初始化前进入应用进程）**：`DOTNET_InterpMode=3`、`DOTNET_EnableWriteXorExecute=0`（后者宿主自 kit #24 起默认已 `setenv`；**前者宿主已支持**：在应用沙箱 `<files>/interp.txt` 写入首字符为数字的值（如 `3`）即可——宿主在 coreclr 启动前（`OhosHostApplyExecMemoryPolicy`，与 `xwe.txt` 同一 A/B 位置）读取并 `setenv("DOTNET_InterpMode", <值>)`，日志 `interp=<v> source=file|default`；无文件则不写入该变量（环境已有的值保持不变），运行时默认 JIT 路径不变。测试方无需再等待宿主/启动路径注入）；可选 `DOTNET_InterpreterName`（负对照用）。
 4. **判定点（须全部成立）**：① 启动日志/hilog 出现解释器生效迹象（`libclrinterpreter.so` 被 dlopen；runtime 若无显式行，以 ② 为准）；② 运行中 `/proc/self/maps` 含 `libclrinterpreter.so`（只在解释器激活时加载）；③ `/proc/self/maps` **无匿名 `r-x`**（残余 W^X 判定点）；④ managed app 正常输出/首帧，无 `SEGV_ACCERR`；⑤ 负对照 `DOTNET_InterpreterName=libclrinterpreter-missing.so` 必须启动失败（证明开关被解析而非忽略）。
 5. **风险与口径**：残余匿名 exec 页可能来自 `Precode`/UMEntryThunk stub（解释器代码堆本身不可执行）；③ 不达标先记录，勿改 W^X。解释器性能数量级慢于 JIT，本 pack 只回答「可用性/可行性」。
 6. **包内文档勘误**：`VERIFICATION.md` 的 `libclrinterpreter.so` BuildID 行（`7380afe1…`）系 R1 spike 残留，实际 `0bd8fdfc…`；「未发布 release」为打包时状态，以本小节为准。哈希/尺寸/`NEEDED`（`libc++_shared.so, libc.so`）/宽字符串已逐项复核一致。
