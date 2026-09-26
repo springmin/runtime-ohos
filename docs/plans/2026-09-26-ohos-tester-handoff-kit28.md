@@ -1,4 +1,4 @@
-# 测试方交接：kit #28、R2（Map 覆盖层 / LiveView 探测 / `start_app` AOT 桥 / 解释器实验）判定点（2026-09-28）
+# 测试方交接：kit #28、R2（Map 覆盖层 / LiveView 探测 / `start_app` AOT 桥 / 解释器实验）判定点（2026-09-26）
 
 > 承接 kit #27 交接（`2026-09-27-ohos-tester-handoff-kit27.md`）：KIT-EXT2（Push/Account/Map 探测、130/130 导出、
 > marshal-off）与 #26 的 P2-INTEROP/TASK-MIG/PLAT-GAP、#25 的权限链/Share/Scan/AOT 判定点**继续有效**（本文 §2
@@ -16,13 +16,23 @@
 > ④ **解释器实验（独立资产）**：`ohos-interpreter-pack.tar.gz` 替换 payload `libcoreclr.so` + 新增
 > `libclrinterpreter.so`，宿主读 `<files>/interp.txt`（首字符数字，如 `3`）→ `setenv("DOTNET_InterpMode", 3)`，
 > 日志 `interp=3 source=file`。
-> 指纹（本轮已核实部分）：ui/shell abc **264,136 B**（headless **18,532 B**）、hap 内宿主 **269,216 B**（本机
-> `verify-kit` 整包复核；`DT_NEEDED` 5、UND 239、denylist 0）、宿主导出契约 **134/134**、
-> 交互门禁 **334/floor 314**；侧挂 `aot-haps.tar.gz` **17,090,044 B** / `67519d11…`（+ `aot-haps-README.md`）、
+> 指纹（kit #28 实测）：ui/shell abc **264,136 B** / `9020ec5e…`（headless **18,532 B** / `d7ec9ca7…` 未变）、
+> hap 内宿主 `libopenharmonyhost.so` **269,216 B** / `bb51826e…`（= pack **265,120 B** / `30addfbe…` + 4096 B
+> 签名块；`DT_NEEDED` 5、UND 239、denylist 0）、宿主导出契约 **134/134**、交互门禁 **334/floor 314**；
+> 侧挂 `aot-haps.tar.gz` **17,090,044 B** / `67519d11…`（+ `aot-haps-README.md`）、
 > `ohos-interpreter-pack.tar.gz` **2,419,988 B** / `a10699b3…`（+ README/sidecar）。
-> **kit #28（数字入口见 release Integrity）**：`device-test-kit.tar.gz`、解压内容树、5 个 hap 与 bundle 的
-> tar/树/sidecar 数字一律以 release 说明的「## Integrity」小节或 `.tar.gz.sha256` sidecar 为准（`workload-latest`
-> 镜像同值）；本页不写死这些哈希。
+> **kit #28（已发布 2026-09-26，数字入口见 release Integrity）**：tar **196,220,486 B** / `091dcc56…`；
+> 解压树 **`0a7a3215…`**；sidecar 89 B / `d7efd251…`（内容 = kit sha）；5 个 hap 各 **~75.67 MB**
+> （签名变体 75,669,608–75,669,642 B / `9870e50d…`、`ea2c2d16…`、`2d22fb25…`、`f3d06dab…`；未签名
+> 73,499,383 B / `f013d431…`；zip **278** 条；`libs/arm64-v8a` **269** 项 = 14 `.so` + 254 payload +
+> `.dotnet-payload.json`）；hap 内 hosting DLL **55,296 B** / `4c121725…`、Maui.Graphics **16,384 B** /
+> `01a09b32…`；`resources.index` **1588/1780** B；`dotnet.zip` **254** 项 / 0 `.so`；包内 `verify-kit.sh`
+> **53,999 B** / `8f855ad9…`（abc 期望重锚 264,136，`ohos-workload 112b6e9`）；`tester-run.sh` 仍为 **v8**
+> （73,375 B / `6ca2093e…`，本轮未改动、未重传）；bundle **30,525,614 B** / `7d614517…`（was 30,508,149 B /
+> `bc30c65b…`；Sdk pack 322,441 B；sdk-ohos 锚点已更新到 `93350abcae`，`versions.env`
+> `WORKLOAD_BUNDLE_SHA256 = 7d614517…`）；发布波 = `ohos-workload dfbe2a6`（批 tip `b6f0302`；maui CI pin
+> `a0a2c087` → `63d13d15`、ridgraph-sync sdk pin `f27b20f4cc` → `3eb480fb4b`）。重签、预签或重新打包后的
+> 哈希必然不同 —— 以 release 说明与随包 `SHA256SUMS` 为准。
 
 ## 1. kit #28 相对 #27 的增量（测试方视角）
 
@@ -74,7 +84,8 @@
    `resources.index` 1588/1780（≤ 2 KiB）；语义不变（FAIL → 退出码 1；WARN → 仍 `KIT OK`）。**用 #27 的旧期望值
    `245412`（或更早的 `234620`）校验本包会 FAIL —— 那是脚本的预期行为，不是包坏。**
    本轮本机对 kit #28 tar 的整包复核已 `KIT OK`（15/15 `SHA256SUMS`、树摘要与 5 hap 深度断言全过；hap 内宿主
-   **269,216 B**、`dotnet.zip` 254/0 `.so`、index 1588/1780）——**整包 tar/树哈希仍以 release「## Integrity」为准**。
+   **269,216 B**、`dotnet.zip` 254/0 `.so`、index 1588/1780；整包 tar **196,220,486 B** / `091dcc56…`、树
+   **`0a7a3215…`**、sidecar `d7efd251…`）——整包数字仍以 release「## Integrity」/ sidecar 为准（重签/重打包后必然变化）。
 2. 一条命令取证（`tester-run.sh` **v8**，未变）：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
    → 证据包含 `hilog/hilog-{applib,dlopen,bootstrap,execmem}.txt`、`device/payload-*.txt`、
    `meta/kit-selfcheck.txt`（`kit_index_ok`/`payload=yes|no`）与 `summary.txt`。
@@ -96,5 +107,6 @@
 - 权限弹窗 / Share 面板 / Scan 返回 / AOT（#25 口径）自 #25 起**仍未有真机回传**；PLAT-GAP 消费方路径自 #26
   起仍待真机复测；无 HMS 降级不抛（#27）自 #27 起仍待真机复测；stock kit（#22 起，含 #28）的首次设备复测
   仍待做（里程碑与判定点见 `2026-09-24-ohos-device-milestone.md` §6）。
-- 批次注记：kit #28 的门禁为交互套件 **334/floor 314**（kit7/kit8/kit9/kit10；`ohos-workload 626f4bc`/`112b6e9`）；
-  `tester-run.sh` 未重传（仍 v8，73,375 B）；kit 整包数字以 release「## Integrity」为准（本页保持哈希无关）。
+- 批次注记：kit #28 的门禁为交互套件 **334/floor 314**（kit7/kit8/kit9/kit10；`ohos-workload 626f4bc`/`112b6e9`，
+  发布波 `dfbe2a6`）；`tester-run.sh` 未重传（仍 v8，73,375 B / `6ca2093e…`）；本页所记数字 = 2026-09-26 实测
+  （tar `091dcc56…` / 树 `0a7a3215…`），重签、预签或重新打包后以 release「## Integrity」与 `.sha256` sidecar 为准。

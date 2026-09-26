@@ -52,7 +52,7 @@
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
-> **2026-09-28 update (kit #28: R2 — Map overlay / Live View probe / AOT start bridge / interpreter):** the
+> **2026-09-26 update (kit #28: R2 — Map overlay / Live View probe / AOT start bridge / interpreter):** the
 > default-flavor haps answer `IsOverlayAvailable=false` and every Map overlay call degrades without throwing
 > (the `MapComponent` overlay only compiles in the `ARKTS_SDK_FLAVOR=harmony` shell and needs an AGC map
 > AppKey); the Live View probe registers no sink without the kit/entitlement (`IsSupported=false`,
@@ -63,7 +63,7 @@
 > Rebuilt artifacts: abc **264,136 B** / headless 18,532 B, host export contract **134/134**, suite
 > **334/floor 314**; the kit `verify-kit.sh` re-anchors the abc expectation to `264136`. The P1–P4 ladder,
 > `probe:`/`xwe` verdicts and `tester-run.sh` v8 evidence set are unchanged; the kit #28 judgement points are
-> in `2026-09-28-ohos-tester-handoff-kit28.md`. **Stock kit (#22 on, #28 included) still has not been on a device.**
+> in `2026-09-26-ohos-tester-handoff-kit28.md`. **Stock kit (#22 on, #28 included) still has not been on a device.**
 >
 > **2026-09-27 update (kit #27: KIT-EXT2; history):** that kit probes the three HMS kits (Push/Account/Map)
 > in the shell and only registers a sink when the variable `import()` succeeds — with no Kit/AGC/HMS the

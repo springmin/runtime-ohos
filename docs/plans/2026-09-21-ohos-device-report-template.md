@@ -7,8 +7,8 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」；`tester-run.sh` v8 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
+| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §0（本轮 tar `091dcc56…`）；`tester-run.sh` v8 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256（本轮 `0a7a3215…`）；`summary.txt` 的 `tree_digest` 同值） |
 | `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v8 = `8`） |
 | 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #28） |
 
@@ -90,7 +90,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - `appLibPathKey` 行（含 `lib path:` 原文）：`<粘贴 / 未出现>`（出现 `appLibPathKey: <bundle>/<module>` = 模块级 app-lib key 已注册，`libIsolation` 生效）
 - 别名注册行（`[openharmony-host] … bound via alias '…'`，逐字）：`<粘贴 / 未出现>`
 - 首帧判定（`registerXComponent=function` / 首帧出现 / 无 `Load native module failed`）：`<逐条>`
-- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-28-ohos-tester-handoff-kit28.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
+- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
 
 ## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26–#28 继续按此判读）
 
@@ -132,7 +132,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 > R2 默认 flavor 的 5 个 hap **无 Map/LiveView UI 入口**；首要判定是**降级不抛**与**重建 payload 首次运行**。
 > Map 点亮需 `ARKTS_SDK_FLAVOR=harmony` 构建 + AGC 地图 AppKey；LiveView 需 AGC 实况窗权益 + 设备开关；
 > AOT 直启需 `aot-haps.tar.gz` 重签 hap；解释器为独立实验资产。没有对应入口/资产的项登记「未测」，不要判失败。
-> 完整判读见 `docs/plans/2026-09-28-ohos-tester-handoff-kit28.md` §2。
+> 完整判读见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §2。
 
 - Map 覆盖层降级不抛（`IsOverlayAvailable` / show/hide/close/区域/标记）：`<false/不可用原文 + 有无异常 + 未测（本包无入口）>`
 - Map 覆盖层点亮（harmony + AGC AppKey）：`<flags bit1 + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`

@@ -4,7 +4,7 @@
 > `tester-run.sh` 是 `device-test-kit` release 上的**独立资产**（不在 kit 的 `SHA256SUMS` 内，kit 本身无需重下）；脚本默认 **dry-run**，不加动作参数不会碰设备。
 > 当前脚本 = **v8**（内嵌 `script_version=8`；kit #24–#28 版脚本 73,375 B / `6ca2093e…`，未重传、与仓库副本逐字节一致；其余数字以 release 资产页与 `gh api` 为准）：行为与输出字段对旧调用兼容；v6r2 起 `--tree-digest` 复用已校验摘要（P16）明显更快、证据包含 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征、设备侧 payload 状态与 kit hap 自检；v8 再增 exec-memory 证据采集（`hilog/hilog-execmem.txt`，`summary.txt` 记 `execmem_capture`/`execmem_lines`；见 §5、§6）。
 > 逐项清单与判读仍见 `docs/plans/2026-09-19-ohos-hap-acceptance-for-testers.md`（包内名 `验收说明.md`）；探针定义见 `docs/plans/2026-09-21-ohos-crash-probes.md`。
-> 当前发布相关：**kit #28**（2026-09-28 发布；R2：Map 覆盖层（harmony flavor + AGC AppKey；默认 flavor 下 `IsOverlayAvailable=false`、调用不抛）+ LiveView 特性探测（无 Kit/权益时 `IsSupported=false`、Start/Update/Stop `Unavailable` 不抛）+ 壳 `start_app` AOT 启动桥（`lib<stem>.so` → `openharmony_app_main`，`aot=1`/`aot=0` 回退）+ 解释器实验资产（`<files>/interp.txt` → `DOTNET_InterpMode`）；宿主导出契约 **134/134**；ui/shell abc → **264,136 B**（headless 18,532 B）；交互门禁 **334/floor 314**）；KIT-EXT2（#27）与 P2-INTEROP/TASK-MIG/PLAT-GAP（#26）、权限链/Share-Scan 探测降级/AOT 启动路径（#25）不变，并在 #24 的 payload-in-libs 基础上：hap 内 `libs/arm64-v8a/` 原地携带 254 payload + `.dotnet-payload.json`，`dotnet.zip` 回退；整包 tar.gz 数字入口见 release「## Integrity」；kit 内强化 verify-kit 自检应报 0 FAIL / 0 WARN，**abc 期望已重锚 `264136`**）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #28）尚未上机**，本轮归档即首次复测证据。JIT A/B 与判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`，kit #25 判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`，kit #26 判定点（新 payload 首次运行/原生桥 ABI/PLAT-GAP 恢复路径）见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`，kit #27 增量判定点（无 HMS 降级不抛/新 payload 首次运行）见 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md`，kit #28 增量判定点（Map 覆盖层/LiveView/AOT 启动桥/解释器）见 `docs/plans/2026-09-28-ohos-tester-handoff-kit28.md`。
+> 当前发布相关：**kit #28**（2026-09-26 发布；R2：Map 覆盖层（harmony flavor + AGC AppKey；默认 flavor 下 `IsOverlayAvailable=false`、调用不抛）+ LiveView 特性探测（无 Kit/权益时 `IsSupported=false`、Start/Update/Stop `Unavailable` 不抛）+ 壳 `start_app` AOT 启动桥（`lib<stem>.so` → `openharmony_app_main`，`aot=1`/`aot=0` 回退）+ 解释器实验资产（`<files>/interp.txt` → `DOTNET_InterpMode`）；宿主导出契约 **134/134**；ui/shell abc → **264,136 B**（headless 18,532 B）；交互门禁 **334/floor 314**）；KIT-EXT2（#27）与 P2-INTEROP/TASK-MIG/PLAT-GAP（#26）、权限链/Share-Scan 探测降级/AOT 启动路径（#25）不变，并在 #24 的 payload-in-libs 基础上：hap 内 `libs/arm64-v8a/` 原地携带 254 payload + `.dotnet-payload.json`，`dotnet.zip` 回退；整包 tar.gz 数字（本轮实测 tar `196,220,486 B` / `091dcc56…`、树 `0a7a3215…`、sidecar `d7efd251…`；见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md`）以 release「## Integrity」为准；kit 内强化 verify-kit 自检应报 0 FAIL / 0 WARN，**abc 期望已重锚 `264136`**）。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #28）尚未上机**，本轮归档即首次复测证据。JIT A/B 与判定表见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`，kit #25 判定点（权限弹窗文案/Share 面板/Scan 返回/AOT 启动）见 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`，kit #26 判定点（新 payload 首次运行/原生桥 ABI/PLAT-GAP 恢复路径）见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`，kit #27 增量判定点（无 HMS 降级不抛/新 payload 首次运行）见 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md`，kit #28 增量判定点（Map 覆盖层/LiveView/AOT 启动桥/解释器）见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md`。
 
 ## 1. 它做什么
 
@@ -42,7 +42,7 @@ curl -L -O "$base/device-test-kit/device-test-kit.tar.gz.sha256"
 sh tester-run.sh --kit-tar ./device-test-kit.tar.gz --install --start --capture 30
 ```
 
-- 建议同时用发布说明「Integrity」的 tree sha256 绑定解压内容：加 `--expect-tree-digest <hex>`。
+- 建议同时用发布说明「Integrity」的 tree sha256 绑定解压内容：加 `--expect-tree-digest <hex>`（本轮 tree = `0a7a3215…`）。
 - **API 20 波段设备**用 api20 包（先解压 kit）：`sh tester-run.sh --kit-dir ./device-test-kit --install --hap ./device-test-kit/hello-maui-app-api20.hap`。
 - **启动崩溃排查**（探针 hap 是未签名的，先按 `自签说明.md` 自签到位）：`sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes`。
 
@@ -99,7 +99,7 @@ grep -E 'hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|JsError|appspaw
 - **bootstrap/rawfile 失败特征** → `hilog/hilog-bootstrap.txt`：对所有已录制 hilog 窗口再过滤 `GetRawFileContent|bootstrap failed|bootstrap retry|BusinessError|900002|900003|ZIP entry|destination path|Load native module failed|symbol not found|cannot find library|Museum|MUSL-LDSO|check ns accessible`；计数写入 `summary.txt` 的 `bootstrap_capture`（ok/not_captured）、`bootstrap_lines`、`bootstrap_errors`、`rawfile_errors`、`libload_errors`（无录制窗口记 `<unavailable>`）。
 - **设备侧 payload 状态** → `device/payload-files.txt`（`ls -l <filesDir>/` 中 `dotnet|payload` 行）与 `device/payload-marker.txt`（`<filesDir>/dotnet.marker` 首行）；`summary.txt` 记 `payload_present`（yes/no）、`payload_files`（行数）、`payload_marker`（ok/empty）。**kit #24 起 payload 在 hap `libs/arm64-v8a/` 原地运行**，这些键只反映回退布局的 filesDir 解包：`payload_present=no` 属常态；本地 kit 自检的 `payload=yes|no`（marker 是否在包内）才是 payload-in-libs 信号。
 - **kit hap 自检**（本地，dry-run 也打印，设备轮才归档）→ `meta/kit-selfcheck.txt`：逐 kit hap 的 `resources.index` 有无/大小、`libs/arm64-v8a` 计数与 `.dotnet-payload.json`（`payload=yes|no`）、`ets/modules.abc` 头版本；`summary.txt` 记 `kit_index_ok`（yes/no）。
-- **exec-memory 证据**（v8；kit #24 起，kit #28 沿用）→ `hilog/hilog-execmem.txt`：把同一批 hilog 窗口按 `OHOS_DOTNET probe:|xwe=` 过滤，保留 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…` 与 `[openharmony-host] … xwe=0|1 source=…` 行；`summary.txt` 记 `execmem_capture`（ok/not_captured）、`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑）。判定表见 `docs/plans/2026-09-28-ohos-tester-handoff-kit28.md` §3（JIT 表沿用 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5）。
+- **exec-memory 证据**（v8；kit #24 起，kit #28 沿用）→ `hilog/hilog-execmem.txt`：把同一批 hilog 窗口按 `OHOS_DOTNET probe:|xwe=` 过滤，保留 `OHOS_DOTNET probe: 1=… 2=… 3=… 4=…` 与 `[openharmony-host] … xwe=0|1 source=…` 行；`summary.txt` 记 `execmem_capture`（ok/not_captured）、`execmem_lines`（0 = 未捕获，加长 `--capture` 重跑）。判定表见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §3（JIT 表沿用 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5）。
 
 **判读建议（v7/v8 新键；均为提示性，不改退出码）**：
 
@@ -145,7 +145,7 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 ## 9. 相关文档
 
 - 快速上手（一页版）：`docs/plans/2026-09-20-ohos-tester-quickstart.md`（包内名 `快速开始.md`）
-- kit #28 交接（R2 Map 覆盖层 / LiveView / AOT 启动桥 / 解释器实验判定点）：`docs/plans/2026-09-28-ohos-tester-handoff-kit28.md`
+- kit #28 交接（R2 Map 覆盖层 / LiveView / AOT 启动桥 / 解释器实验判定点）：`docs/plans/2026-09-26-ohos-tester-handoff-kit28.md`
 - kit #27 交接（KIT-EXT2 + 无 HMS 降级不抛（Push/Account/Map）/新 payload 首次运行判定点；历史）：`docs/plans/2026-09-27-ohos-tester-handoff-kit27.md`
 - kit #26 交接（P2-INTEROP/TASK-MIG/PLAT-GAP + 新 payload 首次运行判定点；历史）：`docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`
 - kit #25 交接（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动判定点；历史）：`docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`
