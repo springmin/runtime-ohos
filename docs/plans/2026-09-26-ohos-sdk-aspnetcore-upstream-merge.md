@@ -59,10 +59,22 @@
     1. 失败发生在 Stage 1，先于 aspnetcore/sdk —— 两仓 merge 的内容不参与该阶段
     2. 本次 merge 未改动 sdk 的 `eng/ohos-install/**` 与 workflow（fork-local 文件原样保留）
     3. runtime 分支自上次绿色运行（09-21）以来有 **63 个非文档文件**变更（interpreter / AOT / native / targetingpacks 等，kit #27/#28 线）；sdk 侧脚本/workflow 09-23 也有改动（hostfeed 校验、portable RID graph 注入）。当前 workflow 只预置了 **linux-x64** 主机运行时包，缺 **linux-musl-arm64** portable 包
-  - 待处理（三选一）：
-    a. **CI 侧**：在 workflow / `versions.env` 预置 `Microsoft.NETCore.App.Runtime.linux-musl-arm64`（含 sha256 pin），重跑
-    b. **runtime 侧**：核对 `ILCompiler_publish` 的 `PortableOS-TargetArchitecture` RID 计算为何落到 `linux-musl-arm64`（OHOS 本身是独立 RID；若 AOT 工具确需便携 musl-arm64 包则回到 a）
-    c. **隔离验证**：用上次绿色 runtime ref + 当前 merged sdk/aspnetcore refs 跑一次（预期仍失败于 Stage 1，用于归因存档）
+- **根因定位（2026-09-26 深夜，确认版）**：
+  1. Stage 1 的 `clr.aot+packs` 会构建 installer 的 **ILCompiler 官方包工程**（`src/installer/pkg/projects/Microsoft.DotNet.ILCompiler/Microsoft.DotNet.ILCompiler.pkgproj`）
+  2. 其 RID 清单 `ILCompilerRIDs.props` 包含全部 `OfficialBuildRID`，其中有 **`linux-musl-arm64`**
+  3. 为 `linux-musl-arm64` 构建该包时会调用 `ILCompiler_publish.csproj`（其 RID = `$(PortableOS)-$(TargetArchitecture)`，此时解析为 `linux-musl-arm64`），自包含发布需要 `Microsoft.NETCore.App.Runtime.linux-musl-arm64` 运行时包
+  4. 该包在 CI 中不可得：workflow 只预置 `linux-x64`（+fork Ref/runtime pack）；`eng/targetingpacks.targets` 的本地 pack 覆盖只覆盖 `TargetsOpenHarmony`（`openharmony-arm64`）；且 fork 线版本 `11.0.0-rc.1.26451.109` 在 dnceng（最新 rc `26431.118`）与 nuget.org（`26425.128`）都不存在
+  5. → `NETSDK1112` → Stage 1 中止
+  - 同型清单 `src/installer/pkg/projects/netcoreappRIDs.props` 也含 `linux-musl-arm64`；若 `packs` 对 runtime pack 同样做全 RID 展开，需要一并处理
+- **建议的最小修复（runtime 侧，约 3–4 行）**：在 `ILCompilerRIDs.props` 末尾对 OpenHarmony 构建收窄官方 RID 集（仅保留 `$(TargetRid)`），从根上避免 `linux-musl-arm64` 的 NuGet 还原；fork 的 `runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler` 包本就由脚本的 re-publish + `assemble-ilc-pack.py` 产出，不依赖其它 RID：
+  ```xml
+  <ItemGroup Condition="'$(TargetsOpenHarmony)' == 'true'">
+    <OfficialBuildRID Remove="@(OfficialBuildRID)" Condition="'%(OfficialBuildRID.Identity)' != '$(TargetRid)'" />
+  </ItemGroup>
+  ```
+  同法核对 `netcoreappRIDs.props`（若确有全 RID 展开）
+- **备选**：a) 扩展 `eng/targetingpacks.targets` 的本地 pack 覆盖，把 portable `linux-musl-arm64` 重定向到 `LocalRuntimePackDir`；b) pipeline 侧把本地 `openharmony-arm64` 包装成 `linux-musl-arm64` 别名喂给 AOT 还原（改动 sdk 脚本，链路更长）
+- **验证方式**：runtime 侧 scratch 分支 → 本地/CI 复跑（`runtime_ref=scratch` + merged sdk/aspnetcore refs）→ 绿后合入 `feature/openharmony`
 
 ## 6. 边界与后续
 
