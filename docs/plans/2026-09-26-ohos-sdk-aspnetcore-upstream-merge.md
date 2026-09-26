@@ -52,7 +52,17 @@
 - 输入：`runtime_ref=feature/openharmony`、`aspnetcore_ref=feature/openharmony`、`sdk_ref=feature/openharmony`、`rid=openharmony-arm64`
 - Preflight（只校验 runtime_ref 的 OpenHarmony 支持与 band=11.0.0）：runtime 未动 → 通过
 - 预期制品：runtime / aspnetcore / sdk 三仓 `artifacts/packages/Release/Shipping/*` → artifact `ohos-build-openharmony-arm64-<run_id>`；可选 `upload_release=true` 发布到三个 `-ohos` release
-- **结果：** 待补（构建完成后在此追加结论与制品清单）
+- **结果（2026-09-26 22:46 CST）：失败** —— 未进入 aspnetcore/sdk 阶段，失败于 **Stage 1（runtime 构建）**：
+  - `src/coreclr/tools/aot/ILCompiler/ILCompiler_publish.csproj`：`NETSDK1112: The runtime pack for Microsoft.NETCore.App.Runtime.linux-musl-arm64 was not downloaded`
+  - 失败步骤：`Build runtime -> aspnetcore -> sdk`（步骤 16）；CI 检出的 `runtime=d43f9ce2`（kit #28 tip）
+  - 初步归因（**非本次 merge 引起**）：
+    1. 失败发生在 Stage 1，先于 aspnetcore/sdk —— 两仓 merge 的内容不参与该阶段
+    2. 本次 merge 未改动 sdk 的 `eng/ohos-install/**` 与 workflow（fork-local 文件原样保留）
+    3. runtime 分支自上次绿色运行（09-21）以来有 **63 个非文档文件**变更（interpreter / AOT / native / targetingpacks 等，kit #27/#28 线）；sdk 侧脚本/workflow 09-23 也有改动（hostfeed 校验、portable RID graph 注入）。当前 workflow 只预置了 **linux-x64** 主机运行时包，缺 **linux-musl-arm64** portable 包
+  - 待处理（三选一）：
+    a. **CI 侧**：在 workflow / `versions.env` 预置 `Microsoft.NETCore.App.Runtime.linux-musl-arm64`（含 sha256 pin），重跑
+    b. **runtime 侧**：核对 `ILCompiler_publish` 的 `PortableOS-TargetArchitecture` RID 计算为何落到 `linux-musl-arm64`（OHOS 本身是独立 RID；若 AOT 工具确需便携 musl-arm64 包则回到 a）
+    c. **隔离验证**：用上次绿色 runtime ref + 当前 merged sdk/aspnetcore refs 跑一次（预期仍失败于 Stage 1，用于归因存档）
 
 ## 6. 边界与后续
 
