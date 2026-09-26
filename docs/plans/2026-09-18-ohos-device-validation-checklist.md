@@ -18,7 +18,7 @@ Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, 
 reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
 this document. Kit #28 measured values: tar **196,220,486 B** / `091dcc56…`, tree **`0a7a3215…`**,
-sidecar `d7efd251…` (see `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §0).
+sidecar `d7efd251…` (see the fingerprint block at the top of `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md`).
 
 Updated 2026-09-24 (kit #21, historical snapshot — superseded by the kit #22/#23 notes below): the current kit is #21 — all five haps carry `libIsolation` plus the
 complete security/performance/startup fix set since #17 (frame allocation 241,688 → 4,504 B/frame;
