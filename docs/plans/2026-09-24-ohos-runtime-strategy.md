@@ -30,6 +30,43 @@
   4. 冒烟 console（Main/泛型/LINQ/Task/GC）；判定：无 SEGV、无匿名 `r-x` 段（`/proc/self/maps`）、栈帧来自解释器；
   5. 失败：记录首个 `PROT_EXEC` 请求来源（precode / UMEntryThunk），再评估 portable-entrypoints。
 
+### Spike 结果（R1-INTERP-SPIKE, 2026-09-26，本机 OHOS aarch64 主机）
+
+**结论：构建侧打通**（`-os openharmony -arch arm64 --cross -c Release` + `-clrinterpreter`）：
+
+- CMake configure 通过（`-DFEATURE_INTERPRETER=1`）。
+- `interpreter/libclrinterpreter.so` 构建成功：stripped、**268,320 B（262 KiB）**、sha256 `8bcb573411fd6f0f3e244f496e9ce14b5db22539f7831efb8bc64b5c4ec0d59b`、BuildID `7380afe1b8ae43a56f6246ca8e7cf7eca27cdb90`；`DT_NEEDED = libc++_shared.so, libc.so`，`SONAME=libclrinterpreter.so`；导出 `getJit@@V1.0` / `jitStartup@@V1.0`（与 libclrjit 同 ABI）；`GNU_STACK = RW`（无 exec stack）。
+- 解释器相关 VM TU 在 `FEATURE_INTERPRETER=1` 下编译通过：`precode.cpp`/`method.cpp`/`jitinterface.cpp`/`eeconfig.cpp`/`interpexec.cpp`/`codeman.cpp`（cee_wks_core / cee_wks）。
+- 全量 `libcoreclr.so` 链接本轮未完成：coreclr 内嵌的 `src/native/libs`（Crypto/Globalization）需要**真实 OHOS 交叉 ICU 75.1 + OpenSSL** 头/库；本机 `/tmp/icu-ohos-install` 与 `/tmp/openssl-ohos` 已丢失。不影响解释器库这一尖刺主产物。
+
+**开关细节（细化 §2）**：
+
+- `./build.sh … -clrinterpreter`（`eng/build.sh:397`）→ `/p:FeatureInterpreter=true` → `runtime.proj:59` 追加 `-cmakeargs "-DFEATURE_INTERPRETER=1"`；`src/coreclr/CMakeLists.txt:285` 据此 `add_subdirectory(interpreter)`。
+- `clrfeatures.cmake:82-93`：默认仅 Debug/Checked 打开；Release 必须显式传开关；排除 Android，**不排除 openharmony**（arm64 在允许列表）。
+- `FEATURE_STANDALONE_GC` 与解释器**无耦合**：默认 1（`clrfeatures.cmake:95`），OHOS 不在清零列表（`CMakeLists.txt:34`，仅 Apple 移动/WASM/Android）；解释器只链接 `gcinfo` + `minipal` + `dn-containers`。
+- 入 pack 判定：`src/installer/pkg/sfx/Microsoft.NETCore.App/Directory.Build.props:126-128` 仅在 Debug/Checked 或 `FeatureInterpreter=true` 时把 `libclrinterpreter.so` 加进 runtime pack；本机 stock RC1 pack 的 13 个 native lib 已核对，无解释器。
+- 纯解释模式：`interpconfigvalues.h:32-36` `DOTNET_InterpMode=3`（全解释、隐含 `DOTNET_ReadyToRun=0`、`DOTNET_EnableHWIntrinsic=0`、tiered 关）；`DOTNET_Interpreter=<MethodSet>` 为按方法集 opt-in；`codeman.cpp:5809` 按 `MAKEDLLNAME_W("clrinterpreter")` 动态加载，`DOTNET_InterpreterName` 可覆盖。
+
+**本机（OHOS 主机）复现绕过**（均为主机环境/属性，零源码改动；完整命令见 scratch `run-configure.sh`）：
+
+1. `uname -s = HarmonyOS` → Arcade `eng/common/native/init-os-and-arch.sh` 报 `Unsupported OS harmonyos detected!`；用 PATH 前置的 `uname` shim（仅 `-s` 输出 `Linux`）绕过（不碰 `eng/common`）。
+2. `global.json` 要求 bootstrap SDK `11.0.100-rc.1.26420.103`，公网不可得（builds.dotnet.microsoft.com 404、ci.dot.net 超时）。令 `DOTNET_INSTALL_DIR` 指向 scratch 布局（`sdk/11.0.100-rc.1.26420.103` 符号链接 → 已装 `26451.109`）；Arcade 只做目录存在性检查，实际由 host rollForward 使用 26451.109。
+3. OHOS seccomp 禁止 MSBuild 出进程节点绑定控制 UDS（`SocketException (13): Permission denied`，已见 `MSBuild_pid-*.failure.txt`）→ 追加 `/m:1`（末位覆盖 Arcade 的 `/m`）+ `DOTNET_CLI_USE_MSBUILD_SERVER=0`。
+4. 静态图 restore 的 `NuGet.Build.Tasks.Console` 子进程在 OHOS 上 `System.Console.get_Out()` 抛 `PlatformNotSupportedException` → `/p:RestoreUseStaticGraphEvaluation=false`。
+5. `dotnet tool restore`（Arcade `Tools.proj`：coverlet/xharness…）在 OHOS 上失败（`Settings file 'DotnetToolSettings.xml' was not found in package 'coverlet.console@6.0.4'`，包本身完整）→ `/p:_RepoToolManifest=/nonexistent` 跳过；native clr 构建不需要这些工具。
+6. `cdac-build-tool.csproj` 未进 restore 图（`NETSDK1004`）→ 手工 `dotnet restore`（同全局属性，输出到 `artifacts/obj/coreclr/cdac-build-tool`）。
+7. NDK `lld`（26.0.0.18_2）在此主机上加载自带 `llvm/lib/libxml2.so.16` 失败（`Error loading shared library libxml2.so.16`，随后符号全缺失，链接报 `linker command failed due to signal`）；把该 `libxml2.so.16` 复制到 scratch 目录并 `LD_LIBRARY_PATH` 指向即可（configure 与 ninja 都需要）。
+8. OpenSSL/ICU 只为 configure 的 `find_package`/头文件检查需要（`clr` 子集会在 coreclr CMake 内配置 `src/native/libs` 的 Crypto/Globalization）；本次用占位 include/lib 满足 configure、且 `ninja` 只编到解释器/VM 目标。**完整 `clr+libs+packs` 需先用 sdk-ohos `eng/ohos-install/build/ohos-ci-env.sh` 重建 OHOS 交叉 ICU/OpenSSL**。
+
+**启用/入 pack 最小步骤（不发布）**：
+
+- 脚本 `scripts/ohos-runtime-clrinterpreter-overlay.sh <libclrinterpreter.so> --pack <runtime-pack.nupkg> [--install-cache]`，或 `--dir <已解开的 shared/publish 目录>`；目标位置 `runtimes/openharmony-arm64/native/libclrinterpreter.so`（与 `libcoreclr.so` 同目录即可被宿主 `dlopen` 找到）。
+- 应用/设备启动前 setenv：`DOTNET_InterpMode=3`（纯解释）；可选 `DOTNET_Interpreter=<MethodSet>`；`DOTNET_InterpreterName` 覆盖库名。JIT 回退路径仍需 `DOTNET_EnableWriteXorExecute=0`，并移除 seccomp 拦截器。
+- `libc++_shared.so` 必须可解析（解释器 `DT_NEEDED`）；stock runtime pack 不含它，需系统库或随应用提供。
+- **残余 W^X 风险不变**：`Precode::AllocateInterpreterPrecode`（`vm/precode.cpp:237-256`）仍从 `GetNewStubPrecodeHeap()->AllocStub()`（可执行 stub precode 堆）分配 → 纯解释模式仍可能产生匿名 exec 页；`FEATURE_PORTABLE_ENTRYPOINTS` 仅 WASM 默认开启，非 WASM 可行性未验证，仍列为备选。
+
+**成本与下一步**：本机 configure ≈10 min（含 restore），解释器 target ≈2 min（-j4），VM 抽样 TU ≈数分钟；全量 libcoreclr 预计 30–60 min（-j4，需先补 ICU/OpenSSL 资产）。设备侧仍需验证：`DOTNET_InterpMode=3` 启动冒烟、`/proc/self/maps` 匿名 `r-x` 检查、栈帧来自解释器。
+
 ## 3. 四条路线对比
 
 | 路线 | 机制 | OHOS 现状（本仓证据） | 阻塞/成本 | 结论 |
@@ -59,6 +96,6 @@
 ## 6. 仍未验证
 
 - HAP 应用域 vs CLI 域、HarmonyOS 7(API 26) vs lab 内核 1.13 的 exec 策略差异；`DOTNET_EnableWriteXorExecute=0` 在 HAP 域是否足以让 JIT 启动。
-- 解释器在 openharmony-arm64 的构建与运行；残余 exec 页是否必然出现；portable-entrypoints 非 WASM 可行性。
+- 解释器：**构建侧已在本机 openharmony-arm64 打通**（`libclrinterpreter.so` + 解释器相关 VM TU，见 §2 spike 结果）；**运行侧**（HAP/CLI 域下 `DOTNET_InterpMode=3` 冒烟、残余匿名 exec 页是否必然出现）与 portable-entrypoints 非 WASM 可行性仍未验证。
 - NativeAOT：MAUI 切片、ilc pack 签名/exec 位、SDK `NETSDK1203`；坚盾守护模式对 NativeAOT（预期无影响）。
 - 对口 ACL 在 2in1/受邀之外机型的实际可达性。
