@@ -40,7 +40,9 @@
 #endif // !defined(__NR_close_range)
 #endif // !defined(HAVE_CLOSE_RANGE)
 #endif // defined(__linux__)
-#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+// OpenHarmony never calls close_range (seccomp SIGSYS), so none of the users of
+// this flag compile there; keep the definition off to avoid -Wunused-macros.
+#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC) && !defined(TARGET_OPENHARMONY)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
