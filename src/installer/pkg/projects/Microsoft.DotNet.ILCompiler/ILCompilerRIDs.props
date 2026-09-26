@@ -17,4 +17,19 @@
     <OfficialBuildRID Include="freebsd-arm64" Platform="arm64" />
     <OfficialBuildRID Include="$(TargetRid)" Platform="$(TargetArchitecture)" Exclude="@(OfficialBuildRID)" />
   </ItemGroup>
+
+  <!--
+    OpenHarmony builds ship only the fork's own ILCompiler pack (assembled by
+    eng/ohos-install/build/build-ohos-all.sh from the split re-publish). Expanding
+    this pack to every official RID makes the per-RID ILCompiler_publish restore
+    require runtime packs that are not available at the fork build version
+    (Microsoft.NETCore.App.Runtime.linux-musl-arm64 -> NETSDK1112).
+
+    TargetOS is a global property (set by eng/build.sh), so it is reliable at
+    this import point; TargetsOpenHarmony/TargetRid are OR-ed in for safety.
+  -->
+  <ItemGroup Condition="'$(TargetOS)' == 'openharmony' or '$(TargetsOpenHarmony)' == 'true' or $([System.String]::Copy('$(TargetRid)').StartsWith('openharmony'))">
+    <OfficialBuildRID Remove="@(OfficialBuildRID)" />
+    <OfficialBuildRID Include="$(TargetRid)" Platform="$(TargetArchitecture)" Condition="'$(TargetRid)' != ''" />
+  </ItemGroup>
 </Project>
