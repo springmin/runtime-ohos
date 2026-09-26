@@ -5,7 +5,7 @@
 > + `ohos-workload`（`src/OpenHarmonyHost` 原生宿主/NAPI、`src/Microsoft.OpenHarmony.Hosting` 托管宿主、
 > `scripts/build-arkts-shell.sh` 壳构建、`packs/`、`test/`）+ 校验套件
 > （`test/maui-platform-verify`，写作时点 284 条：271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能；现为
-> 329 条 `[verify]`/floor 309，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
+> 334 条 `[verify]`/floor 314，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
 > **方法**：只读代码审计，无构建、无测试运行；每条结论可回指到文件与行。
 > **真机口径**：全部结论均为**离设备**核实；真机现状见 §6。上设备前，"已实现"≠"已验证"。
 > 本文件是独立盘点产物，不替代主审计 `2026-09-19-ohos-code-audit.md` 与最终状态 `2026-09-21-ohos-final-status.md`。
@@ -114,7 +114,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **329** 条 `[verify]`、门限 **floor 309**（`843d371` 的 kit4–6 与
+- `test/maui-platform-verify` 期望 **334** 条 `[verify]`、门限 **floor 314**（`843d371` 的 kit4–6 与
   `18c9637` 的指针驱动条目后为最新；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
   315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查，`6759f84`/`9b9cb9c` 的

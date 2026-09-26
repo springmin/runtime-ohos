@@ -89,7 +89,7 @@
 
 ### 3.2 排期项（含阻塞点）
 
-1. **内联 MSBuild 任务迁移（TASK-MIG，进行中）**：5 个任务类（+1 zip 代码片段）已实现为 `Microsoft.OpenHarmony.Tasks.dll`（net11.0 + 单测 + 三 pack `tools/`），三 pack `UsingTask` 已改指程序集；剩余 hap publish 全量复验（含 `dotnet clean` 契约与 RID pin 锁步），随 RELEASE-25 / kit #26 收口。
+1. **内联 MSBuild 任务迁移（TASK-MIG，进行中）**：5 个任务类（+1 zip 代码片段）已实现为 `Microsoft.OpenHarmony.Tasks.dll`（net11.0 + 单测 + 三 pack `tools/`），三 pack `UsingTask` 已改指程序集；剩余 hap publish 全量复验已完成；`tools/Microsoft.OpenHarmony.Tasks.dll` 自 kit #26 起入包（kit #28 复验通过）。
 2. **NAPI 6d 剩余项**（drawing RAII / effect 所有权 / location-IME 生命周期 / NodeContent 身份 / 原子发布注册表 / 缓冲按需）：阻塞 = `comp-napi/report.md` 原文缺失，需重做只读定位；互操作侧已收口，无并发写冲突。
 3. **sdk 测试接入 CI**：`eng/ohos-install/tests/` 3 个脚本（filewrites 5/0、hostfeed 10/0、installer 43/0）尚未挂 workflow；阻塞 = runner 需 NDK/离线资产或改为纯静态门禁。
 4. **sdk `ohos-full-build` runner 红**：run `36131775031`（illink `MSB6006` exit 150）与 `36129693381`（host subset 无 corehost apphost）；阻塞 = 需 runner 侧复现/缓存修复后复跑，本地无同构环境。
@@ -120,4 +120,4 @@
 6. 文中数字为快照：交互 326/floor 306 与像素取自 2026-09-25 20:00 本地 `preflight`（P2 后复跑仍为 326/306）；118/118 取自 18:08 `build-host`（P2 后复跑仍 118/118）；CI 5/5 为 master tip `2c1a2cb` 的 run 记录。
 7. 本次回填数字来源：P2 = `p2-interop/REPORT-p2-interop.md`（`p2-interop/final-*.log`）；PLAT-GAP = `plat-gap/EVIDENCE.md`；TASK-MIG = `task-mig/`（进行中，无收口报告）；KIT = `kit-impl/feasibility-report.md`。kit #25 发布状态以 release-manifest / `device-test-kit` release 为准（本报告未改 release-manifest）。
 
-> **发布状态（2026-09-26 回填）**：kit #25 已发布（含本轮多数修复：权限链、Share/Scan 探测、AOT 启动路径、present 缓存、JSON 源生成、targets 强化）；kit #26 将收口 P2/PLAT-GAP/TASK-MIG 等尚未入包项。
+> **发布状态（2026-09-26 回填）**：kit #25–#28 已发布——#25（权限链/Share+Scan 探测/AOT 启动路径/present 缓存/JSON 源生成/targets 强化）· #26（P2-INTEROP 125 处 LibraryImport/PLAT-GAP/TASK-MIG 任务程序集）· #27（Push/Account/Map 探测 · NAPI 边界加固 · off-runtime-marshaller · 导出 130/130）· #28（Map 覆盖层 · `start_app` AOT 桥 · LiveView · `interp.txt` 注入 · 导出 134/134、套件 334/floor 314）。
