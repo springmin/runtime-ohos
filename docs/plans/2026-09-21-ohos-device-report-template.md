@@ -10,7 +10,7 @@
 | kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」；`tester-run.sh` v8 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
 | tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
 | `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v8 = `8`） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #26） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #27） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
 > **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e。
@@ -90,9 +90,9 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - `appLibPathKey` 行（含 `lib path:` 原文）：`<粘贴 / 未出现>`（出现 `appLibPathKey: <bundle>/<module>` = 模块级 app-lib key 已注册，`libIsolation` 生效）
 - 别名注册行（`[openharmony-host] … bound via alias '…'`，逐字）：`<粘贴 / 未出现>`
 - 首帧判定（`registerXComponent=function` / 首帧出现 / 无 `Load native module failed`）：`<逐条>`
-- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §4 / `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
+- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md` §4 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
 
-## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26 继续按此判读）
+## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26/#27 继续按此判读）
 
 > 本 kit 的 5 个 hap 是 **JIT payload**（hostfxr 回退路径）；Share/Scan 的 sink 在 OpenHarmony SDK 下
 > **不注册**（`shareDispatch=False`/`scanSupported=False`），面板/扫码 UI 需 `ARKTS_SDK_FLAVOR=harmony`
@@ -105,13 +105,27 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - Scan 返回：`<scanSupported=False 时 IsSupported/ScanAsync 结果 / HarmonyOS 变体 originalValue / 未测（本包无入口）>`
 - AOT 启动：`<AOT hap 启动结果（app export）/ 未提供 AOT hap → JIT hostfxr 回退回归结果>`
 
-## 4e. kit #26 增量判定点（新 payload 首次运行 / 原生桥 ABI / PLAT-GAP 恢复路径）
+## 4e. kit #26 增量判定点（新 payload 首次运行 / 原生桥 ABI / PLAT-GAP 恢复路径；历史，仍按此判读）
 
 > 完整判读见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §2；§4d 的权限/Share/Scan/AOT 口径不变。
+> kit #27 继续沿用本节（重建 payload 首次运行 / 回调路径无 ABI 回归），abc 期望改为 `245412`；PLAT-GAP 路径同。
 
 - 新 payload 首次运行（LibraryImport hosting 重建）：`<启动两行日志原文 + 是否存活 + 5 条冒烟结果>`
 - 原生桥 ABI 抽查（权限请求 / `A11Y` / Hybrid `Echo`·`Add`）：`<结果截图/回显 + 有无 EntryPointNotFound/DllNotFound/参数错乱>`
 - PLAT-GAP 消费方路径（用 kit #26 workload 发布引用 `Microsoft.AspNetCore.App` 的项目）：`<dotnet publish 结果 + 是否需要工程级 KFR/RID/apphost 规避 / 未做>`
+
+## 4f. kit #27 增量判定点（无 HMS 降级不抛（Push/Account/Map）/ 新 payload 首次运行）
+
+> KIT-EXT2 **未新增 UI 入口**：5 个 hap 里没有 Push/Account/Map 的按钮。首选判定是**降级不抛**；真 Kit 调用需
+> `ARKTS_SDK_FLAVOR=harmony` 构建 + HMS 设备 + AGC 开通/审批。没有对应入口的项登记「未测（本包无入口）」，不要判失败。
+> 完整判读见 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md` §2。
+
+- 无 HMS 降级不抛（Push `GetTokenAsync` / Account `AuthorizeAsync`·`GetQuickLoginAnonymousPhoneAsync` / Map `QueryCapabilitiesAsync`·`MapKitImportable`·`IsSupported`）：`<Unavailable/null/false 原文 + 有无异常/崩溃 + 未测（本包无入口）>`
+- Push token（需 HMS/AGC）：`<token 首尾片段 + 错误码 1000900010/1000900012 排查原文 / 未测>`
+- Account 授权（需 HMS + scope 审批）：`<匿名手机号 + authorizationCode 结果 + 错误码 1001502014/1001500001 排查原文 / 未测>`
+- Map 能力位（需 HMS/AGC + AppKey）：`<capability bits（bit0）+ QueryCapabilitiesAsync 结果原文 / 未测>`
+- 新 payload 首次运行（新 abc 245,412 + 新宿主 + marshal-off）：`<启动两行日志原文 + verify-kit 结果（abc=245412）+ 是否存活>`
+- 回调路径（marshal-off）：`<权限请求 / A11Y / Hybrid Echo·Add 结果 + 有无 EntryPointNotFound/DllNotFound/参数错乱>`
 
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 

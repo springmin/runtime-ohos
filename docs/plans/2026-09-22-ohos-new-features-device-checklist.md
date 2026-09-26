@@ -1,7 +1,7 @@
 # 2026-09-22 新功能真机验证清单（测试者版）
 
-> 面向拿到 `device-test-kit`（kit #26，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
-> kit #26（2026-09-26）已含自 kit #17 起的全部安全/性能/启动修复，并在设备里程碑回灌中补齐：宿主按需 dlsym、HAP `resources.index`（restool）、ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #24 叠加 payload-in-libs（`libs/arm64-v8a/` 原地启动 + `.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 W^X=0 与 exec-memory 探针；**kit #25** 再叠加权限链（`reason`/`usedScene` + 请求点门禁）、Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级）与 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；**kit #26** 收口互操作/打包/平台缺口（hosting 桥全量 `LibraryImport` 125 处、`DllImport` 归零、导出契约 118/118；pack 内 6 个 MSBuild 任务程序集 + `Hap.targets` 拆分/`PlatformItems.targets`；AspNetCore KFR/RID/apphost 缺省化，消费方无需工程级规避）。主选就是它本身（`libIsolation` + 全部修复）。**kit #25/#26 未新增 UI 入口** —— 逐项「现有入口/无入口」沿用本清单（标「kit #23 无入口」的项在 #24–#26 同样无入口；运行时与打包层改动见 §0.4/§0.5 与 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #26）尚未上机**。
+> 面向拿到 `device-test-kit`（kit #27，preview.24 基线）与 `tester-run.sh` 的测试者：验证本轮（2026-09-22）落地的 MAUI on OpenHarmony 新能力。
+> kit #27（2026-09-26）已含自 kit #17 起的全部安全/性能/启动修复，并在设备里程碑回灌中补齐：宿主按需 dlsym、HAP `resources.index`（restool）、ZIP offset/length + mkdir、DevEco `modelVersion 6.0.2` 工程布局；kit #24 叠加 payload-in-libs（`libs/arm64-v8a/` 原地启动 + `.dotnet-payload.json`，`dotnet.zip` 回退）、宿主显式 W^X=0 与 exec-memory 探针；**kit #25** 再叠加权限链（`reason`/`usedScene` + 请求点门禁）、Share/Scan 特性探测（OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False` 干净降级）与 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）；**kit #26** 收口互操作/打包/平台缺口（hosting 桥全量 `LibraryImport` 125 处、`DllImport` 归零、导出契约 118/118；pack 内 6 个 MSBuild 任务程序集 + `Hap.targets` 拆分/`PlatformItems.targets`；AspNetCore KFR/RID/apphost 缺省化）；**kit #27** 落 KIT-EXT2（壳 Push/Account/Map 特性探测（无 Kit/AGC/HMS 时 sink 不注册、值 null/false，**不抛**）+ 宿主 12 个 kit sink（导出契约 **130/130**）+ FIX-R1-NAPI-6D 边界加固 + 反向条目 off-runtime marshaller；ui/shell abc → **245,412 B**、hap 内宿主 → **265,120 B**、hosting DLL → **55,296 B**；交互门禁 329/floor 309）。主选就是它本身（`libIsolation` + 全部修复）。**kit #25–#27 未新增 UI 入口** —— 逐项「现有入口/无入口」沿用本清单（标「kit #23 无入口」的项在 #24–#27 同样无入口；运行时/打包层改动见 §0.4/§0.5，kit #27 判定点见 §0.8 与 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md`）。对照载荷（dynpkg/normalized/importb/importd/importprobe a–c）与 P1–P4 探针仍在同一 release，按交付方指示取用。2026-09-24 真机里程碑（kit #18 + 测试方 5 项本地修复首次完整运行）见 `docs/plans/2026-09-24-ohos-device-milestone.md`；**stock kit（#22 起，含 #27）尚未上机**。
 > 与 `验收说明.md`（A1–K2、N1–N7）互补：A–N 覆盖既有能力，本清单覆盖 **M1–M13**（M11–M13 为 2026-09-23 深化批：真实缺陷修复 / UX 深化 / 原始 HAP 资源桥）。
 > 逐项格式：**入口 → 步骤 → 期望 → 证据（抓什么）→ 可能失败**。绝大多数步骤需人工操作：`tester-run.sh` 只能自动**安装 / 启动 / 录 hilog / 跑启动崩溃探针**，触发 UI、切换系统设置、接受弹窗、截图、取沙箱文件都要人工完成。
 
@@ -69,7 +69,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 归档 `tester-report-<时间戳>.tar.gz` 里有 `hilog/hilog-full.txt`、`hilog/hilog-filtered.txt`、`hilog/hilog-applib.txt`、`hilog/hilog-dlopen.txt`、`hilog/hilog-bootstrap.txt`、`hilog/hilog-execmem.txt`（kit #24：`OHOS_DOTNET probe:`/`xwe=` 行）、`kmsg/`、`device/app-libs-arm64.txt`、`device/payload-files.txt`、`device/payload-marker.txt`、`meta/kit-hap-sha256.txt`、`meta/kit-selfcheck.txt`、`probes/`、`summary.txt`（含 `script_version`、`main_hap_sha256`、`bootstrap_errors`/`rawfile_errors`/`libload_errors`、`payload_present`/`payload_marker`、`kit_index_ok`、`execmem_capture`/`execmem_lines` 等字段）。截图/录屏与 `dotnet-status.txt` **不在**归档内，需人工另发；失败项请标注发生时间点。
 
-`tester-run.sh` 当前为 **v8**（`script_version=8`；kit #24–#26 版脚本 73,375 B / `6ca2093e…`，本轮未重传、与仓库副本逐字节一致；其余数字以 release 资产页「## Integrity」与随附 `gh api` 查询为准）：v6r2 的 `--tree-digest` 复用已校验摘要保持不变（P16，实测每轮少读 163.5 MB 量级）、证据包含 `meta/kit-hap-sha256.txt`/`main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征（`hilog-bootstrap.txt` + `bootstrap_errors`/`rawfile_errors`/`libload_errors`）、payload 状态（`payload-files`/`payload-marker` + `payload_present`/`payload_marker`）与 kit hap 自检（`meta/kit-selfcheck.txt` + `kit_index_ok`）；**v8（kit #24 起，kit #26 沿用）再增 execmem 采集**（`hilog-execmem.txt` + `execmem_capture`/`execmem_lines`，kit 自检另加 `payload=yes|no`，判定见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §4 → `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md` §3）。判定：`kit_index_ok=no` → 包早于 kit #22，换当前 kit 再测；`bootstrap_errors`/`rawfile_errors`>0 → 附 `hilog-bootstrap.txt` 回传（不影响退出码）；`payload_present=no` 在 kit #24 起属正常（payload 在 hap `libs/` 原地运行；该键只反映回退布局的 filesDir 解包，kit 自检 `payload=yes|no` 才是 marker 信号）。行为与输出字段对旧调用兼容。
+`tester-run.sh` 当前为 **v8**（`script_version=8`；kit #24–#27 版脚本 73,375 B / `6ca2093e…`，本轮未重传、与仓库副本逐字节一致；其余数字以 release 资产页「## Integrity」与随附 `gh api` 查询为准）：v6r2 的 `--tree-digest` 复用已校验摘要保持不变（P16，实测每轮少读 163.5 MB 量级）、证据包含 `meta/kit-hap-sha256.txt`/`main_hap_sha256`；v7 新增 bootstrap/rawfile 失败特征（`hilog-bootstrap.txt` + `bootstrap_errors`/`rawfile_errors`/`libload_errors`）、payload 状态（`payload-files`/`payload-marker` + `payload_present`/`payload_marker`）与 kit hap 自检（`meta/kit-selfcheck.txt` + `kit_index_ok`）；**v8（kit #24 起，kit #27 沿用）再增 execmem 采集**（`hilog-execmem.txt` + `execmem_capture`/`execmem_lines`，kit 自检另加 `payload=yes|no`，判定见 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md` §4 → `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5）。判定：`kit_index_ok=no` → 包早于 kit #22，换当前 kit 再测；`bootstrap_errors`/`rawfile_errors`>0 → 附 `hilog-bootstrap.txt` 回传（不影响退出码）；`payload_present=no` 在 kit #24 起属正常（payload 在 hap `libs/` 原地运行；该键只反映回退布局的 filesDir 解包，kit 自检 `payload=yes|no` 才是 marker 信号）。行为与输出字段对旧调用兼容。
 
 ### 0.5 自 kit #17 以来的变化（速览）与签名说明
 
@@ -81,6 +81,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 - **kit #24（payload-in-libs + JIT 判定装置）**：payload 直接进 hap `libs/arm64-v8a/`（`.dotnet-payload.json` 校验后原地启动，`dotnet.zip` 回退；签名 hap ~75.3 MB）；`verify-kit.sh` 逐 hap 断言 marker（缺失/不一致 = FAIL）；宿主显式 `DOTNET_EnableWriteXorExecute=0` + `xwe.txt` A/B + exec-memory 探针；`tester-run.sh` v8 采集 `hilog/hilog-execmem.txt`（`execmem_capture`/`execmem_lines`）；重建壳 abc 期望 `215680`/`18308`。不含 seccomp 拦截器（stock kit 直接测）。详见 `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md`。
 - **kit #25（权限链 + Share/Scan 探测 + AOT 启动路径）**：权限变体 5 项权限补齐 `reason`（`$string:permission_reason_*`）与 `usedScene`（`EntryAbility`、`when=inuse`）——运行时授权弹窗应显示**理由文案**（M1 步骤 1/2 的新增期望）；Share/Scan 特性探测（`canIUse` + 变量 import）在 OpenHarmony SDK 上 `shareDispatch=False`/`scanSupported=False`（sink 不注册，干净降级），`ARKTS_SDK_FLAVOR=harmony` 变体才启用面板/扫码；宿主新增 AOT 启动路径（`lib<stem>.so` → `openharmony_app_main`，hostfxr 回退）。指纹：hap ~75.43 MB（zip 278；`libs` 269 = 14 `.so` + 254 payload + marker）、abc `234620`/`18532`、宿主 240,544（hap 内）/236,448（pack）、index 1588/1780、`dotnet.zip` 254/0 `.so`。判定点见 §0.6 与 `docs/plans/2026-09-25-ohos-tester-handoff-kit25.md`。
 - **kit #26（P2-INTEROP + TASK-MIG + PLAT-GAP）**：托管 hosting 桥全量切到源生成 **`LibraryImport`**（125 处 = 44 hosting + 81 MAUI 切片；`DllImport` 归零；导出契约 **118/118** 不变；`StringMarshalling.Utf8`、thunk `[UnmanagedFunctionPointer(Cdecl)]`）——原生桥（权限/无障碍/WebView/分享/扫码等）的调用与回调**行为不变**，hap 内 hosting DLL 47,616 → 55,808 B；hap 打包任务改为 **pack 内编译程序集**（`tools/Microsoft.OpenHarmony.Tasks.dll` 32,256 B，共 6 个任务程序集；`OpenHarmony.Hap.targets` 拆分 + 新增 `PlatformItems.targets`），自建 hap 时不再依赖包内联 targets；**PLAT-GAP 消解**：AspNetCore KFR 固定到 `11.0.0-rc.1.26425.128` 波段、默认 `RuntimeIdentifier=openharmony-arm64`、`EnableAppHostPackDownload=false`，引用 `Microsoft.AspNetCore.App` 的 MAUI 项目（如 BlazorWebView）**不再需要**逐项目规避。指纹：hap ~75.47 MB（zip 278；`libs` 269 = 14 `.so` + 254 payload + marker）、abc 234,620/18,532（不变）、宿主 240,544（hap 内）/236,448（pack，不变）、index 1588/1780、`dotnet.zip` 254/0 `.so`；整包 tar 195,748,984 B（哈希见 release「## Integrity」）。判定点见 §0.7 与 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md`。
+- **kit #27（KIT-EXT2：Push/Account/Map 探测 + 12 kit sink/130 导出 + marshal-off）**：壳对三个 HMS Kit 做特性探测（`@kit.PushKit` `getToken()`/`deleteToken()`、`@kit.AccountKit` `createAuthorizationWithHuaweiIDRequest()` + `getQuickLoginAnonymousPhone`、`@kit.MapKit` capability bits）；**变量 `import()` 成功才注册 sink，无 Kit/AGC/HMS 一律 `Unavailable`/null/false 且不抛**。宿主新增 `ohos_host_push_*`/`ohos_host_account_*`/`ohos_host_map_*`（错误码映射 `1000900010`/`1000900012`、`1001502014`/`1001500001`），导出契约 **118/118 → 130/130**；**FIX-R1-NAPI-6D** 边界加固；反向条目（host→托管回调）改走 **off-runtime marshaller**（`[UnmanagedCallersOnly]` + `delegate* unmanaged[Cdecl]` thunk，套件侧指针驱动 `NativeThunks`）。指纹：hap ~75.56 MB（zip 278；`libs` 269 = 14 `.so` + 254 payload + marker）、abc **245,412**/`18532`、宿主 **265,120**（hap 内）/`261,024`（pack）、hosting DLL 55,296 B、index 1588/1780、`dotnet.zip` 254/0 `.so`；整包 tar 195,951,029 B（哈希见 release「## Integrity」）；交互门禁 329/floor 309。判定点见 §0.8 与 `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md`。
 - **签名说明**：kit #22 起 `签名说明.txt` 的「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若副本仍出现该句，按历史文案处理。
 
 ### 0.6 kit #25 新增判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动）
@@ -100,6 +101,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 > kit #26 的判定口径与 §0.6 一致（权限弹窗 / Share / Scan / AOT 均**继续按 §0.6** 判读，基线换成
 > kit #25/#26）；新增的只有「重建后的 payload 能跑」与「消费方不用再做工程级规避」两类。
+> kit #27 继续沿用本节（重建 payload 首次运行、原生桥/回调无 ABI 回归），并把 abc 期望改为 `245412`。
 
 | 判定点 | 怎么测 | 期望 | 证据 |
 |---|---|---|---|
@@ -107,11 +109,28 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 | 原生桥 ABI（LibraryImport 重建） | 任一原生桥：权限请求、`A11Y` 自检、Hybrid `Echo/Add`（可选分享/扫码探针页） | 返回值/回调与 kit #25 一致；无 `EntryPointNotFoundException`/`DllNotFoundException`/参数错乱 | 结果截图 + hilog 关键字（§0.3）|
 | PLAT-GAP 消费方路径 | 用 kit #26 workload 发布一个引用 `Microsoft.AspNetCore.App` 的 MAUI 项目（如 BlazorWebView） | **无需**逐项目 KFR/RID/apphost 规避即可 restore/publish；RID 默认 `openharmony-arm64`；Demo 恢复路径仍待真机确认 | `dotnet publish` 输出 + 项目文件（无 workaround）|
 
+### 0.8 kit #27 增量判定点（无 HMS 降级不抛（Push/Account/Map）/ 新 payload 首次运行）
+
+> kit #27（KIT-EXT2）**未新增 UI 入口**：5 个 hap 里没有 Push/Account/Map 的按钮。首选判定是**降级不抛**——
+> 壳探测不到 Kit 时 sink 不注册，四个新托管入口（`OpenHarmonyPush`/`OpenHarmonyAccount`/`OpenHarmonyMap`）
+> 返回 `Unavailable`/null/false 且**不崩**。真 Kit 调用需 `ARKTS_SDK_FLAVOR=harmony` 构建 + HMS 设备 +
+> AGC 开通/审批；没有对应入口的项按「未测（本包无入口）」登记，**不要判失败**。完整判读见
+> `docs/plans/2026-09-27-ohos-tester-handoff-kit27.md` §2。
+
+| 判定点 | 怎么测 | 期望 | 证据 |
+|---|---|---|---|
+| 无 HMS 降级不抛 | 当前 kit（OpenHarmony SDK 包）上触发探针页/自检（如有）：Push `GetTokenAsync`、Account `AuthorizeAsync`/`GetQuickLoginAnonymousPhoneAsync`、Map `QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported` | 一律 `Unavailable`/null/false；**无异常、无崩溃、无 `EntryPointNotFoundException`/`DllNotFoundException`** | 启动两行日志 + `dotnet-status.txt`（如有）+ hilog 原文；无入口登记「未测（本包无入口）」 |
+| Push token（需 HMS/AGC） | HarmonyOS SDK 构建 + AGC 开通推送 + 含推送权益 Profile | 返回 token；失败按 `1000900010`（未开通/签名）、`1000900012` 排查；`deleteToken()` 可用 | token 首尾片段 + hilog 错误码原文 |
+| Account 授权（需 HMS） | 同上 + AGC 申请 `quickLoginAnonymousPhone` scope | 返回匿名手机号 + `authorizationCode`；未审批按 `1001502014`/`1001500001` 排查 | 授权页截图 + 状态原文（明文手机号服务端换取） |
+| Map 能力位（需 HMS/AGC） | 同上 + Map 服务 AppKey → capability bits | 有 Kit 时 bit0=1、`MapKitImportable`/`IsSupported`=true；无 Kit 必须 0/false 且不抛 | capability 值 + 结果原文 |
+| 新 payload 首次运行（承 #26） | 重签 → 安装默认 hap → 启动 → 跑 5 条冒烟 | 两行 `[maui]` 日志、无崩溃；`verify-kit.sh` 全过（**abc 期望 `245412`/`18532`**）| 启动日志 + `files/dotnet-status.txt`；失败附 `tester-run.sh` 证据包 |
+| 回调路径（marshal-off，承 #26） | 任一原生桥：权限请求、`A11Y` 自检、Hybrid `Echo/Add` | 返回/回调与 #26 一致；无 `EntryPointNotFoundException`/`DllNotFoundException`/参数错乱 | 结果截图 + hilog 关键字（§0.3）|
+
 ---
 
 ## M1 运行时权限（Permissions）
 
-**入口**：功能探针页按钮（请求相机/麦克风/定位各一次 + 显示 `CheckStatusAsync` 结果）。kit #23 无入口；**kit #25 起权限声明的 `reason`/`usedScene` 与请求点门禁见 §0.6（#26 沿用）**。
+**入口**：功能探针页按钮（请求相机/麦克风/定位各一次 + 显示 `CheckStatusAsync` 结果）。kit #23 无入口；**kit #25 起权限声明的 `reason`/`usedScene` 与请求点门禁见 §0.6（#26/#27 沿用）**。
 
 **代码行为**：MAUI 权限类型映射为 OH 权限名后，经 `ohos_host_request_permission` 交给壳的 `abilityAccessCtrl.requestPermissionsFromUser`；结果由 `host.permissionResult(id, granted)` 回来；30 秒无应答按拒绝处理。`CheckStatusAsync` 走 `OH_AT_CheckSelfPermission`（不弹窗）。映射：Camera→`ohos.permission.CAMERA`、Microphone→`MICROPHONE`、LocationWhenInUse→`APPROXIMATELY_LOCATION`、LocationAlways→`LOCATION`、StorageRead/Photos→`READ_IMAGEVIDEO`、StorageWrite→`WRITE_IMAGEVIDEO`、Vibrate→`VIBRATE`、NetworkState→`GET_NETWORK_INFO`；未映射类型直接 `Denied`（`CheckStatusAsync` 为 `Unknown`）。
 

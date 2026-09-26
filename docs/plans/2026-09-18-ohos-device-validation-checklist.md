@@ -37,7 +37,7 @@ is recorded in `2026-09-24-ohos-device-milestone.md`; **stock kit (from #22 on; 
 payload-in-libs) has not been on a device yet**, so the checks below remain open — use the milestone §6
 decision points (A host load / B bootstrap / C milestone regression) as the first pass/fail gates.
 
-Updated 2026-09-24 (kit #24, historical snapshot — superseded by the #25/#26 notes below): **payload-in-libs + explicit W^X=0 + exec-memory probe**: the
+Updated 2026-09-24 (kit #24, historical snapshot — superseded by the #25–#27 notes below): **payload-in-libs + explicit W^X=0 + exec-memory probe**: the
 hap `libs/arm64-v8a/` now carries the whole payload plus `.dotnet-payload.json` (the runtime starts
 in place from the signed bundle directory; `dotnet.zip` stays as the fallback; the signed hap grows
 from ~32.7 MB to ~75.3 MB). The host pins `DOTNET_EnableWriteXorExecute=0` on both launch paths and
@@ -53,20 +53,33 @@ signatures (see `hilog-bootstrap.txt`) and do not fail the round by themselves. 
 and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`; the kit #25 judgement points
 (permission dialog copy / Share panel / Scan return / AOT startup): `2026-09-25-ohos-tester-handoff-kit25.md`;
 the kit #26 incremental points (first run of the rebuilt payload / native-bridge ABI / PLAT-GAP consumer
-path): `2026-09-26-ohos-tester-handoff-kit26.md`.
+path; still valid): `2026-09-26-ohos-tester-handoff-kit26.md`; the kit #27 incremental points (no-HMS
+degradation must not throw for Push/Account/Map, first run of the rebuilt payload): `2026-09-27-ohos-tester-handoff-kit27.md`.
 
-Updated 2026-09-26 (kit #26 — current): **P2-INTEROP + TASK-MIG + PLAT-GAP**: the managed hosting bridge is
+Updated 2026-09-27 (kit #27 — current): **KIT-EXT2 — Push / Account / Map**: the shell probes the three
+HMS kits (`@kit.PushKit` `getToken()`/`deleteToken()`, `@kit.AccountKit`
+`createAuthorizationWithHuaweiIDRequest()` + `getQuickLoginAnonymousPhone`, `@kit.MapKit` capability bits)
+and only registers a sink when the variable `import()` succeeds — with no Kit/AGC/HMS everything returns
+`Unavailable`/null/false and **never throws**. The host gains 12 kit sinks (`ohos_host_push_*`,
+`ohos_host_account_*`, `ohos_host_map_*`; error-code mapping `1000900010`/`1000900012`,
+`1001502014`/`1001500001`; export contract 118/118 -> **130/130**) plus the FIX-R1-NAPI-6D boundary
+hardening, and the reverse entries (host -> managed callbacks) now marshal off the runtime
+(`[UnmanagedCallersOnly]` + `delegate* unmanaged[Cdecl]` thunks; FIX-R1-MARSHAL-OFF). Artifacts:
+signed hap ~75.56 MB (zip 278 entries; `libs` 269 = 14 `.so` + 254 payload + `.dotnet-payload.json`),
+abc **245,412 B** / headless 18,532 B, in-hap host **265,120 B** / pack 261,024 B, in-hap hosting DLL
+**55,296 B**, index 1588/1780 B, `dotnet.zip` 254 entries / 0 `.so`; the kit `verify-kit.sh` re-anchors
+the abc expectation to `245412` (the #25/#26 value `234620` now FAILs by design). The kit's five haps
+are JIT payloads (hostfxr fallback); **stock kit (from #22 on, #27 included) has not been on a device
+yet**, so the checks below remain open.
+
+Updated 2026-09-26 (kit #26; history): **P2-INTEROP + TASK-MIG + PLAT-GAP**: the managed hosting bridge is
 fully source-generated `LibraryImport` (125 declarations = 44 hosting + 81 MAUI slice; zero `DllImport`;
 the 118/118 host export contract is unchanged), hap packaging tasks are now compiled into the pack
 (`tools/Microsoft.OpenHarmony.Tasks.dll`, six task assemblies; `OpenHarmony.Hap.targets` split +
 `PlatformItems.targets`), and the ASP.NET Core KFR is pinned to the published `11.0.0-rc.1.26425.128`
 band with `RuntimeIdentifier=openharmony-arm64` defaulted and `EnableAppHostPackDownload=false` — consumers
-no longer need the per-project workaround. Artifacts: signed hap ~75.47 MB (zip 278 entries; `libs` 269 =
-14 `.so` + 254 payload + `.dotnet-payload.json`; abc 234,620 / headless 18,532 unchanged; in-hap host
-240,544 B unchanged; in-hap hosting DLL 55,808 B; index 1588/1780 B; `dotnet.zip` 254 entries / 0 `.so`);
-the kit `verify-kit.sh` expectations are unchanged from #25. The kit's five haps are JIT payloads
-(hostfxr fallback); **stock kit (from #22 on, #26 included) has not been on a device yet**, so the checks
-below remain open.
+no longer need the per-project workaround. Artifacts: signed hap ~75.47 MB, abc 234,620 / headless 18,532,
+in-hap host 240,544 B, in-hap hosting DLL 55,808 B. The kit #27 wave carries these forward unchanged.
 
 Updated 2026-09-25 (kit #25): **permission chain + Share/Scan feature probes + AOT startup
 path**: the permissions hap declares every permission with a `reason` (`$string:permission_reason_*`) and a
@@ -86,7 +99,7 @@ Share panel, Scan return, AOT startup — see `2026-09-25-ohos-tester-handoff-ki
 | Artifact | Where |
 |---|---|
 | `hello-maui-app.hap` (~21 MB, 26.0 band, `verify-app` success; siblings `-permissions`, `-api20`, `-api20-permissions`, `-unsigned`) | `ohos-workload/test/hello-maui-app/bin/Release/<tfm>/openharmony-arm64/` or the delivery kit |
-| Delivery kit `device-test-kit.tar.gz` — current delivery kit (**kit #26**: P2-INTEROP `LibraryImport` hosting + TASK-MIG compiled packaging tasks + PLAT-GAP consumer defaults, on top of the #25 permission chain / Share-Scan probes / AOT startup path and #24 payload-in-libs + explicit W^X=0 + exec-memory probe; 5 haps + 8 zh-CN docs + `SHA256SUMS` + the hardened `verify-kit.sh` with per-hap payload-marker assertions; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity`, mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
+| Delivery kit `device-test-kit.tar.gz` — current delivery kit (**kit #27**: KIT-EXT2 Push/Account/Map feature probes (no-HMS degradation, non-throwing) + 12 host kit sinks (130/130 export contract) + FIX-R1-NAPI-6D boundary hardening + FIX-R1-MARSHAL-OFF reverse entries, on top of the #26 P2-INTEROP `LibraryImport` hosting / TASK-MIG compiled packaging tasks / PLAT-GAP consumer defaults, the #25 permission chain / Share-Scan probes / AOT startup path and #24 payload-in-libs + explicit W^X=0 + exec-memory probe; 5 haps + 8 zh-CN docs + `SHA256SUMS` + the hardened `verify-kit.sh` with per-hap payload-marker assertions and the re-anchored abc expectation `245412`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity`, mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
 | Workload bundle `openharmony-workload-1.0.0-preview.24.tar.gz` | GitHub release `workload-1.0.0-preview.24` (+ `workload-latest` with `SHA256SUMS`; the SDK release keeps an earlier snapshot) |
 | Host library | `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so` (signed) |
 | ArkTS shells | `packs/.../templates/ets/modules.abc` (headless) and `modules.ui.abc` (UI); preview.24 carries the T6/T8 archive (fingerprint fallback, keep-screen-on) |
@@ -104,8 +117,8 @@ document. The five kit haps are already legal (`bundleName` matches the profile)
 band-aligned, so **no rename and no `module.json` edit** is needed.
 
 The kit #23 verifier also asserts the payload facts per hap (`resources.index` present/non-empty,
-abc `13.0.1.0` + current size (kit #25 rebuilt shells `234620`/`18532`; older sizes only WARN; the
-kit #26 expectations are unchanged),
+abc `13.0.1.0` + current size (kit #27 rebuilt shell `245412`/headless `18532`; the #25/#26 value
+`234620` now FAILs by design),
 14 libs, `dotnet.zip` composition, host ELF dependency policy); kit #24 adds the
 `libs/arm64-v8a/.dotnet-payload.json` payload-in-libs assertion (missing/inconsistent marker =
 FAIL): `FAIL` exits 1, `WARN` stays `KIT OK`. It passes on kit #22 and **reports real defects on

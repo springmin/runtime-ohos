@@ -52,20 +52,30 @@
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
-> **2026-09-26 update (kit #26: P2-INTEROP/TASK-MIG/PLAT-GAP):** the current kit completes the managed
+> **2026-09-27 update (kit #27: KIT-EXT2):** the current kit probes the three HMS kits (Push/Account/Map)
+> in the shell and only registers a sink when the variable `import()` succeeds — with no Kit/AGC/HMS the
+> managed entries return `Unavailable`/null/false and never throw; the host adds 12 kit sinks
+> (`ohos_host_push_*`/`ohos_host_account_*`/`ohos_host_map_*`; export contract 118/118 -> **130/130**)
+> with the FIX-R1-NAPI-6D boundary hardening, and the reverse entries (host -> managed callbacks) now
+> marshal off the runtime (`[UnmanagedCallersOnly]` + `delegate* unmanaged[Cdecl]` thunks;
+> FIX-R1-MARSHAL-OFF). Rebuilt artifacts: abc **245,412 B** / headless 18,532 B, in-hap host **265,120 B**
+> (pack 261,024 B), in-hap hosting DLL **55,296 B**, signed hap ~75.56 MB (zip 278 entries; `libs` 269 =
+> 14 `.so` + 254 payload + marker; index 1588/1780 B; `dotnet.zip` 254/0 `.so`); the kit `verify-kit.sh`
+> re-anchors the abc expectation to `245412`. The P1–P4 ladder, `probe:`/`xwe` verdicts and `tester-run.sh`
+> v8 evidence set are unchanged; the kit #27 judgement points (no-HMS degradation must not throw /
+> first run of the rebuilt payload) are in `2026-09-27-ohos-tester-handoff-kit27.md`. **Stock kit (#22 on,
+> #27 included) still has not been on a device.**
+>
+> **2026-09-26 update (kit #26: P2-INTEROP/TASK-MIG/PLAT-GAP; history):** that kit completed the managed
 > hosting bridge on source-generated `LibraryImport` (125 declarations = 44 hosting + 81 MAUI slice, zero
-> `DllImport`; the 118/118 host export contract is unchanged), moves the hap packaging tasks into the pack
+> `DllImport`; the 118/118 host export contract is unchanged), moved the hap packaging tasks into the pack
 > (`tools/Microsoft.OpenHarmony.Tasks.dll`, six task assemblies; `OpenHarmony.Hap.targets` split +
-> `PlatformItems.targets`), and closes PLAT-GAP (ASP.NET Core KFR pinned to `11.0.0-rc.1.26425.128`,
+> `PlatformItems.targets`), and closed PLAT-GAP (ASP.NET Core KFR pinned to `11.0.0-rc.1.26425.128`,
 > `RuntimeIdentifier=openharmony-arm64` defaulted, `EnableAppHostPackDownload=false`; consumers no longer
-> need the per-project workaround). Rebuilt artifacts: in-hap hosting DLL 55,808 B, signed hap ~75.47 MB
-> (zip 278 entries; `libs` 269 = 14 `.so` + 254 payload + marker; abc 234,620/18,532 and host 240,544 B in-hap
-> unchanged; index 1588/1780 B; `dotnet.zip` 254/0 `.so`). The P1–P4 ladder, `probe:`/`xwe` verdicts and
-> `tester-run.sh` v8 evidence set are unchanged; the kit #25 judgement points (permission dialog copy /
-> Share panel / Scan return / AOT startup) are in `2026-09-25-ohos-tester-handoff-kit25.md`, and the kit #26
-> incremental points (first run of the rebuilt payload / native-bridge ABI / PLAT-GAP consumer path) are in
-> `2026-09-26-ohos-tester-handoff-kit26.md`. **Stock kit (#22 on, #26 included) still has not been on a
-> device.**
+> need the per-project workaround). Rebuilt artifacts: in-hap hosting DLL 55,808 B, signed hap ~75.47 MB,
+> abc 234,620/18,532, host 240,544 B in-hap. Its incremental points (first run of the rebuilt payload /
+> native-bridge ABI / PLAT-GAP consumer path) remain valid and are in
+> `2026-09-26-ohos-tester-handoff-kit26.md`.
 >
 > **2026-09-25 update (kit #25: permission chain + Share/Scan probes + AOT startup path):** that kit added
 > the permission declaration chain (`reason`/`usedScene` per permission + a request-point gate in
