@@ -101,10 +101,10 @@
 
 ### 设备侧验证（interpreter）（2026-09-26，R2-INTERP-PUBLISH）
 
-解释器 pack 已发布为可测试资产：release `device-test-kit`（`springmin/sdk-ohos`）新增 3 个资产、其余资产零改动——`ohos-interpreter-pack.tar.gz`（id `590052493`，2,419,988 B，sha256 `a10699b3…13f873`）、其 `.sha256`（id `590067457`）与 `ohos-interpreter-pack-README.md`（id `590050562`）。上文 §4 已确认 CLI 域自验被平台封印阻断，**唯一验证域是签名 HAP**；步骤：
+解释器 pack 已发布为可测试资产：release `device-test-kit`（`springmin/sdk-ohos`）新增 3 个资产、其余资产零改动——`ohos-interpreter-pack.tar.gz`（id `590052493`，2,419,988 B，sha256 `a10699b3…13f873`）、其 `.sha256`（id `590067457`）与 `ohos-interpreter-pack-README.md`（id `590050562`）。上文 R2-INTERP-FULL 的「4) 本机 CLI 域自验」已确认 CLI 域被平台封印阻断，**唯一验证域是签名 HAP**；步骤：
 
 1. **预签/安装**：按 kit handoff 的签名流程预签/重签 HAP 后 `hdc install` 安装；重签会改变包哈希，以本地重签件为准。
-2. **应用 pack**：解包资产并核对 `sha256sum -c SHA256SUMS`（应全过）。在 payload 的 HAP `libs/arm64-v8a/` 内**替换** `libcoreclr.so`、**新增** `libclrinterpreter.so`（kit #27 已验证的 payload-in-libs 布局；kit #28 的 payload 同法。`.dotnet-payload.json` 只锚入口程序集/`dotnet.zip`，不锚 native 库），随后重新打包签名。已解开的本地布局可直接用 `scripts/ohos-runtime-clrinterpreter-overlay.sh <pack>/native/libclrinterpreter.so --dir <layout>`（脚本会核对目标 coreclr 含 `clrinterpreter`/`InterpMode` 宽字符串并打印 `coreclr interpreter support: YES`）。
+2. **应用 pack**：解包资产并核对 `sha256sum -c SHA256SUMS`（应全过）。在 payload 的 HAP `libs/arm64-v8a/` 内**替换** `libcoreclr.so`、**新增** `libclrinterpreter.so`（kit #27 的 payload-in-libs 布局 `libs/arm64-v8a/`；kit #28 的 payload 同法。`.dotnet-payload.json` 只锚入口程序集/`dotnet.zip`，不锚 native 库），随后重新打包签名。已解开的本地布局可直接用 `scripts/ohos-runtime-clrinterpreter-overlay.sh <pack>/native/libclrinterpreter.so --dir <layout>`（脚本会核对目标 coreclr 含 `clrinterpreter`/`InterpMode` 宽字符串并打印 `coreclr interpreter support: YES`）。
 3. **env（coreclr 初始化前进入应用进程）**：`DOTNET_InterpMode=3`、`DOTNET_EnableWriteXorExecute=0`（后者宿主自 kit #24 起默认已 `setenv`；前者需宿主/启动路径注入——若开关未生效，判定点 ② 不会成立，等同回 JIT 路径）；可选 `DOTNET_InterpreterName`（负对照用）。
 4. **判定点（须全部成立）**：① 启动日志/hilog 出现解释器生效迹象（`libclrinterpreter.so` 被 dlopen；runtime 若无显式行，以 ② 为准）；② 运行中 `/proc/self/maps` 含 `libclrinterpreter.so`（只在解释器激活时加载）；③ `/proc/self/maps` **无匿名 `r-x`**（残余 W^X 判定点）；④ managed app 正常输出/首帧，无 `SEGV_ACCERR`；⑤ 负对照 `DOTNET_InterpreterName=libclrinterpreter-missing.so` 必须启动失败（证明开关被解析而非忽略）。
 5. **风险与口径**：残余匿名 exec 页可能来自 `Precode`/UMEntryThunk stub（解释器代码堆本身不可执行）；③ 不达标先记录，勿改 W^X。解释器性能数量级慢于 JIT，本 pack 只回答「可用性/可行性」。
