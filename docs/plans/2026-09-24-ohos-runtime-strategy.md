@@ -69,6 +69,36 @@
 
 **成本与下一步**：本机 configure ≈10 min（含 restore），解释器 target ≈2 min（-j4），VM 抽样 TU ≈数分钟；全量 `clr.native` 预计 30–60 min（-j4），但需先补真实 ICU/OpenSSL 资产。下一步：sdk-ohos `eng/ohos-install/build/ohos-ci-env.sh` 建交叉资产 → `clr+libs+host+packs -clrinterpreter` 产出 feature-enabled `libcoreclr.so` + pack（或用 `scripts/ohos-runtime-clrinterpreter-build.sh` 只产解释器库）→ 设备侧验证 `DOTNET_InterpMode=3` 启动冒烟、`/proc/self/maps` 匿名 `r-x` 检查、栈帧来自解释器。
 
+### R2-INTERP-FULL 结果（2026-09-26）：feature-enabled runtime 构建成功，CLI 域运行被平台代码完整性阻断
+
+**1) 交叉依赖重建（R1 阻塞解除）**：`/tmp` 资产已丢，离线重建：
+
+- ICU 75.1：仓内源码 `icu4c-75_1-src.tgz` → 交叉静态构建（`--enable-static --disable-shared --with-data-packaging=static`、OHOS NDK clang、`-fPIC`）；`libicuuc.a` 4,826,018 B / `libicui18n.a` 8,524,842 B / `libicudata.a` 30,729,916 B，含 `unicode/ucurr.h`。
+- OpenSSL 3.3.1：GitHub release tarball（网络可达）→ `./Configure linux-aarch64 no-shared no-tests no-async no-module` + `make build_libs install_dev`；`libcrypto.a` 9,125,248 B / `libssl.a` 1,706,390 B。
+- 复现坑（已固化进脚本）：① NDK `lld` 需 `LD_LIBRARY_PATH` 指向自带 `libxml2.so.16` 的 scratch 副本（quirk #7）；② 交互式 harmonybrew shell 导出的 `CPPFLAGS=-I~/.harmonybrew/include`（ICU **78** 头）会遮蔽 ICU 75 源码，脚本内 `unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS` 后通过。
+
+**2) 全量构建（`-clrinterpreter`，Release/openharmony-arm64）**：
+
+- 用 `-subset clr.native`（而非 `clr+libs`）：`clr.tools` 的 ILCompiler/crossgen2 host 工具在 `ohos-arm64` RID 上触发 `NETSDK1084`（SDK 无 apphost 解析）且与本产物无关；`clr.native` 已包含 `clr.runtime`/`clr.jit`/`clr.hosts` 及 `src/native/libs` 全量本机库。
+- NuGet：本机所有 dnceng/nuget.org 源不可达（超时），改用只读全局缓存的 `NuGet.offline.config`（`<clear/>`）以快速失败/离线恢复（`clr+libs` 曾在源上挂死 10+ min）。
+- 两处 clean-build 修复：① `src/native/libs/System.Native/pal_process.c` 的 `CLOSE_RANGE_CLOEXEC` 在 OHOS 下定义但所有使用点都被 `!TARGET_OPENHARMONY` 排除 → `-Werror,-Wunused-macros`；补 `!defined(TARGET_OPENHARMONY)` 到定义（fork 自身补丁的 guard 不一致）；② `libruntimeinfo.a` 链接顺序（clean build 先链 singlefilehost）→ 预构建 `ninja debug/runtimeinfo/libruntimeinfo.a`（sdk-ohos 脚本同款自愈）。
+- 产物（`artifacts/bin/coreclr/openharmony.arm64.Release/`）：`libcoreclr.so` **5,163,096 B**、sha256 `1ae17c23f1e161853ca8b540b0c1f14e464af8628f499e85fea4a3bbc5d04af8`（`FEATURE_INTERPRETER=1`；宽字符串 `clrinterpreter`/`InterpMode`/`InterpreterName` 全在；`DT_NEEDED` 与 stock 一致：`libc++_shared.so, libc.so`）；`libclrinterpreter.so` **268,320 B**、sha256 `5f87067920b75eab0bbcd87c1716ba80ef98851bda08ab53b4a470ae7a9750ca`（export `getJit`/`jitStartup`）。构建脚本 `scripts/ohos-runtime-interp-fullbuild.sh`；日志 `full-build.log`/`.binlog`、`fullbuild-native*.log`。
+
+**3) overlay 资产**：`scripts/ohos-runtime-clrinterpreter-overlay.sh <interp.so> --dir <stock pack 布局>` 输出 `coreclr interpreter support: YES (clrinterpreter, InterpMode, InterpreterName)`；打包 `ohos-interpreter-pack.tar.gz`（`native/{libcoreclr.so,libclrinterpreter.so}` + `README.md` + `VERIFICATION.md` + `SHA256SUMS` + `build-info.json`；**2,419,988 B**，sha256 `a10699b3da9c26602556ce141375644d61541bfdfe7d3eceff2de52aa113f873`）。**未发布 release**（自验未完成，见下）。组合方式：kit payload HAP `libs/arm64-v8a/` 替换 `libcoreclr.so` + 新增 `libclrinterpreter.so` → 重新打包签名；env `DOTNET_InterpMode=3`、`DOTNET_EnableWriteXorExecute=0`。
+
+**4) 本机 CLI 域自验：被平台代码完整性策略阻断（非构建问题）**。overlay root（自带 muxer/hostfxr + stock 框架 + 两个新 `.so`）启动 hello 时在 dlopen 阶段失败：`Error loading shared library .../libcoreclr.so: Permission denied`（`HRESULT 0x80008088`）。最小探针复现：
+
+| 探针 | 结果 |
+|---|---|
+| 现编 `tiny.so` / 构建产物 `libclrinterpreter.so`、`libcoreclr.so`、`corerun` → dlopen/exec | **EACCES** |
+| stock `libSystem.Native.so` / `dotnet` 复制到同目录 → dlopen/exec | **OK** |
+| 修改 stock 副本（追加 1 字节） | **EPERM**（HMFS 密封） |
+| 两者 xattrs（`security.selinux`/`security.isolate`/`user.hmdfs.perm`） | 完全一致 |
+
+即：CLI（hishell）域只允许**可信来源安装**的 ELF 做 file-backed `PROT_EXEC`（execve/mmap），HMFS 对被信任文件加密封（EPERM）；与本机构建产物的 label 无关。这与 §1 已记录的「file-backed（memfd）PROT_EXEC 被拒、匿名 exec 通过」一致 → **本机构建的 runtime 在 CLI 域不可运行**，唯一执行路径是 HAP/应用域（签名 bundle 内 `libs/`）。
+
+**下一步（解释器）**：将 overlay 走 kit payload（HAP `libs/arm64-v8a` → 重新签名 → 安装），在 HAP 域复跑判定点（maps 含 `libclrinterpreter.so`、`InterpreterName` 负对照、匿名 `r-x` 计数、hello 输出）；再决定是否发布资产。CLI 域验证路线至此关闭（平台策略，预期固件/HAP 域差异待测试方复核）。
+
 ## 3. 四条路线对比
 
 | 路线 | 机制 | OHOS 现状（本仓证据） | 阻塞/成本 | 结论 |
@@ -98,6 +128,6 @@
 ## 6. 仍未验证
 
 - HAP 应用域 vs CLI 域、HarmonyOS 7(API 26) vs lab 内核 1.13 的 exec 策略差异；`DOTNET_EnableWriteXorExecute=0` 在 HAP 域是否足以让 JIT 启动。
-- 解释器：**构建侧已在本机 openharmony-arm64 打通**（`libclrinterpreter.so` + 解释器相关 VM TU，见 §2 spike 结果）；**运行侧**（HAP/CLI 域下 `DOTNET_InterpMode=3` 冒烟、残余匿名 exec 页是否必然出现）与 portable-entrypoints 非 WASM 可行性仍未验证。
+- 解释器：**构建侧已全量打通**（R2-INTERP-FULL：feature-enabled `libcoreclr.so` + `libclrinterpreter.so` + overlay 资产，见 §2「R2-INTERP-FULL 结果」）；**CLI 域运行侧已关闭**——本机 hishell/CLI 域对任何本机构建（未受信）ELF 的 file-backed `PROT_EXEC` 一律 EACCES，stock 受信文件可运行且被 HMFS 密封（EPERM），故只能在 HAP/应用域验证：`DOTNET_InterpMode=3` 冒烟、`/proc/self/maps` 含 `libclrinterpreter.so`、`DOTNET_InterpreterName` 负对照、残余匿名 exec 页；portable-entrypoints 非 WASM 可行性仍未验证。
 - NativeAOT：MAUI 切片、ilc pack 签名/exec 位、SDK `NETSDK1203`；坚盾守护模式对 NativeAOT（预期无影响）。
 - 对口 ACL 在 2in1/受邀之外机型的实际可达性。
