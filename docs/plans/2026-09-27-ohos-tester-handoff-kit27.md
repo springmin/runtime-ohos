@@ -38,6 +38,7 @@
 | 4 | **交互回归门禁 329 / floor 309**：kit4/kit5/kit6（Push/Account/Map 契约 + 无 Kit 降级）；指针驱动条目（`NativeThunks`） | 无新 UI 入口；交付方 CI 门禁（不是设备项），测试方无需动作 | — |
 | 5 | **payload-zip opt-out pack 同步**：`OpenHarmonyHapPayloadZip` opt-out 在三套 preview pack 一致（`OpenHarmony.Hap.targets` 55,473 → **57,750 B**；Sdk.nupkg 290,854 → **305,204 B**） | 交付 kit 的 5 个 hap 行为不变；自建 hap 时该开关走 `dotnet.zip` 回退布局（按设计不带 payload-in-libs marker） | 消费方自建 hap（可选；无入口则按「未做」登记） |
 | 6 | **重建与打包 / 发布波**：重建 abc（两变体）/宿主/hosting/Graphics、重打包 bundle（30,508,149 B）并更新 sdk-ohos 锚；`898f4a1` 把包内 verify-kit abc 期望重锚 245,412，`75cdc26` 推进 maui/sdk CI pin（CI 5/5 success） | 校验步骤、证据字段与 #26 相同，**只换 abc 期望值（245,412/18,532）**；`tester-run.sh` v8 未变 | 校验时以 release「## Integrity」与包内 `verify-kit.sh` 为准 |
+| 7 | **R2-2 AOT-MAUI 附加资产**（`aot-haps.tar.gz`，与 kit 并列发布，**不替换** JIT hap）：`test/hello-maui-app` 的 NativeAOT 变体（`PublishAot=true` → `libhello-maui-app.so` 进 `libs/arm64-v8a/`），一次 publish 产出 AOT / AOT-unsigned 两个 hap；宿主 `run_app` 路由已在本机 harness 跑通（dlopen + `openharmony_app_main` + bridge 注册） | 形态判定：app `.so`（`nm -D` 有 `openharmony_app_main`，带 `.codesign`）+ 宿主 + `libc++_shared.so` 在 `libs/arm64-v8a/`；`module.json` 与 kit 的 `hello-maui-app.hap` 同形（`libIsolation:true`，无 requestPermissions）；无 CoreCLR 运行库（无 `libcoreclr.so`/`libhostfxr.so`） | 设备侧 ArkTS 启动走 JIT 专用 `start_app`，AOT 的 `run_app` 路由仍是 follow-up：本轮按**打包/加载形态**验收，**勿**用 kit `verify-kit.sh` 的 JIT 期望值（14 `.so`）套 AOT hap（3 `.so`） |
 
 ## 2. 本轮判定点（按包内入口逐个勾）
 
