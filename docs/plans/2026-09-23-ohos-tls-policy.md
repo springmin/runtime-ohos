@@ -128,5 +128,10 @@ clang-15 --target=aarch64-linux-ohos --sysroot=$NDK/sysroot \
 - `-linkstaticopenssl` 的真实 `.a` 链接：✅ 已完成；并补 `-Wl,--exclude-libs,ALL`
   本地化静态库符号（runtime 提交 `2bd2b561511`），否则静态归档的全部符号会被导出，
   entrypoints 校验失败
-- 设备端 SslStream/HTTPS 自检：⏳ 进行中（用 `-ohos` release 的静态版 SDK 在设备上
-  不部署 libssl 直接验证，结果待回填）
+- 设备端验证：✅ 已完成（2026-09-28）。用 `-ohos` release 的静态版 SDK 在设备上
+  不部署任何 libssl/libcrypto：
+  - shim 检查：无 "deploy libssl" 提示；`readelf -d` NEEDED 仅 libc.so；动态符号表
+    无 OpenSSL 导出；内嵌 "OpenSSL 3.3.1"（静态链入证据）
+  - `dotnet new console` 成功（fail-closed shim 版本此前在此步 abort）
+  - `dotnet build` + `dotnet app.dll` -> `Hello, World!`
+  静态发布轮：sdk-ohos CI run 36323150941
