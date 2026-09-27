@@ -26,6 +26,8 @@
 
 推送前核对远端 `feature/openharmony` 与 merge 第一父提交一致 → 均为 fast-forward，未触发禁强推。
 
+- **MASP 复核（2026-09-28）**：`upstream/main` tip 复取仍为 `c7cef3bfad`（无新提交），`feature/openharmony` 保持 `07ed2fe38d` 且与 `origin` 一致；`git merge --no-ff upstream/main` = *Already up to date*，merge-tree 重算 tree `5390ef83` 与原 merge 一致；delta 8 文件（RID 列表 / `Directory.Build.props` / `eng/Dependencies.props` / E2E csproj）XML 与条件解析通过；**未跑整仓构建**（本机缺 SDK pin `11.0.100-rc.1.26420.103`、`artifacts/bin/GenerateFiles` 未生成、宿主负载高）→ 构建证据沿用 CI run `36305386249`（`aspnetcore_ref=feature/openharmony`）。
+
 ## 3. 冲突与解决
 
 - **sdk-ohos：仅 `src/Tasks/Common/Resources/Strings.resx` 1 处**
