@@ -1,9 +1,11 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
-> 判定用 `tester-run.sh` **v10**（2026-09-27 重传：新增 `--mode-matrix` 一键矩阵，见 §2.0）：证据包 `tester-report-*.tar.gz` 含
+> 判定用 `tester-run.sh` **v11**（119,452 B / `2355e493…`，`script_version=11 (2026-09-27)`：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`）：证据包 `tester-report-*.tar.gz` 含
 > `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）；
-> 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）。
+> 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）；
+> **当前 kit = #29**（R3 增量 = CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连，
+> 见 `2026-09-28-ohos-tester-handoff-kit29.md`；下表 kit #28 行为最近一次 API 复核快照，新包数字以 release「## Integrity」为准）。
 
 ## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后）
 
@@ -13,13 +15,13 @@
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（新，A1-HARMONY-KIT） | 592541627 | 196,118,871 | `f7a4faa2…`（sidecar `be6452e3…`） | 5 个 harmony-flavor hap（壳 **263,784 B / `d3a7b718…` @13.0.1.0**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
-| `tester-run.sh` v10 | 592647629 | 109,227 | `714ae9b5…` | v10 = `--mode-matrix` 一键矩阵（§2.0）；v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
+| `tester-run.sh` **v11**（当前） | 592647629 | 119,452 | `2355e493…` | v11 = `--mode-matrix` 一键矩阵（§2.0）+ `--a11y-probe`；v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
 
 ## 0. 四态矩阵
 
 | 态 | 取件/前置 | 关键日志（execmem 文件） | 判定 | 回传 |
 |---|---|---|---|---|
-| JIT | kit #28 stock hap | `xwe=0 source=default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
+| JIT | kit #29 stock hap（#28 快照同流程） | `xwe=0 source=default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
 | AOT | aot-haps（已内置桥宿主）＋重签 | `NativeAOT payload … aot=1` | managed 输出，且**无** `The application to execute does not exist` | tar |
 | 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签 | `interp=3 source=file` | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
 | 渲染/交互 | 任一态起来后 | —（功能性） | ①首帧 ②触摸→handler ③导航 ④列表/WebView | 截图/录屏/日志 |
@@ -71,7 +73,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
 - `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
-### 2.1 JIT（kit #28 stock）
+### 2.1 JIT（kit #29 stock；#28 快照同流程）
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --out tester-report
 hdc shell "echo 1 > /data/storage/el2/base/haps/entry/files/xwe.txt"   # A/B：仅当 probe 1≠OK/SEGV 才写

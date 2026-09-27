@@ -79,7 +79,9 @@
 > 不变），托管 `OpenHarmonyMap` 增 `IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`；
 > 默认 flavor 的 5 个 hap `IsOverlayAvailable=false`、所有 overlay 调用降级不抛（kit6/kit7 离线断言）。kit #28 门禁 =
 > **334 行/floor 314**（kit7 + kit8/kit9/kit10），UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；
-> 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。
+> 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。**kit #29 门禁** = 交互套件
+> **387 行/floor 367**、UI abc **281,052 B**（headless **20,916 B**）、宿主导出契约 **134/134 → 143/143**
+> （TTS 136、P0c 139、P1a 141、P2c 143）；TTS/HUKS 见下方 A2-TTS/P2a-HUKS 回填。
 >
 > **A2-TTS 回填（2026-09-27，CoreSpeechKit）**：新获取的 DevEco CLT HarmonyOS SDK（6.0.1.251，HarmonyOS 6.0.1
 > Release / API 21）的 `hms/ets` **确认包含** `kits/@kit.CoreSpeechKit.d.ts`（导出 `textToSpeech` +

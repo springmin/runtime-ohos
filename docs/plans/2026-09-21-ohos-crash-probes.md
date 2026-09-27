@@ -52,7 +52,22 @@
 > Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
-> **2026-09-26 update (kit #28: R2 — Map overlay / Live View probe / AOT start bridge / interpreter):** the
+> **2026-09-28 update (kit #29: R3 — CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 /
+> self-drawn depth):** the shell probes `@kit.CoreSpeechKit` behind `canIUse('SystemCapability.AI.TextToSpeech')`
+> and registers a five-op TTS sink only when both gates pass — with no Kit the managed
+> `OpenHarmonyTextToSpeech` answers `IsSupported=false`, `SpeakAsync`/`Stop` degrade without throwing
+> (real speech needs an HMS device + harmony shell; no AGC entitlement/permission gate); `SecureStorage`
+> prefers a device-bound HUKS AES-256-GCM key (no permission; file-key fallback marked
+> `IsHardwareBacked=false`); `tester-run.sh` is **v11** (`--mode-matrix` four-run matrix + `--a11y-probe`;
+> 119,452 B / `2355e493…`); the self-drawn depth batch adds text editing / animations / lists / images /
+> deep links. Rebuilt artifacts: abc **281,052 B** / headless **20,916 B**, host export contract
+> **143/143**, suite **387/floor 367**; the kit `verify-kit.sh` re-anchors the abc expectation to
+> `281052`/`20916` (the #28 value `264136` now FAILs by design). The P1–P4 ladder, `probe:`/`xwe`
+> verdicts and the v9+ evidence keys (`aot_route`/`interp_mode`, matrix `summary.txt`, `a11y_*`) are
+> unchanged; the kit #29 judgement points are in `2026-09-28-ohos-tester-handoff-kit29.md`.
+> **Stock kit (#22 on, #29 included) still has not been on a device.**
+>
+> **2026-09-26 update (kit #28: R2 — Map overlay / Live View probe / AOT start bridge / interpreter; history):** the
 > default-flavor haps answer `IsOverlayAvailable=false` and every Map overlay call degrades without throwing
 > (the `MapComponent` overlay only compiles in the `ARKTS_SDK_FLAVOR=harmony` shell and needs an AGC map
 > AppKey); the Live View probe registers no sink without the kit/entitlement (`IsSupported=false`,
@@ -62,8 +77,9 @@
 > (`ohos-interpreter-pack.tar.gz`, `<files>/interp.txt` -> `DOTNET_InterpMode`, log `interp=3 source=file`).
 > Rebuilt artifacts: abc **264,136 B** / headless 18,532 B, host export contract **134/134**, suite
 > **334/floor 314**; the kit `verify-kit.sh` re-anchors the abc expectation to `264136`. The P1–P4 ladder,
-> `probe:`/`xwe` verdicts and `tester-run.sh` v8 evidence set are unchanged; the kit #28 judgement points are
-> in `2026-09-26-ohos-tester-handoff-kit28.md`. **Stock kit (#22 on, #28 included) still has not been on a device.**
+> `probe:`/`xwe` verdicts and the `tester-run.sh` v8 evidence set are unchanged; the kit #28 judgement points are
+> in `2026-09-26-ohos-tester-handoff-kit28.md`. **Stock kit (#22 on; the #29 wave carries this forward unchanged)
+> still has not been on a device.**
 >
 > **2026-09-27 update (kit #27: KIT-EXT2; history):** that kit probes the three HMS kits (Push/Account/Map)
 > in the shell and only registers a sink when the variable `import()` succeeds — with no Kit/AGC/HMS the
@@ -76,8 +92,8 @@
 > 14 `.so` + 254 payload + marker; index 1588/1780 B; `dotnet.zip` 254/0 `.so`); the kit `verify-kit.sh`
 > re-anchors the abc expectation to `245412`. The P1–P4 ladder, `probe:`/`xwe` verdicts and `tester-run.sh`
 > v8 evidence set are unchanged; the kit #27 judgement points (no-HMS degradation must not throw /
-> first run of the rebuilt payload) are in `2026-09-27-ohos-tester-handoff-kit27.md`. **Stock kit (#22 on,
-> #28 included) still has not been on a device.**
+> first run of the rebuilt payload) are in `2026-09-27-ohos-tester-handoff-kit27.md`. **Stock kit (#22 on;
+> the #28/#29 waves carry this forward unchanged) still has not been on a device.**
 >
 > **2026-09-26 update (kit #26: P2-INTEROP/TASK-MIG/PLAT-GAP; history):** that kit completed the managed
 > hosting bridge on source-generated `LibraryImport` (125 declarations = 44 hosting + 81 MAUI slice, zero

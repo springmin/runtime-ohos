@@ -7,13 +7,13 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` 文首指纹块（本轮 tar `091dcc56…`）；`tester-run.sh` v8 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256（本轮 `0a7a3215…`）；`summary.txt` 的 `tree_digest` 同值） |
-| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v8 = `8`） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #28） |
+| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-28-ohos-tester-handoff-kit29.md` 文首指纹块；`tester-run.sh` v11 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v11 = `11`） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #29） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
-> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e。
+> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h。
 
 ## 1. 下载与校验
 
@@ -92,7 +92,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - 首帧判定（`registerXComponent=function` / 首帧出现 / 无 `Load native module failed`）：`<逐条>`
 - `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
 
-## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26–#28 继续按此判读）
+## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26–#29 继续按此判读）
 
 > 本 kit 的 5 个 hap 是 **JIT payload**（hostfxr 回退路径）；Share/Scan 的 sink 在 OpenHarmony SDK 下
 > **不注册**（`shareDispatch=False`/`scanSupported=False`），面板/扫码 UI 需 `ARKTS_SDK_FLAVOR=harmony`
@@ -108,7 +108,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 ## 4e. kit #26 增量判定点（新 payload 首次运行 / 原生桥 ABI / PLAT-GAP 恢复路径；历史，仍按此判读）
 
 > 完整判读见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §2；§4d 的权限/Share/Scan/AOT 口径不变。
-> kit #27/#28 继续沿用本节（重建 payload 首次运行 / 回调路径无 ABI 回归）；kit #28 的 abc 期望为 `264136`（#27 为 `245412`）；PLAT-GAP 路径同。
+> kit #27/#28/#29 继续沿用本节（重建 payload 首次运行 / 回调路径无 ABI 回归）；kit #28 的 abc 期望为 `264136`（#27 为 `245412`）、kit #29 为 `281052`/`20916`；PLAT-GAP 路径同。
 
 - 新 payload 首次运行（LibraryImport hosting 重建）：`<启动两行日志原文 + 是否存活 + 5 条冒烟结果>`
 - 原生桥 ABI 抽查（权限请求 / `A11Y` / Hybrid `Echo`·`Add`）：`<结果截图/回显 + 有无 EntryPointNotFound/DllNotFound/参数错乱>`
@@ -127,7 +127,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - 新 payload 首次运行（新 abc 245,412 + 新宿主 + marshal-off）：`<启动两行日志原文 + verify-kit 结果（abc=245412）+ 是否存活>`
 - 回调路径（marshal-off）：`<权限请求 / A11Y / Hybrid Echo·Add 结果 + 有无 EntryPointNotFound/DllNotFound/参数错乱>`
 
-## 4g. kit #28 增量判定点（Map 覆盖层 / LiveView / AOT 启动桥 / 解释器实验）
+## 4g. kit #28 增量判定点（Map 覆盖层 / LiveView / AOT 启动桥 / 解释器实验；历史，仍按此判读）
 
 > R2 默认 flavor 的 5 个 hap **无 Map/LiveView UI 入口**；首要判定是**降级不抛**与**重建 payload 首次运行**。
 > Map 点亮需 `ARKTS_SDK_FLAVOR=harmony` 构建 + AGC 地图 AppKey；LiveView 需 AGC 实况窗权益 + 设备开关；
@@ -141,6 +141,24 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - AOT 启动桥（`aot-haps.tar.gz` 重签）：`<aot=1 日志 + managed 输出 + 有无 The application to execute does not exist>`
 - 解释器实验（替换两个 .so + `<files>/interp.txt`）：`<interp=3 source=file + maps 含 libclrinterpreter.so / 无匿名 r-x + managed 输出>`
 - 新 payload 首次运行（新 abc 264,136 + R2 壳桥）：`<启动两行日志原文 + verify-kit 结果（abc=264136）+ 是否存活>`
+
+## 4h. kit #29 增量判定点（CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 / 自绘深度五连）
+
+> R3 默认 flavor 的 5 个 hap **无 TTS UI 入口**（sink 不注册）：首选判定是**降级不抛**与**重建 payload 首次运行**。
+> TTS 真朗读需 HMS 设备 + harmony 壳（无 AGC 权益/权限门槛）；HUKS 在默认 flavor/headless 均可走（有
+> `libhuks_ndk.z.so` 时为硬件后备）；文本编辑/动画/列表/图片需演示或探针页入口；深链需系统 want 投递。
+> 没有对应入口的项登记「未测（本包无入口）」，不要判失败。完整判读见 `docs/plans/2026-09-28-ohos-tester-handoff-kit29.md` §2。
+
+- TTS 降级不抛（`IsSupported` / `SpeakAsync` / `Stop` / locales）：`<false/直接返回/no-op/设备 locale 原文 + 有无异常 + 未测（本包无入口）>`
+- TTS 点亮（HMS + harmony 壳）：`<实际发声计时 + stop 静音 + locales 列表 + 错误码 1002300002/3/5 排查原文 / 未做>`
+- HUKS 重启读回：`<读回值 + 是否 k1: 前缀 + IsHardwareBacked + hilog>`
+- HUKS 换设备不可解 / 删除清 key：`<不可解原文 + RemoveAll 后旧值结果 + hilog / 未做>`
+- HUKS 回退如实：`<回退文件密钥时 IsHardwareBacked=false 原文>`
+- 模式矩阵（v11 `--mode-matrix`）：`<mode-matrix/summary.txt 逐 Run 键 + conclusion 原文>`
+- 无障碍（v11 `--a11y-probe`）：`<a11y/selfcheck.txt 的 accessibilityStatus/NodeCount + summary a11y_* / 缺失容忍>`
+- 文本编辑 / 动画·减少动效 / 列表 / 图片：`<录屏文件名 + 关键状态原文 / 未测（本包无入口）>`
+- 深链（冷启动 / 热激活）：`<截图 + activation 日志（uri/sequence）+ 未知路由状态原文 / 未做>`
+- 新 payload 首次运行（新 abc 281,052 + R3 壳桥）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
 
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 
