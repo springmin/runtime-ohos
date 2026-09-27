@@ -124,3 +124,5 @@ LiveView create/update/stop 出 TIMER 卡片（开关关 `-3`/`1003500004`、权
 ## 3. 回传物汇总
 `tester-report-*.tar.gz`（`hilog/hilog-execmem.txt`＋`summary.txt`＋install/start 日志）＋解释器轮 maps 摘录＋重签说明；
 AOT/解释器轮附被替换 .so 的 sha256。数字以 release「## Integrity」/ `.sha256` sidecar 为准（重签、重打包后必变）。
+无障碍专项（可选）：`tester-run.sh` v11 `--a11y-probe` → `a11y/`（`selfcheck.txt`＋`hilog-a11y.txt`，`summary a11y_*`）；
+逐项判定见 `2026-09-27-ohos-accessibility-device-verification.md`。

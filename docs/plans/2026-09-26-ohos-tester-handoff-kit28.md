@@ -99,6 +99,9 @@
 2. 一条命令取证（`tester-run.sh` **v9**，2026-09-27 重传）：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
    → 证据包含 `hilog/hilog-{applib,dlopen,bootstrap,execmem}.txt`、`device/payload-*.txt`、
    `meta/kit-selfcheck.txt`（`kit_index_ok`/`payload=yes|no`）与 `summary.txt`（`aot_route`/`interp_mode` 新键）。
+   无障碍专项（可选）：`tester-run.sh` v11 起 `--a11y-probe` 用设备 `uitest` 点按左下角 `A11Y` 自检，归档
+   `a11y/selfcheck.txt`＋`a11y/hilog-a11y.txt`（`summary a11y_*`）；逐项清单与判据见
+   `2026-09-27-ohos-accessibility-device-verification.md`。
 3. 有 harmony flavor / HMS 的测试者请附：壳的构建出处（可直接取 `harmony-haps.tar.gz`，包内已含
    harmony 壳与 5 个变体，仍需自备重签材料与 AGC 权益）、AGC 开通/审批截图、Map flags/事件日志、
    LiveView 卡片截图与错误码、AOT hap 的 `aot=1` 日志；解释器轮次附 `interp=` 行、
