@@ -5,7 +5,7 @@
 > + `ohos-workload`（`src/OpenHarmonyHost` 原生宿主/NAPI、`src/Microsoft.OpenHarmony.Hosting` 托管宿主、
 > `scripts/build-arkts-shell.sh` 壳构建、`packs/`、`test/`）+ 校验套件
 > （`test/maui-platform-verify`，写作时点 284 条：271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能；现为
-> 373 条 `[verify]`/floor 353，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
+> 387 条 `[verify]`/floor 367，P2b-IMG 4 条 + P2c-DEEPLINK 10 条在 P1b 的 373 之上，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
 > **方法**：只读代码审计，无构建、无测试运行；每条结论可回指到文件与行。
 > **真机口径**：全部结论均为**离设备**核实；真机现状见 §6。上设备前，"已实现"≠"已验证"。
 > 本文件是独立盘点产物，不替代主审计 `2026-09-19-ohos-code-audit.md` 与最终状态 `2026-09-21-ohos-final-status.md`。
@@ -71,6 +71,14 @@
 
 真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。设备侧 IME 行为（系统输入法的预览文本节拍、隐藏输入框内的组合）仍需真机确认。
 
+### 1e. 2026-09-27 壳深链批次（P2c-DEEPLINK；IMPLEMENTED；离设备，真机待证）
+
+| 批次 | 覆盖 | 提交锚点 |
+|---|---|---|
+| P2c-DEEPLINK 壳深链与路由对齐（want/activation → `GoToAsync`） | **冷启动深链**：`onCreate` 捕获 want，`bootstrap` 在 `startApp` **前**经 `host.notifyActivation(payload)`（uri/action/parameters/linkHosts/sequence）经宿主 sink 交给托管；宿主在托管回调注册前按序入队（上限 8、丢最旧）并在注册时回放，want 不会与 runtime 启动竞争。**热激活深链**：`onNewWant` 走同一通道（bootstrap 发布前到达的 want 顶替 pending 槽，仍只产生一次激活）；壳每次递增 sequence，托管按到达顺序串行应用并丢弃重复/过期序号。**路由**：`OpenHarmonyAppLinks`（maui-ohos）把 `app://host/path?query` 映射为 `//host/path?query`、白名单内 `https://` 映射为 `//path`（白名单 = 打包写入 app.json 的 `linkHosts` ← `OpenHarmonyAppLinkHosts`，托管 `AllowedHttpsHosts` 可扩展），其余记一条状态并忽略；尚无 Shell/NavigationPage 时请求保持排队，由 `Run`/Create/Foreground/adopt 触发的 host-ready 重试（**未知路由**：无 Shell 时对 `Routing.RegisterRoute` 注册路由走 `NavigationPage.PushAsync`，未注册路由记状态、不抛、不崩）。**审批协同**：Shell 路径一律过 `GoToAsync`（即 `Navigating` 审批链，可取消），取消以"当前页未变"识别并记录为 not applied、绝不半应用；无法解析/异常一律不抛入壳回调。打包补 `OpenHarmonyAppLinkHosts`（app.json `linkHosts`），壳/host/abc：UI 281,052 B / `5c06143a…`、headless 20,916 B / `54a1a201…`、导出契约 141→143 | `maui-ohos 4b5756de`；`ohos-workload 402ed46`（壳/host/abc/打包）、`3e6d9f4`（套件/文档/工作流 pin） |
+
+真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。真机仍需确认：系统 App Linking/`want` 的实际投递（`onNewWant` 是否按预期触发、uri/parameters 形状）、以及 `module.json` 的 `abilities[].skills[].uris` 清单声明（本轮只做 app.json 白名单 + 托管校验，清单侧声明为设备后续项）。
+
 ## 2. 部分实现（Partial，附证据）
 
 2026-09-22 更新：下表带 ✅ 的行已在本轮转为 IMPLEMENTED（已实现；提交锚点行内 + §1b），原缺口证据保留作审计轨迹；其余行仍为缺口。
@@ -100,10 +108,10 @@
   - 真实 OAuth 流程仍缺：① HAP 为 callback scheme 声明 ability skill（`module.json5` `abilities[].skills[].uris`，读回为
     `SkillUri.scheme/host/port/path/pathStartWith/pathRegex/type`）；skill 是静态清单数据，SDK 26.0.0.18 无运行时 scheme
     注册 API，`@ohos.app.ability.wantAgent` 只做延迟 Want 的创建/比较/触发（`getWantAgent`/`trigger`/`equal`/`cancel`）；
-    ② 壳 `EntryAbility` 在 `onNewWant`/`onCreate` 把 `want.uri` 转交 managed host（当前模板无 `onNewWant`，
-    `Microsoft.OpenHarmony.Hosting` 无 want 事件）；③ 浏览器 hand-off 可复用现有 viewData want 路径；④ PKCE/state 存储按
-    MAUI 契约为 app 侧职责。工作量 **M**（①–④ 前三件可离设备完成；回调单实例行为与真机浏览器跳转需设备验证）——提交
-    `maui-ohos 783a7fcb`。
+    ② ✅ 已落地（P2c-DEEPLINK）：壳 `EntryAbility` 在 `onCreate`/`onNewWant` 把 `want.uri`/parameters 经
+    `host.notifyActivation` 转交 `Microsoft.OpenHarmony.Hosting` 的 want/activation 事件（见 §1e）；③ 浏览器 hand-off 可复用
+    现有 viewData want 路径；④ PKCE/state 存储按 MAUI 契约为 app 侧职责。剩余为 ① 的清单声明 + 设备侧回调投递验证 —— 提交
+    `maui-ohos 783a7fcb`、`4b5756de`；`ohos-workload 402ed46`。
 - MediaElement
 - TableView + legacy compatibility renderers + TitleBar + Core Toolbar
 
@@ -124,27 +132,31 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **373** 条 `[verify]`、门限 **floor 353**（P1b-LIST 的 16 条列表/物理检查
-  加在 P1a-ANIM 的 10 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
+- `test/maui-platform-verify` 期望 **387** 条 `[verify]`、门限 **floor 367**（P2c-DEEPLINK 的 10 条深链/激活检查
+  加在 P2b-IMG 的 4 条之上，后者加在 P1b-LIST 的 16 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
   315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查；334/floor 314 为 KIT-EXT2 批次值，
   340/floor 320 为 P2a-HUKS 批次值；347/327 为 P0c-TEXT-EDIT、357/337 为 P1a-ANIM 批次值；
-  `6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内）。
-- 切片 pin：`ohos-workload` `2ad391b`（2026-09-27，与本矩阵同批）将三个 workflow 的 `maui_ohos_ref`
-  固定到 `maui-ohos` `150ac92f66b58c9d9e416b4df6dca8b19f467fab`（P1b-LIST tip：列表深度 + 滚动物理；
-  其下依次为 P1a-ANIM `f9b63ee2`、P0c-TEXT-EDIT `e6b6ecbb`、P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2
-  批次），下限 353；两个 workflow_dispatch 的输入默认值一并推进（此前停滞在 `e6b6ecbb`，手动派发会
-  绕过 env pin 编译旧切片）。
+  373/353 为 P1b-LIST、377/357 为 P2b-IMG 批次值）。
+- 切片 pin：`ohos-workload` `3e6d9f4`（2026-09-27，P2c-DEEPLINK 批次）将三个 workflow 的 `maui_ohos_ref`
+  固定到 `maui-ohos` `4b5756de44257914be6fd44c62b5c03cc09329bf`（P2c-DEEPLINK tip：want/activation 深链路由；
+  其下依次为 P2b-IMG `d3122bb5`、P1b-LIST `150ac92f`、P1a-ANIM `f9b63ee2`、P0c-TEXT-EDIT `e6b6ecbb`、
+  P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2 批次），下限 367；三个 workflow_dispatch 的输入默认值一并推进
+  （此前停滞在 `150ac92f`/`d3122bb5`，手动派发会绕过 env pin 编译旧切片）。
   演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
   → `ab09918` → `c4ac6a5e` → …（KIT-EXT2 334/314、P2a-HUKS 340/320）→ `e6b6ecbb`（347/327）
-  → `f9b63ee2`（357/337）→ `150ac92f`（373/353）。
-- 最近一次本地完整验证（2026-09-27，P1b-LIST）：interaction **373** 条（隔离 worktree，含本轮切片）、
-  0 Unhandled、四条性能门 `within=True`（帧 avg 2.96 ms、4,496 B/帧）；pixel `PIXEL ASSERTIONS PASSED`；
-  markdownlint 0 issues；
-  `scripts/build-arkts-shell.sh --check-pack-abc` 三包同源（UI abc 278,760 B / `c84fbf34…`，
-  headless 18,532 B / `d7ec9ca7…`，abc 13.0.1.0，壳源码未改）；host 源码未改（导出契约 141 名，
-  `check-host-exports.py --cross-check` 全绿）；
-  `selftest-build-arkts-shell.sh`（162 项）、`selftest-packs.sh`（25 项）、`selftest-repo-hygiene.sh`（25 项）全绿。
+  → `f9b63ee2`（357/337）→ `150ac92f`（373/353）→ `d3122bb5`（377/357）→ `4b5756de`（387/367）。
+- 最近一次本地完整验证（2026-09-27，P2c-DEEPLINK；隔离 worktree，含 P2b-IMG + P2c-DEEPLINK 切片）：
+  interaction **387** 条、0 Unhandled、五条性能门 `within=True`（帧 avg 7.32 ms、4,496 B/帧；a11y skip/republish
+  render + publish 两条 skip/两条 republish `within=True`）；pixel `PIXEL ASSERTIONS PASSED`；markdownlint 0 issues；
+  `scripts/build-arkts-shell.sh --check-pack-abc` 三包同源（UI 281,052 B / `5c06143a…`、headless 20,916 B /
+  `54a1a201…`，abc 13.0.1.0；0 ArkTS errors、三包源码字节一致）；
+  host 重建（`build-host.sh`：DT_NEEDED/UND 门绿，nm 全命中 **143** 名，`check-host-exports.py --cross-check` 全绿）；
+  `selftest-build-arkts-shell.sh`（165 项）、`selftest-packs.sh`（25 项）、`selftest-repo-hygiene.sh`（25 项）、
+  `selftest-hap-targets.sh`（34 项）全绿；`selftest-ridgraph.sh`（20 项）在主 checkout 全绿（隔离 worktree 无
+  `sdk-ohos` sibling 时 T5 的 scratch 树取不到 canonical，属环境）；`selftest-tasks.sh` 的 S3 漂移仅源于 worktree
+  路径嵌入（`-p:PathMap=<worktree>=<主 checkout>` 重建后与 pack 内 `Microsoft.OpenHarmony.Tasks.dll` 逐字节一致，
+  源码等价），非源码回归。
 - 历史 CI：`df221b6` 上三条 run 全绿：interaction `35629780806`、pixel `35629780800`、markdownlint `35629780817`
   （均 2026-09-21T17:05:36Z）。
 - 此前 interaction 红的原因是 pin 停在 `90c8373f`（缺 B 系列符号），属 pin 未推进，不是套件回归。
@@ -152,7 +164,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 6. 真机状态（caveat）
 
-- 上述所有内容均为**离设备**验证；套件（现 373 条，见 §5）与像素套件只在无设备环境运行。
+- 上述所有内容均为**离设备**验证；套件（现 387 条，见 §5）与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
   此前 `24.0.0.0` 超出设备 ark runtime）。**kit #28 为当前发布**（含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关；数字入口见 release「## Integrity」）；
@@ -169,7 +181,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 |---|---|---|---|
 | 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；待 **stock kit #28** 复测（判定点见里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（373 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 373/floor 353） |
+| 3 | 真机验证扫尾（387 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 387/floor 367；P2c 深链还需真机 want/App Linking 投递与清单声明验证） |
 | 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」 |
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
@@ -179,7 +191,7 @@ Window / SafeArea / 标题收尾 —— 见 §1b（提交锚点）。
 `IApplication` handler、列表/轮播/滑动补齐、Shell 标题栏镜像 —— 见 §1b。
 原 #4（推进 CI 切片 pin）经 `fb533f0` 到 `ab09918` 持续推进；interaction 套件现由 `ohos-workload` 的
 workflow 直跑 `test/maui-platform-verify`（编译 pin 见 `.github/workflows/interaction-regression.yml`，
-套件 373/floor 353，pin `maui-ohos 150ac92f`）。
+套件 387/floor 367，pin `maui-ohos 4b5756de`）。
 
 §4 的 **SDK 阻塞清单**：TextToSpeech / Hot Reload / arm32 不变；Map 转方案 (b) 能力探测已落地、
 Share Kit 多文件分享转已落地（无 Kit 时仍降级）；原 **BLE GATT** 一栏已移出（以 host/NAPI/壳桥接的
