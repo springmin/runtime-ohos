@@ -9,8 +9,8 @@
 > harmony-flavor 专属模板模块（`templates/ets/map/MapOverlay.ets`，字面量 `@kit.MapKit`，
 > `NodeController`/`BuilderNode` 挂载），托管 `OpenHarmonyMap` 提供 show/hide/close/区域/标记与
 > `Ready`/`MarkerClick`/`CameraIdle` 事件；**默认 OpenHarmony flavor 下 overlay 不编译，`IsSupported` 可为 true
-> 而 `IsOverlayAvailable=false`，所有 overlay 调用降级不抛**；真机点亮需 `ARKTS_SDK_FLAVOR=harmony` 壳 +
-> AGC 地图 AppKey；② **LiveView 特性探测**：壳 `canIUse('SystemCapability.LiveView.LiveViewService')` +
+> 而 `IsOverlayAvailable=false`，所有 overlay 调用降级不抛**；真机点亮需 harmony 壳 + AGC 地图服务开通与重签
+> （harmony 壳已随并列资产 `harmony-haps.tar.gz` 交付，见 §1 行 6 与判定卡 §2.5，无需自建）；② **LiveView 特性探测**：壳 `canIUse('SystemCapability.LiveView.LiveViewService')` +
 > `@kit.LiveViewKit` 双门，TIMER 场景 create/update/stop（title/text/progress/time）；无 Kit/权益时
 > `IsSupported=false`、Start/Update/Stop 返回 `Unavailable` 不抛；③ **壳 `start_app` AOT 启动桥**：宿主先探测
 > `<app_dir>/lib<stem>.so` + `dlsym("openharmony_app_main")`，命中即在 bridged app 线程直启（日志 `aot=1`，
@@ -22,7 +22,8 @@
 > hap 内宿主 `libopenharmonyhost.so` **269,216 B** / `bb51826e…`（= pack **265,120 B** / `30addfbe…` + 4096 B
 > 签名块；`DT_NEEDED` 5、UND 239、denylist 0）、宿主导出契约 **134/134**、交互门禁 **334/floor 314**；
 > 侧挂 `aot-haps.tar.gz` **17,093,146 B** / `91e1b9d3…`（+ `aot-haps-README.md`；AOT-RECUT 2026-09-27 已内置桥宿主 `bb51826e…`）、
-> `ohos-interpreter-pack.tar.gz` **2,419,988 B** / `a10699b3…`（+ README/sidecar）。
+> `ohos-interpreter-pack.tar.gz` **2,419,988 B** / `a10699b3…`（+ README/sidecar）、
+> `harmony-haps.tar.gz` **196,118,871 B** / `f7a4faa2…`（A1-HARMONY-KIT 2026-09-27；harmony-flavor 5 变体，壳 263,784 B / `d3a7b718…` + README/sidecar）。
 > **kit #28（已发布 2026-09-26，数字入口见 release Integrity）**：tar **196,220,486 B** / `091dcc56…`；
 > 解压树 **`0a7a3215…`**；sidecar 89 B / `d7efd251…`（内容 = kit sha）；5 个 hap 各 **~75.67 MB**
 > （签名变体 75,669,608–75,669,642 B / `9870e50d…`、`ea2c2d16…`、`2d22fb25…`、`f3d06dab…`；未签名
@@ -46,7 +47,7 @@
 | 3 | **壳 `start_app` AOT 启动桥（R2-SHELL-EXT V1）**：宿主在 `start_app` 先探 `lib<stem>.so` → `openharmony_app_main`，命中即直启（`aot=1`）；失败（缺库/缺符号/分配）记 `aot=0` 回退 hostfxr；`run_app` one-shot 行为不变 | 旁挂 `aot-haps.tar.gz` 的 AOT hap 现在也能走 ArkTS 壳 `start_app` 直启（此前只能 `run_app`）；kit 内 5 个 JIT hap 仍走 hostfxr 回退（回归点）。**注意**：`aot-haps.tar.gz` 已于 2026-09-27 重切（AOT-RECUT），包内宿主就是 kit #28 桥版（`bb51826e…`），**无需换宿主**，重签即判，见判定卡 §2.2 | **AOT 启动**（§2：`aot=1` 日志、managed 输出、无 `The application to execute does not exist`） |
 | 4 | **解释器实验（R2-INTERP，独立资产）**：`ohos-interpreter-pack.tar.gz`（feature-enabled `libcoreclr.so` + `libclrinterpreter.so` + README/VERIFICATION/SHA256SUMS/build-info）；宿主 `<files>/interp.txt`（首字符为数字）→ 启动前 `setenv("DOTNET_InterpMode", <值>)`，日志 `interp=<v> source=file|default`（无文件不写入、运行时默认 JIT 不变） | 测试方按 §2 组合并签名 HAP 后：纯解释模式启动；`/proc/self/maps` 可判解释器激活与匿名 `r-x` | **interpreter**（§2；实验资产，按交付方指示取用） |
 | 5 | **门禁与重建**：ui/shell abc 重编 **264,136 B**（headless 18,532 B 不变）、导出契约 **134/134**、交互套件 **334/floor 314**（kit7 = Map 覆盖层（含 flavor 门）；kit8/kit9/kit10 = LiveView shell/bridge/降级）；包内 `verify-kit.sh` abc 期望重锚 **264136**（`ohos-workload 112b6e9`），`tester-run.sh` 发布时为 **v8**（73,375 B）、2026-09-27 重传 **v9**（`aot_route`/`interp_mode` 采集，见判定卡） | 校验步骤、证据字段与 #27 相同，**只换 abc 期望值（264,136/18,532）**；用 #27 的 `245412` 或更旧的 `234620` 校验本包会 FAIL（脚本预期） | 校验时以 release「## Integrity」与包内 `verify-kit.sh` 为准 |
-| 6 | **并列资产（不替换 kit 内 5 个 JIT hap）**：`aot-haps.tar.gz`（hello-maui-app NativeAOT 变体：`libhello-maui-app.so` + 宿主 + `libc++_shared.so`，无 CoreCLR 运行库）+ `aot-haps-README.md`；`ohos-interpreter-pack.tar.gz` + README + `.sha256` | 形态判定：AOT hap `libs/arm64-v8a/` 恰 3 个 `.so`（**勿**用 kit `verify-kit.sh` 的 JIT 期望值套 AOT hap）；解释器 pack 用 `sha256sum -c SHA256SUMS` 自检 | 按交付方指示取用（§2） |
+| 6 | **并列资产（不替换 kit 内 5 个 JIT hap）**：`aot-haps.tar.gz`（hello-maui-app NativeAOT 变体：`libhello-maui-app.so` + 宿主 + `libc++_shared.so`，无 CoreCLR 运行库）+ `aot-haps-README.md`；`ohos-interpreter-pack.tar.gz` + README + `.sha256`；`harmony-haps.tar.gz`（**harmony-flavor 5 变体**：壳 263,784 B/`d3a7b718…`，`MapOverlay.ets`/LiveView sink 在包内；前置 = 自备重签材料 + **AGC 开通/权益**（地图服务＋指纹 / 实况窗 TIMER / Push/Account），判定见判定卡 §2.5）+ README + `.sha256` | 形态判定：AOT hap `libs/arm64-v8a/` 恰 3 个 `.so`（**勿**用 kit `verify-kit.sh` 的 JIT 期望值套 AOT hap）；解释器 pack 用 `sha256sum -c SHA256SUMS` 自检；harmony haps 用 `sha256sum -c SHA256SUMS` 或 kit `verify-kit.sh --expected-abc 263784` | 按交付方指示取用（§2） |
 
 ## 2. 本轮判定点（按包内入口逐个勾）
 
@@ -95,8 +96,9 @@
 2. 一条命令取证（`tester-run.sh` **v9**，2026-09-27 重传）：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
    → 证据包含 `hilog/hilog-{applib,dlopen,bootstrap,execmem}.txt`、`device/payload-*.txt`、
    `meta/kit-selfcheck.txt`（`kit_index_ok`/`payload=yes|no`）与 `summary.txt`（`aot_route`/`interp_mode` 新键）。
-3. 有 harmony flavor / HMS 的测试者请附：`ARKTS_SDK_FLAVOR=harmony` 的构建出处、AGC 开通/审批截图、
-   Map flags/事件日志、LiveView 卡片截图与错误码、AOT hap 的 `aot=1` 日志；解释器轮次附 `interp=` 行、
+3. 有 harmony flavor / HMS 的测试者请附：壳的构建出处（可直接取 `harmony-haps.tar.gz`，包内已含
+   harmony 壳与 5 个变体，仍需自备重签材料与 AGC 权益）、AGC 开通/审批截图、Map flags/事件日志、
+   LiveView 卡片截图与错误码、AOT hap 的 `aot=1` 日志；解释器轮次附 `interp=` 行、
    maps 摘录与 `SHA256SUMS` 自检输出。
 4. AOT hap 不要用 kit `verify-kit.sh` 的 JIT 期望值（14 `.so`）核对（AOT hap 只有 3 个 `.so`）；用
    `aot-haps-README.md` 的 5 条形态判定。
@@ -105,9 +107,10 @@
 
 - 本轮全部增量（Map 覆盖层、LiveView 桥、`start_app` AOT 直启、解释器 pack、`interp.txt` 开关）**均未上机**：
   kit 的 hap 是自签名（`9568257`/`9568344` 属预期，先重签）。
-- Map 覆盖层的**真机点亮**需 HarmonyOS SDK + AGC 地图 AppKey；LiveView 需 AGC 实况窗权益 + 设备开关；
-  AOT 直启需签名后的 AOT hap；解释器需替换 payload 后重签 —— 当前只有**离线/本机证据**（kit7/kit8/kit9/kit10
-  断言、AOT smoke 的 one-shot/`--bridge` 两路由、`interp.txt` 解析与 setenv 日志对）。
+- Map 覆盖层的**真机点亮**需 AGC 地图服务开通 + 重签（harmony 壳已随 `harmony-haps.tar.gz` 交付，无需自建）；
+  LiveView 需 AGC 实况窗权益 + 设备开关；AOT 直启需签名后的 AOT hap；解释器需替换 payload 后重签 —— 当前只有
+  **离线/本机证据**（kit7/kit8/kit9/kit10 断言、AOT smoke 的 one-shot/`--bridge` 两路由、
+  harmony haps 的 82/82 形态断言与 kit `verify-kit.sh --expected-abc 263784` KIT OK、`interp.txt` 解析与 setenv 日志对）。
 - 解释器的残余匿名 `r-x`（Precode/UMEntryThunk stub）与 `DOTNET_InterpreterName` 负对照**未在真机取证**；
   先记录判定点，勿改 W^X/启动策略。
 - 权限弹窗 / Share 面板 / Scan 返回 / AOT（#25 口径）自 #25 起**仍未有真机回传**；PLAT-GAP 消费方路径自 #26

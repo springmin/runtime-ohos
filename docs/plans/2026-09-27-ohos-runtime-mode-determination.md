@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #28） | 590266238 | 196,220,486 | `091dcc56…`（sidecar `d7efd251…`） | 5 个 JIT hap＋文档＋verify-kit |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
+| `harmony-haps.tar.gz`（新，A1-HARMONY-KIT） | 592541627 | 196,118,871 | `f7a4faa2…`（sidecar `be6452e3…`） | 5 个 harmony-flavor hap（壳 **263,784 B / `d3a7b718…` @13.0.1.0**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
 | `tester-run.sh` v9 | 592440134 | 75,917 | `3c2d33bf…` | v8 = 73,375 B / `6ca2093e…`；v9 采集 `aot=`/`interp=` |
 
@@ -67,6 +68,20 @@ hdc shell "rm -f /data/storage/el2/base/haps/entry/files/interp.txt"
 
 ### 2.4 渲染/交互（任一态）
 ① 首帧（截图）→ ② 触摸→managed handler（日志/状态）→ ③ 导航（页面切换）→ ④ 列表滚动＋WebView 加载；各附截图或日志。
+
+### 2.5 harmony 变体（`harmony-haps.tar.gz`，Map/LiveView 点亮的唯一打包入口）
+> 壳 = HarmonyOS SDK 构建（包内即 harmony flavor：`MapOverlay.ets` + LiveView sink，**无需测试方自建壳**）；
+> 前置 = 自备重签材料（自签会被 9568257/9568344 拒绝，属预期）＋ **AGC 开通/权益**（Map 地图服务 + 证书指纹；
+> LiveView 实况窗 TIMER 权益 + 设备开关；Push/Account 按需）。5 个 hap 与 kit 同包名，装 harmony 会顶替 kit 主包；
+> 回 JIT 重装 kit hap（同 §2.2）。静态形态（交付方逐 hap 断言 82/82 + kit `verify-kit.sh --expected-abc 263784` KIT OK）：
+> abc 263,784 B/`d3a7b718…`（PANDA 13.0.1.0）、libs 269（14 `.so`+254 payload+marker）、hap 内宿主 269,216 B/`bb51826e…`、
+> `module.json` 与 kit #28 对应 hap 逐字节相同、14 `.so` 均带 `.codesign`；默认 JIT payload 不变（**AOT 走 §2.2 的 `aot-haps.tar.gz`**）。
+```sh
+sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app.hap --install --start --capture 60 --out tester-report-harmony
+```
+期望：`IsOverlayAvailable=true`（flags bit1=1）、show/hide/区域/标记有真实地图视图与 `Ready`/`MarkerClick`/`CameraIdle`；
+LiveView create/update/stop 出 TIMER 卡片（开关关 `-3`/`1003500004`、权益未批 `1003500005`）；Push/Account/Scan/Share 面板正常。
+回传：截图/录屏＋状态原文＋AGC 开通/审批截图。
 
 ## 3. 回传物汇总
 `tester-report-*.tar.gz`（`hilog/hilog-execmem.txt`＋`summary.txt`＋install/start 日志）＋解释器轮 maps 摘录＋重签说明；
