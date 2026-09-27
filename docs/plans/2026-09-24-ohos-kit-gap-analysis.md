@@ -80,12 +80,29 @@
 > 默认 flavor 的 5 个 hap `IsOverlayAvailable=false`、所有 overlay 调用降级不抛（kit6/kit7 离线断言）。kit #28 门禁 =
 > **334 行/floor 314**（kit7 + kit8/kit9/kit10），UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；
 > 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。
+>
+> **A2-TTS 回填（2026-09-27，CoreSpeechKit）**：新获取的 DevEco CLT HarmonyOS SDK（6.0.1.251，HarmonyOS 6.0.1
+> Release / API 21）的 `hms/ets` **确认包含** `kits/@kit.CoreSpeechKit.d.ts`（导出 `textToSpeech` +
+> `speechRecognizer`）与 `api/@hms.ai.textToSpeech.d.ts`（syscap `SystemCapability.AI.TextToSpeech`，since
+> 4.1.0(11)：`createEngine(CreateEngineParams)`、`TextToSpeechEngine.{setListener,speak,listVoices,stop,isBusy,
+> shutdown}`、`SpeakListener.{onStart,onComplete,onStop,onError}`、错误码 `1002300001/2/3/5`、`401`；模块级
+> `listVoices` since 5.1.1(19)）—— 此前「本机 SDK 无 Core Speech Kit」的判定作废。**探测+降级链路已落地**：
+> 壳 `canIUse('SystemCapability.AI.TextToSpeech')` + 变量说明符 `@kit.CoreSpeechKit` 双门 + `registerTtsSink`
+> 五 op（0 create / 1 speak / 2 stop / 3 locales / 4 isBusy；引擎惰性创建 person 0、离线模式 1，speak 在引擎
+> 完成/停止/报错时才应答并在 stop 时清算挂起请求）；host `ohos_host_tts_{available,request,register_result,result}`
+> （旧的单 op `ohos_host_tts_speak` 移除，导出契约 134 → **136/136**）；托管 `OpenHarmonyTextToSpeech` 补齐
+> `SpeakAsync`（等待朗读完成）/`GetLocalesAsync`（引擎音色列表 → MAUI `Locale`，无 Kit 回退设备 locale）/
+> `Stop()`/`IsSupported` + PublicAPI。默认 OpenHarmony flavor 下 sink 不注册：`IsSupported=false`、SpeakAsync
+> 直接返回、Stop 为 no-op、locales 回退设备 locale，全链路不抛（kit13 离线断言）；harmony flavor 全量编译证据
+> ui abc **273,932 B / `e7290ed1…` / 13.0.1.0**（0 ArkTS 错误，TTS 字面量在 abc 内），默认 flavor ui abc
+> **274,284 B / `61c7aa78…` / 13.0.1.0**（headless 18,532 B），交互套件 **337 行/floor 317**（kit11/kit12/kit13）。
+> 真机验收仍需 HMS 设备 + harmony 壳；Kit 本身无 AGC 权益/权限门槛，设备语音能力与离线音色数据是门（判定点见 §6）。
 
 ## 1. 能力矩阵
 
 | 能力 | 我们当前状态（引用覆盖矩阵） | 可用 Kit/技能 | 关键 API（import / 权限 / syscap / 设备） | 落地到 MAUI 的形态 | 工作量 | 风险 | 建议 |
 |---|---|---|---|---|---|---|---|
-| TTS（TextToSpeech） | 链路已接、sink 如实返回不可用（覆盖矩阵 §4；审计 §5c；`OpenHarmonyTextToSpeech.cs:1-9`、`Index.ets:2223`） | **无**：25 Kit 无 Core Speech Kit；`02-development` 检索 `CoreSpeechKit`/`textToSpeech` 0 命中 | 无（技能未提供；本机 SDK 无 `@kit.CoreSpeechKit`/`@ohos.ai.tts`） | 平台扩展（替换现有 TTS sink） | S（待引擎） | 无引擎可用 | **维持门控**（此前判定不变） |
+| TTS（TextToSpeech） | 已实现（特性探测，A2-TTS 2026-09-27）：壳 `probeTtsKit`/`registerTtsSink` + host `ohos_host_tts_*` + 托管 `OpenHarmonyTextToSpeech`（`SpeakAsync`/`GetLocalesAsync`/`Stop`/`IsSupported`；无 Kit 降级不抛）——旧 stub 的「sink 如实返回不可用」已被真实链路替换 | **有**：CoreSpeechKit —— `@kit.CoreSpeechKit` → `@hms.ai.textToSpeech`（CLT SDK 6.0.1.251 `hms/ets` 已确认；非 25-Kit 技能语料，证据为 d.ts 原文） | `createEngine({language,person,online})`、`engine.speak(text,{requestId})`、`engine.listVoices`/模块级 `listVoices`、`stop()`、`isBusy()`、`shutdown()`；syscap `SystemCapability.AI.TextToSpeech`；since 4.1.0(11) | 平台扩展（已替换旧 TTS stub sink） | S（已完成） | 设备语音能力/离线音色数据；HMS 真机未验 | **已补齐（HMS 分支）**：默认 flavor 降级不抛，harmony flavor 编译通过（abc 273,932 B / 13.0.1.0）；真机验收见 §6（speak/stop/语言列表判定点） |
 | Map / POI / 路线 | 方案 (a)+(b) 均已落地（覆盖矩阵 §4）；方案 (a) 覆盖层需 harmony flavor + AGC AppKey（默认 flavor 降级不抛） | Map Kit：`hmos-map-kit-{map-creation,poi-search,route-planning}` | `import { map, mapCommon, MapComponent } from '@kit.MapKit'`；`site.searchByText(params): Promise<SearchByTextResult>`；`navi` 路线/导航；需 AGC 开通地图服务 + AppKey | 平台扩展（无 Essentials 对应）/仅文档 | L* | AGC AppKey、HMS 设备 | **KIT-EXT2 方案 (b) + R2-3 方案 (a) 均已落地**：壳 `probeMapKit`/`registerMapSink` 能力位 + host `ohos_host_map_*`（`command`）+ 托管 `OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`/`IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`（no-kit/no-overlay 返 false、调用不抛）；覆盖层需 harmony flavor + AppKey（见打包文档）；真机验收待 HMS 设备 |
 | 系统分享面板 / 多文件 | 文本 + 单文件（隐式 `sendData` Want）；多文件已落地 Share Kit 分支（无 Kit 时记录在案 no-op）（覆盖矩阵 §2 `Share` 行、§4；`OpenHarmonyAppLauncher.cs:22,193`） | Share Kit：`hmos-share-kit-panel-share`（one-sdk 语料） | `import { systemShare } from '@kit.ShareKit'`；`new systemShare.SharedData({ utd, content\|uri })`；`new systemShare.ShareController(data).show(context, opts)`；≤500 条/200KB；起始 4.1.0(11)；手机/平板/2in1 | Essentials `Share` 多文件分支（平台扩展） | M* | HMS 设备；`utd`/uri 语义 | **KIT-IMPL 已落地**：壳 `registerShareKitSink` 探测成功才注册；无 Kit 时多文件仍走既有 no-op + 状态；真机验收待 HMS 设备 |
 | 扫码（默认 / 自定义） | 未实现（无 Essentials 对应；相机 picker 已有） | Scan Kit：`hmos-scan-kit-defaultscan`/`-customscan` | `import { scanBarcode, scanCore } from '@kit.ScanKit'`；`scanBarcode.startScanForResult(ctx)`；`canIUse('SystemCapability.Multimedia.Scan.ScanBarcode')`；默认免 CAMERA、自定义需 `ohos.permission.CAMERA`；起始 4.0.0(10) | 平台扩展（新增） | M* | 设备 syscap | **KIT-IMPL 已落地**：壳 `registerScanSink`（canIUse+import 双门）+ 托管 `OpenHarmonyScan`（`IsSupported`/`ScanAsync`）；无 Kit 设备 `IsSupported=false`；真机验收待 HMS 设备 |
@@ -125,7 +142,7 @@
 
 - **Hot Reload**：`hdc` 被组织策略拦截（`E00C001`）；且需 `dotnet watch`/agent、设备通道与运行时 metadata update——三项均不在 Kit 技能覆盖范围（最终状态 §2 D4）。
 - **arm32**：无 32 位设备验证路径；N13/S1a/A1 只发 arm64/x64；启动条件 = 拿到 32 位设备/模拟器（arm32 差距分析 §0）。
-- **HMS Kit 通道（剩余 Payment 与已落地项的共性）**：需 ① 以 HarmonyOS SDK（DevEco/HMS）替换 OpenHarmony SDK 并切换 `runtimeOS`（**Share/Scan 的 SDK 分支与探测代码已就绪，`ARKTS_SDK_FLAVOR=harmony`**）；② AGC 侧开通/审批（推送、地图服务 AppKey、一键登录权限、实况窗权益、支付商户）；③ 签名证书指纹绑定 + 含权益的 Profile；④ HMS 设备。Share/Scan/Push/Account/Map/LiveView 已落地降级+探测链路，**真机验收**仍需 ①+④；Payment 另需 ②③。
+- **HMS Kit 通道（剩余 Payment 与已落地项的共性）**：需 ① 以 HarmonyOS SDK（DevEco/HMS）替换 OpenHarmony SDK 并切换 `runtimeOS`（**Share/Scan 的 SDK 分支与探测代码已就绪，`ARKTS_SDK_FLAVOR=harmony`**）；② AGC 侧开通/审批（推送、地图服务 AppKey、一键登录权限、实况窗权益、支付商户）；③ 签名证书指纹绑定 + 含权益的 Profile；④ HMS 设备。Share/Scan/Push/Account/Map/LiveView/TTS 已落地降级+探测链路，**真机验收**仍需 ①+④；Payment 另需 ②③。
 - **WebAuthenticator**：无 Kit 可解，维持诚实降级；工程路径见覆盖矩阵 §3（①–④，前三件可离设备，工作量 M）。
 - **MediaElement**：无 Kit 门控；如落地需在平台层自建 AudioKit/MediaKit/AVSessionKit 播放器（以社区工具包契约为准）。
 - **SecureStorage 硬件路径**：待真机确认 HUKS 应答；否则维持每安装文件密钥（已记录非硬件后备）。
@@ -137,13 +154,30 @@
 3. **AGC 门槛**：Push `1000900010`（未开通/签名）、Account `1001502014`（未申请 scope 权限）、Map AppKey、LiveView 权益与场景白名单、Payment 商户/证书——均需 AGC 侧人工操作/审批，本环境不可代办。
 4. **Ads 例外**：`@kit.AdsKit` 在 SDK 中存在且 API 可编译（`AdLoader.loadAd` / `advertising.showAd`），但 OpenHarmony 设备是否有广告服务/广告位未证（预期 801 / 21800003）。
 5. **版本映射**：技能为 HarmonyOS 6.x 文档（起始版本 4.0.0(10)–6.0.2(22)），与本机 API 26 OpenHarmony Beta SDK 的波段映射未验证。
-6. **真机待证**：TTS `-1`、SecureStorage HUKS 分支、Share 多文件面板、Scan syscap 分支均未上设备。
+6. **真机待证**：SecureStorage HUKS 分支、Share 多文件面板、Scan syscap 分支、**TTS 真朗读（speak/stop/音色列表，见 §6）** 均未上设备。CoreSpeechKit 的 `isBusy`/`shutdown`/`onData` 流式合成为可选面，本轮只用 `setListener/speak/listVoices/stop/isBusy`。
 
 ## 5. 结论
 
-- **已实现（特性探测）6 项**：Share、Scan、Push、Account、Map（方案 (a)+(b)）、LiveView——自「有条件可补齐」转入；真机点亮待 HMS 设备 + AGC 开通/审批；**仅记录 2 项**：Payment、Ads；**维持门控 6 项**：TTS（双否）、Hot Reload、arm32、WebAuthenticator、SecureStorage 兜底、MediaElement。
+- **已实现（特性探测）7 项**：Share、Scan、Push、Account、Map（方案 (a)+(b)）、LiveView、**TTS（CoreSpeechKit）**——自「有条件可补齐」转入；真机点亮待 HMS 设备 + AGC 开通/审批（TTS 无 AGC 门槛）；**仅记录 2 项**：Payment、Ads；**维持门控 5 项**：Hot Reload、arm32、WebAuthenticator、SecureStorage 兜底、MediaElement。
 - 在当前 OpenHarmony SDK 26.0.0.18 + OpenHarmony 设备上，本轮技能核查**未改变任何既有运行时门控**（Kit 真调用仍需 HarmonyOS 分支）；新增的确切信息是「这些 Kit 在 HarmonyOS 侧确有其事，且有可引用的 API 证据」，可作为未来切换 HarmonyOS 工具链时的落地清单。
 - **KIT-IMPL 更新（2026-09-25）**：① Share 与 Scan 的**特性探测平台扩展已落地**（壳/宿主/托管/断言），在 OpenHarmony 设备上如实降级、在 HMS 设备上自动启用——不再是纯文档项；② `ARKTS_SDK_FLAVOR=harmony` 已进 `build-arkts-shell.sh`（默认行为不变、abc `13.0.1.0` 门禁保留），完整 HarmonyOS 构建仍需一台装有 HarmonyOS SDK 的机器；③ **Map/Push/Account 仍需外部条件**（AGC 开通/审批：Push `1000900010`、Account `1001502014`、Map AppKey）与 HMS 设备，本环境不可代办；④ 真机验收项：Share 多文件面板与 `shareCompleted`、Scan `originalValue`、HarmonyOS flavor 的 abc 装载（DevEco 证据仅到「6.1.0(23) → 13.0.1.0」）。
 - **KIT-EXT2 更新（2026-09-25，第二批）**：① **Push/Account** 的探测+降级链路已落地（壳 sink、host `ohos_host_push_*`/`ohos_host_account_*`、托管 `OpenHarmonyPush`/`OpenHarmonyAccount`、错误码映射与断言），**Map** 以方案 (b) 落地能力探测/预留 sink（`MapKitImportable`/`IsSupported`；方案 (a) 覆盖层已排期，需 harmony flavor + AppKey）；② host 导出契约 118 → 130，UI/headless abc 重编并同步三个 pack 的 provenance（`13.0.1.0`），交互套件 329 行/floor 309（新增 kit4/kit5/kit6）；③ 四个新托管入口在 OpenHarmony SDK/无 host 环境全部 `Unavailable`/null 且不抛（离线证据）；④ **外部条件不变**：HarmonyOS SDK 构建、AGC（Push 开通+Profile、Account scope 审批、Map AppKey）、签名指纹一致、HMS 设备。真机验收项新增：`getToken()` 成功与 `1000900010/1000900012` 排障、匿名手机号/authorizationCode 与服务端换号、Map capability bit0=1。
 - **R2-SHELL-EXT 更新（2026-09-26，LiveView + 壳 AOT 桥接）**：① **Live View** 的探测+降级链路已落地（壳 canIUse/`@kit.LiveViewKit` 双门 + `registerLiveViewSink` 的 TIMER 场景 create/update/stop；host `ohos_host_liveview_*`；托管 `OpenHarmonyLiveView` + PublicAPI），host 导出契约 130 → 134，UI/headless abc 重编并同步三个 pack 的 provenance（`13.0.1.0`，UI 264136 B / headless 18532 B），交互套件 330 行/floor 310 → **334 行/floor 314**（kit8–kit10 + interp 政策 pin）；② **壳 `start_app` AOT 桥接**（V1）：host 在 `start_app` 里探测 `<app_dir>/lib<stem>.so` + `openharmony_app_main`，命中即在 bridged app 线程直启（日志 `aot=1`，bridge 注册/lifecycle/NodeContent 全部沿用），缺库/缺符号/分配失败记 `aot=0` 回退 hostfxr——AOT hap 不再只能走 `run_app`，`run_app` 行为不变；`a7` 交互 pin 折入新语义（7 条失败路径 + AOT 探针），`test/aot-smoke/run-local-smoke.sh` 覆盖 one-shot 与 `--bridge` 两条路由（payload + 退出码 7）；③ 降级证据：OpenHarmony SDK 下 sink 不注册、`IsSupported=false`、`Start/Update/Stop` 全部 `Unavailable` 且不抛（kit10 离线断言）；④ **外部条件不变**：真机验收需 HarmonyOS SDK 构建 + AGC 实况窗权益 + 设备实况窗开关 + HMS 设备。
 - **R2-3 更新（2026-09-26，Map 覆盖层）**：① **方案 (a) `MapComponent` 覆盖层已落地**（harmony-flavor 专属模块 `MapOverlay.ets` + 页面变量说明符 `'./map/MapOverlay'` 动态导入；宿主 `ohos_host_map_command(id, op, args)`；托管 `OpenHarmonyMap` 的 `IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`）；② 默认 flavor 下 `IsOverlayAvailable=false`、overlay 调用全部降级不抛（kit6/kit7 离线断言）；③ kit #28 门禁 = 交互套件 **334 行/floor 314**、UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；④ **外部条件不变**：真机点亮需 `ARKTS_SDK_FLAVOR=harmony` 壳 + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。
+- **A2-TTS 更新（2026-09-27，CoreSpeechKit）**：① **TTS 探测+降级链路已落地并替换旧 stub**（壳 canIUse/`@kit.CoreSpeechKit` 双门 + `registerTtsSink` 五 op；host `ohos_host_tts_*` 取代单 op `ohos_host_tts_speak`；托管 `OpenHarmonyTextToSpeech` 的 `SpeakAsync`/`GetLocalesAsync`/`Stop`/`IsSupported` + PublicAPI）；② host 导出契约 134 → **136/136**（nm -D 全命中，`check-host-exports.py --cross-check` 通过），默认 flavor UI abc **274,284 B / `61c7aa78…`**（headless 18,532 B）、三个 pack provenance 同步；③ 交互套件 334 → **337 行/floor 317**（kit11/kit12/kit13；离屏降级 `speak=True supported=False stop=True locales=1` 全断言通过）；④ **harmony 分支编译证据**：同一源码对 DevEco CLT 6.0.1.251 SDK（`hms/ets` 含 CoreSpeechKit）编译 ui abc **273,932 B / `e7290ed1…` / 13.0.1.0**，0 ArkTS 错误；⑤ **外部条件**：真机朗读验收需 HMS 设备 + harmony 壳，Kit 无 AGC 权益/权限门槛（判定点见 §6）。
+
+## 6. A2-TTS 真机交接判定点（speak / stop / 语言列表）
+
+> 前置：HMS 设备 + HarmonyOS flavor 壳（本文的 harmony abc 273,932 B / `e7290ed1…`，或后续 kit 内重建的同源 abc）；
+> Kit 无 AGC 权益/权限门槛，设备语音能力与离线音色数据是门。默认 OpenHarmony flavor 上先复核降级语义
+> （kit13：`IsSupported=false`、`SpeakAsync` 直接返回、`Stop` no-op、`GetLocalesAsync` 回退设备 locale，均不抛）。
+
+| # | 判定点 | 怎么测 | 期望 | 证据/回传 |
+|---|--------|--------|------|-----------|
+| 1 | **speak（朗读）** | 触发 `TextToSpeech.SpeakAsync("你好", new SpeechOptions { Locale = <引擎 Locale> })`（或应用自检入口） | 设备实际发声；`SpeakAsync` 在朗读完成时才返回（不是派发即返回）；hilog 无 `speech request answered status <非 0>`；语言/音色不支持时返回并记录 `1002300002/1002300003`、引擎创建失败 `1002300005`，**不抛** | 调用→返回计时（≈ 音频时长）+ hilog 原文 |
+| 2 | **stop（停止）** | 较长文本朗读进行中调用 `OpenHarmonyTextToSpeech.Instance.Stop()` | 立即静音；进行中的 `SpeakAsync` 随之完成（不触发 60 s 桥超时、不抛）；随后再次 speak 正常 | 静音前后 hilog + 计时 |
+| 3 | **语言列表（locales）** | 调 `TextToSpeech.GetLocalesAsync()` | 返回引擎 `listVoices` 的语言集合（`Locale.Id` = kit language，如 `zh-CN`/`en-US`；`Name` 取 description/gender），**不再是单一设备 locale 回退**；再用列表内一个 locale speak 成功 | locales 列表原文 + speak 截图/日志 |
+| 4 | **降级（回归，无 HMS）** | 默认 flavor 的 hap 上触发同一入口 | 与本文 kit13 离线断言一致：`IsSupported=false`、无朗读、无异常 | 状态原文 + hilog |
+
+失败分类：`-1` = sink 未注册（壳非 harmony / 无 Kit）；`-2` = 引擎缺失/参数畸形/kit 抛非 BusinessError；
+正数 = CoreSpeechKit 错误码（`1002300001` 文本空/超长、`1002300002/3` 语言/音色不支持、`1002300005` 引擎创建失败、`401` 参数错误）。
