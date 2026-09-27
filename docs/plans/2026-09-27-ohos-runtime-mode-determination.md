@@ -4,6 +4,11 @@
 > 判定用 `tester-run.sh` **v11**（119,452 B / `2355e493…`，`script_version=11 (2026-09-27)`：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`）：证据包 `tester-report-*.tar.gz` 含
 > `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）；
 > 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）；
+> **打包期单开关（MS-MODE，2026-09-28）**：`-p:OpenHarmonyRuntimeMode=jit|aot|interp`（默认 jit）直接把同一 publish 产出对应形态——
+> aot 校验 `lib<stem>.so` 存在，interp 可用 `-p:OpenHarmonyInterpreterPack=<解包目录>` 换入 `libcoreclr.so`+`libclrinterpreter.so`；
+> 标记写入 hap `libs/<abi>/runtime-mode.txt`，宿主在 `xwe.txt`/`interp.txt` 同点读取（`interp.txt` 仍优先），日志
+> `runtime-mode=<v> source=file|manifest|default`；规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode switch」；
+> 下文 AOT/解释器设备轮仍按 Run D/C 用既有资产，本开关是后续 hap 变体的打包入口；
 > **当前 kit = #29**（R3 增量 = CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连，
 > 见 `2026-09-28-ohos-tester-handoff-kit29.md`；下表 kit #28 行为最近一次 API 复核快照，新包数字以 release「## Integrity」为准）。
 
