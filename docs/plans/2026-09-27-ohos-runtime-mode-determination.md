@@ -4,12 +4,12 @@
 > 判定用 `tester-run.sh` **v9**（2026-09-27 重传）：证据包 `tester-report-*.tar.gz` 含 `hilog/hilog-execmem.txt` 与
 > `summary.txt` 新键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）。
 
-## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核）
+## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后）
 
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #28） | 590266238 | 196,220,486 | `091dcc56…`（sidecar `d7efd251…`） | 5 个 JIT hap＋文档＋verify-kit |
-| `aot-haps.tar.gz` | 590020146 | 17,090,044 | `67519d11…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（宿主滞后，见 §2.2） |
+| `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
 | `tester-run.sh` v9 | 592440134 | 75,917 | `3c2d33bf…` | v8 = 73,375 B / `6ca2093e…`；v9 采集 `aot=`/`interp=` |
 
@@ -18,7 +18,7 @@
 | 态 | 取件/前置 | 关键日志（execmem 文件） | 判定 | 回传 |
 |---|---|---|---|---|
 | JIT | kit #28 stock hap | `xwe=0 source=default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
-| AOT | aot-haps＋换 kit #28 宿主＋重签 | `NativeAOT payload … aot=1` | managed 输出，且**无** `The application to execute does not exist` | tar |
+| AOT | aot-haps（已内置桥宿主）＋重签 | `NativeAOT payload … aot=1` | managed 输出，且**无** `The application to execute does not exist` | tar |
 | 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签 | `interp=3 source=file` | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
 | 渲染/交互 | 任一态起来后 | —（功能性） | ①首帧 ②触摸→handler ③导航 ④列表/WebView | 截图/录屏/日志 |
 
@@ -26,7 +26,7 @@
 
 1. `probe: 1=OK`？否（`1=1|12|13|38` 或启动 SEGV/`mprotect` 拒绝）→ 写 `xwe.txt=1` 复跑 A/B，两轮都记录；仍未通按崩溃分支取证。
 2. 应用 managed 起来了（`[maui] openharmony build …`＋首帧）？否 → 按崩溃分支（applib/dlopen/bootstrap + `aot=`/`interp=` 行）取证，不进入后续态。
-3. `aot=1`＋managed 输出＋无 `The application to execute does not exist`？是 → AOT 直启成立；若见 `bridged start_app … JIT payloads only` → 宿主滞后（§2.2 第 2 步）。
+3. `aot=1`＋managed 输出＋无 `The application to execute does not exist`？是 → AOT 直启成立；若见 `bridged start_app … JIT payloads only` → 误用了旧的 R2-2 资产（现资产已内置桥宿主，应无此行）。
 4. `interp=3 source=file`＋maps 含 `libclrinterpreter.so`？是 → 解释器激活；匿名 `r-x` 只计数（`Precode`/UMEntryThunk 残余先记录）。
 5. 之后按 §2.4 做四项功能性判定；每态单独一轮，不混轮。
 
@@ -43,12 +43,11 @@ hdc shell "rm -f /data/storage/el2/base/haps/entry/files/xwe.txt"
 回传：`tester-report*.tar.gz`（A/B 两轮都发）。
 
 ### 2.2 AOT（aot-haps）
-> **实测注意**：现资产内宿主是 R2-2 版 **265,120 B / `366720e0…`**，`start_app` 打
-> `requires the one-shot run_app route; bridged start_app supports JIT payloads only`，
-> **原包 `aa start` 不会有 `aot=1`**；先换 kit #28 宿主再判：
+> **已内置桥宿主（AOT-RECUT，2026-09-27）**：资产内宿主 = kit #28 桥版 **269,216 B / `bb51826e…`**，
+> `start_app` 直接探测 `lib<stem>.so` → `openharmony_app_main` 并记 `aot=1`；**无需换宿主**，
+> 按《自签说明.md》重签后 `aa start` / 桌面启动即可判定（旧 R2-2 包才会打
+> `bridged start_app supports JIT payloads only`）。
 ```sh
-unzip -p ./device-test-kit/hello-maui-app.hap libs/arm64-v8a/libopenharmonyhost.so > host-k28.so  # 269,216 B / `bb51826e…`
-# 把 host-k28.so 写回 hello-maui-app-aot-unsigned.hap 的 libs/arm64-v8a/libopenharmonyhost.so，按《自签说明.md》重签
 sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app-aot-signed.hap --install --start --capture 60 --out tester-report-aot
 ```
 期望：`summary aot_route=1`；`NativeAOT payload … aot=1`；managed 输出/首帧；无 `The application to execute does not exist`；hap 内无 `libcoreclr.so`/`libhostfxr.so`（AOT 形态）。
