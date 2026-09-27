@@ -122,5 +122,11 @@ clang-15 --target=aarch64-linux-ohos --sysroot=$NDK/sysroot \
 #  f9400400 a9400800（动态解析器），故保持慢路径。
 ```
 
-未做：全量 OHOS 交叉构建、`-linkstaticopenssl` 的真实 `.a` 链接、设备端
-SslStream/HTTPS 自检。
+未做（2026-09-27 更新）：
+- 全量 OHOS 交叉构建：✅ 已完成（sdk-ohos CI，静态链接 + `verify-entrypoints` 通过，
+  run 36319023367）
+- `-linkstaticopenssl` 的真实 `.a` 链接：✅ 已完成；并补 `-Wl,--exclude-libs,ALL`
+  本地化静态库符号（runtime 提交 `2bd2b561511`），否则静态归档的全部符号会被导出，
+  entrypoints 校验失败
+- 设备端 SslStream/HTTPS 自检：⏳ 进行中（用 `-ohos` release 的静态版 SDK 在设备上
+  不部署 libssl 直接验证，结果待回填）
