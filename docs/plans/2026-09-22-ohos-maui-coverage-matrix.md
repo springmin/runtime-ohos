@@ -71,7 +71,7 @@
 | `Connectivity` | ✅ 已实现（2026-09-22；原恒 `Unknown`） | `maui-ohos b942952a` + `ohos-workload b7fa6da`；原缺口 `OpenHarmonyEssentialsExtras.cs:77` |
 | `Clipboard` | ✅ 已实现（2026-09-22：系统剪贴板 + `ClipboardContentChanged`；读拒绝不弹窗并缓存） | `maui-ohos b942952a`、`6a4062b7` + `ohos-workload b7fa6da`/`e0cfc24`；原为文件后备 `OpenHarmonyEssentialsExtras.cs:11` |
 | `Share` | ✅ 已实现（2026-09-26：Share Kit 多文件分支 `OpenHarmonyShareKitBridge`；无 Kit 时仍一次 no-op + 状态） | `maui-ohos fc7fbfdc`；原 `OpenHarmonyAppLauncher.cs:22`、`:193`（文本 + 单文件） |
-| `SecureStorage` | HUKS 应答时走 HUKS；否则回退每安装文件密钥（明确非硬件后备） | `OpenHarmonySecureStorage.cs:1` |
+| `SecureStorage` | ✅ 已实现（2026-09-27 P2a-HUKS：HUKS 优先 —— host 原生 AES-256-GCM 引擎（`host_keystore.c`，`libhuks_ndk.z.so` 经 dlopen 探测）生成并持有设备绑定密钥，密文 `k1:<nonce‖ct‖tag>` 落盘；别名 `maui.ohos.securestorage.v1.<path-hash>`；无 HUKS/操作失败时回退每安装文件密钥并明确标注非硬件后备；`IsHardwareBacked` 如实；`RemoveAll` 清 key。真机已验证跨进程读回 / 换别名不可解 / 删除后不可解） | `maui-ohos 99ac1818` + `ohos-workload 681bcb9`/`f333856`（原 `OpenHarmonySecureStorage.cs:1`） |
 | Window mapper | ✅ 已实现（2026-09-22：每页 `SafeArea` + 窗口标题；原只映射 `Content`） | `maui-ohos aef91b0b` + `ohos-workload 29f1fbf`；原缺口 `OpenHarmonyWindowHandler.cs:9` |
 | 键盘 / 焦点 | 仅文本控件（Entry / Editor）有焦点处理；非文本焦点遍历 / 硬件键转发为记录在案的 shell/host 缺口 | `OpenHarmonyEntryHandler.cs:81`、`OpenHarmonyEditorHandler.cs:70`、`b439bf73` |
 | ImageButton | ✅ 已实现（2026-09-22：已注册，含 `FontImageSource` 字形支持） | `maui-ohos 71df935f`；原缺口 `MauiOpenHarmonyExtensions.cs:15` |
