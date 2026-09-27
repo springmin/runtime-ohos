@@ -40,9 +40,9 @@
 | `hello-mauiapp-probe4-unsigned.hap` | 223,178 | `d24d26cd168ee34ea6c6352e80d25a556a096765b0f95d163203b8789e3f8d63` | P4：逐依赖预检 |
 | `new-features-device-checklist.md` | 52,580 | `8d30542087d70eac1d51bdc41bf00962e6cab95dec0a0014554de088188c6c54` | 本轮新功能 M1–M13 真机清单（2026-09-24 与仓库文档同步重传，kit #22 口径）|
 | `tester-run.sh` | 73,375 | `6ca2093e8ed2b76b6ca73b0c9e8ad87fa07a14c86514a9d21c75d790ac5129b1` | **v8**（内嵌 `SCRIPT_VERSION="8 (2026-09-24)"`；仓库脚本 commit `8b162a1`）：校验 + 安装 + 启动 + 30 s hilog + RM1 无重建 app-lib/dlopen 证据；bootstrap/rawfile 失败特征、payload 状态与逐 hap kit 自检（`resources.index`/libs/`payload=yes\|no`/abc 头，`meta/kit-selfcheck.txt`、`kit_index_ok`）；v8 的 exec-memory 证据采集（`hilog/hilog-execmem.txt`：`xwe=0\|1 source=default\|file` 决策行 + `OHOS_DOTNET probe:`，`summary.txt` 的 `execmem_capture`/`execmem_lines`）；发任何 hdc 命令前校验 bundle 名（A1）；复用已校验摘要产出 kit 摘要（P16）。**kit #28 波次未改动、未重传**（仍与仓库逐字节一致） |
-| `aot-haps-README.md` | 3,414 | `105e88fc6c33ddf6504036904bde5479200c0baf1c4809660a19bc083ae7f737` | AOT hap 资产说明（R2-2，独立于本 kit；kit #28 波次未动） |
-| `aot-haps.tar.gz` | 17,090,044 | `67519d118d14ffb48d9db19bf1c86ec3582ce94b9db1602fa2900e041bd69ef1` | MAUI NativeAOT hap 变体（另有资产，不在 kit 内；kit #28 波次未动） |
-| `aot-haps.tar.gz.sha256` | 82 | `f4d5cdbccfc6fdd42fde2ec3632bcace0b187adca969700a4ae7dcdbe74a9a7c` | AOT hap 边车（未动） |
+| `aot-haps-README.md` | 4,092 | `46ef70b1ecbd670681c44dfc6ecf1424f005f64edd1f2a66c97a76e75d2b18d6` | AOT hap 资产说明（AOT-RECUT 2026-09-27：已内置桥宿主 `bb51826e…`，开箱 `aot=1`） |
+| `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3d66bb69c1797627aac7553c29f7de29ea25874a0ac45505470fa490d` | MAUI NativeAOT hap 变体（另有资产，不在 kit 内；AOT-RECUT：宿主含 `start_app` AOT 桥） |
+| `aot-haps.tar.gz.sha256` | 82 | `a4e2c74f6eac0e0c07dd720ca487f1ada56e97be80d6320d4492e5badbb8257e` | AOT hap 边车（内容 = AOT tar 的 sha256） |
 | `ohos-interpreter-pack-README.md` | 3,324 | `44c4fc78b3ef3961c98da167acdb7d9938f7125648700ba2efc8d2080347314f` | 解释器 pack 说明（R2-INTERP-FULL，独立于本 kit；kit #28 波次未动） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3da9c26602556ce141375644d61541bfdfe7d3eceff2de52aa113f873` | 解释器 pack（另有资产；`interp.txt` 开关由宿主消费，不在 kit 内；kit #28 波次未动） |
 | `ohos-interpreter-pack.tar.gz.sha256` | 95 | `4eb569cbe3551d856fec10bc9d852e9d45de337b076cf2dd3e75d5fcb378424b` | 解释器 pack 边车（未动） |
