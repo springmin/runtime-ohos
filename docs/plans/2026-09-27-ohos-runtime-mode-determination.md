@@ -12,13 +12,13 @@
 > **当前 kit = #29**（R3 增量 = CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连，
 > 见 `2026-09-28-ohos-tester-handoff-kit29.md`；下表 kit #28 行为最近一次 API 复核快照，新包数字以 release「## Integrity」为准）。
 
-## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后）
+## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后；harmony 行 2026-09-28 MAPFIX 后复核）
 
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #28） | 590266238 | 196,220,486 | `091dcc56…`（sidecar `d7efd251…`） | 5 个 JIT hap＋文档＋verify-kit |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
-| `harmony-haps.tar.gz`（新，A1-HARMONY-KIT） | 592541627 | 196,118,871 | `f7a4faa2…`（sidecar `be6452e3…`） | 5 个 harmony-flavor hap（壳 **263,784 B / `d3a7b718…` @13.0.1.0**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5 |
+| `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
 | `tester-run.sh` **v11**（当前） | 592647629 | 119,452 | `2355e493…` | v11 = `--mode-matrix` 一键矩阵（§2.0）+ `--a11y-probe`；v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
 
@@ -118,9 +118,15 @@ hdc shell "rm -f /data/storage/el2/base/haps/entry/files/interp.txt"
 > 壳 = HarmonyOS SDK 构建（包内即 harmony flavor：`MapOverlay.ets` + LiveView sink，**无需测试方自建壳**）；
 > 前置 = 自备重签材料（自签会被 9568257/9568344 拒绝，属预期）＋ **AGC 开通/权益**（Map 地图服务 + 证书指纹；
 > LiveView 实况窗 TIMER 权益 + 设备开关；Push/Account 按需）。5 个 hap 与 kit 同包名，装 harmony 会顶替 kit 主包；
-> 回 JIT 重装 kit hap（同 §2.2）。静态形态（交付方逐 hap 断言 82/82 + kit `verify-kit.sh --expected-abc 263784` KIT OK）：
-> abc 263,784 B/`d3a7b718…`（PANDA 13.0.1.0）、libs 269（14 `.so`+254 payload+marker）、hap 内宿主 269,216 B/`bb51826e…`、
-> `module.json` 与 kit #28 对应 hap 逐字节相同、14 `.so` 均带 `.codesign`；默认 JIT payload 不变（**AOT 走 §2.2 的 `aot-haps.tar.gz`**）。
+> 回 JIT 重装 kit hap（同 §2.2）。静态形态（交付方逐 hap 断言 **102/102** + kit `verify-kit.sh --expected-abc 291628`
+> KIT OK；与同提交默认 control 构建**仅 `ets/modules.abc` 不同**）：abc **291,628 B/`a637a513…`**（PANDA 13.0.1.0，
+> 含 `entry/ets/map/MapOverlay` 模块记录 + `mapOverlayView`/`markerClick`/`cameraIdle` 符号）、libs 269
+> （14 `.so`+254 payload+marker）、hap 内宿主 285,600 B/`5248c6a9…`、`module.json` 与 kit #29 对应 hap 逐字节相同、
+> 14 `.so` 均带 `.codesign`；默认 JIT payload 不变（**AOT 走 §2.2 的 `aot-haps.tar.gz`**）。
+> **更正（MAPFIX 2026-09-28）**：旧 A1 件（abc 263,784 B/`d3a7b718…`）的「`MapOverlay.ets` 真编译」不成立 ——
+> 模块仅被复制、从未进编译图（abc 无模块记录，bit1 只能为 0）。本版由构建脚本向 harmony 的 `Index.ets`
+> 副本注入静态 import 并修好 `MapOverlay.ets:135` 的 NodeController 无参构造，CI 门
+> `HARMONY_REQUIRE_MAP_OVERLAY=1` 由 WARN 转绿；新 tar `9b0506fa…`（旧 `f7a4faa2…`）。
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app.hap --install --start --capture 60 --out tester-report-harmony
 ```

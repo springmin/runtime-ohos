@@ -11,7 +11,7 @@
 |---|---|---|---|
 | `device-test-kit.tar.gz`（kit #29） | 196,990,205 | `e895cc0a…` | 5 个 JIT hap＋`verify-kit.sh`＋文档 |
 | `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`） |
-| `harmony-haps.tar.gz` | 196,118,871 | `f7a4faa2…` | harmony 壳 5 变体（AGC 就绪时用） |
+| `harmony-haps.tar.gz` | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；MAPFIX 重切：overlay 真编译，abc 291,628 B/`a637a513…`；旧 196,118,871/`f7a4faa2…` 无 overlay 记录已替换） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器 payload（`interp.txt=3`） |
 | `tester-run.sh` v11 | 119,452 | `2355e493…` | 执行器（`--mode-matrix` / `--a11y-probe`） |
 
@@ -23,7 +23,8 @@
    → 回传 `mode-matrix/` 全目录＋四个 `tester-report-*.tar.gz`。
 3. **harmony 变体（AGC 就绪时）**：解压 `harmony-haps.tar.gz`，按《自签说明》重签 →
    `sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app.hap --install --start --capture 60`
-   → 期望 `IsOverlayAvailable=true`（flags bit1）、Map `Ready/MarkerClick/CameraIdle`、LiveView create/update/stop
+   → 期望 `IsOverlayAvailable=true`（flags bit1；MAPFIX 后 abc 已含 `entry/ets/map/MapOverlay` 模块记录，
+   无 AGC 权益时才按降级路径登记）、Map `Ready/MarkerClick/CameraIdle`、LiveView create/update/stop
    → 回传截图/录屏＋状态原文＋AGC 开通截图。
 4. **无障碍采集（可并入任一轮）**：加 `--a11y-probe` → 期望 `a11y/selfcheck.txt`（`accessibilityStatus: 1`＋正整数节点数）与 `a11y/hilog-a11y.txt`（缺失容忍、不算失败）→ 回传 `a11y/` 两文件＋`summary a11y_*`。
 

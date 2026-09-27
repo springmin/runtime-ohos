@@ -45,10 +45,12 @@
 ## 0. AGC 最小点亮顺序（harmony 变体；按最小依赖排序）
 
 > 目的：以最少 AGC 操作点亮最多判定点；① 未完成时 ②–⑤ 都会因包名/签名指纹不一致失败（如 `1000900010`）。
-> 全流程还需 harmony 壳（`harmony-haps.tar.gz`）与测试方自备重签材料（自签会被 9568257/9568344 拒绝，属预期）。
+> 全流程还需 harmony 壳（`harmony-haps.tar.gz`；2026-09-28 MAPFIX 重切：abc 291,628 B/`a637a513…`，overlay 真编译 ——
+> 旧 A1 件 abc 263,784 B/`d3a7b718…` 无 overlay 模块记录、bit1 恒 0）与测试方自备重签材料
+> （自签会被 9568257/9568344 拒绝，属预期）。
 
 1. **① App + 签名证书指纹 + Profile（必须先有）**：AGC 创建应用（bundleName `com.example.hellomauiapp`）→ 登记测试方签名证书指纹 → 下载绑定 UDID 的调试 Profile（p7b）随重签使用。
-2. **② Map AppKey（可最先验证 harmony overlay）**：AGC 开通地图服务并为该应用配置 AppKey（与 ① 指纹一致）→ 装 harmony hap：`IsOverlayAvailable=true`（flags bit1）、地图视图出现、`Ready` 事件可达；无 AppKey 时 overlay 调用降级不抛。
+2. **② Map AppKey（可最先验证 harmony overlay）**：AGC 开通地图服务并为该应用配置 AppKey（与 ① 指纹一致）→ 装 harmony hap（MAPFIX 重切件：abc 含 `entry/ets/map/MapOverlay` 模块记录 + `mapOverlayView`/`markerClick`/`cameraIdle` 符号；旧 A1 件缺记录、`IsOverlayAvailable` 不可能为 true）：`IsOverlayAvailable=true`（flags bit1）、地图视图出现、`Ready` 事件可达；无 AppKey 时 overlay 调用降级不抛。
 3. **③ Push 权益**：AGC 开通推送 + 含推送权益的 Profile → `GetTokenAsync()` 返回 token（失败按 `1000900010`/`1000900012` 排查）。
 4. **④ LiveView 开关**：AGC 申请实况窗 TIMER 权益 + 设备实况窗开关打开 → create/update/stop 出卡片（开关关 `-3`/`1003500004`、权益未批 `1003500005`）。
 5. **⑤ Account scope**：AGC 申请 `quickLoginAnonymousPhone` scope 审批 → 授权返回匿名手机号＋`authorizationCode`（未批按 `1001502014`/`1001500001` 排查）。
@@ -67,7 +69,7 @@
 | 7 | **列表深度与滚动物理（P1b-LIST；全托管，壳/host 零改动）**：增量加载（`RemainingItemsThresholdReached` 单次触发+重武装）；`ItemsUpdatingScrollMode` 三模式按条目身份锚定；`ScrollTo(index, group, position, animate)` 全参数（已可见项不动、折叠组自动展开、160–420 ms ease-out）；组头/组尾 + `SetGroupCollapsed`/`ToggleGroupCollapsed`（换源/投影变化重排防泄漏）；滚动物理（越界橡皮筋 64 px、回弹、有界过冲、滚动条 hold/fade）；1,200 条窗口 13–22 行、稳态 ≤1 KiB/帧 | 长列表滚动到底自动增量加载（不重复触发）；`ScrollTo` 定位/动画；点组头折叠/展开不跳变；拖拽越界有阻尼回弹；滚动条自动隐藏 | **列表**（§2：入口为演示长列表/探针页；无入口登记「未测」） |
 | 8 | **图片解码深度（P2b-IMG）**：低清先出（目标长边 ≥128 px 时首帧按目标/8 预览并请求重绘）→ 下一帧按显示尺寸解码替换；pixelmap 缓存键 = 内容哈希+长度+请求尺寸（LRU 8 项/32 MiB）；单边 clamp 4096（`OH_DecodingOptions_SetDesiredSize`，API 12+，走可选库 shim）；失败画占位一次不逐帧重试；旧 host 回退全尺寸解码（导出契约 141 不变） | 大图先出低清、随后变清晰（≤1 帧差，窗口 resize 命中一次）；解码位图显著变小（本机 bench：4.77 MB 4000×3000 源 1080×810 目标：48.0 MB → 3.5 MB；3.27 MB 3400×2550 源 1032×200：34.7 MB → 0.8 MB）；失败不逐帧重试 | **图片**（§2；需演示页/探针页有大图入口） |
 | 9 | **深链与激活（P2c-DEEPLINK）**：冷启动 `onCreate` 捕获 want → `bootstrap` 在 `startApp` **前** `host.notifyActivation`（uri/action/parameters/linkHosts/sequence）→ 宿主注册前按序入队（上限 8、丢最旧）并在注册时回放；热激活 `onNewWant` 同通道（sequence 去重/过期丢弃）；路由 `app://host/path` → `//host/path`、白名单 `https://` = 打包 `OpenHarmonyAppLinkHosts` → app.json `linkHosts`；无 Shell 时已注册路由走 `NavigationPage.PushAsync`，未知路由记状态不抛；Shell 路径过 `GoToAsync`（`Navigating` 可取消、绝不半应用）（导出契约 141 → 143） | 从浏览器/其他应用唤起：冷启动直达目标页、已运行时热激活换页且不重复；未注册路由不崩、有状态记录 | **深链**（§2；`module.json5` 的 `skills[].uris` 清单声明与系统投递为设备后续项） |
-| 10 | **门禁与重建**：ui/shell abc 重编 **281,052 B**（headless 20,916 B；三个 preview pack 同源）、导出契约 **143/143**、交互套件 **387/floor 367**（kit11–kit13 TTS、kit14 HUKS，P0c/P1a/P1b/P2b/P2c 各批叠加；`[suite] checks=387 total=387 floor=367 assert=True`）；`verify-kit.sh` abc 期望重锚 `281052`/`20916`；`tester-run.sh` 升 **v11**（119,452 B）；并列资产沿用 `aot-haps.tar.gz` / `ohos-interpreter-pack.tar.gz` / `harmony-haps.tar.gz`（以 release 实际资产为准） | 校验步骤、证据字段与 #28 相同，**只换 abc 期望值（281,052/20,916）与脚本版本（v11）**；用 #28 的 `264136` 或更旧值校验本包会 FAIL（脚本预期） | 校验时以 release「## Integrity」与包内 `verify-kit.sh` 为准 |
+| 10 | **门禁与重建**：ui/shell abc 重编 **281,052 B**（headless 20,916 B；三个 preview pack 同源）、导出契约 **143/143**、交互套件 **387/floor 367**（kit11–kit13 TTS、kit14 HUKS，P0c/P1a/P1b/P2b/P2c 各批叠加；`[suite] checks=387 total=387 floor=367 assert=True`）；`verify-kit.sh` abc 期望重锚 `281052`/`20916`；`tester-run.sh` 升 **v11**（119,452 B）；并列资产沿用 `aot-haps.tar.gz` / `ohos-interpreter-pack.tar.gz` / `harmony-haps.tar.gz`（以 release 实际资产为准；**harmony-haps 于 kit 发布后 MAPFIX 重切**：overlay 真编译，abc 291,628 B/`a637a513…`、tar 196,898,796 B/`9b0506fa…`、逐 hap 断言 102/102，CI 门 `HARMONY_REQUIRE_MAP_OVERLAY=1` 由 WARN 转绿 —— 旧 A1 件 abc 263,784/`d3a7b718…` 无 `entry/ets/map/MapOverlay` 模块记录） | 校验步骤、证据字段与 #28 相同，**只换 abc 期望值（281,052/20,916）与脚本版本（v11）**；用 #28 的 `264136` 或更旧值校验本包会 FAIL（脚本预期） | 校验时以 release「## Integrity」与包内 `verify-kit.sh` 为准 |
 
 ## 2. 本轮判定点（按包内入口逐个勾）
 
@@ -123,7 +125,8 @@
    → 证据包含 `hilog/hilog-{applib,dlopen,bootstrap,execmem}.txt`、`device/payload-*.txt`、
    `meta/kit-selfcheck.txt`（`kit_index_ok`/`payload=yes|no`）与 `summary.txt`（`aot_route`/`interp_mode` 新键）。
    模式矩阵（四态一键）：`--mode-matrix`；无障碍专项：`--a11y-probe`（`a11y/` + `summary a11y_*`）。
-3. 有 harmony flavor / HMS 的测试者请附：壳的构建出处（可直接取 `harmony-haps.tar.gz`，仍需自备重签材料与
+3. 有 harmony flavor / HMS 的测试者请附：壳的构建出处（可直接取 `harmony-haps.tar.gz`，MAPFIX 重切件
+   abc 291,628 B/`a637a513…`、含 overlay 模块记录；仍需自备重签材料与
    AGC 权益；TTS 无 AGC 门槛、只要 HMS 设备）、TTS speak/stop/locales 证据（计时 + 列表）、HUKS 重启读回
    与删除清 key 证据、深链冷/热激活截图与日志、Map/LiveView/AOT 证据同 #28、解释器轮附 `interp=` 行与 maps 摘录。
 4. AOT hap 不要用 kit `verify-kit.sh` 的 JIT 期望值（14 `.so`）核对（AOT hap 只有 3 个 `.so`）；用
