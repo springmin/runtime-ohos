@@ -26,8 +26,9 @@
 - 版本号不变：runtime/aspnetcore `11.0.0-rc.1.<buildid>`、sdk `11.0.100-rc.2.<buildid>`（`eng/Versions.props` 未被这 91 个提交改动；rc2 只在 `release/11.0-rc2` 线）
 - 对已提交 PR（#132827/#132953）与计划 PR（N1–N16）无影响：`pr/*` 为独立 ref；N1–N16 的 09-22 排练基线 `6f4751a142c` 已含本段全部提交且排练 CLEAN；仅 `pr/ohos-packs` 与 `CoreCLR.sfxproj` 有文件交集（其 patch 已针对 #133111 预先解冲突）
 
-## 4. 后续
+## 4. 后续与结果
 
-- 用 `runtime_ref=feature/openharmony` 重跑三仓 CI 验证（当前发布轮为 pre-A 制品）
-- 若发布包含本合并的制品：注意 versions.env 的资产 sha256 锚点与版本串策略（同版本串重发需更新锚点，或换新 buildid）
+- A 发布轮 `36312607274`（2026-09-27 19:16 CST）**成功**：三仓 `-ohos` 构建线资产已用含 A 的字节覆盖（runtime/SDK tarball updated 11:15Z）
+- 锚点已刷新（sdk-ohos `55be4aa6f5`）：`RUNTIME_TARBALL_SHA256`/`SDK_TARBALL_SHA256` 对应 A 轮资产；`SDK_VERSION` 对齐已发布标签 `11.0.100-rc.2.26451.109`（此前 rc.1 pin 与 rc.2 发布标签错位）
+- 可选：`ohos-release-mirror.yml`（workflow_dispatch）把 A 资产镜像到 `-openharmony` 分发线
 - rc2 迁移（合 `release/11.0-rc2` + 换 pin 组）另案
