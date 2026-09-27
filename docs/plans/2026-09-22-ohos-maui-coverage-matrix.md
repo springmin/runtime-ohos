@@ -5,7 +5,7 @@
 > + `ohos-workload`（`src/OpenHarmonyHost` 原生宿主/NAPI、`src/Microsoft.OpenHarmony.Hosting` 托管宿主、
 > `scripts/build-arkts-shell.sh` 壳构建、`packs/`、`test/`）+ 校验套件
 > （`test/maui-platform-verify`，写作时点 284 条：271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能；现为
-> 357 条 `[verify]`/floor 337，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
+> 373 条 `[verify]`/floor 353，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
 > **方法**：只读代码审计，无构建、无测试运行；每条结论可回指到文件与行。
 > **真机口径**：全部结论均为**离设备**核实；真机现状见 §6。上设备前，"已实现"≠"已验证"。
 > 本文件是独立盘点产物，不替代主审计 `2026-09-19-ohos-code-audit.md` 与最终状态 `2026-09-21-ohos-final-status.md`。
@@ -67,6 +67,7 @@
 |---|---|---|
 | P0c-TEXT-EDIT 文本编辑深度（自绘合成路线） | 光标：按字符宽度前缀和的插字符 + 500 ms 闪烁节拍 + 焦点门（非焦点不显示、不请求帧）；随滚动/焦点定位（拖拽按按下时内容空间差值换算）。选区：高亮用同一前缀和（原比例估算移除）；两个圆形选择手柄（半径 9 px、命中 24 px slop）绘制/命中/拖拽，拖拽只移动被抓手的一端（另一端为锚），并回写 `InputView.CursorPosition`/`SelectionLength`；文本手势取消在飞惯性并抑制抬手甩动（`SuppressReleaseFling`）。IME 组合（预编辑）：壳 `onChange` 的 `PreviewText` 第二参数经 `host.notifyTextComposition(value, offset)` → `ohos_host_register_text_composition`；托管在 offset 处绘制预编辑（高亮 + 下划线）并把插字符放到组合串之后，提交（空值）清预编辑并把光标推进到 `offset + 组合长度`；托管光标经 `ohos_host_keyboard_set_caret`（随 text-input sink 第二参数）同步到壳输入框；无组合导出/旧 host 时如实降级（无预编辑、不抛）。`Editor` 补齐 `CursorPosition`/`SelectionLength` 映射；`PublicAPI` 增加 public `MapCursor` | `maui-ohos e6b6ecbb`；`ohos-workload 45756e0`（壳/host）、`5e08861`（套件/文档） |
 | P1a-ANIM 动画与转场深度（自绘合成路线） | 页面转场：NavigationPage/Shell 的 push/pop 在栈提交后对**新页**做进场（不透明度 0→自身值 + 水平轻位移：页宽 5%、上限 48 px，push 自右/pop 自左），由共享帧循环驱动；`DurationMs`（180）/`Curve`（CubicOut）/`Enabled`/`SlideFactor` 可配；几何在首帧惰性就位（MAUI 换页会重置页面 Width，回退 Width→Frame→SurfaceViewportWidth），提交时精确还原捕获的不透明度/位移，中断的转场先提交再开新。控件状态：Switch 旋钮+轨道（0→1 插值，轨道色以 alpha 叠加实现无分配混合）、CheckBox 对勾双段 draw-on、按压反馈（保留既有 OrangeRed 观感，以跟随进度的 alpha 叠加绘制；渐变/图片底按进度做 50% 调暗）——每通道一个惰性 `ProgressChannel`（到达目标显式退休以便重新注册），帧循环上无每帧分配。共享元素（最小可行）：键为 `AutomationId` 的保留前缀 `shared:`；出页 frame 在栈变更时捕获（虚拟 frame 无效则回退平台 view 的最后绘制 frame），入页元素在首帧读取**实时** frame，做位置 + 等比缩放（源/目标宽度比，clamp 0.2..5）+ 不透明度 morph；约束文档化（只动画进场元素——合成器只画一页；每次导航一个主元素为已验证路径）。减少动效：壳经 `@kit.AccessibilityKit`（API 23，惰性导入 + syscap/typeof 双门）→ `host.notifyAnimationReduce` → `ohos_host_animation_reduce_set`（宿主记忆最后值并对迟到的 listener 回放；导出契约 139→141）→ `OpenHarmonyMotion.ReduceMotion`：转场跳过、控件 snap、`OpenHarmonyTicker.SystemEnabled=false`（MAUI 在下一 tick force-finish）。公开动画对齐：ticker 运行期在帧循环注册只请求重绘的驱动（`FadeToAsync/TranslateToAsync/ScaleToAsync` 采样仍由 ticker 的定时器提供，重绘按平台帧对齐——自己绘制面只画 dirty）；顺带修复渲染器 transform/alpha 作用域（子树继承、不泄漏给兄弟、后端 alpha 字段随退出显式恢复） | `maui-ohos f9b63ee2`；`ohos-workload 150c14d`（壳/host/abc）、`784ddbb`（套件/文档） |
+| P1b-LIST 列表深度与滚动物理（自绘合成路线；全托管，壳/host 零改动） | 增量加载：`RemainingItemsThresholdReached` 进入阈值区触发一次、区内滚动不重复、离开阈值区或条目数变化后重新武装（外加发送中的重入门，Reached 处理器扩源不会逐帧触发）。`ItemsUpdatingScrollMode`：KeepItemsInView/KeepLastItemInView 按**条目身份**（索引会在前方插入行时指向别的条目）锚定首/末可见条目并保持其屏幕位置/底对齐；KeepScrollOffset 保持原始偏移并 clamp 到收缩后的内容末端；换源丢弃物化行、槽位投影变化重排（池只回收模板行，组头/组尾重建，避免旧文本泄漏成条目）。`ScrollTo(index, group, position, animate)`：Start/Center/End/MakeVisible 全参数（已可见项不动、折叠组自动展开），`animate:true` 经共享帧循环做 160–420 ms ease-out 三次缓动（每视图一个动画；减少动效直接落位；程序化写偏移不再被采样成甩动速度）。分组：`GroupFooterTemplate` 组尾行（行布局 = 组头 + 条目 + 组尾）；`OpenHarmonyCollectionViewExtensions.SetGroupCollapsed/ToggleGroupCollapsed/IsGroupCollapsed`（PublicAPI 基线已登记）在 **ItemsSource 不变**前提下只改槽位投影与偏移（折叠视口上方组时上拉偏移，下方内容不跳），`SetGroupHeaderTogglesCollapse(true)` 打开组头点击折叠（物化行的 tap 随开关重挂）。滚动物理：拖拽越界橡皮筋（上限 64 px）、抬手回弹弹簧、甩动撞边把剩余速度转为有界过冲后精确停在边上（减少动效改为硬 clamp）；滚动条 hold/fade/`ThumbOpacity` 可调、减少动效在 hold 到期帧直接隐藏、淡出结束清注册位（修复此前每次进程只淡出一次）；1,200 条长列表检查窗口有界（13–22 行）与稳态滚动 ≤1 KiB/帧分配。壳/host 无改动：UI abc 278,760 B / `c84fbf34…`、导出契约 141 不变 | `maui-ohos cde18e60`（列表）、`150ac92f`（物理）；`ohos-workload 2ad391b`（套件/文档/工作流 pin） |
 
 真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。设备侧 IME 行为（系统输入法的预览文本节拍、隐藏输入框内的组合）仍需真机确认。
 
@@ -123,26 +124,27 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **357** 条 `[verify]`、门限 **floor 337**（P1a-ANIM 的 10 条动画/转场检查
-  加在 P0c-TEXT-EDIT 的 7 条与 P2a-HUKS 的 3 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
-  与图像批次并行时该行将变为 361/floor 341，以套件自报为准；
+- `test/maui-platform-verify` 期望 **373** 条 `[verify]`、门限 **floor 353**（P1b-LIST 的 16 条列表/物理检查
+  加在 P1a-ANIM 的 10 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
   315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查；334/floor 314 为 KIT-EXT2 批次值，
-  340/floor 320 为 P2a-HUKS 批次值；`6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内）。
-- 切片 pin：`ohos-workload` `784ddbb`（2026-09-27，与本矩阵同批）将三个 workflow 的 `maui_ohos_ref`
-  固定到 `maui-ohos` `f9b63ee2b5f6883d0a0c79c1cbc1e5b0f3a19e46`（P1a-ANIM tip：帧驱动转场/控件状态/共享元素
-  + ticker 重绘驱动 + 渲染器 transform/alpha 作用域修复；其下依次为 P0c-TEXT-EDIT、P2a-HUKS、A2-TTS、
-  R2-SHELL-EXT/KIT-EXT2 批次），下限 337。
+  340/floor 320 为 P2a-HUKS 批次值；347/327 为 P0c-TEXT-EDIT、357/337 为 P1a-ANIM 批次值；
+  `6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内）。
+- 切片 pin：`ohos-workload` `2ad391b`（2026-09-27，与本矩阵同批）将三个 workflow 的 `maui_ohos_ref`
+  固定到 `maui-ohos` `150ac92f66b58c9d9e416b4df6dca8b19f467fab`（P1b-LIST tip：列表深度 + 滚动物理；
+  其下依次为 P1a-ANIM `f9b63ee2`、P0c-TEXT-EDIT `e6b6ecbb`、P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2
+  批次），下限 353；两个 workflow_dispatch 的输入默认值一并推进（此前停滞在 `e6b6ecbb`，手动派发会
+  绕过 env pin 编译旧切片）。
   演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
   → `ab09918` → `c4ac6a5e` → …（KIT-EXT2 334/314、P2a-HUKS 340/320）→ `e6b6ecbb`（347/327）
-  → `f9b63ee2`（357/337）。
-- 最近一次本地完整验证（2026-09-27，P1a-ANIM）：interaction **357** 条（隔离 worktree，含本轮切片）、
-  0 Unhandled、四条性能门 `within=True`（帧 avg 2.63 ms、4,504 B/帧）；pixel `PIXEL ASSERTIONS PASSED`；
-  markdownlint-cli2 0.23.3 0 issues；
-  `scripts/build-arkts-shell.sh` 三包同源（UI abc 278,760 B / `c84fbf34…`，headless 18,532 B / `d7ec9ca7…`，
-  abc 13.0.1.0，0 ArkTS 错误）；`scripts/build-host.sh` nm 门（141 导出）与
-  `check-host-exports.py --cross-check` 全绿；
-  `selftest-build-arkts-shell.sh`（165 项）、`selftest-packs.sh`（25 项）、`selftest-repo-hygiene.sh`（25 项）全绿。
+  → `f9b63ee2`（357/337）→ `150ac92f`（373/353）。
+- 最近一次本地完整验证（2026-09-27，P1b-LIST）：interaction **373** 条（隔离 worktree，含本轮切片）、
+  0 Unhandled、四条性能门 `within=True`（帧 avg 2.96 ms、4,496 B/帧）；pixel `PIXEL ASSERTIONS PASSED`；
+  markdownlint 0 issues；
+  `scripts/build-arkts-shell.sh --check-pack-abc` 三包同源（UI abc 278,760 B / `c84fbf34…`，
+  headless 18,532 B / `d7ec9ca7…`，abc 13.0.1.0，壳源码未改）；host 源码未改（导出契约 141 名，
+  `check-host-exports.py --cross-check` 全绿）；
+  `selftest-build-arkts-shell.sh`（162 项）、`selftest-packs.sh`（25 项）、`selftest-repo-hygiene.sh`（25 项）全绿。
 - 历史 CI：`df221b6` 上三条 run 全绿：interaction `35629780806`、pixel `35629780800`、markdownlint `35629780817`
   （均 2026-09-21T17:05:36Z）。
 - 此前 interaction 红的原因是 pin 停在 `90c8373f`（缺 B 系列符号），属 pin 未推进，不是套件回归。
@@ -150,7 +152,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 6. 真机状态（caveat）
 
-- 上述所有内容均为**离设备**验证；套件（现 357 条，见 §5）与像素套件只在无设备环境运行。
+- 上述所有内容均为**离设备**验证；套件（现 373 条，见 §5）与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
   此前 `24.0.0.0` 超出设备 ark runtime）。**kit #28 为当前发布**（含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关；数字入口见 release「## Integrity」）；
@@ -167,7 +169,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 |---|---|---|---|
 | 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；待 **stock kit #28** 复测（判定点见里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（357 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 357/floor 337） |
+| 3 | 真机验证扫尾（373 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 373/floor 353） |
 | 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」 |
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
@@ -177,7 +179,7 @@ Window / SafeArea / 标题收尾 —— 见 §1b（提交锚点）。
 `IApplication` handler、列表/轮播/滑动补齐、Shell 标题栏镜像 —— 见 §1b。
 原 #4（推进 CI 切片 pin）经 `fb533f0` 到 `ab09918` 持续推进；interaction 套件现由 `ohos-workload` 的
 workflow 直跑 `test/maui-platform-verify`（编译 pin 见 `.github/workflows/interaction-regression.yml`，
-套件 357/floor 337，pin `maui-ohos f9b63ee2`）。
+套件 373/floor 353，pin `maui-ohos 150ac92f`）。
 
 §4 的 **SDK 阻塞清单**：TextToSpeech / Hot Reload / arm32 不变；Map 转方案 (b) 能力探测已落地、
 Share Kit 多文件分享转已落地（无 Kit 时仍降级）；原 **BLE GATT** 一栏已移出（以 host/NAPI/壳桥接的
