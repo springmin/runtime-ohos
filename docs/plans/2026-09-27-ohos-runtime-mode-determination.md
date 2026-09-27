@@ -1,8 +1,8 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
-> 判定用 `tester-run.sh` **v11**（119,452 B / `2355e493…`，`script_version=11 (2026-09-27)`：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`）：证据包 `tester-report-*.tar.gz` 含
-> `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）；
+> 判定用 `tester-run.sh` **v12**（126,658 B / `87763a3e…`，`script_version=12 (2026-09-28)`：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`，v12 起 `summary runtime_mode` 读 hap `libs/<abi>/runtime-mode.txt` 且 `interp_mode`/`aot_route` 按 file（interp.txt）> manifest（清单）> default 取值）：证据包 `tester-report-*.tar.gz` 含
+> `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|1(manifest)|<unavailable>`、`interp_mode=<v>(file|manifest|default)|<unavailable>`、`runtime_mode=<v>(hap)|invalid(<值>)|<absent>`（缺失容忍；file>manifest>default）；
 > 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）；
 > **打包期单开关（MS-MODE，2026-09-28）**：`-p:OpenHarmonyRuntimeMode=jit|aot|interp`（默认 jit）直接把同一 publish 产出对应形态——
 > aot 校验 `lib<stem>.so` 存在，interp 可用 `-p:OpenHarmonyInterpreterPack=<解包目录>` 换入 `libcoreclr.so`+`libclrinterpreter.so`；
@@ -20,7 +20,7 @@
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
-| `tester-run.sh` **v11**（当前） | 592647629 | 119,452 | `2355e493…` | v11 = `--mode-matrix` 一键矩阵（§2.0）+ `--a11y-probe`；v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
+| `tester-run.sh` **v12**（当前） | 593961018 | 126,658 | `87763a3e…` | v12 = `runtime_mode` 清单键（`libs/<abi>/runtime-mode.txt`）+ file>manifest>default 回退 + 清单 interp 的 Run C（见 §2.0）；v11 = 119,452 B / `2355e493…`（`--mode-matrix` + `--a11y-probe`）、v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
 
 ## 0. 四态矩阵
 
@@ -28,7 +28,7 @@
 |---|---|---|---|---|
 | JIT | kit #29 stock hap（#28 快照同流程） | `xwe=0 source=default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
 | AOT | aot-haps（已内置桥宿主）＋重签 | `NativeAOT payload … aot=1` | managed 输出，且**无** `The application to execute does not exist` | tar |
-| 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签 | `interp=3 source=file` | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
+| 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签（或清单 `runtime-mode.txt=interp` 的包） | `interp=3 source=file`（清单包为 `interp=3 source=manifest`） | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
 | 渲染/交互 | 任一态起来后 | —（功能性） | ①首帧 ②触摸→handler ③导航 ④列表/WebView | 截图/录屏/日志 |
 
 ## 1. 判定树（自上而下；先证跑通，再判模式）
@@ -36,7 +36,7 @@
 1. `probe: 1=OK`？否（`1=1|12|13|38` 或启动 SEGV/`mprotect` 拒绝）→ 写 `xwe.txt=1` 复跑 A/B，两轮都记录；仍未通按崩溃分支取证。
 2. 应用 managed 起来了（`[maui] openharmony build …`＋首帧）？否 → 按崩溃分支（applib/dlopen/bootstrap + `aot=`/`interp=` 行）取证，不进入后续态。
 3. `aot=1`＋managed 输出＋无 `The application to execute does not exist`？是 → AOT 直启成立；若见 `bridged start_app … JIT payloads only` → 误用了旧的 R2-2 资产（现资产已内置桥宿主，应无此行）。
-4. `interp=3 source=file`＋maps 含 `libclrinterpreter.so`？是 → 解释器激活；匿名 `r-x` 只计数（`Precode`/UMEntryThunk 残余先记录）。
+4. `interp=3 source=file`（清单包 `source=manifest`）＋maps 含 `libclrinterpreter.so`？是 → 解释器激活；匿名 `r-x` 只计数（`Precode`/UMEntryThunk 残余先记录）。
 5. 之后按 §2.4 做四项功能性判定；每态单独一轮，不混轮。
 
 ## 2. 精确步骤 / 期望 / 回传
@@ -54,7 +54,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 |---|---|---|
 | A | JIT stock：卸载+安装主 hap → 启动 → 录 `--capture` 秒 | kit（必需） |
 | B | XWE A/B：写 `<files>/xwe.txt=1` → `aa force-stop` → 启动/录制 → 清理 `xwe.txt` | kit |
-| C | 解释器：校验 `--interp-pack` sha → 换入 `libcoreclr.so`+`libclrinterpreter.so`（`--interp-overlay` 可换成指定脚本）→ 装变体 hap → 写 `<files>/interp.txt=3` → 启动/录制 → 清理 + 重装 stock | `--interp-pack`（或已重签的 `--interp-hap`） |
+| C | 解释器：校验 `--interp-pack` sha → 换入 `libcoreclr.so`+`libclrinterpreter.so`（`--interp-overlay` 可换成指定脚本）→ 装变体 hap → 写 `<files>/interp.txt=3` → 启动/录制 → 清理 + 重装 stock；**v12**：主 hap 清单声明 interp 时不需资产（直接装 stock hap、不写 `interp.txt`，摘要 `3(manifest)`） | `--interp-pack`（或已重签的 `--interp-hap`；或清单 interp 的主 hap） |
 | D | AOT：校验 `--aot-haps` sha → 安装 `hello-maui-app-aot*.hap` → 启动/录制 → 重装 stock | `--aot-haps` |
 
 产出 `<out>/mode-matrix/summary.txt`（每 Run 一份 `tester-report-*.tar.gz` + `mode-matrix/<run>.log` 在同一目录）：
@@ -62,7 +62,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 键 | 含义 |
 |---|---|
 | `run_<x>_install` / `run_<x>_start` / `run_<x>_alive` | 安装结果（ok / code:9568297 / …）、启动结果、存活检查 |
-| `run_<x>_aot_route` / `run_<x>_interp_mode` | `0|1|0+1|<unavailable>` / `<v>(file|default)|<unavailable>` |
+| `run_<x>_aot_route` / `run_<x>_interp_mode` / `run_<x>_runtime_mode` | `0|1|0+1|1(manifest)|<unavailable>` / `<v>(file|manifest|default)|<unavailable>` / `<v>(hap)|invalid(...)|<absent>` |
 | `run_<x>_probe_1` | 宿主 `OHOS_DOTNET probe: 1=` 的取值（JIT 可用性第一判据） |
 | `run_<x>_xwe` | `xwe=0` / `xwe=1`（A/B 对照） |
 | `run_<x>_frame` / `run_<x>_crash` | 首帧关键字命中（yes/no，未录到记 `<unavailable>`）/ 崩溃关键字（`SEGV_ACCERR`、`SIGSEGV`、`cppcrash`、`bootstrap failed`、`The application to execute does not exist`… 或 `none`） |
@@ -108,7 +108,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app-interp.hap -
 hdc shell "pidof com.example.hellomauiapp"; hdc shell "cat /proc/<pid>/maps" | grep -E 'libclrinterpreter|r-x.*\[anon' > maps-interp.txt
 hdc shell "rm -f /data/storage/el2/base/haps/entry/files/interp.txt"
 ```
-期望：`summary interp_mode=3(file)`；`interp=3 source=file`；maps 含 `libclrinterpreter.so`、匿名 `r-x` 计数照录；managed 输出；无 `SEGV_ACCERR`。
+期望：`summary interp_mode=3(file)`（清单包为 `3(manifest)`）；`interp=3 source=file`（清单包 `source=manifest`）；maps 含 `libclrinterpreter.so`、匿名 `r-x` 计数照录；managed 输出；无 `SEGV_ACCERR`。
 回传：tar（含 execmem）＋maps 摘录＋pack `sha256sum -c` 输出。
 
 ### 2.4 渲染/交互（任一态）
@@ -137,5 +137,5 @@ LiveView create/update/stop 出 TIMER 卡片（开关关 `-3`/`1003500004`、权
 ## 3. 回传物汇总
 `tester-report-*.tar.gz`（`hilog/hilog-execmem.txt`＋`summary.txt`＋install/start 日志）＋解释器轮 maps 摘录＋重签说明；
 AOT/解释器轮附被替换 .so 的 sha256。数字以 release「## Integrity」/ `.sha256` sidecar 为准（重签、重打包后必变）。
-无障碍专项（可选）：`tester-run.sh` v11 `--a11y-probe` → `a11y/`（`selfcheck.txt`＋`hilog-a11y.txt`，`summary a11y_*`）；
+无障碍专项（可选）：`tester-run.sh` v12 `--a11y-probe` → `a11y/`（`selfcheck.txt`＋`hilog-a11y.txt`，`summary a11y_*`）；
 逐项判定见 `2026-09-27-ohos-accessibility-device-verification.md`。

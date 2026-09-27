@@ -1,7 +1,8 @@
 # 复测任务单（一页）：kit #29 一轮设备判定（2026-09-28）
 
 > 目标：一轮拿全 JIT / XWE / AOT / 解释器 / harmony 五态证据，一并采无障碍。
-> 执行入口 = `tester-run.sh` **v11**（119,452 B / `2355e493…`）；判定树与细节见
+> 执行入口 = `tester-run.sh` **v12**（126,658 B / `87763a3e…`；`summary runtime_mode` 读 hap 的
+> `libs/<abi>/runtime-mode.txt`，优先级 file（interp.txt）> manifest（清单）> default）；判定树与细节见
 > `2026-09-27-ohos-runtime-mode-determination.md`，逐项勾选见 `2026-09-28-ohos-tester-handoff-kit29.md` §2。
 > 本页只给「取件 → 执行 → 回传 → 判定」。
 
@@ -13,13 +14,13 @@
 | `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`） |
 | `harmony-haps.tar.gz` | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；MAPFIX 重切：overlay 真编译，abc 291,628 B/`a637a513…`；旧 196,118,871/`f7a4faa2…` 无 overlay 记录已替换） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器 payload（`interp.txt=3`） |
-| `tester-run.sh` v11 | 119,452 | `2355e493…` | 执行器（`--mode-matrix` / `--a11y-probe`） |
+| `tester-run.sh` v12 | 126,658 | `87763a3e…` | 执行器（`--mode-matrix` / `--a11y-probe`；`summary runtime_mode=jit|aot|interp(hap)|invalid(...)|<absent>`） |
 
 ## 2. 执行顺序（每步「期望 → 回传」）
 
 1. **校验 kit**：解压后在包内 `sh verify-kit.sh` → 期望 0 FAIL / 0 WARN（abc 锚 **281,052/20,916**）→ 回传终端输出。
 2. **一键四 Run**：`sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz --aot-haps ./aot-haps.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60`
-   → 期望四 Run 不中断、`mode-matrix/summary.txt` 键齐全（`run_*_install/start/probe_1/xwe/aot_route/interp_mode/frame/crash`＋`conclusion`）
+   → 期望四 Run 不中断、`mode-matrix/summary.txt` 键齐全（`run_*_install/start/probe_1/xwe/aot_route/interp_mode/runtime_mode/frame/crash`＋`conclusion`）
    → 回传 `mode-matrix/` 全目录＋四个 `tester-report-*.tar.gz`。
 3. **harmony 变体（AGC 就绪时）**：解压 `harmony-haps.tar.gz`，按《自签说明》重签 →
    `sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app.hap --install --start --capture 60`
