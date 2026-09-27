@@ -1,8 +1,9 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
-> 判定用 `tester-run.sh` **v9**（2026-09-27 重传）：证据包 `tester-report-*.tar.gz` 含 `hilog/hilog-execmem.txt` 与
-> `summary.txt` 新键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）。
+> 判定用 `tester-run.sh` **v10**（2026-09-27 重传：新增 `--mode-matrix` 一键矩阵，见 §2.0）：证据包 `tester-report-*.tar.gz` 含
+> `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|<unavailable>`、`interp_mode=<v>(file|default)|<unavailable>`（缺失容忍）；
+> 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）。
 
 ## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后）
 
@@ -12,7 +13,7 @@
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（新，A1-HARMONY-KIT） | 592541627 | 196,118,871 | `f7a4faa2…`（sidecar `be6452e3…`） | 5 个 harmony-flavor hap（壳 **263,784 B / `d3a7b718…` @13.0.1.0**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
-| `tester-run.sh` v9 | 592440134 | 75,917 | `3c2d33bf…` | v8 = 73,375 B / `6ca2093e…`；v9 采集 `aot=`/`interp=` |
+| `tester-run.sh` v10 | 592647629 | 109,227 | `714ae9b5…` | v10 = `--mode-matrix` 一键矩阵（§2.0）；v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
 
 ## 0. 四态矩阵
 
@@ -32,6 +33,43 @@
 5. 之后按 §2.4 做四项功能性判定；每态单独一轮，不混轮。
 
 ## 2. 精确步骤 / 期望 / 回传
+
+### 2.0 一键执行（v10 `--mode-matrix`，推荐入口）
+
+```sh
+sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
+    --aot-haps ./aot-haps.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
+```
+
+一条命令跑四个 Run（每个 Run 是本脚本的独立子轮：kit 校验与 bundleName 白名单照走，**任一步失败只记录、不中断其余**）：
+
+| Run | 做什么 | 前置资产 |
+|---|---|---|
+| A | JIT stock：卸载+安装主 hap → 启动 → 录 `--capture` 秒 | kit（必需） |
+| B | XWE A/B：写 `<files>/xwe.txt=1` → `aa force-stop` → 启动/录制 → 清理 `xwe.txt` | kit |
+| C | 解释器：校验 `--interp-pack` sha → 换入 `libcoreclr.so`+`libclrinterpreter.so`（`--interp-overlay` 可换成指定脚本）→ 装变体 hap → 写 `<files>/interp.txt=3` → 启动/录制 → 清理 + 重装 stock | `--interp-pack`（或已重签的 `--interp-hap`） |
+| D | AOT：校验 `--aot-haps` sha → 安装 `hello-maui-app-aot*.hap` → 启动/录制 → 重装 stock | `--aot-haps` |
+
+产出 `<out>/mode-matrix/summary.txt`（每 Run 一份 `tester-report-*.tar.gz` + `mode-matrix/<run>.log` 在同一目录）：
+
+| 键 | 含义 |
+|---|---|
+| `run_<x>_install` / `run_<x>_start` / `run_<x>_alive` | 安装结果（ok / code:9568297 / …）、启动结果、存活检查 |
+| `run_<x>_aot_route` / `run_<x>_interp_mode` | `0|1|0+1|<unavailable>` / `<v>(file|default)|<unavailable>` |
+| `run_<x>_probe_1` | 宿主 `OHOS_DOTNET probe: 1=` 的取值（JIT 可用性第一判据） |
+| `run_<x>_xwe` | `xwe=0` / `xwe=1`（A/B 对照） |
+| `run_<x>_frame` / `run_<x>_crash` | 首帧关键字命中（yes/no，未录到记 `<unavailable>`）/ 崩溃关键字（`SEGV_ACCERR`、`SIGSEGV`、`cppcrash`、`bootstrap failed`、`The application to execute does not exist`… 或 `none`） |
+| `run_<x>_report` | 该 Run 的报告 tar 路径 |
+| `run_c_overlay` / `run_c_hap` / `run_c_hap_sha256` / `run_c_signed` / `run_c_coreclr_check` | 变体构建方式（`builtin` / `script:<路径>` / `given`）、变体路径与 sha、是否重签、解释器宽字符串检查 |
+| `interp_pack_sha256`/`interp_pack_check`/`interp_pack_members`、`aot_pack_sha256`/`aot_pack_check`/`aot_pack_members` | 可选资产校验（sidecar=ok；包内 `SHA256SUMS` 逐成员复核） |
+| `preclean_*_rm` / `switch_*_write|_rm` / `force_stop` / `restore_install` | 切换文件清理与写删、重启、还原 stock 的执行结果（`ok`/`fail(rc=…)`） |
+| `matrix_failures` / `conclusion` | 未通过计数 / 结论建议行（JIT 直起可用 / 需 xwe=1 / 解释器 3(file) / AOT aot=1） |
+
+注意：
+
+- `--dry-run` 只打印计划与资产清单（不碰设备，含必需资产列表）；无 `hdc` 时给出明确提示（退出码 3）。
+- Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
+- `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
 ### 2.1 JIT（kit #28 stock）
 ```sh
