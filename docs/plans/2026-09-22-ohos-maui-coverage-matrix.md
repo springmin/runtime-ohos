@@ -5,7 +5,7 @@
 > + `ohos-workload`（`src/OpenHarmonyHost` 原生宿主/NAPI、`src/Microsoft.OpenHarmony.Hosting` 托管宿主、
 > `scripts/build-arkts-shell.sh` 壳构建、`packs/`、`test/`）+ 校验套件
 > （`test/maui-platform-verify`，写作时点 284 条：271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能；现为
-> 334 条 `[verify]`/floor 314，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
+> 347 条 `[verify]`/floor 327，见 §5）+ 演示工程（`test/hello-maui-app`，多目标 20.0/26.0）。
 > **方法**：只读代码审计，无构建、无测试运行；每条结论可回指到文件与行。
 > **真机口径**：全部结论均为**离设备**核实；真机现状见 §6。上设备前，"已实现"≠"已验证"。
 > 本文件是独立盘点产物，不替代主审计 `2026-09-19-ohos-code-audit.md` 与最终状态 `2026-09-21-ohos-final-status.md`。
@@ -61,6 +61,14 @@
 
 真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。
 
+### 1d. 2026-09-27 新落地批次（IMPLEMENTED；离设备，真机待证）
+
+| 批次 | 覆盖 | 提交锚点 |
+|---|---|---|
+| P0c-TEXT-EDIT 文本编辑深度（自绘合成路线） | 光标：按字符宽度前缀和的插字符 + 500 ms 闪烁节拍 + 焦点门（非焦点不显示、不请求帧）；随滚动/焦点定位（拖拽按按下时内容空间差值换算）。选区：高亮用同一前缀和（原比例估算移除）；两个圆形选择手柄（半径 9 px、命中 24 px slop）绘制/命中/拖拽，拖拽只移动被抓手的一端（另一端为锚），并回写 `InputView.CursorPosition`/`SelectionLength`；文本手势取消在飞惯性并抑制抬手甩动（`SuppressReleaseFling`）。IME 组合（预编辑）：壳 `onChange` 的 `PreviewText` 第二参数经 `host.notifyTextComposition(value, offset)` → `ohos_host_register_text_composition`；托管在 offset 处绘制预编辑（高亮 + 下划线）并把插字符放到组合串之后，提交（空值）清预编辑并把光标推进到 `offset + 组合长度`；托管光标经 `ohos_host_keyboard_set_caret`（随 text-input sink 第二参数）同步到壳输入框；无组合导出/旧 host 时如实降级（无预编辑、不抛）。`Editor` 补齐 `CursorPosition`/`SelectionLength` 映射；`PublicAPI` 增加 public `MapCursor` | `maui-ohos e6b6ecbb`；`ohos-workload 45756e0`（壳/host）、`5e08861`（套件/文档） |
+
+真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。设备侧 IME 行为（系统输入法的预览文本节拍、隐藏输入框内的组合）仍需真机确认。
+
 ## 2. 部分实现（Partial，附证据）
 
 2026-09-22 更新：下表带 ✅ 的行已在本轮转为 IMPLEMENTED（已实现；提交锚点行内 + §1b），原缺口证据保留作审计轨迹；其余行仍为缺口。
@@ -73,7 +81,7 @@
 | `Share` | ✅ 已实现（2026-09-26：Share Kit 多文件分支 `OpenHarmonyShareKitBridge`；无 Kit 时仍一次 no-op + 状态） | `maui-ohos fc7fbfdc`；原 `OpenHarmonyAppLauncher.cs:22`、`:193`（文本 + 单文件） |
 | `SecureStorage` | ✅ 已实现（2026-09-27 P2a-HUKS：HUKS 优先 —— host 原生 AES-256-GCM 引擎（`host_keystore.c`，`libhuks_ndk.z.so` 经 dlopen 探测）生成并持有设备绑定密钥，密文 `k1:<nonce‖ct‖tag>` 落盘；别名 `maui.ohos.securestorage.v1.<path-hash>`；无 HUKS/操作失败时回退每安装文件密钥并明确标注非硬件后备；`IsHardwareBacked` 如实；`RemoveAll` 清 key。真机已验证跨进程读回 / 换别名不可解 / 删除后不可解） | `maui-ohos 99ac1818` + `ohos-workload 681bcb9`/`f333856`（原 `OpenHarmonySecureStorage.cs:1`） |
 | Window mapper | ✅ 已实现（2026-09-22：每页 `SafeArea` + 窗口标题；原只映射 `Content`） | `maui-ohos aef91b0b` + `ohos-workload 29f1fbf`；原缺口 `OpenHarmonyWindowHandler.cs:9` |
-| 键盘 / 焦点 | 仅文本控件（Entry / Editor）有焦点处理；非文本焦点遍历 / 硬件键转发为记录在案的 shell/host 缺口 | `OpenHarmonyEntryHandler.cs:81`、`OpenHarmonyEditorHandler.cs:70`、`b439bf73` |
+| 键盘 / 焦点 | ✅ 文本编辑深度已实现（2026-09-27 P0c-TEXT-EDIT：光标闪烁/选区高亮/选择手柄拖拽/IME 组合预编辑；见 §1d）；非文本焦点遍历 / 硬件键转发仍为记录在案的 shell/host 缺口 | `maui-ohos e6b6ecbb`（原文本焦点 `OpenHarmonyEntryHandler.cs:81`、`OpenHarmonyEditorHandler.cs:70`、`b439bf73`） |
 | ImageButton | ✅ 已实现（2026-09-22：已注册，含 `FontImageSource` 字形支持） | `maui-ohos 71df935f`；原缺口 `MauiOpenHarmonyExtensions.cs:15` |
 | `MainThread` | 无实现 | （全切片无 `MainThread`） |
 | 单元格 | ✅ 已实现（2026-09-22：`SwitchCell` / `EntryCell`） | `maui-ohos 71df935f`；原缺口（全切片无对应 handler） |
@@ -114,26 +122,29 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **334** 条 `[verify]`、门限 **floor 314**（`843d371` 的 kit4–6 与
-  `18c9637` 的指针驱动条目后为最新；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
+- `test/maui-platform-verify` 期望 **347** 条 `[verify]`、门限 **floor 327**（P0c-TEXT-EDIT 的 7 条
+  与 P2a-HUKS 的 3 条后为最新；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
-  315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查，`6759f84`/`9b9cb9c` 的
-  BATCH-1/2 与 announce 检查在内）。
-- 切片 pin：`ohos-workload` `ab09918`（2026-09-22，与本矩阵同批）将 interaction workflow 固定到
-  `maui-ohos` `c4ac6a5e8c0ed4f2138a7b5d06faf8b92940bdb3`（BLE GATT / settings-AppInfo / IApplication /
-  列表补齐 tip），下限 264。演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
-  → `ab09918` → `c4ac6a5e`。
-- 最近一次本地完整 preflight（2026-09-22）全绿：interaction **284** 条、0 Unhandled、两条性能门
-  `within=True`，pixel `PIXEL ASSERTIONS PASSED`，markdownlint 0 issues。
+  315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查；334/floor 314 为 KIT-EXT2 批次值，
+  340/floor 320 为 P2a-HUKS 批次值；`6759f84`/`9b9cb9c` 的 BATCH-1/2 与 announce 检查在内）。
+- 切片 pin：`ohos-workload` `5e08861`（2026-09-27，与本矩阵同批）将两个 workflow 的 `maui_ohos_ref`
+  固定到 `maui-ohos` `e6b6ecbbd334f8384b6891b8cba52a1864c06163`（P0c-TEXT-EDIT 自绘文本编辑 tip：
+  光标闪烁/选区手柄/IME 组合；其下依次为 P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2 批次），下限 327。
+  演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
+  → `ab09918` → `c4ac6a5e` → …（KIT-EXT2 334/314、P2a-HUKS 340/320）→ `e6b6ecbb`（347/327）。
+- 最近一次本地完整验证（2026-09-27，P0c-TEXT-EDIT）：interaction **347** 条、0 Unhandled、两条性能门
+  `within=True`；pixel `PIXEL ASSERTIONS PASSED`；markdownlint 0 issues；
+  `scripts/build-arkts-shell.sh` 三包同源（UI abc 275,324 B / `5efa6b1a…`，headless 18,532 B，abc 13.0.1.0）；
+  `scripts/build-host.sh` nm 门（139 导出）与 `check-host-exports.py --cross-check` 全绿；
+  `selftest-build-arkts-shell.sh`（165 项）、`selftest-packs.sh`（25 项）全绿。
 - 历史 CI：`df221b6` 上三条 run 全绿：interaction `35629780806`、pixel `35629780800`、markdownlint `35629780817`
   （均 2026-09-21T17:05:36Z）。
 - 此前 interaction 红的原因是 pin 停在 `90c8373f`（缺 B 系列符号），属 pin 未推进，不是套件回归。
-- 注意：pin 推进到 `c4ac6a5e` 后的 CI run **尚未产生**（2026-09-22 已 push `ab09918`）；套件在 `90b21416`
-  上 284 条全绿，`c4ac6a5e` 相对该 tip 只增不减已 pin 的面。
+- 注意：pin 推进到 `e6b6ecbb` 后的 CI run 尚待本次 push 产生；此前 `c4ac6a5e` 起的批次均已本地全绿验证。
 
 ## 6. 真机状态（caveat）
 
-- 上述所有内容均为**离设备**验证；套件（现 334 条，见 §5）与像素套件只在无设备环境运行。
+- 上述所有内容均为**离设备**验证；套件（现 347 条，见 §5）与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
   此前 `24.0.0.0` 超出设备 ark runtime）。**kit #28 为当前发布**（含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关；数字入口见 release「## Integrity」）；
@@ -150,7 +161,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 |---|---|---|---|
 | 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；待 **stock kit #28** 复测（判定点见里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（334 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 334/floor 314） |
+| 3 | 真机验证扫尾（347 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 347/floor 327） |
 | 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」 |
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
@@ -160,7 +171,7 @@ Window / SafeArea / 标题收尾 —— 见 §1b（提交锚点）。
 `IApplication` handler、列表/轮播/滑动补齐、Shell 标题栏镜像 —— 见 §1b。
 原 #4（推进 CI 切片 pin）经 `fb533f0` 到 `ab09918` 持续推进；interaction 套件现由 `ohos-workload` 的
 workflow 直跑 `test/maui-platform-verify`（编译 pin 见 `.github/workflows/interaction-regression.yml`，
-套件 334/floor 314）。
+套件 347/floor 327，pin `maui-ohos e6b6ecbb`）。
 
 §4 的 **SDK 阻塞清单**：TextToSpeech / Hot Reload / arm32 不变；Map 转方案 (b) 能力探测已落地、
 Share Kit 多文件分享转已落地（无 Kit 时仍降级）；原 **BLE GATT** 一栏已移出（以 host/NAPI/壳桥接的
