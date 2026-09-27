@@ -42,6 +42,18 @@
 > release 说明；重签、预签或重新打包后的哈希必然不同）。包内 `verify-kit.sh` 的 abc 期望随本包重锚
 > （#28 = `264136`/`18532`；本包预期 **`281052`/`20916`**），用 #28 的旧值校验本包会 FAIL —— 属脚本预期。
 
+## 0. AGC 最小点亮顺序（harmony 变体；按最小依赖排序）
+
+> 目的：以最少 AGC 操作点亮最多判定点；① 未完成时 ②–⑤ 都会因包名/签名指纹不一致失败（如 `1000900010`）。
+> 全流程还需 harmony 壳（`harmony-haps.tar.gz`）与测试方自备重签材料（自签会被 9568257/9568344 拒绝，属预期）。
+
+1. **① App + 签名证书指纹 + Profile（必须先有）**：AGC 创建应用（bundleName `com.example.hellomauiapp`）→ 登记测试方签名证书指纹 → 下载绑定 UDID 的调试 Profile（p7b）随重签使用。
+2. **② Map AppKey（可最先验证 harmony overlay）**：AGC 开通地图服务并为该应用配置 AppKey（与 ① 指纹一致）→ 装 harmony hap：`IsOverlayAvailable=true`（flags bit1）、地图视图出现、`Ready` 事件可达；无 AppKey 时 overlay 调用降级不抛。
+3. **③ Push 权益**：AGC 开通推送 + 含推送权益的 Profile → `GetTokenAsync()` 返回 token（失败按 `1000900010`/`1000900012` 排查）。
+4. **④ LiveView 开关**：AGC 申请实况窗 TIMER 权益 + 设备实况窗开关打开 → create/update/stop 出卡片（开关关 `-3`/`1003500004`、权益未批 `1003500005`）。
+5. **⑤ Account scope**：AGC 申请 `quickLoginAnonymousPhone` scope 审批 → 授权返回匿名手机号＋`authorizationCode`（未批按 `1001502014`/`1001500001` 排查）。
+6. **⑥ TTS（无需权益/权限）**：CoreSpeechKit 无 AGC 门槛；只需 HMS 设备＋harmony 壳，门 = 设备语音能力/离线音色数据（AGC 清单第 13 行）。
+
 ## 1. kit #29 相对 #28 的增量（测试方视角）
 
 | # | 变化 | 测试方看到什么 | 判定点 |
@@ -127,6 +139,8 @@
   AGC 清单第 13 行 = TTS、门槛项为「设备语音能力/离线音色数据」。
 - 深链的 `module.json5` `abilities[].skills[].uris` 清单声明与系统 App Linking 的实际投递（`onNewWant`
   触发形状）仍待设备；当前只有 app.json 白名单 + 托管校验。
+- 商店/AGC 上架准备（元数据合规、签名/Profile、27 类权限映射与 reason 模板、App Linking 清单声明、提交前自检）见
+  `2026-09-28-ohos-agc-store-readiness.md`。
 - 图片解码 bench 为**设备本机 bench**（signed aarch64 探针，非 MAUI 应用路径）；MAUI 演示页大图回合待做。
 - 权限弹窗 / Share 面板 / Scan 返回 / AOT（#25 口径）自 #25 起、PLAT-GAP 消费方路径（#26）与无 HMS 降级
   不抛（#27）、R2（#28）自各自批次起**仍未有真机回传**；stock kit（#22 起，含 #29）的首次设备复测仍待做
