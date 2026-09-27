@@ -27,6 +27,7 @@
 推送前核对远端 `feature/openharmony` 与 merge 第一父提交一致 → 均为 fast-forward，未触发禁强推。
 
 - **MASP 复核（2026-09-28）**：`upstream/main` tip 复取仍为 `c7cef3bfad`（无新提交），`feature/openharmony` 保持 `07ed2fe38d` 且与 `origin` 一致；`git merge --no-ff upstream/main` = *Already up to date*，merge-tree 重算 tree `5390ef83` 与原 merge 一致；delta 8 文件（RID 列表 / `Directory.Build.props` / `eng/Dependencies.props` / E2E csproj）XML 与条件解析通过；**未跑整仓构建**（本机缺 SDK pin `11.0.100-rc.1.26420.103`、`artifacts/bin/GenerateFiles` 未生成、宿主负载高）→ 构建证据沿用 CI run `36305386249`（`aspnetcore_ref=feature/openharmony`）。
+- **MSDK 复核（2026-09-28）**：`upstream/main` tip 复取仍为 `3b1d59fe28`（无新提交），`feature/openharmony` 保持 `82dc57c64c` 且与 `origin` 一致；`git merge --no-ff upstream/main` = *Already up to date*；merge-tree 重算（tree `9add6aed`）与原 merge `3080fb8441` 仅 `Strings.resx` 1 处不同（即当时的并集解冲突；其余文件与自动合并逐字节一致，含 `dotnet.csproj` / `redist.csproj` / `GenerateLayout.targets` / 13 语言 xlf）；resx 并集 233+2+4=239，13 语言 xlf 经 XliffTasks `11.0.0-beta.26453.118` `/t:UpdateXlf` 实跑零 diff；`eng/ohos-install` 离线用例 58/58（codesign 5 / hostfeed 10 / installer 43）、RID 图 `eng/PortableRuntimeIdentifierGraph.openharmony.json` JSON 解析通过（4 个 openharmony RID）、相关脚本 `bash -n` 通过；**未跑本机全量 SDK 构建/布局**（无 `.dotnet` bootstrap、artifacts 未生成、宿主 load≈23、内存余 <1GB）→ 构建证据沿用 CI run `36305386249` 全链绿（sdk 阶段含本 merge）。
 
 ## 3. 冲突与解决
 
