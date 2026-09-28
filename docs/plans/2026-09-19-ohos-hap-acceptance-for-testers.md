@@ -443,7 +443,7 @@ P3 失败 = 宿主导出/链接命名空间；P4 失败 = 缺依赖（`PROBE4` �
 > Blazor 条目重签（工程 bundleName 必须为 `com.example.opendotnet`），再安装。hap 声明 **`ohos.permission.INTERNET`**
 > （宿主工程 dev-only；站点由 rawfile 直供、运行时不需要联网；重签后声明是否保留取决于签名工程；**kit #32 起该 hap 已无 INTERNET，重签后保持**）。没有 hdc/无法重签时，
 > 自动两项按「未测（无 hdc）」登记，只做人工两项。完整判读见
-> `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` §2。
+> `docs/plans/2026-09-28-ohos-tester-handoff-kit32.md` §2（#31 见 `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` §2）。
 
 | 判定点 | 怎么测 | 期望 | 回传证据 |
 |---|---|---|---|

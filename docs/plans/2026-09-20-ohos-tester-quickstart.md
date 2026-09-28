@@ -34,7 +34,7 @@ sh verify-kit.sh --expect-tree-digest <device-test-kit 发布说明「## Integri
 > 重签一行（路径/密码换成你的，完整步骤见 `自签说明.md`）：
 > `hap-sign-tool sign-app -keyAlias debugKey -signAlg SHA256withECDSA -mode localSign -signCode 1 -appCertFile <你的>.cer -profileFile <你的>.p7b -inFile hello-maui-app-unsigned.hap -outFile hello-maui-app-yourself.hap -keystoreFile <你的>.p12 -keyPwd "<key密码>" -keystorePwd "<store密码>"`
 >
-> **kit #31 的 Blazor 组件（第 6 个 hap）**：`hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`）的 bundle 为 **`com.example.opendotnet`**，同样只有未签名变体；把自签工程的 bundleName 设为同名后按上面一行命令重签即可（详见 `自签说明.md` Blazor 条目与 `验收说明.md` Blazor 段）。hap 声明 `ohos.permission.INTERNET`（宿主工程 dev-only；站点 rawfile 直供、**运行时不需要联网**；重签后声明是否保留取决于签名工程）。
+> **kit #31 的 Blazor 组件（第 6 个 hap）**：`hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`）的 bundle 为 **`com.example.opendotnet`**，同样只有未签名变体；把自签工程的 bundleName 设为同名后按上面一行命令重签即可（详见 `自签说明.md` Blazor 条目与 `验收说明.md` Blazor 段）。**kit #32 起该 hap 无 `INTERNET`**（rawfile 直供、运行时不需要联网；重签不修改 module.json，重签后保持；#31 旧包声明 INTERNET，`verify-kit.sh` 以 WARN 记录）。
 >
 > **关于包内 `签名说明.txt`**：kit #22 起「PA1 重建壳的下一版 kit」历史句已随源修复（`ohos-workload c6a4cd95e`）；若你手上副本仍出现该句，按历史文案处理，判读以 `签名说明` 其余内容与 release notes 为准。
 
