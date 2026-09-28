@@ -1,7 +1,7 @@
 # Blazor WASM → ArkWeb 承载 demo（2026-09-28）
 
 **目标：** 把设备端 `dotnet publish` 产出的 Blazor WASM 静态站点，用最小的 ArkTS HAP（ArkWeb `Web` 组件）承载。
-**结论：** 站点服务与 WebView HAP 两侧**都已在本机构建成功**（HAP 已签名、`verify-app` 通过）；真机渲染验证需在带 UI 且可 `hdc` 安装的设备上进行。
+**结论：** 站点服务与 WebView HAP 两侧**都已在本机构建成功**（HAP 已签名、`verify-app` 通过）；并已产出**自包含变体**（站点内嵌 `resources/rawfile`、`onInterceptRequest` 直供，无需本地服务、无网络权限），见 §3。真机渲染验证需在带 UI 且可 `hdc` 安装的设备上进行。
 
 ## 1. 站点侧（已实测）
 
@@ -86,9 +86,57 @@ aa start -b com.example.opendotnet -a EntryAbility
 #   python3 serve-blazor.py <publish>/wwwroot 8199
 ```
 
-## 3. 未做 / 待办
+## 3. 自包含变体：rawfile + onInterceptRequest（已构建 + 签名 + 验证）
+
+站点整包（71 MB / 899 个文件）内嵌进 `resources/rawfile/blazor/`，页面用
+`Web.onInterceptRequest` 同步读 rawfile 应答（`ResourceManager.getRawFileContentSync`），
+不依赖本机服务、不需要 INTERNET 权限：
+
+```ets
+const ORIGIN: string = 'https://blazor.local/';   // 拦截的伪源
+Web({ src: ORIGIN, controller: this.controller })
+  .onInterceptRequest((event) => {
+    const url: string = event.request.getRequestUrl();       // https://blazor.local/<path>
+    if (!url.startsWith(ORIGIN)) return null;                // 其它请求不拦截
+    let path: string = url.substring(ORIGIN.length);         // -> rawfile blazor/<path>
+    // 去查询串/片段；空路径与未命中都回退 index.html（SPA 路由）
+    const bytes: Uint8Array = rm.getRawFileContentSync('blazor/' + path);
+    const resp: WebResourceResponse = new WebResourceResponse();   // 全局 ArkUI 类型
+    resp.setResponseCode(200);
+    resp.setResponseMimeType(mimeTypeOf(path));              // .wasm -> application/wasm
+    resp.setResponseEncoding('utf-8');
+    resp.setResponseData(bytes.buffer as ArrayBuffer);
+    return resp;
+  })
+```
+
+实测与坑：
+
+- 构建/打包/签名/验证全通过：`CompileArkTS` → 原生 `ohos_packing_tool` pack →
+  `hap-sign-tool sign-profile/sign-app/verify-app`；HAP **69.5 MB / 908 成员（899 rawfile）**，
+  `verify-app success`。
+- `WebResourceResponse`/`Header` 是 `component/web.d.ts` 的**全局声明**，不在
+  `@kit.ArkWeb` 的 `webview` 命名空间里（`webview.WebResourceResponse` 会编译失败）。
+- API 26 另有 `setWebSchemeHandler`（自定义 scheme，`WebSchemeHandler/WebResourceHandler`），
+  本次选了 `onInterceptRequest`：产品内 HybridWebView/BlazorWebView 资产桥就是这条路径
+  （`packs/Microsoft.OpenHarmony.Sdk/<ver>/templates/ets/pages/Index.ets` 的 `serveBlazorFile`）。
+- 承载页保持仓库 ArkTS 合约：仅 `@kit.*` 导入、无全局 `getContext()`、无 `@ohos.*` 动态导入。
+- **本机环境陷阱**：OpenHarmony 环境导出 `NODE=/data/service/hnp/bin/node`（v24），该 node
+  跑 hvigor 会在启动期崩（V8 `Check failed: 12 == (*__errno_location())`，表现为
+  `hvigor.log` 只有 174 字节的 fatal 输出）。用 `~/.harmonybrew/bin/node`（v26.8.1）即可；
+  固化的 `pack-host.sh` 默认避开 hnp node。
+
+**固化资产（ohos-workload 仓）**：
+- `test/hello-blazorwasm/`：最小 Blazor WASM 工程 + `run-smoke.sh`（发布 + 站点校验；
+  dnceng rc.2 flight 与 task-host override 配方见其 README）
+- `test/hello-blazorwasm/arkts-host/`：本变体的 ArkTS 工程 + `pack-host.sh`
+  （stage → 内嵌站点 → hvigor → 原生打包 → 签名 → 验证；`--bundle`/`SIGN_*` 可换签名材料）
+
+## 4. 未做 / 待办
 
 - **ArkWeb 渲染验证**（需真机 UI）：`wasm` 加载、`fetch`/`instantiateStreaming`、可选多线程（COOP/COEP）、Service Worker
-- **站点与 HAP 一体化**：把 `wwwroot` 打进 HAP `resources/rawfile` 并用 `onInterceptRequest` 提供 `application/wasm`（免依赖 127.0.0.1 服务），或应用内起本地服务
+- `.br`/`.gz` 协商（当前直接提供未压缩同名文件；站点同时带压缩副本，后续可按 `Accept-Encoding` 加 `Content-Encoding`）
 - hvigor 插件与 SDK 版本对齐（消除手动打包步骤）
-- 与 P0-①（TaskHostFactory 根因）无关：后者影响 wasm **构建**，承载侧不涉及
+- 与 P0-①（TaskHostFactory 根因）无关：后者影响 wasm **构建**（修复已随 sdk-ohos
+  `feature/openharmony` 发布，Roslyn 编译器服务器同修；见
+  `2026-09-28-msbuild-taskhost-pipe-rootcause.md`）
