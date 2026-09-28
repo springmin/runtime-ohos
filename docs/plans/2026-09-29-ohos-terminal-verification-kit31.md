@@ -1,5 +1,7 @@
 # 终态复核（kit #31）：五仓 / 发布资产 / kit 抽验 / bundle / CI / 文档一致性（2026-09-29）
 
+> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+
 > 独立只读终态复核（KIT31-VERIFY）。两段时点：**首发 11:14–11:54 CST**（`reg-kit31/RELEASE-VALUES.txt` 60s×40min 未产出；
 > 第 1 项完成、2/3/4/6 登记待值）；**发布后补记 12:15–13:25**（VALUES 产出后第 2/3/4/6 项补齐）。证据：`git fetch/rev-parse/rev-list/reflog`、
 > `gh api`（release by-id/body、Actions runs）、本地 `reg-kit31` 解包 + 包内 `verify-kit.sh` + 独立深断言、gh-proxy 小件独立下载（v13/边车/HEAD）。
@@ -46,13 +48,14 @@
   （当前 tip 非 flavor-surface，无 run，属预期）。
 - sdk-ohos：ohos-install-tests `36378113086` success @`b2b79e27d9`；ohos-full-build `36373081395` @`4d1a88e6f5` completed/success。
 
-## 6. 文档一致性 — PASS（一项表述异常）
-- manifest（`16f627a16e7`）已按 VALUES 刷新（f4325d2f/52e77ee8/7d0cba77/2caa06bd/43a78c8f/b2b79e27d9、6 hap、v13）；handoff-kit31 /
-  任务单 / final-status 均以「当前 = kit #31 + 数字入口 release『## Integrity（kit #31）』」表述；旧值（`a781c25b`/`cc1ca935`/`a63cd34f`/`87763a3e`/`c4647fc8`）
-  仅历史对照语境，无「当前 kit」误用。
-- 异常记录（不代改他方文档）：Blazor hap `module.json` 声明 `requestPermissions=[ohos.permission.INTERNET]`（dev-only），而 handoff-kit31 开头
-  「无本地服务/无网络权限」与 2026-09-28 演示/可行性文档「权限=无」表述不符；manifest 与 VALUES `note_blazor_permission` 已如实标注。
-- README 中 kit #30 终态复核行仍标 🔄（其报告已说明 2/3/6 项补齐）——建议文档 owner 翻 ✅。
+## 6. 文档一致性 — PASS（本波清扫后）
+- manifest（`16f627a16e7`）已按 VALUES 刷新（f4325d2f/52e77ee8/7d0cba77/2caa06bd/43a78c8f/b2b79e27d9、6 hap、v13）；测试方文档已由 `5026610eddc`
+  回填实测数字（21 个文件：tar/树/sidecar/`SHA256SUMS`/v13/6 hap/bundle 等），仅保留「以 release 与随包 `SHA256SUMS` 为准」的免责句；
+  旧值（`a781c25b`/`cc1ca935`/`a63cd34f`/`87763a3e`/`c4647fc8`）仅历史对照语境，无「当前 kit」误用。
+- Blazor INTERNET 表述异常已消除（`5026610eddc` + 本波）：handoff/一页/自签/快速开始/验收/交付说明/崩溃文档/新功能清单/final-status 与演示/可行性文
+  已统一为「宿主工程 dev-only 声明 `ohos.permission.INTERNET`；rawfile 直供、运行时不联网；重签后保留与否取决于签名工程」，manifest 与
+  VALUES `note_blazor_permission` 同步（源侧后续构建已移除该声明，ohos-workload `2dcd846`）。
+- README 中 kit #30 终态复核行已翻 ✅（第 2/3/6 项补齐）。
 
 ## 外部依赖清单（不在本仓/本复核控制）
 - 真机轮（JIT/XWE/AOT/解释器/harmony + Blazor 两标记 + 无障碍）与重签：测试方设备/UDID；ArkWeb 首帧与 `/counter` 人工两项只能真机闭环。

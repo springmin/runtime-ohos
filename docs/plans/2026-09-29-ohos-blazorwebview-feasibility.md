@@ -1,5 +1,7 @@
 # BlazorWebView / Blazor WASM 承载可行性（OpenHarmony，2026-09-29）
 
+> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+
 **性质：** 只读调研（不改代码）。基线：maui-ohos `feature/openharmony`、ohos-workload kit #31 资产、runtime-ohos 既有计划。
 **结论先行：** 方案 A（ArkTS 独立宿主）已到「可签 hap + 机器判读标记」，随 kit #31 真机收口（S）；
 方案 B1（MAUI Blazor Hybrid）实现已在、只缺真机（S）；方案 B2（MAUI WebView 载 Blazor WASM）可行但缺口集中（M）。
@@ -21,7 +23,7 @@
 ## 2. 方案 A — ArkTS 宿主独立 hap（现状）
 
 - 路径：`dotnet publish` 站点 → `resources/rawfile/blazor` → `Web.onInterceptRequest` 直供 → `onConsole` 转发 `BLZ_*` 到 hilog。
-- 缺口：WebView 桥=无（WASM 自带 JS↔.NET）；资源加载=`https://blazor.local/` + 拦截（`app://` 未用；API 26 已有 `customizeSchemes`/`setWebSchemeHandler`）；interop=Blazor WASM 内建，无需宿主通道；导航/历史=SPA 回退，无深链/`onNewWant` 接入；Cookie/存储=未接（`WebCookieManager`/`domStorageAccess` 均未开）；权限=无（rawfile 直供不需要 INTERNET）。
+- 缺口：WebView 桥=无（WASM 自带 JS↔.NET）；资源加载=`https://blazor.local/` + 拦截（`app://` 未用；API 26 已有 `customizeSchemes`/`setWebSchemeHandler`）；interop=Blazor WASM 内建，无需宿主通道；导航/历史=SPA 回退，无深链/`onNewWant` 接入；Cookie/存储=未接（`WebCookieManager`/`domStorageAccess` 均未开）；权限=宿主工程 dev-only 声明 `ohos.permission.INTERNET`（rawfile 直供、运行时不联网；重签后是否保留取决于签名工程）。
 - Spike（即 kit #31）：重签安装 → `tester-run.sh --blazor-probe`；**里程碑 = `hilog -x | grep BlazorWebHost` 含 `marker: BLZ_BOOT` + `marker: BLZ_RENDERED`**（人工：首屏 + `/counter` +1 + 截图）。
 - 风险：真机首帧仍未验（headless 设备）；不覆盖原生 UI 融合。**工作量 S**（已就绪，待执行）。
 
