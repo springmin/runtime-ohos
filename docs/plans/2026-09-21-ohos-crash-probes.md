@@ -49,7 +49,8 @@
 > payload state (`device/payload-files.txt` / `payload-marker.txt`), the exec-memory evidence
 > (`hilog/hilog-execmem.txt` + `execmem_capture`/`execmem_lines`) and a local kit hap
 > self-check (`meta/kit-selfcheck.txt`, `kit_index_ok`) automatically.
-> Numbers for the current kit: release `## Integrity` + `2026-09-22-ohos-release-manifest.md`.
+> Numbers for the current kit (#30): tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar
+> **`a63cd34f…`** (release `## Integrity (kit #30)`); `2026-09-22-ohos-release-manifest.md` refreshes the snapshot.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
 > **2026-09-28 update (kit #30: MS-MODE — runtime-mode packaging switch / tester-run v12 / MAPFIX

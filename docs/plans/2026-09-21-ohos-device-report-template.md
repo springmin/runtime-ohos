@@ -7,8 +7,8 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` 文首指纹块；`tester-run.sh` v12 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
+| kit tar.gz sha256（实测） | `<...>`（kit #30 期望：tar **`a781c25b…`**、tree **`cc1ca935…`**、sidecar **`a63cd34f…`**；期望值见 `device-test-kit` release「## Integrity（kit #30）」/`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` 文首指纹块；`tester-run.sh` v12 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #30）」的 tree sha256，kit #30 = **`cc1ca935…`**；`summary.txt` 的 `tree_digest` 同值） |
 | `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v12 = `12`） |
 | 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #30） |
 

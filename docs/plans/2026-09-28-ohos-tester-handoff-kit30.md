@@ -37,10 +37,17 @@
 > ④ **门禁与指纹**：交互套件 **391/floor 371**（+4 = MS-MODE：宿主标记解析 / 优先级与生效模式日志 /
 > aot 回退 / pack 契约；`[suite] checks=391 total=391 floor=371 assert=True`）；ui/shell abc
 > **281,052 B / `5c06143a…`**（headless **20,916 B / `54a1a201…`**）与宿主导出契约 **143/143** 不变。
-> **kit #30（数字入口见 release Integrity）**：整包 tar/树摘要/sidecar 与 5 hap 大小/哈希以 release 说明
-> 「## Integrity」与随包 `SHA256SUMS` 为准（#29 实测 tar 196,990,205 B / `e895cc0a…`、sidecar `ce9f467f…`
-> 可作对照；重签、预签或重新打包后的哈希必然不同）。包内 `verify-kit.sh` 的 abc 期望沿用
-> `281052`/`20916`（#29 起），用 #28 的 `264136`（或更旧值）校验本包会 FAIL —— 属脚本预期。
+> **kit #30 发布实测（2026-09-28，release `## Integrity (kit #30)` 已 PATCH）**：tar **196,992,264 B /
+> `a781c25b…`**（#29 196,990,205 / `e895cc0a…`）、sidecar **`a63cd34f…`**（89 B）、树 **`cc1ca935…`**、
+> `SHA256SUMS` **15 项 / 1,309 B / `3a369dd8…`**；下载发布的 tar 解包后 `verify-kit.sh --expect-tree-digest`
+> = tree OK + **KIT OK（0 FAIL / 0 WARN）**。5 hap **~75.91 MB**：默认 **75,911,491 / `333b0436…`**、
+> permissions 75,911,431 / `d86cf095…`、api20 75,911,487 / `cda37a2b…`、api20-permissions 75,911,523 /
+> `2106703b…`、unsigned 73,718,261 / `458ee58d…`；zip **279** 条 = 24 + 254 payload + `runtime-mode.txt`；
+> `libs` **270** = 14 `.so` + 254 payload + `.dotnet-payload.json` + **`runtime-mode.txt=jit`**（五 hap 同值）；
+> hap 内宿主 **285,600 B / `de9b30dd…`**（pack 281,504 / `f6b3581a…`）；bundle **30,563,349 B / `c4647fc8…`**
+> （Sdk pack 346,067 / `913bcadb…`；sdk-ohos 锚 `a691bf11dd`，`WORKLOAD_BUNDLE_SHA256` c2b527d3 → c4647fc8）。
+> 包内 `verify-kit.sh` 的 abc 期望沿用 `281052`/`20916`，用 #28 的 `264136`（或更旧值）校验本包会 FAIL ——
+> 属脚本预期；重签、预签或重新打包后哈希必然不同，以 release「## Integrity」与随包 `SHA256SUMS` 为准。
 
 ## 0. 一键执行（tester-run v12）
 
@@ -101,7 +108,9 @@ sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --a1
    `dotnet.zip` 254 项、`libs/arm64-v8a` 14 个 `.so` + `.dotnet-payload.json` payload-in-libs 断言、
    `resources.index` 1588/1780（≤ 2 KiB）；语义不变（FAIL → 退出码 1；WARN → 仍 `KIT OK`）。**用 #28 的旧期望值
    `264136`（或更早的 `245412`/`234620`）校验本包会 FAIL —— 那是脚本的预期行为，不是包坏。**
-   本轮整包数字（tar/树/sidecar/5 hap）以 release「## Integrity」与 `.tar.gz.sha256` sidecar 为准（本页不写死）。
+   本轮整包数字（tar/树/sidecar/5 hap）发布实测：tar **196,992,264 B / `a781c25b…`**、树 **`cc1ca935…`**、
+   sidecar **`a63cd34f…`**、`SHA256SUMS` 15 项 / 1,309 B / `3a369dd8…`（下载解包复核 = tree OK + KIT OK）；
+   重签/重打包后以 release「## Integrity」与 `.tar.gz.sha256` sidecar 为准。
 2. 一条命令取证（`tester-run.sh` **v12**）：`sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60`
    → 证据包含 `hilog/hilog-{applib,dlopen,bootstrap,execmem}.txt`、`device/payload-*.txt`、
    `meta/kit-selfcheck.txt`（`kit_index_ok`/`payload=yes|no`）与 `summary.txt`（`aot_route`/`interp_mode`/`runtime_mode` 键）。
@@ -116,9 +125,12 @@ sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --a1
 
 - 本轮增量（runtime-mode 标记经打包 hap 的真机回合、aot 显式回退行、清单 interp 的 Run C 路线、
   MAPFIX harmony 包的真机 Map 点亮）**均未上机**：kit 的 hap 是自签名（`9568257`/`9568344` 属预期，先重签）。
-- MS-MODE 的离线证据：`selftest-hap-targets.sh` T7（默认/非法/aot 缺库与带库/interp 两种 pack 布局/错误）、
-  交互套件 ms-mode 4 检查、`test/aot-smoke/run-local-smoke.sh`（默认/aot/interp 标记、aot 回退、
-  `interp.txt` 覆盖）；真机回合仍待测试方。
+- MS-MODE 的离线证据：`selftest-hap-targets.sh` T7（默认/非法/aot 缺库与带库/interp 两种 pack 布局/错误；
+  **50 检查 / 0 失败 / 1 skip**）、交互套件 ms-mode 4 检查（**391/floor 371**）、
+  `test/aot-smoke/run-local-smoke.sh`（默认/aot/interp 标记、aot 回退、`interp.txt` 覆盖）；
+  `selftest-build-arkts-shell.sh` **185**（T18 = overlay-index patch ±）、`selftest-verify-harmony.sh` **102/102**
+  （对已发布的 MAPFIX harmony hap + control 复跑）、`selftest-tester-run.sh` **634/0**（S14b/S14c/S17b
+  runtime_mode 标记）、`selftest-verify-kit.sh` **72/0**（abc fixtures 281052/20916）；真机回合仍待测试方。
 - MAPFIX 的静态证据：逐 hap 断言 102/102、`verify-kit.sh --expected-abc 291628` KIT OK、与同提交默认 control
   构建仅 `ets/modules.abc` 不同；Map overlay 的 AppKey/AGC 前置与真机事件（`Ready`/`MarkerClick`/`CameraIdle`）
   仍待外部条件。
@@ -127,7 +139,9 @@ sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --a1
 - 权限弹窗 / Share 面板 / Scan 返回 / AOT（#25 口径）自 #25 起、PLAT-GAP 消费方路径（#26）与无 HMS 降级
   不抛（#27）、R2（#28）自各自批次起**仍未有真机回传**；stock kit（#22 起，含 #30）的首次设备复测仍待做
   （里程碑与判定点见 `2026-09-24-ohos-device-milestone.md` §6）。
-- 批次注记：kit #30 的门禁为交互套件 **391/floor 371**（MS-MODE 批次；`ohos-workload 6cdd1fa` 等）；
-  `tester-run.sh` v12（126,658 B / `87763a3e…`，`script_version=12 (2026-09-28)`）；本页所记数字 = 2026-09-28
-  实测（abc 281,052/20,916、导出 143、套件 391/371），重签、预签或重新打包后以 release「## Integrity」
-  与 `.sha256` sidecar 为准。
+- 批次注记：kit #30 的门禁为交互套件 **391/floor 371**（MS-MODE 批次；`ohos-workload 6cdd1fa`/`d1d7b70` 等）；
+  `tester-run.sh` v12（126,658 B / `87763a3e…`，`script_version=12 (2026-09-28)`）；CI（`ohos-workload d1d7b70`）：
+  interaction `36364725359` / pixel `36364725327` / host-export `36364725283` / ridgraph `36364725293` /
+  markdownlint `36364725282`，sdk-ohos `a691bf11dd` ohos-install-tests `36367015490`（全 success）；
+  本页所记数字 = 2026-09-28 实测（abc 281,052/20,916、导出 143、套件 391/371、tar 196,992,264/`a781c25b…`），
+  重签、预签或重新打包后以 release「## Integrity」与 `.sha256` sidecar 为准。

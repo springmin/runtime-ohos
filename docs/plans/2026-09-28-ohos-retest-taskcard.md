@@ -11,11 +11,21 @@
 
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz`（kit #30） | 见 release「## Integrity」 | 见 release「## Integrity」 | 5 个 JIT hap（`libs/<abi>/runtime-mode.txt=jit`）＋`verify-kit.sh`＋文档；本页不写死整包数字 |
+| `device-test-kit.tar.gz`（kit #30，已发布 2026-09-28） | 196,992,264 | `a781c25b…`（sidecar `a63cd34f…`；树 `cc1ca935…`） | 5 个 JIT hap（`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker）＋`verify-kit.sh`＋文档；`SHA256SUMS` 15 项 / 1,309 B |
 | `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`；对应 `-p:OpenHarmonyRuntimeMode=aot` 的产物形态） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`；旧 196,118,871/`f7a4faa2…` 无 overlay 记录已替换） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
 | `tester-run.sh` v12 | 126,658 | `87763a3e…` | 执行器（`--mode-matrix` / `--a11y-probe`；`summary runtime_mode=jit|aot|interp(hap)|invalid(...)|<absent>`） |
+
+包内 5 hap（zip **279** = 24 + 254 payload + `runtime-mode.txt`；`libs` **270** = 14 `.so` + 254 payload + `.dotnet-payload.json` + `runtime-mode.txt=jit`；hap 内宿主 **285,600 B / `de9b30dd…`**，pack 281,504 / `f6b3581a…`；`SHA256SUMS` 15 项 / 1,309 B / `3a369dd8…`）：
+
+| hap | 大小 (B) | sha256（前缀） |
+|---|---|---|
+| `hello-maui-app.hap` | 75,911,491 | `333b0436…` |
+| `hello-maui-app-permissions.hap` | 75,911,431 | `d86cf095…` |
+| `hello-maui-app-api20.hap` | 75,911,487 | `cda37a2b…` |
+| `hello-maui-app-api20-permissions.hap` | 75,911,523 | `2106703b…` |
+| `hello-maui-app-unsigned.hap` | 73,718,261 | `458ee58d…` |
 
 ## 2. 执行顺序（每步「期望 → 回传」）
 
