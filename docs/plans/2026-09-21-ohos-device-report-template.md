@@ -7,13 +7,13 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（kit #30 期望：tar **`a781c25b…`**、tree **`cc1ca935…`**、sidecar **`a63cd34f…`**；期望值见 `device-test-kit` release「## Integrity（kit #30）」/`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` 文首指纹块；`tester-run.sh` v12 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #30）」的 tree sha256，kit #30 = **`cc1ca935…`**；`summary.txt` 的 `tree_digest` 同值） |
-| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v12 = `12`） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #30） |
+| kit tar.gz sha256（实测） | `<...>`（kit #31 期望值见 `device-test-kit` release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首指纹块；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`**、sidecar **`a63cd34f…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #31）」的 tree sha256；#30 = `cc1ca935…` 仅作对照；`summary.txt` 的 `tree_digest` 同值） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v13 = `13`；v12 = `12 (2026-09-28)` 为 #30 值） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #31） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
-> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3、#30 为 MS-MODE）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h，#30 见 §4i。
+> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3、#30 为 MS-MODE、#31 为 Blazor WASM/ArkWeb 组件）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h，#30 见 §4i，#31 见 §4j。
 
 ## 1. 下载与校验
 
@@ -173,6 +173,17 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - 模式矩阵 Run C 清单路线（v12）：`<run_c_via=manifest + run_c_interp_mode=3(manifest) + conclusion 原文 + 是否未写 interp.txt>`
 - Map 覆盖层点亮（MAPFIX harmony + AppKey + 同指纹重签）：`<IsOverlayAvailable=true + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`
 - 新 payload 首次运行（新宿主 MS-MODE + #29 abc）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
+
+## 4j. kit #31 Blazor 段（第 6 个 hap / tester-run v13 `--blazor-probe`）
+
+> Blazor 组件与 MAUI 包互不依赖；没有 hdc/无法重签时登记「未测」，不判失败。完整判读见
+> `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` §2/§4。
+
+- Blazor 重签（`com.example.opendotnet`，工程 bundleName 必须同名）：`<签出文件名 + verify-app 结果 + hdc install 结果原文>`
+- 两条 `BLZ_*` 标记（必过；`sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`）：`<hilog 里 BlazorWebHost ... marker: BLZ_BOOT / BLZ_RENDERED 原文 / 未测（无 hdc）>`
+- 失败采集：`<blazor-hilog.txt 文件名（含 BLZ_ERROR 行原文）+ bm dump -n com.example.opendotnet 原文 / 无>`
+- 人工首屏：`<截图文件名 + 是否显示 “Hello from Blazor WebAssembly”>`
+- 人工 `/counter` +1：`<0→1 原文（截图）>`
 
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 

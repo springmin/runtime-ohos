@@ -49,8 +49,8 @@
 > payload state (`device/payload-files.txt` / `payload-marker.txt`), the exec-memory evidence
 > (`hilog/hilog-execmem.txt` + `execmem_capture`/`execmem_lines`) and a local kit hap
 > self-check (`meta/kit-selfcheck.txt`, `kit_index_ok`) automatically.
-> Numbers for the current kit (#30): tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar
-> **`a63cd34f…`** (release `## Integrity (kit #30)`); `2026-09-22-ohos-release-manifest.md` refreshes the snapshot.
+> Numbers for the current kit (#31): release `## Integrity (kit #31)` carries the current values (kit #30
+> for comparison: tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar **`a63cd34f…`**); `2026-09-22-ohos-release-manifest.md` refreshes the snapshot.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
 > **2026-09-28 update (kit #30: MS-MODE — runtime-mode packaging switch / tester-run v12 / MAPFIX
@@ -59,17 +59,28 @@
 > `xwe.txt`/`interp.txt` with **file > manifest > default** precedence and logs
 > `runtime-mode=<v> source=file|manifest|default` on every path (`aot` with a missing `lib<stem>.so`
 > logs the explicit `falling back to the JIT route` line; `interp` may carry
-> `-p:OpenHarmonyInterpreterPack`). `tester-run.sh` is **v12** (126,658 B / `87763a3e…`, asset id
-> 593961018: new `runtime_mode` summary key, `3(manifest)`/`1(manifest)` fallbacks and a
-> `run_c_via=manifest` matrix Run C for an interp-marked main hap). MAPFIX re-cut the harmony haps
+> `-p:OpenHarmonyInterpreterPack`). `tester-run.sh` is **v12** for that kit (126,658 B / `87763a3e…`, asset id 593961018: new `runtime_mode` summary key, `3(manifest)`/`1(manifest)` fallbacks and a `run_c_via=manifest` matrix Run C for an interp-marked main hap); **kit #31 ships v13** adding `--blazor-probe` (installs the re-signed Blazor hap, starts `com.example.opendotnet`/`EntryAbility`, asserts the `marker: BLZ_BOOT`/`BLZ_RENDERED` hilog lines, dumps `blazor-hilog.txt` on failure). MAPFIX re-cut the harmony haps
 > (`MapOverlay` really compiles: abc **291,628 B** / `a637a513…`, tar `9b0506fa…`; the old
 > `d3a7b718…`/`f7a4faa2…` assets had no module record). Rebuilt artifacts: host rebuilt with the marker
 > parser; abc **281,052 B** / headless **20,916 B**, host export contract **143/143**, suite
 > **387/floor 367 -> 391/floor 371**; the kit `verify-kit.sh` abc expectation is unchanged
 > (`281052`/`20916`; the #28 value `264136` FAILs by design). The P1–P4 ladder, `probe:`/`xwe` verdicts
 > and the v9+ evidence keys (`aot_route`/`interp_mode`/`runtime_mode`, matrix `summary.txt`, `a11y_*`) are
-> unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`.
-> **Stock kit (#22 on, #30 included) still has not been on a device.**
+> unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
+> **Stock kit (#22 on, #31 included) still has not been on a device.**
+>
+> **2026-09-29 update (kit #31: Blazor WASM/ArkWeb component / tester-run v13 `--blazor-probe`):**
+> the kit carries a 6th hap `hello-blazorwasm-host-unsigned.hap` (26 MB, unsigned, bundle
+> `com.example.opendotnet`): an ArkTS-only ArkWeb host with the Blazor WASM site embedded in
+> `resources/rawfile/blazor` (`onInterceptRequest`, no local server; the `--slim` site drops
+> `.br/.gz/.map` and ICU). Re-sign it like the MAUI unsigned hap, then run
+> `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`: the probe installs/starts
+> `com.example.opendotnet`/`EntryAbility` and asserts the forwarded hilog markers
+> `BlazorWebHost ... marker: BLZ_BOOT` (window load) and `marker: BLZ_RENDERED` (first Blazor frame);
+> failures also carry `marker: BLZ_ERROR <msg>` and dump `blazor-hilog.txt` for return. Manual:
+> first screen “Hello from Blazor WebAssembly”, `/counter` click +1, one screenshot. The MAUI 5 haps
+> and the P1-P4 ladder are unchanged (the Blazor hap does not load `libopenharmonyhost.so`).
+> **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
 > **2026-09-28 update (kit #29: R3 — CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 /
 > self-drawn depth; history):** the shell probes `@kit.CoreSpeechKit` behind `canIUse('SystemCapability.AI.TextToSpeech')`
@@ -84,7 +95,7 @@
 > `281052`/`20916` (the #28 value `264136` now FAILs by design). The P1–P4 ladder, `probe:`/`xwe`
 > verdicts and the v9+ evidence keys (`aot_route`/`interp_mode`, matrix `summary.txt`, `a11y_*`) are
 > unchanged; the kit #29 judgement points are in `2026-09-28-ohos-tester-handoff-kit29.md`.
-> **Stock kit (#22 on, #30 included) still has not been on a device.**
+> **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
 > **2026-09-26 update (kit #28: R2 — Map overlay / Live View probe / AOT start bridge / interpreter; history):** the
 > default-flavor haps answer `IsOverlayAvailable=false` and every Map overlay call degrades without throwing
