@@ -9,6 +9,7 @@
 > 标记写入 hap `libs/<abi>/runtime-mode.txt`，宿主在 `xwe.txt`/`interp.txt` 同点读取（`interp.txt` 仍优先），日志
 > `runtime-mode=<v> source=file|manifest|default`；规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode switch」；
 > 下文 AOT/解释器设备轮仍按 Run D/C 用既有资产，本开关是后续 hap 变体的打包入口；
+> 三形态一键出包（构建侧）：`sh ohos-workload/scripts/make-mode-kit.sh --project <app.csproj> --tfm <tfm> --out-dir <dir> --interp-pack <pack> [--mode jit,aot,interp] [--sign <UDID>]` → `out/<mode>/<stem>-<mode>.hap`（逐模式断言 marker + lib 后保留；`--sign` 沿用 sign-for-device 口令纪律），规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode kits」；
 > **当前 kit = #30**（MS-MODE 增量 = runtime-mode 打包开关 + tester-run v12 + MAPFIX harmony 重切；
 > R3 增量（CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连）仍然有效，见
 > `2026-09-28-ohos-tester-handoff-kit30.md`（#29 见 `2026-09-28-ohos-tester-handoff-kit29.md`）；
