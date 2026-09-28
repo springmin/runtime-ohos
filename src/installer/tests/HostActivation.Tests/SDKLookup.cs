@@ -1201,6 +1201,27 @@ namespace HostActivation.Tests
                 .And.NotHaveStdErrContaining("Using .NET SDK dll=");
         }
 
+        [Fact]
+        public void AotSdkCannotBeLoadedFallsBackToManagedSdk()
+        {
+            GlobalJson.CreateEmpty(SharedState.CurrentWorkingDir);
+
+            AddAvailableSdkVersions("9999.1.0");
+
+            string sdkDir = Path.Combine(ExecutableDotNet.BinPath, "sdk", "9999.1.0");
+            string aotSdkPath = Path.Combine(sdkDir, Binaries.DotNetAot.FileName);
+            File.WriteAllText(aotSdkPath, "This is not a valid native library.");
+
+            // Run without host tracing: an AOT-ed SDK that exists but cannot be loaded is
+            // a supported configuration, so probing for it should not produce error output.
+            ExecutableDotNet.Exec("help")
+                .WorkingDirectory(SharedState.CurrentWorkingDir)
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.NotHaveStdErrContaining("Failed to load");
+        }
+
         private static void AddSdkToCustomPath(string sdkRoot, string version)
         {
             DotNetBuilder.AddMockSDK(sdkRoot, version, version);

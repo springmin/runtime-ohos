@@ -231,6 +231,13 @@ bool pal_is_path_fully_qualified(const pal_char_t* path);
 // *dll and returns true; returns false on failure.
 bool pal_load_library(const pal_char_t* path, pal_dll_t* dll);
 
+// Load the dynamic library at path as an optional dependency. Same as
+// pal_load_library, except a load failure is an expected outcome and is reported
+// at info level instead of error. Use this when the library may legitimately not
+// be available (for example, when probing for an optional component), so that
+// its absence does not produce error output on every invocation.
+bool pal_try_load_library(const pal_char_t* path, pal_dll_t* dll);
+
 // Unload a library previously loaded with pal_load_library.
 void pal_unload_library(pal_dll_t library);
 
@@ -584,6 +591,7 @@ namespace pal
 
     bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
+    bool try_load_library(const string_t* path, dll_t* dll);
     pal_proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 

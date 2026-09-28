@@ -58,7 +58,7 @@ int __stdcall dotnet_execute(
 
 The entry point uses the `__stdcall` calling convention on Windows and the default calling convention elsewhere.
 
-If the `dotnet-aot` library is not found or does not have the expected entry point, the muxer falls back to running the managed `dotnet.dll` as a framework-dependent app.
+If the `dotnet-aot` library is not found, cannot be loaded, or does not have the expected entry point, the muxer falls back to running the managed `dotnet.dll` as a framework-dependent app.
 
 Note: if the SDK lookup is invoked through `hostfxr_resolve_sdk2` the algorithm is the same, expect that the function can disallow pre-release versions via the `hostfxr_resolve_sdk2_flags_t::disallow_prerelease` flag.
 
