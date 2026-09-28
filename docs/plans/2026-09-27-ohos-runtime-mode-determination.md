@@ -9,14 +9,16 @@
 > 标记写入 hap `libs/<abi>/runtime-mode.txt`，宿主在 `xwe.txt`/`interp.txt` 同点读取（`interp.txt` 仍优先），日志
 > `runtime-mode=<v> source=file|manifest|default`；规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode switch」；
 > 下文 AOT/解释器设备轮仍按 Run D/C 用既有资产，本开关是后续 hap 变体的打包入口；
-> **当前 kit = #29**（R3 增量 = CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连，
-> 见 `2026-09-28-ohos-tester-handoff-kit29.md`；下表 kit #28 行为最近一次 API 复核快照，新包数字以 release「## Integrity」为准）。
+> **当前 kit = #30**（MS-MODE 增量 = runtime-mode 打包开关 + tester-run v12 + MAPFIX harmony 重切；
+> R3 增量（CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连）仍然有效，见
+> `2026-09-28-ohos-tester-handoff-kit30.md`（#29 见 `2026-09-28-ohos-tester-handoff-kit29.md`）；
+> 下表 kit #28 行是最近一次 API 复核快照，新包数字以 release「## Integrity」为准）。
 
-## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后；harmony 行 2026-09-28 MAPFIX 后复核）
+## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后；harmony 行 2026-09-28 MAPFIX 后复核；kit #30 行数字见 release「## Integrity」）
 
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
-| `device-test-kit.tar.gz`（kit #28） | 590266238 | 196,220,486 | `091dcc56…`（sidecar `d7efd251…`） | 5 个 JIT hap＋文档＋verify-kit |
+| `device-test-kit.tar.gz`（kit #30；#29 实测 392356147 / 196,990,205 B / `e895cc0a…`） | 见 release「## Integrity」 | 见 release「## Integrity」 | 见 sidecar（#28 快照 590266238 / 196,220,486 / `091dcc56…`） | 5 个 JIT hap（#30 含 `libs/<abi>/runtime-mode.txt=jit`）＋文档＋verify-kit |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
@@ -26,16 +28,16 @@
 
 | 态 | 取件/前置 | 关键日志（execmem 文件） | 判定 | 回传 |
 |---|---|---|---|---|
-| JIT | kit #29 stock hap（#28 快照同流程） | `xwe=0 source=default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
+| JIT | kit #30 stock hap（默认 `runtime-mode.txt=jit`；#28 快照同流程） | `xwe=0 source=default`、`runtime-mode=jit source=manifest|default`、`probe: 1=OK`、`aot=0 dir=…` | `1=OK` 且 managed 运行 → JIT 可用；`1≠OK` 或 SEGV/`mprotect` 拒 → 走 `xwe.txt=1` A/B | tar |
 | AOT | aot-haps（已内置桥宿主）＋重签 | `NativeAOT payload … aot=1` | managed 输出，且**无** `The application to execute does not exist` | tar |
-| 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签（或清单 `runtime-mode.txt=interp` 的包） | `interp=3 source=file`（清单包为 `interp=3 source=manifest`） | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
+| 解释器 | interp pack 替换 payload＋`interp.txt`=3＋重签（或清单 `runtime-mode.txt=interp` 的包） | `interp=3 source=file`（清单包为 `runtime-mode=interp source=manifest` + `interp=3 source=manifest`） | maps 含 `libclrinterpreter.so`、匿名 `r-x` 照录（Precode stub 风险，不得改策略）、managed 输出 | tar＋maps |
 | 渲染/交互 | 任一态起来后 | —（功能性） | ①首帧 ②触摸→handler ③导航 ④列表/WebView | 截图/录屏/日志 |
 
 ## 1. 判定树（自上而下；先证跑通，再判模式）
 
 1. `probe: 1=OK`？否（`1=1|12|13|38` 或启动 SEGV/`mprotect` 拒绝）→ 写 `xwe.txt=1` 复跑 A/B，两轮都记录；仍未通按崩溃分支取证。
 2. 应用 managed 起来了（`[maui] openharmony build …`＋首帧）？否 → 按崩溃分支（applib/dlopen/bootstrap + `aot=`/`interp=` 行）取证，不进入后续态。
-3. `aot=1`＋managed 输出＋无 `The application to execute does not exist`？是 → AOT 直启成立；若见 `bridged start_app … JIT payloads only` → 误用了旧的 R2-2 资产（现资产已内置桥宿主，应无此行）。
+3. `aot=1`＋managed 输出＋无 `The application to execute does not exist`？是 → AOT 直启成立；若见 `bridged start_app … JIT payloads only` → 误用了旧的 R2-2 资产（现资产已内置桥宿主，应无此行）；aot 标记缺库时应见 `runtime-mode=aot but …; falling back to the JIT route`（显式回退，不崩）。
 4. `interp=3 source=file`（清单包 `source=manifest`）＋maps 含 `libclrinterpreter.so`？是 → 解释器激活；匿名 `r-x` 只计数（`Precode`/UMEntryThunk 残余先记录）。
 5. 之后按 §2.4 做四项功能性判定；每态单独一轮，不混轮。
 
@@ -67,7 +69,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | `run_<x>_xwe` | `xwe=0` / `xwe=1`（A/B 对照） |
 | `run_<x>_frame` / `run_<x>_crash` | 首帧关键字命中（yes/no，未录到记 `<unavailable>`）/ 崩溃关键字（`SEGV_ACCERR`、`SIGSEGV`、`cppcrash`、`bootstrap failed`、`The application to execute does not exist`… 或 `none`） |
 | `run_<x>_report` | 该 Run 的报告 tar 路径 |
-| `run_c_overlay` / `run_c_hap` / `run_c_hap_sha256` / `run_c_signed` / `run_c_coreclr_check` | 变体构建方式（`builtin` / `script:<路径>` / `given`）、变体路径与 sha、是否重签、解释器宽字符串检查 |
+| `run_c_via` / `run_c_overlay` / `run_c_hap` / `run_c_hap_sha256` / `run_c_signed` / `run_c_coreclr_check` | 清单路线（`manifest` = 主 hap 标记 interp、直接跑 stock hap，不写 `interp.txt`、不重打包）或变体构建方式（`builtin` / `script:<路径>` / `given`）、变体路径与 sha、是否重签、解释器宽字符串检查 |
 | `interp_pack_sha256`/`interp_pack_check`/`interp_pack_members`、`aot_pack_sha256`/`aot_pack_check`/`aot_pack_members` | 可选资产校验（sidecar=ok；包内 `SHA256SUMS` 逐成员复核） |
 | `preclean_*_rm` / `switch_*_write|_rm` / `force_stop` / `restore_install` | 切换文件清理与写删、重启、还原 stock 的执行结果（`ok`/`fail(rc=…)`） |
 | `matrix_failures` / `conclusion` | 未通过计数 / 结论建议行（JIT 直起可用 / 需 xwe=1 / 解释器 3(file) / AOT aot=1） |
@@ -78,21 +80,24 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
 - `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
-### 2.1 JIT（kit #29 stock；#28 快照同流程）
+### 2.1 JIT（kit #30 stock；#28 快照同流程）
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --out tester-report
 hdc shell "echo 1 > /data/storage/el2/base/haps/entry/files/xwe.txt"   # A/B：仅当 probe 1≠OK/SEGV 才写
 sh tester-run.sh --kit-dir ./device-test-kit --start --capture 60 --out tester-report-xwe1
 hdc shell "rm -f /data/storage/el2/base/haps/entry/files/xwe.txt"
 ```
-期望：`summary aot_route=0 interp_mode=0(default)`；`xwe=0 source=default`（A/B 轮为 `xwe=1 source=file`）；`probe: 1=OK`；managed 输出＋首帧。
+期望：`summary aot_route=0 interp_mode=0(default) runtime_mode=jit(hap)`；`xwe=0 source=default`（A/B 轮为 `xwe=1 source=file`）、`runtime-mode=jit source=manifest`（写过 `interp.txt` 的机器为 `source=file`）；`probe: 1=OK`；managed 输出＋首帧。
 回传：`tester-report*.tar.gz`（A/B 两轮都发）。
 
 ### 2.2 AOT（aot-haps）
 > **已内置桥宿主（AOT-RECUT，2026-09-27）**：资产内宿主 = kit #28 桥版 **269,216 B / `bb51826e…`**，
 > `start_app` 直接探测 `lib<stem>.so` → `openharmony_app_main` 并记 `aot=1`；**无需换宿主**，
 > 按《自签说明.md》重签后 `aa start` / 桌面启动即可判定（旧 R2-2 包才会打
-> `bridged start_app supports JIT payloads only`）。
+> `bridged start_app supports JIT payloads only`）。**MS-MODE（2026-09-28）起**：用
+> `-p:OpenHarmonyRuntimeMode=aot` 构建的包（标记 `runtime-mode.txt=aot`）走同一探测；标记为 aot 而
+> `lib<stem>.so` 缺失/不可加载时，宿主记 `runtime-mode=aot but <path> …; falling back to the JIT route`
+> 并回退（不崩、不再静默穿透）。
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app-aot-signed.hap --install --start --capture 60 --out tester-report-aot
 ```
@@ -108,7 +113,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --hap ./hello-maui-app-interp.hap -
 hdc shell "pidof com.example.hellomauiapp"; hdc shell "cat /proc/<pid>/maps" | grep -E 'libclrinterpreter|r-x.*\[anon' > maps-interp.txt
 hdc shell "rm -f /data/storage/el2/base/haps/entry/files/interp.txt"
 ```
-期望：`summary interp_mode=3(file)`（清单包为 `3(manifest)`）；`interp=3 source=file`（清单包 `source=manifest`）；maps 含 `libclrinterpreter.so`、匿名 `r-x` 计数照录；managed 输出；无 `SEGV_ACCERR`。
+期望：`summary interp_mode=3(file)`（清单包为 `3(manifest)`、`run_c_via=manifest`）；`interp=3 source=file`（清单包先记 `runtime-mode=interp source=manifest`、再记 `interp=3 source=manifest`；写过 `interp.txt` 时 file 覆盖标记）；maps 含 `libclrinterpreter.so`、匿名 `r-x` 计数照录；managed 输出；无 `SEGV_ACCERR`。
 回传：tar（含 execmem）＋maps 摘录＋pack `sha256sum -c` 输出。
 
 ### 2.4 渲染/交互（任一态）
@@ -121,7 +126,7 @@ hdc shell "rm -f /data/storage/el2/base/haps/entry/files/interp.txt"
 > 回 JIT 重装 kit hap（同 §2.2）。静态形态（交付方逐 hap 断言 **102/102** + kit `verify-kit.sh --expected-abc 291628`
 > KIT OK；与同提交默认 control 构建**仅 `ets/modules.abc` 不同**）：abc **291,628 B/`a637a513…`**（PANDA 13.0.1.0，
 > 含 `entry/ets/map/MapOverlay` 模块记录 + `mapOverlayView`/`markerClick`/`cameraIdle` 符号）、libs 269
-> （14 `.so`+254 payload+marker）、hap 内宿主 285,600 B/`5248c6a9…`、`module.json` 与 kit #29 对应 hap 逐字节相同、
+> （14 `.so`+254 payload+marker）、hap 内宿主 285,600 B/`5248c6a9…`、`module.json` 与 kit #30 对应 hap 逐字节相同、
 > 14 `.so` 均带 `.codesign`；默认 JIT payload 不变（**AOT 走 §2.2 的 `aot-haps.tar.gz`**）。
 > **更正（MAPFIX 2026-09-28）**：旧 A1 件（abc 263,784 B/`d3a7b718…`）的「`MapOverlay.ets` 真编译」不成立 ——
 > 模块仅被复制、从未进编译图（abc 无模块记录，bit1 只能为 0）。本版由构建脚本向 harmony 的 `Index.ets`

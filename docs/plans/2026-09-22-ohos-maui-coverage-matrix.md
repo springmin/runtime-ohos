@@ -127,25 +127,26 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 | TextToSpeech | **已解（A2-TTS 2026-09-27）**：CLT HarmonyOS SDK（6.0.1.251）的 `hms/ets` 确认 `@kit.CoreSpeechKit` → `@hms.ai.textToSpeech`（syscap `SystemCapability.AI.TextToSpeech`，since 4.1.0(11)）；默认 OpenHarmony SDK 仍无此 Kit | 链路已落地（壳 `canIUse`+变量 import 双门、五 op sink、托管 `SpeakAsync`/`GetLocalesAsync`/`Stop`/`IsSupported`）；默认 flavor 降级不抛，harmony flavor 编译证据 abc 273,932 B / `13.0.1.0`；真机朗读需 HMS 设备 + harmony 壳（Kit 无 AGC 权益/权限门槛，AGC 清单第 13 行；见 `2026-09-24-ohos-kit-gap-analysis.md` §1/§6） |
 | Map | 本 SDK 无 MapKit | 方案 (b) 能力探测已落地（`OpenHarmonyMap.QueryCapabilitiesAsync`/`MapKitImportable`/`IsSupported`，无 Kit 返 null/false）；方案 (a) MapComponent overlay 已落地（R2-3：`IsOverlayAvailable`/show/hide/close/区域/标记 + `Ready`/`MarkerClick`/`CameraIdle`），需 harmony flavor + AGC AppKey，默认 flavor 降级不抛 |
 | 系统分享面板 / 多文件分享 | 无 Share Kit（`systemShare`），一个 Want 只有单个 uri 槽 | 文本 + 单文件可用（S4）；Share Kit 多文件分支已落地（无 Kit 时仍走 no-op + 一次状态） |
-| Hot Reload | hdc 策略 | 硬阻塞（交接状态 §8，D4）；**开发侧替代已落地**：`ohos-workload/scripts/devloop.sh` v1（2026-09-27，28,582 B / `7491d0c3…`）一键 build → (sign) → install → start → logs（+ `--watch`），见 kit #29 交接 |
+| Hot Reload | hdc 策略 | 硬阻塞（交接状态 §8，D4）；**开发侧替代已落地**：`ohos-workload/scripts/devloop.sh` v1（2026-09-27，28,582 B / `7491d0c3…`）一键 build → (sign) → install → start → logs（+ `--watch`），见 kit #30 交接（#29 见 kit #29 交接） |
 | arm32 | 无 runtime packs、无 32 位设备 | 见 `2026-09-21-ohos-arm32-support-gap.md` |
 
 ## 5. 套件与 CI 基线
 
-- `test/maui-platform-verify` 期望 **387** 条 `[verify]`、门限 **floor 367**（P2c-DEEPLINK 的 10 条深链/激活检查
-  加在 P2b-IMG 的 4 条之上，后者加在 P1b-LIST 的 16 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
+- `test/maui-platform-verify` 期望 **391** 条 `[verify]`、门限 **floor 371**（MS-MODE 的 4 条 runtime-mode 检查
+  加在 P2c-DEEPLINK 的 10 条深链/激活检查之上，后者加在 P2b-IMG 的 4 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
   315/floor 295 为 2026-09-22 批次值；`fb533f0` 新增 9 条 audit 检查；334/floor 314 为 KIT-EXT2 批次值，
   340/floor 320 为 P2a-HUKS 批次值；347/327 为 P0c-TEXT-EDIT、357/337 为 P1a-ANIM 批次值；
-  373/353 为 P1b-LIST、377/357 为 P2b-IMG 批次值）。
+  373/353 为 P1b-LIST、377/357 为 P2b-IMG、387/367 为 P2c-DEEPLINK 批次值）。
 - 切片 pin：`ohos-workload` `3e6d9f4`（2026-09-27，P2c-DEEPLINK 批次）将三个 workflow 的 `maui_ohos_ref`
   固定到 `maui-ohos` `4b5756de44257914be6fd44c62b5c03cc09329bf`（P2c-DEEPLINK tip：want/activation 深链路由；
   其下依次为 P2b-IMG `d3122bb5`、P1b-LIST `150ac92f`、P1a-ANIM `f9b63ee2`、P0c-TEXT-EDIT `e6b6ecbb`、
-  P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2 批次），下限 367；三个 workflow_dispatch 的输入默认值一并推进
+  P2a-HUKS、A2-TTS、R2-SHELL-EXT/KIT-EXT2 批次），下限 371（MS-MODE 起；此前 367）；三个 workflow_dispatch 的输入默认值一并推进
   （此前停滞在 `150ac92f`/`d3122bb5`，手动派发会绕过 env pin 编译旧切片）。
   演进：`df221b6` → `be5d471f`（下限 224）→ `fb533f0` → `90b21416`（下限 264）
   → `ab09918` → `c4ac6a5e` → …（KIT-EXT2 334/314、P2a-HUKS 340/320）→ `e6b6ecbb`（347/327）
-  → `f9b63ee2`（357/337）→ `150ac92f`（373/353）→ `d3122bb5`（377/357）→ `4b5756de`（387/367）。
+  → `f9b63ee2`（357/337）→ `150ac92f`（373/353）→ `d3122bb5`（377/357）→ `4b5756de`（387/367）
+  → MS-MODE 批次（`ohos-workload 57d8edf` 追加 4 检查，**391/floor 371**）。
 - 最近一次本地完整验证（2026-09-27，P2c-DEEPLINK；隔离 worktree，含 P2b-IMG + P2c-DEEPLINK 切片）：
   interaction **387** 条、0 Unhandled、五条性能门 `within=True`（帧 avg 7.32 ms、4,496 B/帧；a11y skip/republish
   render + publish 两条 skip/两条 republish `within=True`）；pixel `PIXEL ASSERTIONS PASSED`；markdownlint 0 issues；
@@ -160,17 +161,20 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 - 历史 CI：`df221b6` 上三条 run 全绿：interaction `35629780806`、pixel `35629780800`、markdownlint `35629780817`
   （均 2026-09-21T17:05:36Z）。
 - 此前 interaction 红的原因是 pin 停在 `90c8373f`（缺 B 系列符号），属 pin 未推进，不是套件回归。
-- 注意：pin 推进到 `e6b6ecbb` 后的 CI run 尚待本次 push 产生；此前 `c4ac6a5e` 起的批次均已本地全绿验证。
+- 注意：MS-MODE 批次（`ohos-workload 6cdd1fa`）的离线门禁 = `selftest-hap-targets.sh` T7（runtime-mode 暂存
+  fixture：jit/非法/aot 缺库与带库/interp 两种 pack 布局）、`selftest-tester-run.sh` S1–S17b（marker 解析/优先级/
+  aot 回退/Run C manifest 路线）与交互套件 `[suite] checks=391 total=391 floor=371 assert=True`（4 条 ms-mode 检查）；
+  CI run 状态以 GitHub Actions 结果为准。
 
 ## 6. 真机状态（caveat）
 
-- 上述所有内容均为**离设备**验证；套件（现 387 条，见 §5）与像素套件只在无设备环境运行。
+- 上述所有内容均为**离设备**验证；套件（现 391 条 / floor 371，见 §5）与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
-  此前 `24.0.0.0` 超出设备 ark runtime）。**kit #29 为当前发布**（含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关，R3 批 = CoreSpeechKit TTS + HUKS-first SecureStorage + tester-run v11 + 自绘深度五连（文本编辑/动画/列表/图片/深链）；数字入口见 release「## Integrity」）；
+  此前 `24.0.0.0` 超出设备 ark runtime）。**kit #30 为当前发布**（MS-MODE 批 = runtime-mode 打包开关（`libs/<abi>/runtime-mode.txt`；宿主 file>manifest>default）+ tester-run v12 + MAPFIX harmony 重切（MapOverlay 真编译）；含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关，R3 批 = CoreSpeechKit TTS + HUKS-first SecureStorage + 自绘深度五连（文本编辑/动画/列表/图片/深链）；数字入口见 release「## Integrity」）；
   详情见 `2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5f 与 `2026-09-22-ohos-arkts-abc-version-history.md`。
   **2026-09-24 设备里程碑**：kit #18 + 测试方 5 项本地修复后首次完整运行成功（`managed app hello-maui-app.dll started (UI shell)`、无崩溃）；
-  旧「黑屏 #4 = napi 记录名」结论已修正为无害加固 —— 直接链见 `2026-09-24-ohos-device-milestone.md` §2，**stock kit（#22 起，当前 #29）尚未上机**。
+  旧「黑屏 #4 = napi 记录名」结论已修正为无害加固 —— 直接链见 `2026-09-24-ohos-device-milestone.md` §2，**stock kit（#22 起，当前 #30）尚未上机**。
   P1–P4 阶梯仍适用于 dlopen / 缺库 / 宿主入口 / .NET 运行时类崩溃（判读分支见
   `2026-09-21-ohos-crash-probes.md` §4.0/§4.0b）。
 - 因此本矩阵中"已实现"仅代表代码路径与离设备套件证据，不代表真机行为。

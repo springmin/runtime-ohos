@@ -7,13 +7,13 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-28-ohos-tester-handoff-kit29.md` 文首指纹块；`tester-run.sh` v11 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| kit tar.gz sha256（实测） | `<...>`（期望值见 `device-test-kit` release「## Integrity」/`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` 文首指纹块；`tester-run.sh` v12 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
 | tree digest（实测） | `<...>`（期望 = release「## Integrity」的 tree sha256；`summary.txt` 的 `tree_digest` 同值） |
-| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v11 = `11`） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #29） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v12 = `12`） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #30） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
-> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h。
+> **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3、#30 为 MS-MODE）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h，#30 见 §4i。
 
 ## 1. 下载与校验
 
@@ -90,7 +90,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - `appLibPathKey` 行（含 `lib path:` 原文）：`<粘贴 / 未出现>`（出现 `appLibPathKey: <bundle>/<module>` = 模块级 app-lib key 已注册，`libIsolation` 生效）
 - 别名注册行（`[openharmony-host] … bound via alias '…'`，逐字）：`<粘贴 / 未出现>`
 - 首帧判定（`registerXComponent=function` / 首帧出现 / 无 `Load native module failed`）：`<逐条>`
-- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §3 / `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
+- `summary.txt` 的 v7/v8 键（原文照抄）：`bootstrap_errors=<...> rawfile_errors=<...> libload_errors=<...> payload_present=<...> payload_marker=<...> kit_index_ok=<...> execmem_capture=<...> execmem_lines=<...>`；`kit_index_ok=no` 请换 kit #22+ 再测；`bootstrap/rawfile` 计数 >0 时附 `hilog-bootstrap.txt`；JIT 判定见 `docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §3（#28 见 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md` §3）/ `docs/plans/2026-09-24-ohos-tester-handoff-kit24.md` §5
 
 ## 4d. kit #25 判定点（权限弹窗文案 / Share 面板 / Scan 返回 / AOT 启动；#26–#29 继续按此判读）
 
@@ -108,7 +108,7 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 ## 4e. kit #26 增量判定点（新 payload 首次运行 / 原生桥 ABI / PLAT-GAP 恢复路径；历史，仍按此判读）
 
 > 完整判读见 `docs/plans/2026-09-26-ohos-tester-handoff-kit26.md` §2；§4d 的权限/Share/Scan/AOT 口径不变。
-> kit #27/#28/#29 继续沿用本节（重建 payload 首次运行 / 回调路径无 ABI 回归）；kit #28 的 abc 期望为 `264136`（#27 为 `245412`）、kit #29 为 `281052`/`20916`；PLAT-GAP 路径同。
+> kit #27/#28/#29/#30 继续沿用本节（重建 payload 首次运行 / 回调路径无 ABI 回归）；kit #28 的 abc 期望为 `264136`（#27 为 `245412`）、kit #29 为 `281052`/`20916`（#30 沿用）；PLAT-GAP 路径同。
 
 - 新 payload 首次运行（LibraryImport hosting 重建）：`<启动两行日志原文 + 是否存活 + 5 条冒烟结果>`
 - 原生桥 ABI 抽查（权限请求 / `A11Y` / Hybrid `Echo`·`Add`）：`<结果截图/回显 + 有无 EntryPointNotFound/DllNotFound/参数错乱>`
@@ -159,6 +159,20 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - 文本编辑 / 动画·减少动效 / 列表 / 图片：`<录屏文件名 + 关键状态原文 / 未测（本包无入口）>`
 - 深链（冷启动 / 热激活）：`<截图 + activation 日志（uri/sequence）+ 未知路由状态原文 / 未做>`
 - 新 payload 首次运行（新 abc 281,052 + R3 壳桥）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
+
+## 4i. kit #30 增量判定点（runtime-mode 打包开关 / tester-run v12 / MAPFIX harmony 重切）
+
+> MS-MODE 默认 flavor 的 5 个 hap 为 **jit 形态**（`libs/<abi>/runtime-mode.txt=jit`）：首选判定是
+> **标记录入 + 优先级**与**重建 payload 首次运行**。MAPFIX 的 Map overlay 点亮需 harmony 壳 + AGC 地图
+> AppKey + **与 AGC 证书指纹一致的重签**。没有对应入口/资产时登记「未测（本包无入口）」，不要判失败。
+> 完整判读见 `docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §2。
+
+- runtime_mode 标记（默认包）：`<summary runtime_mode=jit(hap) + execmem 的 runtime-mode=jit source=manifest 原文>`
+- 优先级（file>manifest>default）：`<写/删 <files>/interp.txt 前后的 source=file / source=manifest 原文 + 是否切到 3(file)/3(manifest)>`
+- aot 显式回退（aot 形态包，可选）：`<runtime-mode=aot but …; falling back to the JIT route 行 / 无此资产 → 未测>`
+- 模式矩阵 Run C 清单路线（v12）：`<run_c_via=manifest + run_c_interp_mode=3(manifest) + conclusion 原文 + 是否未写 interp.txt>`
+- Map 覆盖层点亮（MAPFIX harmony + AppKey + 同指纹重签）：`<IsOverlayAvailable=true + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`
+- 新 payload 首次运行（新宿主 MS-MODE + #29 abc）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
 
 ## 5. 探针阶梯（仍崩溃时；签装与判读见 crash-probes）
 

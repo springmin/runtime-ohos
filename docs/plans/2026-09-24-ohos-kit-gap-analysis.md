@@ -81,7 +81,11 @@
 > **334 行/floor 314**（kit7 + kit8/kit9/kit10），UI abc **264,136 B**（headless 18,532 B）、宿主导出契约 **134/134**；
 > 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。**kit #29 门禁** = 交互套件
 > **387 行/floor 367**、UI abc **281,052 B**（headless **20,916 B**）、宿主导出契约 **134/134 → 143/143**
-> （TTS 136、P0c 139、P1a 141、P2c 143）；TTS/HUKS 见下方 A2-TTS/P2a-HUKS 回填。
+> （TTS 136、P0c 139、P1a 141、P2c 143）；**kit #30 门禁** = 交互套件 **391 行/floor 371**（MS-MODE：
+> 宿主 runtime-mode 标记解析/优先级与生效日志/aot 回退/pack 契约 4 检查）、abc 与导出契约不变；
+> **MAPFIX（2026-09-28）**：旧 A1 harmony 件的 `MapOverlay` 从未进编译图（abc 无模块记录、bit1 恒 0），
+> 重切件 abc **291,628 B / `a637a513…`** 已真编译（tar `9b0506fa…`，旧 `d3a7b718…`/`f7a4faa2…` 已替换）；
+> 点亮前置 = AGC 地图 AppKey + **与 AGC 证书指纹一致的重签**。TTS/HUKS 见下方 A2-TTS/P2a-HUKS 回填。
 >
 > **A2-TTS 回填（2026-09-27，CoreSpeechKit）**：新获取的 DevEco CLT HarmonyOS SDK（6.0.1.251，HarmonyOS 6.0.1
 > Release / API 21）的 `hms/ets` **确认包含** `kits/@kit.CoreSpeechKit.d.ts`（导出 `textToSpeech` +
