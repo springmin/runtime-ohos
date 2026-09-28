@@ -148,6 +148,11 @@ bool pal::load_library(const string_t* path, dll_t* dll)
     return pal_load_library(path->c_str(), dll);
 }
 
+bool pal::try_load_library(const string_t* path, dll_t* dll)
+{
+    return pal_try_load_library(path->c_str(), dll);
+}
+
 pal_proc_t pal::get_symbol(dll_t library, const char* name)
 {
     return pal_get_symbol(library, name);

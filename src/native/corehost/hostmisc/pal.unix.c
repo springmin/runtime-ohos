@@ -318,15 +318,40 @@ bool pal_is_path_fully_qualified(const pal_char_t* path)
     return path != NULL && path[0] == DIR_SEPARATOR;
 }
 
-bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+// Logs a library load failure. Probing for an optional library is treated as an
+// expected outcome, so failures are reported at info level instead of error.
+static void TRACE_ATTR_FORMAT_PRINTF(2, 3) pal_log_load_failure(bool probe, const pal_char_t* format, ...);
+
+static void pal_log_load_failure(bool probe, const pal_char_t* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    if (probe)
+        trace_info_v(format, args);
+    else
+        trace_error_v(format, args);
+    va_end(args);
+}
+
+static bool pal_load_library_impl(const pal_char_t* path, pal_dll_t* dll, bool probe)
 {
     *dll = dlopen(path, RTLD_LAZY);
     if (*dll == NULL)
     {
-        trace_error(_X("Failed to load %s, error: %s"), path, dlerror());
+        pal_log_load_failure(probe, _X("Failed to load %s, error: %s"), path, dlerror());
         return false;
     }
     return true;
+}
+
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    return pal_load_library_impl(path, dll, false);
+}
+
+bool pal_try_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    return pal_load_library_impl(path, dll, true);
 }
 
 void pal_unload_library(pal_dll_t library)

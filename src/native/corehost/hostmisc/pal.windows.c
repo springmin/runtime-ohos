@@ -512,7 +512,22 @@ bool pal_is_path_fully_qualified(const pal_char_t* path)
     return len >= 3 && path[1] == VOLUME_SEPARATOR && is_dir_separator(path[2]);
 }
 
-bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+// Logs a library load failure. Probing for an optional library is treated as an
+// expected outcome, so failures are reported at info level instead of error.
+static void TRACE_ATTR_FORMAT_PRINTF(2, 3) pal_log_load_failure(bool probe, const pal_char_t* format, ...);
+
+static void pal_log_load_failure(bool probe, const pal_char_t* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    if (probe)
+        trace_info_v(format, args);
+    else
+        trace_error_v(format, args);
+    va_end(args);
+}
+
+static bool pal_load_library_impl(const pal_char_t* path, pal_dll_t* dll, bool probe)
 {
     *dll = NULL;
 
@@ -525,7 +540,7 @@ bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
         full = pal_fullpath(path, false);
         if (full == NULL)
         {
-            trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            pal_log_load_failure(probe, _X("Failed to load [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
             return false;
         }
         load_path = full;
@@ -535,10 +550,10 @@ bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
     if (library == NULL)
     {
         DWORD error_code = GetLastError();
-        trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), load_path, HRESULT_FROM_WIN32(error_code));
+        pal_log_load_failure(probe, _X("Failed to load [%s], HRESULT: 0x%X"), load_path, HRESULT_FROM_WIN32(error_code));
         if (error_code == ERROR_BAD_EXE_FORMAT)
         {
-            trace_error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+            pal_log_load_failure(probe, _X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
         }
         free(full);
         return false;
@@ -582,6 +597,16 @@ bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
     *dll = library;
     free(full);
     return true;
+}
+
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    return pal_load_library_impl(path, dll, false);
+}
+
+bool pal_try_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    return pal_load_library_impl(path, dll, true);
 }
 
 void pal_unload_library(pal_dll_t library)
