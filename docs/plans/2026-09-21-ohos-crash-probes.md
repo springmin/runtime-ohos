@@ -49,8 +49,8 @@
 > payload state (`device/payload-files.txt` / `payload-marker.txt`), the exec-memory evidence
 > (`hilog/hilog-execmem.txt` + `execmem_capture`/`execmem_lines`) and a local kit hap
 > self-check (`meta/kit-selfcheck.txt`, `kit_index_ok`) automatically.
-> Numbers for the current kit (#31): release `## Integrity (kit #31)` carries the current values (kit #30
-> for comparison: tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar **`a63cd34f…`**); `2026-09-22-ohos-release-manifest.md` refreshes the snapshot.
+> Numbers for the current kit (#31): tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**,
+> `SHA256SUMS` **16 entries / 1,410 B / `f49b9a0e…`** (kit #30 for comparison: tar **196,992,264 B** / `a781c25b…`); `2026-09-22-ohos-release-manifest.md` refreshes the snapshot.
 > JIT verdict table and NativeAOT handoff: `2026-09-24-ohos-tester-handoff-kit24.md`.
 >
 > **2026-09-28 update (kit #30: MS-MODE — runtime-mode packaging switch / tester-run v12 / MAPFIX
@@ -59,7 +59,7 @@
 > `xwe.txt`/`interp.txt` with **file > manifest > default** precedence and logs
 > `runtime-mode=<v> source=file|manifest|default` on every path (`aot` with a missing `lib<stem>.so`
 > logs the explicit `falling back to the JIT route` line; `interp` may carry
-> `-p:OpenHarmonyInterpreterPack`). `tester-run.sh` is **v12** for that kit (126,658 B / `87763a3e…`, asset id 593961018: new `runtime_mode` summary key, `3(manifest)`/`1(manifest)` fallbacks and a `run_c_via=manifest` matrix Run C for an interp-marked main hap); **kit #31 ships v13** adding `--blazor-probe` (installs the re-signed Blazor hap, starts `com.example.opendotnet`/`EntryAbility`, asserts the `marker: BLZ_BOOT`/`BLZ_RENDERED` hilog lines, dumps `blazor-hilog.txt` on failure). MAPFIX re-cut the harmony haps
+> `-p:OpenHarmonyInterpreterPack`). `tester-run.sh` is **v12** for that kit (126,658 B / `87763a3e…`, asset id 593961018: new `runtime_mode` summary key, `3(manifest)`/`1(manifest)` fallbacks and a `run_c_via=manifest` matrix Run C for an interp-marked main hap); **kit #31 ships v13** (**137,113 B / `2caa06bd…`**, asset **594519342**) adding `--blazor-probe` (installs the re-signed Blazor hap, starts `com.example.opendotnet`/`EntryAbility`, asserts the `marker: BLZ_BOOT`/`BLZ_RENDERED` hilog lines, dumps `blazor-hilog.txt` on failure). MAPFIX re-cut the harmony haps
 > (`MapOverlay` really compiles: abc **291,628 B** / `a637a513…`, tar `9b0506fa…`; the old
 > `d3a7b718…`/`f7a4faa2…` assets had no module record). Rebuilt artifacts: host rebuilt with the marker
 > parser; abc **281,052 B** / headless **20,916 B**, host export contract **143/143**, suite
@@ -70,8 +70,9 @@
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
 > **2026-09-29 update (kit #31: Blazor WASM/ArkWeb component / tester-run v13 `--blazor-probe`):**
-> the kit carries a 6th hap `hello-blazorwasm-host-unsigned.hap` (26 MB, unsigned, bundle
-> `com.example.opendotnet`): an ArkTS-only ArkWeb host with the Blazor WASM site embedded in
+> the kit carries a 6th hap `hello-blazorwasm-host-unsigned.hap` (26,794,931 B / `36010a9c…`, unsigned, bundle
+> `com.example.opendotnet`; declares `ohos.permission.INTERNET` - development-only host, rawfile-served, no
+> runtime network need; a re-signed copy keeps it only if the signing project does): an ArkTS-only ArkWeb host with the Blazor WASM site embedded in
 > `resources/rawfile/blazor` (`onInterceptRequest`, no local server; the `--slim` site drops
 > `.br/.gz/.map` and ICU). Re-sign it like the MAUI unsigned hap, then run
 > `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`: the probe installs/starts

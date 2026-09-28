@@ -17,10 +17,11 @@ report template to what to return.
 Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, not here — §0
 reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
-this document. Kit #30 numbers are the published snapshot (release notes `## Integrity (kit #30)`,
-PATCHed 2026-09-28): tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar
-**`a63cd34f…`**, `SHA256SUMS` 15 entries / 1,309 B / `3a369dd8…` (the kit #30 handoff
-`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` carries the full table; #29 was tar
+this document. Kit #31 numbers are the published snapshot (release notes `## Integrity (kit #31)`,
+PATCHed 2026-09-28): tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar
+**`7d0cba77…`**, `SHA256SUMS` 16 entries / 1,410 B / `f49b9a0e…` (the kit #31 handoff
+`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` carries the full table; tester-run v13
+137,113 B / `2caa06bd…`, asset 594519342; #30 was tar 196,992,264 / `a781c25b…`, #29
 196,990,205 / `e895cc0a…`); the #28 comparison values were
 tar **196,220,486 B** / `091dcc56…`, tree **`0a7a3215…`**, sidecar `d7efd251…` (see
 `docs/plans/2026-09-26-ohos-tester-handoff-kit28.md`).
@@ -30,7 +31,7 @@ complete security/performance/startup fix set since #17 (frame allocation 241,68
 P17 extraction skip, H7 rawfile fd read, headless abc `13.0.1.0`) and `tester-run.sh` v6r2 now
 collects app-lib/dlopen evidence, kmsg and the XPM/fs-verity probes automatically. The comparison
 payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 remain on the same release.
-Numbers stay in the release notes `## Integrity` (kit #30 measured: tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar **`a63cd34f…`**; kit #28 comparison: tar `196,220,486 B` / `091dcc56…`, tree `0a7a3215…`); the kit's `签名说明.txt` PA1 sentence is
+Numbers stay in the release notes `## Integrity` (kit #31 measured: tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; kit #30 comparison: tar **196,992,264 B** / `a781c25b…`; kit #28 comparison: tar `196,220,486 B` / `091dcc56…`, tree `0a7a3215…`); the kit's `签名说明.txt` PA1 sentence is
 historical wording (source fixed, next kit packaging).
 
 Updated 2026-09-24 (kit #22): the current kit is #22 — a stock-runnable back-port of the on-device
@@ -65,9 +66,21 @@ degradation must not throw for Push/Account/Map, first run of the rebuilt payloa
 AOT start bridge / interpreter experiment): `2026-09-26-ohos-tester-handoff-kit28.md`; the kit #29 incremental
 points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a11y / text editing / animations /
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
-points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`.
+points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-09-28 (kit #30 — current): **MS-MODE — runtime-mode packaging switch / tester-run v12 /
+Updated 2026-09-28 (kit #31 — current): **Blazor WASM/ArkWeb component + tester-run v13**: a 6th,
+unsigned hap `hello-blazorwasm-host-unsigned.hap` (26,794,931 B / `36010a9c…`, 219 entries, bundle
+`com.example.opendotnet`, own shell abc 16,352 B @13.0.1.0; embedded site 210 files = `_framework` 208
+with 204 `.wasm` + `blazor.webassembly.js`; declares `ohos.permission.INTERNET` - development-only
+host, rawfile-served, no runtime network need; a re-signed copy keeps it only if the signing project
+does). `tester-run.sh` is **v13** (137,113 B / `2caa06bd…`, asset 594519342) adding `--blazor-probe`
+(install the re-signed hap, start `com.example.opendotnet`/`EntryAbility`, assert `marker: BLZ_BOOT` +
+`marker: BLZ_RENDERED`, dump `blazor-hilog.txt` on failure); manual first screen "Hello from Blazor
+WebAssembly" + `/counter` +1 + one screenshot. `verify-kit.sh` is **63,301 B / `67622771…`** (selftest
+72 -> 92) and adds the section-2c Blazor assertions (when the component is present). **Stock kit (from
+#22 on, #31 included) has not been on a device yet.**
+
+Updated 2026-09-28 (kit #30 — history): **MS-MODE — runtime-mode packaging switch / tester-run v12 /
 MAPFIX harmony re-cut**: `-p:OpenHarmonyRuntimeMode=jit|aot|interp` (default `jit`) selects the launch
 shape and writes `libs/<abi>/runtime-mode.txt` next to the signed payload (the `aot` shape requires the
 NativeAOT application library `lib<stem>.so` or the build fails, naming the aot-haps publish flags;
@@ -85,7 +98,7 @@ AppKey plus a re-sign whose certificate fingerprint matches AGC. Artifacts: host
 parser; abc **281,052 B** / headless **20,916 B**, host export contract **143/143**, suite
 **387/floor 367 -> 391/floor 371**; the kit `verify-kit.sh` abc expectation is unchanged
 (`281052`/`20916`; the #28 value `264136` FAILs by design). The kit's five haps are the default jit shape
-(`libs/<abi>/runtime-mode.txt=jit`); **stock kit (from #22 on, #30 included) has not been on a device yet**,
+(`libs/<abi>/runtime-mode.txt=jit`); **stock kit (from #22 on, #31 included) has not been on a device yet**,
 so the checks below remain open.
 
 Updated 2026-09-28 (kit #29 — history): **R3 — CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 /
@@ -170,14 +183,14 @@ Share panel, Scan return, AOT startup — see `2026-09-25-ohos-tester-handoff-ki
 | Artifact | Where |
 |---|---|
 | `hello-maui-app.hap` (~21 MB, 26.0 band, `verify-app` success; siblings `-permissions`, `-api20`, `-api20-permissions`, `-unsigned`) | `ohos-workload/test/hello-maui-app/bin/Release/<tfm>/openharmony-arm64/` or the delivery kit |
-| Delivery kit `device-test-kit.tar.gz` — current delivery kit (**kit #30**: MS-MODE — runtime-mode packaging switch (`-p:OpenHarmonyRuntimeMode=jit|aot|interp`, default `jit` -> hap `libs/<abi>/runtime-mode.txt`; host **file > manifest > default** precedence, `runtime-mode=<v> source=file|manifest|default` log, explicit `falling back to the JIT route` when an aot marker's library is missing/unloadable; `interp` may carry `-p:OpenHarmonyInterpreterPack`) + tester-run v12 (`runtime_mode` key; matrix Run C `run_c_via=manifest` for an interp-marked main hap) + the MAPFIX harmony re-cut (MapOverlay really compiles: abc 291,628 B / `a637a513…`, tar `9b0506fa…`); R3 carried: CoreSpeechKit TTS (probe + five-op sink + `SpeakAsync`/`GetLocalesAsync`/`Stop`/`IsSupported`; no Kit -> `IsSupported=false`, calls do not throw; real speech needs an HMS device + harmony shell, no AGC entitlement/permission gate) / HUKS-first SecureStorage (device-bound AES-256-GCM key via `libhuks_ndk.z.so`, no permission, file-key fallback marked not hardware-backed; `RemoveAll` clears the key) / devloop.sh (one-command incremental deploy replacing Hot Reload) / self-drawn depth (text editing carets/selection/IME preedit, page transitions/control states/shared elements/reduced motion, incremental list loading/ScrollTo/group collapse/scroll physics, low-res-first image decode, cold/warm deep links), on top of the #28 R2 Map overlay / Live View / `start_app` AOT bridge / interpreter, the #27 KIT-EXT2 Push/Account/Map probes + 12 host kit sinks + FIX-R1-NAPI-6D / FIX-R1-MARSHAL-OFF, the #26 P2-INTEROP `LibraryImport` hosting / TASK-MIG compiled packaging tasks / PLAT-GAP consumer defaults, the #25 permission chain / Share-Scan probes / AOT startup path and #24 payload-in-libs + explicit W^X=0 + exec-memory probe; 5 haps + 8 zh-CN docs + `SHA256SUMS` + the hardened `verify-kit.sh` with per-hap payload-marker assertions and the re-anchored abc expectation `281052`/`20916`; side assets `aot-haps.tar.gz` (AOT MAUI variant + README), `ohos-interpreter-pack.tar.gz` (+ README/sidecar) and `harmony-haps.tar.gz`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity` (kit #30 measured tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar **`a63cd34f…`**, `SHA256SUMS` 15 entries / 1,309 B / `3a369dd8…`; kit #28 comparison was tar 196,220,486 B / `091dcc56…`, tree `0a7a3215…`, sidecar `d7efd251…`), mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
+| Delivery kit `device-test-kit.tar.gz` — current delivery kit (**kit #31**: the Blazor WASM/ArkWeb component — 6th unsigned hap `hello-blazorwasm-host-unsigned.hap` (26,794,931 B / `36010a9c…`, bundle `com.example.opendotnet`, declares `ohos.permission.INTERNET`; tester-run v13 `--blazor-probe`; 6 haps total) + **kit #30**: MS-MODE — runtime-mode packaging switch (`-p:OpenHarmonyRuntimeMode=jit|aot|interp`, default `jit` -> hap `libs/<abi>/runtime-mode.txt`; host **file > manifest > default** precedence, `runtime-mode=<v> source=file|manifest|default` log, explicit `falling back to the JIT route` when an aot marker's library is missing/unloadable; `interp` may carry `-p:OpenHarmonyInterpreterPack`) + tester-run v12 (`runtime_mode` key; matrix Run C `run_c_via=manifest` for an interp-marked main hap) + the MAPFIX harmony re-cut (MapOverlay really compiles: abc 291,628 B / `a637a513…`, tar `9b0506fa…`); R3 carried: CoreSpeechKit TTS (probe + five-op sink + `SpeakAsync`/`GetLocalesAsync`/`Stop`/`IsSupported`; no Kit -> `IsSupported=false`, calls do not throw; real speech needs an HMS device + harmony shell, no AGC entitlement/permission gate) / HUKS-first SecureStorage (device-bound AES-256-GCM key via `libhuks_ndk.z.so`, no permission, file-key fallback marked not hardware-backed; `RemoveAll` clears the key) / devloop.sh (one-command incremental deploy replacing Hot Reload) / self-drawn depth (text editing carets/selection/IME preedit, page transitions/control states/shared elements/reduced motion, incremental list loading/ScrollTo/group collapse/scroll physics, low-res-first image decode, cold/warm deep links), on top of the #28 R2 Map overlay / Live View / `start_app` AOT bridge / interpreter, the #27 KIT-EXT2 Push/Account/Map probes + 12 host kit sinks + FIX-R1-NAPI-6D / FIX-R1-MARSHAL-OFF, the #26 P2-INTEROP `LibraryImport` hosting / TASK-MIG compiled packaging tasks / PLAT-GAP consumer defaults, the #25 permission chain / Share-Scan probes / AOT startup path and #24 payload-in-libs + explicit W^X=0 + exec-memory probe; 6 haps (5 MAUI + 1 Blazor) + 8 zh-CN docs + `SHA256SUMS` + the hardened `verify-kit.sh` with per-hap payload-marker assertions and the re-anchored abc expectation `281052`/`20916`; side assets `aot-haps.tar.gz` (AOT MAUI variant + README), `ohos-interpreter-pack.tar.gz` (+ README/sidecar) and `harmony-haps.tar.gz`; size/sha256/tree digest read from the `device-test-kit` release notes `## Integrity` (kit #30 measured tar **196,992,264 B** / `a781c25b…`, tree **`cc1ca935…`**, sidecar **`a63cd34f…`**, `SHA256SUMS` 15 entries / 1,309 B / `3a369dd8…`; kit #28 comparison was tar 196,220,486 B / `091dcc56…`, tree `0a7a3215…`, sidecar `d7efd251…`), mirrored on `workload-latest`) | release `device-test-kit`, also attached to `workload-latest`; the same release carries the unsigned startup-crash probes P1–P4 (`hello-mauiapp-probe{1..4}-unsigned.hap`) |
 | Workload bundle `openharmony-workload-1.0.0-preview.24.tar.gz` | GitHub release `workload-1.0.0-preview.24` (+ `workload-latest` with `SHA256SUMS`; the SDK release keeps an earlier snapshot) |
 | Host library | `packs/Microsoft.OpenHarmony.Sdk/<ver>/hosts/arm64-v8a/libopenharmonyhost.so` (signed) |
 | ArkTS shells | `packs/.../templates/ets/modules.abc` (headless) and `modules.ui.abc` (UI); preview.24 carries the T6/T8 archive (fingerprint fallback, keep-screen-on) |
 
 **Step 0 — kit identity check (before installing anything).** Take the current tarball
 size/sha256 and the extracted-tree digest from the `device-test-kit` release notes
-(`## Integrity`; the kit #30 release notes carry the current values; the #28 comparison was tar
+(`## Integrity`; the kit #31 release notes carry the current values (tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; the #30 comparison was tar **196,992,264 B** / `a781c25b…`; the #28 comparison was tar
 196,220,486 B / `091dcc56…`, tree `0a7a3215…`; `workload-latest` mirrors them) or the `.sha256` sidecar. Then run the
 quickstart's verify chain — ① `sha256sum -c device-test-kit.tar.gz.sha256` (or
 `verify-kit.sh --anchor-file …`), ② extract, ③
@@ -185,11 +198,11 @@ quickstart's verify chain — ① `sha256sum -c device-test-kit.tar.gz.sha256` (
 in-kit version line (`最终状态.md`「发布物」 or `README-交付说明.md`「构建基线」) reads
 `1.0.0-preview.24`. Re-signed or pre-signed kits legitimately differ: compare only against the
 release notes (or the sidecar) of the build you downloaded, never against a value copied into a
-document. The five kit haps are already legal (`bundleName` matches the profile) and
+document. The six kit haps (five MAUI + the Blazor host, the latter with its own bundle `com.example.opendotnet`) are already legal (`bundleName` matches each shipped hap) and
 band-aligned, so **no rename and no `module.json` edit** is needed.
 
 The kit #23 verifier also asserts the payload facts per hap (`resources.index` present/non-empty,
-abc `13.0.1.0` + current size (kit #29 rebuilt shell `281052`/headless `20916`, unchanged in kit #30; the #28 value `264136`,
+abc `13.0.1.0` + current size (kit #29 rebuilt shell `281052`/headless `20916`, unchanged in kit #30/#31; the #28 value `264136`,
 the #27 value `245412` and the #25/#26 value `234620` now FAIL by design),
 14 libs, `dotnet.zip` composition, host ELF dependency policy); kit #24 adds the
 `libs/arm64-v8a/.dotnet-payload.json` payload-in-libs assertion (missing/inconsistent marker =

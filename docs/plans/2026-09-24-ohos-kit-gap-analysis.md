@@ -82,7 +82,7 @@
 > 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。**kit #29 门禁** = 交互套件
 > **387 行/floor 367**、UI abc **281,052 B**（headless **20,916 B**）、宿主导出契约 **134/134 → 143/143**
 > （TTS 136、P0c 139、P1a 141、P2c 143）；**kit #30 门禁** = 交互套件 **391 行/floor 371**（MS-MODE：
-> 宿主 runtime-mode 标记解析/优先级与生效日志/aot 回退/pack 契约 4 检查）、abc 与导出契约不变；**kit #31 门禁** = 第 6 个 hap（Blazor WASM/ArkWeb 组件）+ `verify-kit.sh` Blazor 分节（`rawfile/blazor` 站点 / `_framework` wasm+JS / bundle `com.example.opendotnet` / 无 br/gz/map 与 ICU），交互套件、abc 与导出契约不变；
+> 宿主 runtime-mode 标记解析/优先级与生效日志/aot 回退/pack 契约 4 检查）、abc 与导出契约不变；**kit #31 门禁** = 第 6 个 hap（Blazor WASM/ArkWeb 组件）+ `verify-kit.sh` Blazor 分节（`rawfile/blazor` 站点 / `_framework` wasm+JS / bundle `com.example.opendotnet` / 无 br/gz/map 与 ICU；verify-kit 63,301 B / `67622771…`），交互套件、abc 与导出契约不变（kit #31 发布实测 tar **207,023,588 B / `f4325d2f…`**）；
 > 发布实测 tar **196,992,264 B / `a781c25b…`**、树 **`cc1ca935…`**、sidecar `a63cd34f…`（下载解包复核 = tree OK + KIT OK）；
 > **MAPFIX（2026-09-28）**：旧 A1 harmony 件的 `MapOverlay` 从未进编译图（abc 无模块记录、bit1 恒 0），
 > 重切件 abc **291,628 B / `a637a513…`** 已真编译（tar `9b0506fa…`，旧 `d3a7b718…`/`f7a4faa2…` 已替换）；

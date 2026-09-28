@@ -1,7 +1,7 @@
 # Blazor WASM → ArkWeb 承载 demo（2026-09-28）
 
 **目标：** 把设备端 `dotnet publish` 产出的 Blazor WASM 静态站点，用最小的 ArkTS HAP（ArkWeb `Web` 组件）承载。
-**结论：** 站点服务与 WebView HAP 两侧**都已在本机构建成功**（HAP 已签名、`verify-app` 通过）；并已产出**自包含变体**（站点内嵌 `resources/rawfile`、`onInterceptRequest` 直供，无需本地服务、无网络权限），见 §3。真机渲染验证需在带 UI 且可 `hdc` 安装的设备上进行。
+**结论：** 站点服务与 WebView HAP 两侧**都已在本机构建成功**（HAP 已签名、`verify-app` 通过）；并已产出**自包含变体**（站点内嵌 `resources/rawfile`、`onInterceptRequest` 直供，无需本地服务；宿主工程 dev-only、声明 `ohos.permission.INTERNET`，运行时 rawfile 直供、不需要联网；重签后声明是否保留取决于签名工程），见 §3。真机渲染验证需在带 UI 且可 `hdc` 安装的设备上进行。
 
 ## 1. 站点侧（已实测）
 
@@ -90,7 +90,7 @@ aa start -b com.example.opendotnet -a EntryAbility
 
 站点整包（71 MB / 899 个文件）内嵌进 `resources/rawfile/blazor/`，页面用
 `Web.onInterceptRequest` 同步读 rawfile 应答（`ResourceManager.getRawFileContentSync`），
-不依赖本机服务、不需要 INTERNET 权限：
+不依赖本机服务；宿主工程 dev-only、声明 `INTERNET`（运行时 rawfile 直供、不需要联网；重签后是否保留取决于签名工程）：
 
 ```ets
 const ORIGIN: string = 'https://blazor.local/';   // 拦截的伪源

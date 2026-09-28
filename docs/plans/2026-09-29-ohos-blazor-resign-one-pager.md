@@ -1,10 +1,10 @@
 # Blazor 组件重签与验收操作卡（kit #31 · 一页版）
 
-> 对象：kit #31 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（约 26 MB，未签名，bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-29-ohos-tester-handoff-kit31.md` §2–§3。
+> 对象：kit #31 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（约 26,794,931 B / `36010a9c…`，未签名，bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-29-ohos-tester-handoff-kit31.md` §2–§3。
 
 ## 1. 取件
 
-- 解出 `hello-blazorwasm-host-unsigned.hap`（约 26 MB；只拿这一个文件也可操作）；kit #31 数字（tar/树/sidecar/hap 摘要）以 release「## Integrity（kit #31）」与随包 `SHA256SUMS`/`.tar.gz.sha256` 为准；重签后哈希必变，以新产出 + 新验签为准。
+- 解出 `hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`；只拿这一个文件也可操作）；hap 声明 `ohos.permission.INTERNET`（宿主工程 dev-only；站点 rawfile 直供、运行时不需要联网；重签后声明是否保留取决于你的签名工程）；kit #31 实测 tar **207,023,588 B / `f4325d2f…`**、树 **`52e77ee8…`**、sidecar **`7d0cba77…`**、Blazor hap **26,794,931 B / `36010a9c…`**（`SHA256SUMS` **16 项 / 1,410 B / `f49b9a0e…`**）；以 release「## Integrity（kit #31）」与随包 `SHA256SUMS`/`.tar.gz.sha256` 为准；重签后哈希必变，以新产出 + 新验签为准。
 
 ## 2. 重签（与 MAUI 未签包同流程）
 

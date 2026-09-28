@@ -1,7 +1,7 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
-> 判定用 `tester-run.sh` **v13**（v12 = 126,658 B / `87763a3e…` / `script_version=12 (2026-09-28)` 为 #30 值，v13 增 `--blazor-probe`：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`，v12 起 `summary runtime_mode` 读 hap `libs/<abi>/runtime-mode.txt` 且 `interp_mode`/`aot_route` 按 file（interp.txt）> manifest（清单）> default 取值）：证据包 `tester-report-*.tar.gz` 含
+> 判定用 `tester-run.sh` **v13**（v13 = **137,113 B / `2caa06bd…`** / asset **594519342**；v12 = 126,658 B / `87763a3e…` / `script_version=12 (2026-09-28)` 为 #30 值：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`，v12 起 `summary runtime_mode` 读 hap `libs/<abi>/runtime-mode.txt` 且 `interp_mode`/`aot_route` 按 file（interp.txt）> manifest（清单）> default 取值）：证据包 `tester-report-*.tar.gz` 含
 > `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|1(manifest)|<unavailable>`、`interp_mode=<v>(file|manifest|default)|<unavailable>`、`runtime_mode=<v>(hap)|invalid(<值>)|<absent>`（缺失容忍；file>manifest>default）；
 > 矩阵轮另出 `mode-matrix/summary.txt`（逐 Run 安装/启动/probe_1/xwe/首帧/崩溃/报告 tar + 结论建议行）；
 > **打包期单开关（MS-MODE，2026-09-28）**：`-p:OpenHarmonyRuntimeMode=jit|aot|interp`（默认 jit）直接把同一 publish 产出对应形态——
@@ -10,20 +10,20 @@
 > `runtime-mode=<v> source=file|manifest|default`；规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode switch」；
 > 下文 AOT/解释器设备轮仍按 Run D/C 用既有资产，本开关是后续 hap 变体的打包入口；
 > 三形态一键出包（构建侧）：`sh ohos-workload/scripts/make-mode-kit.sh --project <app.csproj> --tfm <tfm> --out-dir <dir> --interp-pack <pack> [--mode jit,aot,interp] [--sign <UDID>]` → `out/<mode>/<stem>-<mode>.hap`（逐模式断言 marker + lib 后保留；`--sign` 沿用 sign-for-device 口令纪律），规则与验证见 ohos-workload `docs/openharmony-hap-packaging.md`「Runtime mode kits」；
-> **当前 kit = #31**（Blazor WASM/ArkWeb 组件增量 = 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（26 MB，未签名，bundle `com.example.opendotnet`）+ tester-run v13（`--blazor-probe`：`BLZ_BOOT`/`BLZ_RENDERED`）；MS-MODE（#30）= runtime-mode 打包开关 + tester-run v12 + MAPFIX harmony 重切；
+> **当前 kit = #31**（Blazor WASM/ArkWeb 组件增量 = 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`，未签名，bundle `com.example.opendotnet`）+ tester-run v13（`--blazor-probe`：`BLZ_BOOT`/`BLZ_RENDERED`）；MS-MODE（#30）= runtime-mode 打包开关 + tester-run v12 + MAPFIX harmony 重切；
 > R3 增量（CoreSpeechKit TTS / HUKS-first SecureStorage / 自绘深度五连）仍然有效，见
 > `2026-09-28-ohos-tester-handoff-kit30.md`（#29 见 `2026-09-28-ohos-tester-handoff-kit29.md`）；
-> 下表 kit #28 行是历史 API 复核快照，kit #30 行为 2026-09-28 发布实测（#31 数字入口见 release「## Integrity（kit #31）」）；数字以 release 为准）。
+> 下表 kit #28 行是历史 API 复核快照，kit #30 行为 2026-09-28 发布实测（#31 实测 tar 207,023,588 / `f4325d2f…`、树 `52e77ee8…`、sidecar `7d0cba77…`）；数字以 release 为准）。
 
 ## 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`；asset id/尺寸/digest 2026-09-27 API 复核，AOT-RECUT 后；harmony 行 2026-09-28 MAPFIX 后复核；kit #30 行为 2026-09-28 发布实测）
 
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
-| `device-test-kit.tar.gz`（kit #31，已发布 2026-09-29） | 以 release 为准（#30 = 392356147） | 以 release 为准（#30 = 196,992,264） | 以 release 为准（#30 = `a781c25b…`、sidecar `a63cd34f…`、树 `cc1ca935…`） | 6 个 hap（5 个 MAUI JIT + 1 个未签名 Blazor `hello-blazorwasm-host-unsigned.hap`、26 MB、bundle `com.example.opendotnet`；`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker、`libs` 270）＋文档＋verify-kit；#29 196,990,205 / `e895cc0a…`、#28 196,220,486 / `091dcc56…` 为历史对照 |
+| `device-test-kit.tar.gz`（kit #31，2026-09-28 发布） | 392356147 | **207,023,588** | **`f4325d2f…`**（sidecar **`7d0cba77…`**；树 **`52e77ee8…`**） | 6 个 hap（5 个 MAUI JIT + 1 个未签名 Blazor `hello-blazorwasm-host-unsigned.hap`、26,794,931 B / `36010a9c…`、bundle `com.example.opendotnet`；`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker、`libs` 270）＋文档＋verify-kit；#29 196,990,205 / `e895cc0a…`、#28 196,220,486 / `091dcc56…` 为历史对照 |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
-| `tester-run.sh` **v13**（当前；v12 = asset 593961018 / 126,658 / `87763a3e…` 为 #30 值） | 以 release 资产页为准 | 以 release 为准 | 以 release 为准 | v12 = `runtime_mode` 清单键（`libs/<abi>/runtime-mode.txt`）+ file>manifest>default 回退 + 清单 interp 的 Run C（见 §2.0）；v11 = 119,452 B / `2355e493…`（`--mode-matrix` + `--a11y-probe`）、v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
+| `tester-run.sh` **v13**（当前） | **594519342** | **137,113** | **`2caa06bd…`**（v12 = 593961018 / 126,658 / `87763a3e…` 为 #30 值） | v12 = `runtime_mode` 清单键（`libs/<abi>/runtime-mode.txt`）+ file>manifest>default 回退 + 清单 interp 的 Run C（见 §2.0）；v11 = 119,452 B / `2355e493…`（`--mode-matrix` + `--a11y-probe`）、v10 = 109,227 B / `714ae9b5…`、v9 = 75,917 B / `3c2d33bf…`（`aot=`/`interp=` 采集）、v8 = 73,375 B / `6ca2093e…` |
 
 ## 0. 四态矩阵
 

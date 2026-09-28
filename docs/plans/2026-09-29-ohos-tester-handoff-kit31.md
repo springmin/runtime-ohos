@@ -1,9 +1,9 @@
 # 测试方交接：kit #31、Blazor WASM/ArkWeb 组件（tester-run v13 `--blazor-probe`）（2026-09-29）
 
 > 结论先行：kit #31 = **kit #30 + Blazor WebAssembly（ArkWeb 承载）组件** ——
-> ① 新增第 **6** 个 hap **`hello-blazorwasm-host-unsigned.hap`（26 MB，未签名）**：一个 ArkTS-only 宿主
+> ① 新增第 **6** 个 hap **`hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`，未签名）**：一个 ArkTS-only 宿主
 > （ArkWeb `Web` 组件）把 `dotnet publish` 出的 Blazor WASM 静态站点内嵌在 `resources/rawfile/blazor`，
-> `onInterceptRequest` 直供、无本地服务/无网络权限；**bundle = `com.example.opendotnet`**（与本包 MAUI
+> `onInterceptRequest` 直供（宿主工程 dev-only、声明 `ohos.permission.INTERNET`；运行时由 rawfile 直供、不需要联网；tester 重签后声明是否保留取决于签名工程）；**bundle = `com.example.opendotnet`**（与本包 MAUI
 > 系列的 `com.example.hellomauiapp` **不同**），署名规则与 `com.example.mauiapp` 一节完全相同（需按你自己的
 > 账号重签，`-signCode 1` 不变）。
 > ② **`tester-run.sh` v13**：新增 **`--blazor-probe`** —— 安装重签后的 Blazor hap → `aa start -b
@@ -15,8 +15,7 @@
 > `bm dump -n com.example.opendotnet`）。
 > ④ **门禁与指纹**：abc **281,052**/`20916`、导出契约 **143/143**、交互套件 **391/floor 371** 均承 #30
 > **不变**；`verify-kit.sh` 新增 Blazor hap 分节断言（见 §1/§5）。
-> ⑤ **kit #31 发布实测：数字入口见 release「## Integrity（kit #31）」**（本轮 RELEASE-VALUES 未在窗口内产出，
-> tar/树/sidecar/资产 id 以 release 说明与随包 `SHA256SUMS` 为准；重签/重打包后哈希必变）。
+> ⑤ **kit #31 发布实测（2026-09-28）**：tar **207,023,588 B / `f4325d2f…`**、树 **`52e77ee8…`**、sidecar **`7d0cba77…`**（89 B）、`SHA256SUMS` **16 项 / 1,410 B / `f49b9a0e…`**；bundle **30,570,394 B / `43a78c8f…`**（sdk-ohos 锚 **`b2b79e27d9`**，`WORKLOAD_BUNDLE_SHA256` c4647fc8 → 43a78c8f）；tester-run **v13** **137,113 B / `2caa06bd…`**（asset **594519342**）；6 hap = MAUI 5（75,911,479 / `1aba610a…`、75,911,514 / `97cb56b6…`、75,911,552 / `e36df60f…`、75,911,464 / `28e77e06…`、73,718,252 / `1a520fd2…`）+ Blazor **26,794,931 / `36010a9c…`**。数字仍以 release「## Integrity（kit #31）」与随包 `SHA256SUMS` 为准（重签/重打包后哈希必变）。
 >
 > 本组件规格与交付输入见 ohos-workload `docs/blazor-arkweb-kit-handoff.md`（§3 接线清单 / §4 判读与失败采集）。
 > 承接 kit #30 交接（`2026-09-28-ohos-tester-handoff-kit30.md`）：MS-MODE（runtime-mode 打包开关）/ tester-run v12 /
@@ -40,13 +39,13 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 
 | # | 变化 | 测试方看到什么 | 判定点 |
 |---|---|---|---|
-| 1 | **第 6 个 hap：Blazor WASM/ArkWeb 组件**（`hello-blazorwasm-host-unsigned.hap`，26 MB，未签名） | 包内多一个 ArkTS-only 宿主 hap（bundle **`com.example.opendotnet`**），内嵌站点：`resources/rawfile/blazor/index.html` + `_framework/`（`.wasm` + `blazor.webassembly*.js`；`--slim`：无 `.br/.gz/.map`、无 ICU）；**只有未签名变体**，必须按《自签说明》重签（与 MAUI 未签包同一流程） | 重签 → 安装 → 启动 → 两条 `BLZ_*` 标记（§2） |
+| 1 | **第 6 个 hap：Blazor WASM/ArkWeb 组件**（`hello-blazorwasm-host-unsigned.hap`，26,794,931 B / `36010a9c…`，未签名） | 包内多一个 ArkTS-only 宿主 hap（bundle **`com.example.opendotnet`**），内嵌站点：`resources/rawfile/blazor/index.html` + `_framework/`（`.wasm` + `blazor.webassembly*.js`；`--slim`：无 `.br/.gz/.map`、无 ICU）；**只有未签名变体**，必须按《自签说明》重签（与 MAUI 未签包同一流程） | 重签 → 安装 → 启动 → 两条 `BLZ_*` 标记（§2） |
 | 2 | **tester-run v13：`--blazor-probe`** | 一条命令完成「装重签 hap → 启动 `com.example.opendotnet`/`EntryAbility` → 3–5 s 采集 → 断言标记」；失败落 `blazor-hilog.txt`（`hilog -x` 原文，含 `BlazorWebHost` 与 `BLZ_ERROR` 行） | `BLZ_BOOT` + `BLZ_RENDERED` 必过；失败物 = `blazor-hilog.txt` + 截图（§2/§4） |
 | 3 | **判读标记（宿主 → hilog）** | 宿主输出 `BlazorWebHost ... marker: BLZ_BOOT`（window load）与 `marker: BLZ_RENDERED`（Blazor 首帧，.NET→JS interop）；JS 异常转发为 `marker: BLZ_ERROR <msg>` | 两条标记 = 自动必过；`BLZ_ERROR` = 失败并原样回传 |
-| 4 | **`verify-kit.sh` Blazor 分节**（建议断言，包内脚本为准） | 断言 `resources/rawfile/blazor/index.html` 存在、`_framework/` ≥1 个 `*.wasm` 与 `blazor.webassembly*.js`、`module.json` 的 bundle 为 `com.example.opendotnet`、无 `.br/.gz/.map` 与 `icudt*.dat`（`--slim` 生效） | `verify-kit.sh` 0 FAIL / 0 WARN（§5） |
+| 4 | **`verify-kit.sh` Blazor 分节**（随包 **63,301 B / `67622771…`**，selftest **92** 检查；组件缺失时只记一行日志） | 断言 `resources/rawfile/blazor/index.html`（1,269 B）存在、`_framework/` **208** 文件（**204** `*.wasm` + `blazor.webassembly*.js`）、宿主 abc **16,352 B** @`13.0.1.0`、`module.json` 的 bundle 为 `com.example.opendotnet`、无 `.br/.gz/.map` 与 `icudt*.dat`（`--slim` 生效；`ets/sourceMaps.map` 为宿主编译产物、豁免该检查） | `verify-kit.sh` 0 FAIL / 0 WARN（§5） |
 | 5 | **门禁与指纹不变**（承 #30） | abc **281,052 B**（headless **20,916 B**）、导出契约 **143/143**、交互套件 **391/floor 371**；MS-MODE 的 `runtime-mode.txt`/优先级、MAPFIX harmony 件、R3/R2/KIT-EXT2 判定点均不动 | 校验步骤、证据字段与 #30 相同，只多 Blazor 一节与 `--blazor-probe` |
 
-> 尺寸预算：kit #29 为 361 MB；+1 个 26 MB unsigned hap ≈ **+7%**（#31 整包数字以 release 为准）。
+> 尺寸预算：kit #29 为 361 MB；+1 个 26,794,931 B / `36010a9c…` unsigned hap ≈ **+7%**（#31 整包数字以 release 为准）。
 
 ## 2. 本轮判定点（按包内入口逐个勾）
 
@@ -65,6 +64,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 
 ## 3. Blazor 组件自签与打包要点（测试方视角）
 
+- **权限**：hap 声明 **`ohos.permission.INTERNET`**（宿主工程 dev-only；站点由 `resources/rawfile/blazor` 直供、**运行时不需要联网**；tester 重签后声明是否保留取决于你的签名工程）。
 - **自签**：bundle = `com.example.opendotnet`；新建自动签名工程时把 `AppScope/app.json5` 的 `bundleName`
   设为同名（否则属性校验失败）；`hap-sign-tool sign-app` 的 **`-signCode 1` 必须带上**（`libs/**` 的
   `SoInfoSegment` 凭据；机制见《自签说明》与 ELF 签名研究文档）。验签用同 SDK `verify-app`。
@@ -89,12 +89,12 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 
 1. 下载/校验/重签/安装同 `快速开始.md` §1/§3；kit 内 `verify-kit.sh` 逐 hap 断言 abc **`281052`**/`20916`、
    `dotnet.zip` 254 项、`libs/arm64-v8a` 14 个 `.so` + `.dotnet-payload.json`、`resources.index` 1588/1780（≤ 2 KiB）；
-   **新增** Blazor hap 的 `rawfile/blazor` 断言（§1 #4）。语义不变（FAIL → 退出码 1；WARN → 仍 `KIT OK`）。
+   **新增** Blazor hap 的 `rawfile/blazor` 断言（§1 #4；本波 `verify-kit.sh` = 63,301 B / `67622771…`，selftest 72 → 92）。语义不变（FAIL → 退出码 1；WARN → 仍 `KIT OK`）。
    用 #28 的旧期望值 `264136`（或更早的 `245412`/`234620`）校验本包会 FAIL —— 那是脚本的预期行为。
-   **整包数字（tar/树/sidecar/6 hap/`SHA256SUMS`）以 release「## Integrity（kit #31）」与 `.tar.gz.sha256`
-   sidecar 为准**；#30 实测（tar **196,992,264 B / `a781c25b…`**、树 **`cc1ca935…`**、sidecar **`a63cd34f…`**、
-   `SHA256SUMS` 15 项 / 1,309 B）仅作对照 —— #31 因新增 hap 必然变化。
-2. 一条命令取证（`tester-run.sh` **v13**）：常规轮同 #30（`--kit-dir/--install/--start/--capture`）；
+   **整包数字（tar/树/sidecar/6 hap/`SHA256SUMS`）**：tar **207,023,588 B / `f4325d2f…`**、树 **`52e77ee8…`**、
+   sidecar **`7d0cba77…`**（89 B）、`SHA256SUMS` **16 项 / 1,410 B / `f49b9a0e…`**（下载解包复核 = tree OK +
+   KIT OK + Blazor 断言通过，0 FAIL / 0 WARN）；#30 实测（196,992,264 / `a781c25b…`）仅作对照。
+2. 一条命令取证（`tester-run.sh` **v13**，**137,113 B / `2caa06bd…`**，asset **594519342**）：常规轮同 #30（`--kit-dir/--install/--start/--capture`）；
    Blazor 轮加 `--blazor-probe`（证据 = `BlazorWebHost` 两标记 + 失败时的 `blazor-hilog.txt`），
    人工补截图与 `/counter` 结果。模式矩阵（四态一键）与无障碍专项（`--a11y-probe`）同 #30。
 3. 有 harmony flavor / HMS 的测试者请附：壳的构建出处（可直接取 `harmony-haps.tar.gz`，MAPFIX 重切件
@@ -106,5 +106,5 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
   `BLZ_ERROR` 已把 JS 错误转发 hilog，便于区分「宿主 rawfile 供给/协商问题」还是「WASM/ArkWeb 能力问题」。
 - `--slim` 站点不带 `.br/.gz`：传输量略增（本地 rawfile 读取无感）；如需压缩变体请取非 slim 包或注明。
 - Blazor hap **只有 unsigned 变体**（我方调试 profile 绑定我方 UDID）：不重签无法安装；重签后哈希必变，
-  一切数字以 release 与随包 `SHA256SUMS` 为准。
+  一切数字以 release「## Integrity（kit #31）」与随包 `SHA256SUMS` 为准（重签后哈希必变）。
 - 包内 `verify-kit.sh` 对 Blazor 一节的具体期望文本以包内脚本为准（本文按接线清单描述其语义）。
