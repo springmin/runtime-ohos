@@ -91,7 +91,8 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 | 校验 | `--diff-filter=U`=0、`git diff --check` 干净、take-ours==HEAD / take-rc2==theirs（抽样逐字节）、`gentree.cpp`==`s3/resolved/gentree.cpp.resolved` |
 | CI 验证 | 双仓 ref 派发 run **36392095576**（`upload_release=false`；runtime+aspnetcore=`fix/ohos-rc2`，sdk=`feature/openharmony`） |
 | 迭代 1 | run 36392095576 **失败**（23m48s，runtime 构建 XCROSS ILC publish）：`NETSDK1112: The runtime pack for Microsoft.NETCore.App.Runtime.linux-musl-arm64 was not downloaded`。根因：取 rc2 的 `eng/Version.Details.props` 后 `MicrosoftNETCoreAppRefPackageVersion` 由 `rc.1.26431.109` → **`rc.2.26465.108`**，而 musl alias seed 列表（`VERSION_BAND`/`BOOTSTRAP_RUNTIME_VERSION`/`HOST_PACK_BRANCH_VERSION`/`RT_VERSION`，全 rc.1 pin）不覆盖它（pre-merge 的 26431.109 恰在列表里，故此前不炸）。修复：`build-ohos-all.sh` 的 `seed_musl_runtime_pack_alias_from_release()` 从 runtime/aspnetcore checkout 的 `Version.Details.props` **动态解析该属性**并入 seed 列表（幂等，随 band 前进自动生效）——sdk commit `55473eec99` |
-| 迭代 2 | run **36394814751**（冷启动，预期 ~58min）|
+| 迭代 2 | run **36394814751**（23m25s 失败，同款 NETSDK1112）。修复 1 实际生效（日志确认 seed 了 6 个版本，含 `rc.2.26465.108`/`rc.2.26473.112`），但仍缺一个版本：**各仓 `global.json` 的 bootstrap SDK 内置运行时版本**——rc2 合并同时取了 rc2 的 `global.json`（S0 take-rc2），SDK pin 由 `11.0.100-rc.1.26420.103` → **`11.0.100-rc.1.26425.128`**；自包含的 in-build 工具发布（`ILCompiler_publish`/`ILCompiler_inbuild`）按该 SDK 的内置运行时版本解析目标 RID pack，而 26420.103 恰好由 `BOOTSTRAP_RUNTIME_VERSION` 覆盖、26425.128 没有（pre-merge 因此不炸）。修复 2（sdk `d8b05d86de`）：从 runtime/aspnetcore 的 `global.json` 推导 `11.0.0-<rest>` 加入别名 seed 列表（幂等），并在 NETSDK1112 诊断中打印 `linux-musl-arm64` 别名缓存 |
+| 迭代 3 | run **36398500043**（冷启动，预期 ~58min）|
 
 产物索引：`/data/storage/el2/base/tmp/opencode/rc2-decisions/{s0,s1,s2,s3}.md`、`apply-list.tsv`、
 `apply.py`、S3 resolved 文件 `.../s3/resolved/`。
