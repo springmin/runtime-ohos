@@ -1,6 +1,6 @@
 # 四域 skill 合规审计与彻底修复报告（ArkTS · NAPI · 互操作/AOT · MSBuild）
 
-- **日期**：2026-09-25（**2026-09-26 回填**：P2 收口、PLAT-GAP 补录、TASK-MIG 进展、KIT-GAP/KIT-IMPL 结论）· **范围**：`ohos-workload`（壳/宿主/打包）、`maui-ohos`（OpenHarmony 平台切片）、`sdk-ohos`（SDK 打包/codesign）、`runtime-ohos`（文档/契约）。
+- **日期**：2026-09-25（**2026-09-26 回填**：P2 收口、PLAT-GAP 补录、TASK-MIG 进展、KIT-GAP/KIT-IMPL 结论；**2026-09-28 补记**：Blazor 组件 hap 的 `ohos.permission.INTERNET` 声明，见 §4）· **范围**：`ohos-workload`（壳/宿主/打包）、`maui-ohos`（OpenHarmony 平台切片）、`sdk-ohos`（SDK 打包/codesign）、`runtime-ohos`（文档/契约）。
 - **修复策略**：审计条目**一律按「最彻底修法」落地**（用户要求），不保留只做「最小修法」的条目；本环境无法闭环的进「排期」，写明阻塞点，不降级为「有意保留」。
 - **计数口径**：`comp-{arkts,napi,interop,build}/report.md` 未落盘（见 §6①），本报告按本轮修复工单（`fix-*` 报告/日志/提交消息）重建；「合规复核」= 本轮新增且已绿的自动化门禁。
 - **2026-09-26 回填口径**：P2 收口后互操作/AOT 域 6/6；PLAT-GAP 为审计表外**补录**（+1 条目，不计入原 30 条的违例/偏差）；「已彻底修复」= 4（ArkTS）+ 8（NAPI）+ 6（互操作/AOT）+ 8（MSBuild 原 30 条内）+ 1（PLAT-GAP 补录）= **27**；域内排期 4 = ArkTS 1（HMS 真机验收，外部条件 §4）+ NAPI 1（6d）+ MSBuild 2（TASK-MIG 内联任务进行中、打包 clean/RID pin 随其复验），另 sdk 2 项基建（测试接 CI、`ohos-full-build` runner 红）。
@@ -101,6 +101,7 @@
 - **HMS 设备 / Kit 通道**：KIT-GAP/KIT-IMPL 复核 14 项 = **5 项条件可补齐**（Share/Scan 探测与降级链路已落地：壳 `canIUse`+变量 import、host/托管桥、kit1–kit3 断言；Map/Push/Account 待 HMS+AGC）· **3 项仅记录**（LiveView/Payment/Ads）· **6 项维持门控**（TTS/Hot Reload/arm32/WebAuthenticator/SecureStorage 兜底/MediaElement）。真机验收（Share `shareCompleted`、Scan `originalValue`、`ARKTS_SDK_FLAVOR=harmony` abc 装载）需 HMS 设备；Push `1000900010`、Account `1001502014`、Map AppKey、实况窗权益、支付商户另需 AGC 开通/审批。矩阵见 `2026-09-24-ohos-kit-gap-analysis.md`；回填 `8b37c37daa3`；落地提交 ohos-workload `68220cd`/`652c356`/`201fbc9`/`063da85`、maui `fc7fbfdc`。
 - **HarmonyOS SDK**：`ARKTS_SDK_FLAVOR=harmony` 完整构建需装有 DevEco/HMS SDK 的机器（本机仅 OpenHarmony SDK 26.0.0.18）。
 - **真机项**：NAPI TSFN 同步应答阻塞/超时、env cleanup 页销毁顺序、AOT 单入口冒烟（P2 后仍 SKIP：openharmony-arm64 ilc/runtime pack 未安装）、SecureStorage HUKS 分支。
+- **Blazor 组件 hap 权限声明（2026-09-28 补记，kit #31）**：第 6 个 hap `hello-blazorwasm-host-unsigned.hap` 声明 `ohos.permission.INTERNET`（ArkTS dev-only 宿主的遗留；站点经 `resources/rawfile/blazor` 的 `onInterceptRequest` 直供、运行时不联网）。合规面记录：不属于权限链审计的 27 类 MAUI 映射、不构成违例；源侧后续构建已移除该声明（ohos-workload `2dcd846`，重建 26,794,872 B / `bdad8db9…`），kit #31 包内副本仍带该声明；重签后保留与否取决于签名工程。
 - **文档回填（2026-09-26）**：本报告已回填 P2 收口（§2.3 · §3.1）、PLAT-GAP 补录（§2.5）、TASK-MIG 进行中（§2.4 · §3.2）与 KIT-GAP/KIT-IMPL 结论（§2.1 · 本节）；KIT-GAP 矩阵的 KIT-IMPL 回填已入库 `8b37c37daa3`。`2026-09-22-ohos-maui-coverage-matrix.md` 仍把「Share Kit 多文件」列为 SDK 阻塞、数字仍为 315/floor 295 —— 应补 Share/Scan 探测落地与 326/floor 306（release-manifest 由另一代理维护，本报告未触碰）。
 
 ## 5. 与既有合规线交叉引用
