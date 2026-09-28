@@ -28,7 +28,7 @@
 - **kit 波次收口（2026-09-28，`bd14599` + `ff9c348` + `sdk-ohos 82dc57c64c`，历史）**：`bd14599` 把包内 verify-kit 的 abc 期望重锚到 281,052/20,916 并同步内嵌 host-deps 的 `OH_DecodingOptions_`；`ff9c348` 把 ridgraph-sync 的 sdk-ohos pin 推进到 `82dc57c64c`；`sdk-ohos 82dc57c64c` 把 `versions.env` 的 bundle 锚更新到 `c2b527d3…`；`ohos-install-tests` run 36340451030 success。
 - release 最后更新 2026-09-28（kit #32 资产；tar.gz + sidecar + `tester-run.sh` v14 + 3 个 `maui-razor-*` 资产已上传，bundle 已重打包并同步三处 release）；`2026-09-21-ohos-final-status.md` 指向 `2026-09-24-ohos-device-milestone.md`，本页与之一致锚定当前 release（docs agent 的 kit #32 文档同步随其提交跟进）。
 
-## 2. `device-test-kit` release 上的全部资产（2026-09-28 快照，24 项）
+## 2. `device-test-kit` release 上的全部资产（2026-09-28 快照，27 项）
 
 | 资产 | 大小 (B) | sha256 | 用途 |
 |---|---|---|---|
@@ -104,14 +104,14 @@ curl -L -O "$base/device-test-kit.tar.gz" -O "$base/device-test-kit.tar.gz.sha25
 sha256sum -c device-test-kit.tar.gz.sha256          # ① 整包锚定
 tar xzf device-test-kit.tar.gz && cd device-test-kit
 sha256sum -c SHA256SUMS                             # ② 包内 16/16（verify-kit 另做逐 hap 深度断言）
-sh verify-kit.sh --expect-tree-digest 52e77ee8d0aecca535b7e3d169cc0b0815c0bbd38579984388f9cb88416af723   # ③ 内容树绑定
+sh verify-kit.sh --expect-tree-digest 645879bc2d630d2df9fb961effc5221a554674d1aea7d8b4ef0372c81665a9af   # ③ 内容树绑定
 ```
 
-一条命令（校验 + 安装 + 启动 + 录 30 秒 hilog，`tester-run.sh` v13 默认 dry-run，无设备不动作；需 `hdc`，多设备加 `--device <id>`；v13 在 v8–v12 的全部能力之上新增 `--blazor-probe`/`--blazor-hap`/`--blazor-bundle`（安装重签后的第 6 个 hap → `aa start -b com.example.opendotnet -a EntryAbility` → 4 s → `hilog -x` → 断言 `marker: BLZ_BOOT` + `marker: BLZ_RENDERED`；失败落盘 `blazor/blazor-hilog.txt` 并给重签提示），v12 的 `runtime_mode`/矩阵能力不变：
+一条命令（校验 + 安装 + 启动 + 录 30 秒 hilog，`tester-run.sh` v14 默认 dry-run，无设备不动作；需 `hdc`，多设备加 `--device <id>`；v14 在 v13 的 `--blazor-probe`/`--blazor-hap`/`--blazor-bundle`（v8–v12 能力之上新增；安装重签后的第 6 个 hap → `aa start -b com.example.opendotnet -a EntryAbility` → 4 s → `hilog -x` → 断言 `marker: BLZ_BOOT` + `marker: BLZ_RENDERED`；失败落盘 `blazor/blazor-hilog.txt` 并给重签提示）之上，把通过标记绑定到宿主 pid + 会话 nonce（旧宿主降级 pid+格式过滤并记 WARN），v12 的 `runtime_mode`/矩阵能力不变：
 
 ```sh
 sh tester-run.sh --kit-tar ./device-test-kit.tar.gz \
-  --expect-tree-digest 52e77ee8d0aecca535b7e3d169cc0b0815c0bbd38579984388f9cb88416af723 \
+  --expect-tree-digest 645879bc2d630d2df9fb961effc5221a554674d1aea7d8b4ef0372c81665a9af \
   --install --start --capture 30
 ```
 

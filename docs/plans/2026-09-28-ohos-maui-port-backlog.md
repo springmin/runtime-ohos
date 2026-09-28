@@ -95,3 +95,10 @@
 - **每波上限 3 个切片任务**；每波恰好 1 个「套件」任务统一推进 checks/floor 与 pin（避免 Program.cs 冲突），
   且触壳任务（T2/T14/T16/T17/T20）与触像素基线的任务同波各限 1 个（abc/导出契约与像素基线各自串行）。
 - **预期波次**：前 10 项 ≈ 4 波；全部 22 项 ≈ 8–9 波。本轮仅产出清单，未开始执行。
+
+## 5. 追加登记（2026-09-28 复核；不重排 §1–§4）
+
+- **A1 host 多指坐标**：`host_napi.cpp` 的 `OnTouch` 每事件仅按 **point 0** 取窗口坐标上报（`ohos_host_notify_touch(type, x, y, numPoints, event.id)` 已把指针数量/身份贯通到托管桥，但坐标只有第 0 指；Pinch 为独立旁路、读 0/1 两指算距离）。多指手势（拖拽/悬停/笔）的坐标精度受此限制；修复 = 宿主逐点上报（通知接口/结构扩展）+ 托管 Gestures/Pointer 按 pointer id 消费。
+- **A2 slice pin 推进（时机）**：maui 切片 pin 已在 W1A 由 `33b0af79` 推进到 `8241f1b3`（`ohos-workload 1809ad6`，套件 405/385）；**后续推进待 Wave 2（W1A/W1B 之后的下一批）收口后再统一**，与套件 checks/floor 一次性对齐，避免三 workflow 的 `maui_ohos_ref` 在逐任务里反复 churn（见附录注记）。
+
+> **附录注记（A2）**：本项不排入下一波；Wave 2 收口时统一推进（口径同 §4：每波恰好 1 个套件任务统一 checks/floor 与 pin）。
