@@ -6,14 +6,14 @@
 
 ## Verdict
 
-**PASS WITH FINDINGS（6 处已修 / 5 条报告未修）。** 六个新面逐项结论见下表；修复集中在深链、HUKS 回退与 probe 解析三面，均为崩溃/注入/竞态类小改，无协议变更。验证：交互 harness **398 检查 / floor 376**（新增 sec3 行为断言，编译本机 slice 源码）；`selftest-tester-run.sh` 新增 S21b 控制字符负例；`selftest-verify-kit.sh` 92 项。
+**PASS WITH FINDINGS（6 缺陷已修 + 1 加固 / 6 条报告未修）。** 六个新面逐项结论见下表；修复集中在深链、HUKS 回退与 probe 解析三面，均为崩溃/注入/竞态类小改，无协议变更。验证：交互 harness **398 检查 / floor 376**（新增 sec3 行为断言，编译本机 slice 源码）；`selftest-tester-run.sh` 新增 S21b 控制字符负例；`selftest-verify-kit.sh` 92 项。
 
 | 指标 | 数值 |
 |---|---|
 | 复查面 | 6（深链 / ArkWeb rawfile / HUKS 回退 / 图片 / probe 解析 / 权限） |
-| 候选 | 12（中 2 · 低 8 · 信息 2） |
-| 已修 | 6（深链 2 + HUKS 3 + probe 1） + 3 回归 pin |
-| 报告未修 | 6（WebView 区 3 + probe 完整性 1 + 权限 1 + 深链 route 信息 1） |
+| 候选 | 13（中 2 · 低 7 · 加固 1 · 信息 3） |
+| 已修 | 7（深链 2 + HUKS 4 含加固 + probe 1） + 3 回归 pin |
+| 报告未修 | 6（WebView 2 + probe 完整性 1 + 图片残余 1 + 权限 1 + 深链信息 1） |
 | 设备验证 | 无（设备安装受策略限制） |
 
 ## 汇总表
