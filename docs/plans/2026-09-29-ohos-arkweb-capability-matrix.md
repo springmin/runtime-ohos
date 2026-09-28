@@ -1,5 +1,7 @@
 # ArkWeb 能力矩阵（MAUI WebView / BlazorWebView 需求视角，2026-09-29）
 
+> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+
 **性质：** 只读调研；数据源逐行标注。需求面 = MAUI `WebView`/`HybridWebView`/`BlazorWebView`（Hybrid）与 Blazor WASM 站点承载。
 
 **数据源与读法：**

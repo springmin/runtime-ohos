@@ -1,5 +1,7 @@
 # Blazor 组件重签与验收操作卡（kit #31 · 一页版）
 
+> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+
 > 对象：kit #31 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（约 26,794,931 B / `36010a9c…`，未签名，bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-29-ohos-tester-handoff-kit31.md` §2–§3。
 
 ## 1. 取件

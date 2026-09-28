@@ -1,5 +1,7 @@
 # 测试方交接：kit #31、Blazor WASM/ArkWeb 组件（tester-run v13 `--blazor-probe`）（2026-09-29）
 
+> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+
 > 结论先行：kit #31 = **kit #30 + Blazor WebAssembly（ArkWeb 承载）组件** ——
 > ① 新增第 **6** 个 hap **`hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`，未签名）**：一个 ArkTS-only 宿主
 > （ArkWeb `Web` 组件）把 `dotnet publish` 出的 Blazor WASM 静态站点内嵌在 `resources/rawfile/blazor`，
