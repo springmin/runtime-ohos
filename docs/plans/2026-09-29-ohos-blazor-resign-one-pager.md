@@ -1,12 +1,12 @@
-# Blazor 组件重签与验收操作卡（kit #31 · 一页版）
+# Blazor 组件重签与验收操作卡（kit #32 · 一页版）
 
-> 日期口径：文件名按撰写日；kit #31 发布日 = **2026-09-28**（RELEASE-VALUES `date`）。
+> 日期口径：文件名按撰写日；kit #32 发布日与数字以 release「## Integrity（kit #32）」为准（#31 发布日 = 2026-09-28）。
 
-> 对象：kit #31 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（约 26,794,931 B / `36010a9c…`，未签名，bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-29-ohos-tester-handoff-kit31.md` §2–§3。
+> 对象：kit #32 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；约 26,794,931 B / `36010a9c…` 为 #31 值，以 release 为准；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
 
 ## 1. 取件
 
-- 解出 `hello-blazorwasm-host-unsigned.hap`（26,794,931 B / `36010a9c…`；只拿这一个文件也可操作）；hap 声明 `ohos.permission.INTERNET`（宿主工程 dev-only；站点 rawfile 直供、运行时不需要联网；重签后声明是否保留取决于你的签名工程）；kit #31 实测 tar **207,023,588 B / `f4325d2f…`**、树 **`52e77ee8…`**、sidecar **`7d0cba77…`**、Blazor hap **26,794,931 B / `36010a9c…`**（`SHA256SUMS` **16 项 / 1,410 B / `f49b9a0e…`**）；以 release「## Integrity（kit #31）」与随包 `SHA256SUMS`/`.tar.gz.sha256` 为准；重签后哈希必变，以新产出 + 新验签为准。
+- 解出 `hello-blazorwasm-host-unsigned.hap`（只拿这一个文件也可操作）；**kit #32 起该 hap 无 `ohos.permission.INTERNET`**（rawfile 直供；重签不修改 module.json，重签后保持）；kit #32 整包数字以 release「## Integrity（kit #32）」与随包 `SHA256SUMS`/`.tar.gz.sha256` 为准（#31 实测 tar **207,023,588 B / `f4325d2f…`**、Blazor hap 26,794,931 B / `36010a9c…` 仅作对照）；重签后哈希必变，以新产出 + 新验签为准。
 
 ## 2. 重签（与 MAUI 未签包同流程）
 
@@ -27,7 +27,7 @@ hdc shell aa start -b com.example.opendotnet -a EntryAbility
 hdc shell "hilog -x | grep BlazorWebHost"    # 期望：marker: BLZ_BOOT 与 marker: BLZ_RENDERED
 ```
 
-- 两条都在 = 通过；出现 `marker: BLZ_ERROR <msg>` = 失败（原文记录并回传）。一键版（推荐）：`sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`（v13；失败自动落 `blazor-hilog.txt`）。
+- 两条都在 = 通过；出现 `marker: BLZ_ERROR <msg>` = 失败（原文记录并回传）。一键版（推荐）：`sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`（**kit #32 随包 v14**；标记只认宿主 pid + session nonce；失败自动落 `blazor-hilog.txt`）。
 
 ## 5. 人工判读（截图 1 张）
 

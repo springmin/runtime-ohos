@@ -7,10 +7,10 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（kit #31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`**、sidecar **`7d0cba77…`**（`SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…`；见 release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首）；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| kit tar.gz sha256（实测） | `<...>`（kit #32 = release「## Integrity（kit #32）」与 `.tar.gz.sha256` sidecar；kit #31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`**、sidecar **`7d0cba77…`**（`SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…` 仅作对照；见 release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首）；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
 | tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #31）」的 tree sha256，kit #31 = **`52e77ee8…`**；#30 = `cc1ca935…` 仅作对照；`summary.txt` 的 `tree_digest` 同值） |
-| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 v13 = `13`；v12 = `12 (2026-09-28)` 为 #30 值） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #31） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 **v14** = `14`；v13 = `13` 为 #31 值；v12 = `12 (2026-09-28)` 为 #30 值） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #32） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
 > **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3、#30 为 MS-MODE、#31 为 Blazor WASM/ArkWeb 组件）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h，#30 见 §4i，#31 见 §4j。
@@ -174,7 +174,11 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - Map 覆盖层点亮（MAPFIX harmony + AppKey + 同指纹重签）：`<IsOverlayAvailable=true + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`
 - 新 payload 首次运行（新宿主 MS-MODE + #29 abc）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
 
-## 4j. kit #31 Blazor 段（第 6 个 hap / tester-run v13 `--blazor-probe`）
+## 4k. kit #32 增量（WebView 六项 / B1 razor / SEC 收口 / Blazor 无 INTERNET）
+
+> 9 项设备卡：`docs/plans/2026-09-28-ohos-webview-blazor-device-card.md`；判定点：`docs/plans/2026-09-28-ohos-tester-handoff-kit32.md` §2–§3；tester-run **v14**（`summary` 增 `blazor_marker_pid`/`blazor_session_nonce`）。
+
+## 4j. kit #31 Blazor 段（第 6 个 hap / tester-run v13 `--blazor-probe`；历史）
 
 > Blazor 组件与 MAUI 包互不依赖；没有 hdc/无法重签时登记「未测」，不判失败。完整判读见
 > `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` §2/§4。

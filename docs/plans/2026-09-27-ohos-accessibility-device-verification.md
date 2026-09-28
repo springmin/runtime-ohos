@@ -1,9 +1,9 @@
 # 无障碍真机验证清单（P0b-A11Y，2026-09-27）
 
-**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #31 真机上的逐项验证（MAUI 主包承 #30、abc/宿主不变；#31 新增的 Blazor 组件不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
+**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #32 真机上的逐项验证（MAUI 主包承 #30/#31，abc 重建为 289,992；#31 的 Blazor 组件与 #32 的 WebView/B1 不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
 **样品**：默认 `hello-maui-app.hap`（重签后安装）；演示页含 Entry/CheckBox/Switch/Slider/ProgressBar/CollectionView/ListView/HybridWebView/BlazorWebView（无 Image 入口 → I1 登记未测）。
 **前置**：点左下角 `A11Y` 确认 `accessibilityStatus: 1 (attached - expected)`；读屏 =「设置 → 辅助功能 → 屏幕朗读」；每轮开始 `hdc shell hilog -r`（或直接 `--capture`）。
-**采集**：`sh tester-run.sh --kit-dir <kit> --install --start --capture 30 --a11y-probe`（v13；v12 亦可，`--a11y-probe` 行为不变）→ `a11y/selfcheck.txt`、`a11y/selfcheck-layout.json`、`a11y/hilog-a11y.txt`，`summary.txt` 增 `a11y_*` 键（另含 `runtime_mode`）；旧脚本按文末「手动采集」。
+**采集**：`sh tester-run.sh --kit-dir <kit> --install --start --capture 30 --a11y-probe`（v14；v12/v13 亦可，`--a11y-probe` 行为不变）→ `a11y/selfcheck.txt`、`a11y/selfcheck-layout.json`、`a11y/hilog-a11y.txt`，`summary.txt` 增 `a11y_*` 键（另含 `runtime_mode`）；旧脚本按文末「手动采集」。
 **维度**：影子树语义（role/text/description/hint/bounds/enabled/focusable/range/checked）· 朗读串（角色+文本+状态）· 焦点顺序（几何方向/发布树序）· 动作触发（双击 = CLICK 回放为画布点按）· 几何命中（节点 bounds 中心）。
 **判定**：全部「通过判据」满足 = PASS；本包无入口 =「未测（本包无入口）」不判失败；有入口但语义/动作/几何不符 = FAIL（附录屏 + `a11y/` + 对应 hilog 关键字）。
 

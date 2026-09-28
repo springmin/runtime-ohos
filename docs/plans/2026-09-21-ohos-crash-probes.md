@@ -69,6 +69,14 @@
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
+> **2026-09-28 update (kit #32: WebView six-item wiring / B1 razor asset / SEC round):**
+> MAUI WebView/Hybrid/Blazor handlers now map back/forward/reload + CanGoBack/CanGoForward, cookies,
+> per-control frame, navigated events and the failure clear (device card
+> `2026-09-28-ohos-webview-blazor-device-card.md`); the release adds the B1 `hello-maui-razor` asset
+> (bundle `com.example.hellomauirazor`); the SEC round hardens the Blazor probe (host pid + session
+> nonce, tester-run **v14**) and the Blazor hap no longer declares INTERNET (re-sign keeps it);
+> abc `289992`/headless `20916`, suite **398/floor 378**. The kit #30/#31 judgement points keep working.
+>
 > **2026-09-29 update (kit #31: Blazor WASM/ArkWeb component / tester-run v13 `--blazor-probe`):**
 > the kit carries a 6th hap `hello-blazorwasm-host-unsigned.hap` (26,794,931 B / `36010a9c…`, unsigned, bundle
 > `com.example.opendotnet`; declares `ohos.permission.INTERNET` - development-only host, rawfile-served, no
