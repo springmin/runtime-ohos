@@ -6,6 +6,7 @@
 parameters:
   isExtraPlatformsBuild: false
   isMacCatalystOnlyBuild: false
+  isRollingBuild: false
   useHelixMonitor: false
 
 jobs:

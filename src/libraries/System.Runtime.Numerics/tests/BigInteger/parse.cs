@@ -1406,6 +1406,14 @@ namespace System.Numerics.Tests
             Assert.False(BigInteger.TryParse(value, style, format, out _));
             Assert.False(BigInteger.TryParse(Encoding.UTF8.GetBytes(value), style, format, out _));
         }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
