@@ -1,9 +1,9 @@
 # 测试方交接：kit #32、WebView 六项接线 + B1 razor 资产 + SEC 修复（2026-09-28）
 
-> 日期口径：文件名按撰写日；kit #32 发布日与整包数字以 release「## Integrity（kit #32）」与 `.tar.gz.sha256`
-> sidecar 为准（本文窗口内 RELEASE-VALUES 未产出时一律指针口径；重签/重打包后哈希必变）。
-> #31 实测（tar **207,023,588 B / `f4325d2f…`**、树 **`52e77ee8…`**、sidecar **`7d0cba77…`**、
-> `SHA256SUMS` **16 项 / 1,410 B**）仅作对照。
+> 日期口径：文件名按撰写日；kit #32 发布日 = **2026-09-28**（RELEASE-VALUES `date`，FINAL）。
+> kit #32 发布实测：tar **207,114,608 B / `8f690949…`**、树 **`645879bc…`**、sidecar **`344760e7…`**、
+> `SHA256SUMS` **16 项 / 1,410 B / `2d3f2fad…`**（下载解包复核 = tree OK + KIT OK，0 FAIL / 0 WARN；
+> 重签/重打包后哈希必变，以 release「## Integrity（kit #32）」与随包校验为准）。
 
 > 结论先行：kit #32 = **kit #31 + WebView 六项接线（壳 + 切片） + B1 razor 独立资产 + SEC-SCAN-3 收口修复 +
 > Blazor 组件 hap 无 INTERNET（重签后保持）** ——
@@ -14,9 +14,9 @@
 > 真机 9 项不确定项 → **《WebView / Blazor Hybrid 真机验证卡》（§3）**。
 > ② **B1 razor 独立资产**：`hello-maui-razor`（MAUI Blazor Hybrid，进程内 CoreCLR、**native 模型非 WASM**；
 > bundle **`com.example.hellomauirazor`**）本机复跑 `publish -c Release -f net11.0-openharmony26.0
-> -r openharmony-arm64` → `sign-profile/sign-app/verify-app success`（签名 hap **75,889,768 B**，新壳 abc
+> -r openharmony-arm64` → `sign-profile/sign-app/verify-app success`（本机签名复跑 75,889,768 B 仅证明管线；发布 = 独立资产 `maui-razor-haps.tar.gz` 内未签 hap **73,656,242 B / `b4d305f0…`**，新壳 abc
 > **289,992 B / `e005f2366d72…`**，`dotnet.zip` 259 条含 `wwwroot/index.html`、`_framework/blazor.webview.js`、
-> `blazor.modules.json`、`js/app.js`；无 wasm/dot.js）；发布名/大小/摘要以 release 资产页为准。
+> `blazor.modules.json`、`js/app.js`；无 wasm/dot.js）；资产 **38,968,818 B / `5e549506…`**（sidecar `3f4cc4d6…`、README 2,617 B / `ff56faff…`），`requestPermissions=0`。
 > ③ **SEC-SCAN-3 收口**：深链控制字符注入 + allow-list 竞态、HUKS 空键崩溃/并发丢更新/坏 base64、
 > `.key`/`secure.dat` 0600 加固、`BLZ_ERROR` 终端清洗、ArkWeb rawfile 路径段校验 + 安全头（`nosniff`/`Vary`/
 > 最小 CSP）+ 启动 nonce、**探针标记 pid 绑定 + session nonce**、`app://../x` 段拒绝。
@@ -25,7 +25,12 @@
 > （与源侧期望不一致 → **WARN 不 FAIL**，kit #31 旧包仍可校验）。
 > ⑤ **门禁与指纹**：ui/shell abc **289,992 B / `e005f2366d724309…`**（headless **20,916 B / `54a1a201…`** 不变；
 > 壳重建 = ArkWeb 接线）、交互套件 **398/floor 378**（+5 w1–w5、SEC3 +2 回归 pin）、导出契约 **143/143**、
-> 像素套件 `PIXEL ASSERTIONS PASSED`；`verify-kit.sh` selftest **92 → 102**。
+> 像素套件 `PIXEL ASSERTIONS PASSED`；`verify-kit.sh` selftest **92 → 102**（脚本 **66,661 B / `f72a4a3c…`**）。
+> ⑥ **发布实测（2026-09-28，RELEASE-VALUES FINAL）**：tar **207,114,608 B / `8f690949…`**、树 **`645879bc…`**、
+> sidecar `344760e7…`、`SHA256SUMS` **16 项 / 1,410 B / `2d3f2fad…`**；bundle **30,566,929 B / `286a923e…`**
+> （sdk-ohos 锚 **`b4e76a6239`**）；tester-run **v14 140,197 B / `a174fcd0…`**（asset 595131362）；razor 资产
+> **38,968,818 B / `5e549506…`**（内未签 hap 73,656,242 / `b4d305f0…`）；6 hap 表见 §5；CI：ohos-workload **5/5**
+> （interaction 36413679129 等），sdk-ohos `ohos-install-tests` 红（step 6，历史同红；本机安装器测 43/43+10/10+5/5）。
 > 本轮判定点见 §2；承接 #31 的 Blazor 段（`2026-09-29-ohos-tester-handoff-kit31.md`）与 #30 的 MS-MODE/
 > #29 R3/#28 R2/#27 KIT-EXT2/#26 P2-INTEROP 判定点**继续有效**，本文只覆盖 #32 增量与判读引用。
 
@@ -54,7 +59,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 5 | **门禁与指纹**（承 #31） | abc **289,992**/`20916`、导出 **143/143**、交互 **398/floor 378**；MAPFIX harmony 件、MS-MODE/R3/R2 判定点不变 | 校验步骤与证据字段同 #31，仅 abc 期望值与 Blazor 段增强 |
 
 > 尺寸预算：kit #31 为 207,023,588 B；#32 = MAUI 5 hap 重建 + Blazor hap 重建（去掉 INTERNET）+ 并列 razor 资产
-> （如随包，约 +76 MB 量级），整包数字以 release 为准。
+> （+razor 资产 38,968,818 B），整包 = **207,114,608 B（+91,020 B vs #31）**。
 
 ## 2. 本轮判定点（按包内入口逐个勾）
 
@@ -94,16 +99,18 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
   同名；hap 内为 MAUI native 模型（不加载 WASM），判定只用 `BLZ_*` 与 `/counter`，不要套 ArkTS 宿主判据。
 - **MAUI 5 hap**：包含 #32 新壳（abc 289,992）；`libs/arm64-v8a/` 仍为 payload-in-libs 布局（254 payload +
   `.dotnet-payload.json`，`dotnet.zip` 回退），`libIsolation` 与全部历史修复不变。
-- **重建/重签后哈希必变**：一切数字以 release「## Integrity（kit #32）」与随包 `SHA256SUMS` / `.tar.gz.sha256` 为准。
+- **重建/重签后哈希必变**：本文数字 = kit #32 发布实测；以 release「## Integrity（kit #32）」与随包 `SHA256SUMS` / `.tar.gz.sha256` 为准。
 
 ## 5. 校验与取证（与 #31 相同骨架，仅 abc 期望与 Blazor 段增强）
 
 1. 包内 `sh verify-kit.sh` → 期望 **0 FAIL / 0 WARN**（#32 起：abc 期望 **289992**/`20916`；
    Blazor 2c 记录权限集，与源侧期望不一致 → WARN；selftest **102** 检查）。
    用 #31 的值 `281052` 校验本包会 FAIL —— 那是脚本的预期行为。
-2. `tester-run.sh` **v14**（大小/摘要以 release 资产页为准）：常规轮同 #31；Blazor 轮 `--blazor-probe` 现在断言
+2. `tester-run.sh` **v14**（**140,197 B / `a174fcd0…`**，asset 595131362）：常规轮同 #31；Blazor 轮 `--blazor-probe` 现在断言
    **pid + nonce 绑定**的标记（失败/降级信息进 `summary` 与 `blazor/`）；模式矩阵与 a11y 同 #30/#31。
-3. 整包数字（tar/树/sidecar/`SHA256SUMS`/hap 表/bundle/锚）**一律以 release「## Integrity（kit #32）」为准**
+3. 整包数字（tar **207,114,608 B / `8f690949…`**、树 **`645879bc…`**、sidecar **`344760e7…`**、`SHA256SUMS` **16 项 / 1,410 B / `2d3f2fad…`**、bundle **30,566,929 B / `286a923e…`**（锚 **`b4e76a6239`**）、tester-run **v14 140,197 B / `a174fcd0…`**、razor 资产 **38,968,818 B / `5e549506…`**）**以 release「## Integrity（kit #32）」与随包校验为准**
+
+> 6 hap（#32）：`hello-maui-app.hap` **75,866,199 / `ffa545fd…`**（0 权限）；`hello-maui-app-permissions.hap` **75,870,309 / `973f692f…`**（5 权限）；`hello-maui-app-api20.hap` **75,866,219 / `b614f9a2…`**；`hello-maui-app-api20-permissions.hap` **75,870,334 / `71bb121d…`**（5 权限）；`hello-maui-app-unsigned.hap` **73,684,666 / `8658f45a…`**；`hello-blazorwasm-host-unsigned.hap` **26,803,570 / `5011cf73…`**（219 条目、0 权限）。
    （#31 实测值仅作对照，见文首）。
 4. 有 harmony flavor / HMS 的测试者请附：壳构建出处（`harmony-haps.tar.gz`，MAPFIX 重切件
    abc 291,628 B/`a637a513…`）、Map/LiveView 点亮证据、TTS/HUKS/深链证据同 #29。
@@ -112,8 +119,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 
 - **WebView 六项与 B1 razor 均未在真机验证**（我方工作区无 UI/无 `hdc`）：几何/事件/Cookie/存储/失败清屏与
   B1 两标记 + JS 往返正是 §3 设备卡要闭环的 9 项。
-- B1 razor 的发布形态（签名/未签、名字、是否随 kit 或独立资产）以 release 资产页为准；本机复跑值
-  （75,889,768 B 签名 hap）只证明管线。
+- B1 razor 发布形态 = 独立资产 `maui-razor-haps.tar.gz`（38,968,818 B / `5e549506…`，内未签 hap 73,656,242 / `b4d305f0…`，0 权限）；本机签名复跑值（75,889,768 B）只证明管线。
 - 旧宿主（无 nonce）仍可过 `--blazor-probe`，但记录为**降级绑定**（`blazor_session_nonce=absent` + WARN）。
 - `--slim` 站点不带 `.br/.gz`（功能等价）；Blazor #32 hap 无 INTERNET、重签后保持，但**若你从自己的工程
   重建**则权限以你的工程为准。

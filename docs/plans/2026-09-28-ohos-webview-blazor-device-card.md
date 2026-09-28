@@ -2,7 +2,7 @@
 
 > 对象：kit #32 的 MAUI WebView 六项接线（壳 + 切片，`OpenHarmony{WebView,HybridWebView,BlazorWebView}Handler`）
 > 与 B1 razor 独立资产（`hello-maui-razor`，bundle `com.example.hellomauirazor`）。每项 = 操作 → 期望 → 证据 → 判据；
-> 失败回传「原文 + 截图」，无 hdc 时自动项登记「未测（无 hdc）」。资产名/数字以 release「## Integrity（kit #32）」为准。
+> 失败回传「原文 + 截图」，无 hdc 时自动项登记「未测（无 hdc）」。资产 = 独立 `maui-razor-haps.tar.gz`（38,968,818 B / `5e549506…`；内未签 hap 73,656,242 B / `b4d305f0…`，abc 289,992）；kit tar 207,114,608 B / `8f690949…`（数字以 release「## Integrity（kit #32）」为准）。
 
 | # | 不确定项 | 操作 | 期望 | 证据 / 判据 |
 |---|---|---|---|---|

@@ -1,12 +1,12 @@
 # Blazor 组件重签与验收操作卡（kit #32 · 一页版）
 
-> 日期口径：文件名按撰写日；kit #32 发布日与数字以 release「## Integrity（kit #32）」为准（#31 发布日 = 2026-09-28）。
+> 日期口径：文件名按撰写日；kit #32 发布日 = **2026-09-28**，数字以 release「## Integrity（kit #32）」为准（#31 发布日 = 2026-09-28）。
 
-> 对象：kit #32 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；约 26,794,931 B / `36010a9c…` 为 #31 值，以 release 为准；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
+> 对象：kit #32 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；#32 = **26,803,570 B / `5011cf73…`**（0 权限），#31 = 26,794,931 B / `36010a9c…`；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
 
 ## 1. 取件
 
-- 解出 `hello-blazorwasm-host-unsigned.hap`（只拿这一个文件也可操作）；**kit #32 起该 hap 无 `ohos.permission.INTERNET`**（rawfile 直供；重签不修改 module.json，重签后保持）；kit #32 整包数字以 release「## Integrity（kit #32）」与随包 `SHA256SUMS`/`.tar.gz.sha256` 为准（#31 实测 tar **207,023,588 B / `f4325d2f…`**、Blazor hap 26,794,931 B / `36010a9c…` 仅作对照）；重签后哈希必变，以新产出 + 新验签为准。
+- 解出 `hello-blazorwasm-host-unsigned.hap`（只拿这一个文件也可操作）；**kit #32 起该 hap 无 `ohos.permission.INTERNET`**（rawfile 直供；重签不修改 module.json，重签后保持）；kit #32 实测 tar **207,114,608 B / `8f690949…`**、sidecar `344760e7…`、tree `645879bc…`、Blazor hap **26,803,570 B / `5011cf73…`**（0 权限）；以随包 `SHA256SUMS`/`.tar.gz.sha256` 为准（#31 = 207,023,588 / `f4325d2f…`、26,794,931 / `36010a9c…` 对照）；重签后哈希必变，以新产出 + 新验签为准。
 
 ## 2. 重签（与 MAUI 未签包同流程）
 

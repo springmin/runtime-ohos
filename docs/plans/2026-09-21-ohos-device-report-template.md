@@ -7,9 +7,9 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（kit #32 = release「## Integrity（kit #32）」与 `.tar.gz.sha256` sidecar；kit #31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`**、sidecar **`7d0cba77…`**（`SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…` 仅作对照；见 release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首）；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| kit tar.gz sha256（实测） | `<...>`（kit #32 = tar **207,114,608 B / `8f690949…`**、tree **`645879bc…`**、sidecar **`344760e7…`**、`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`；kit #31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`**、sidecar **`7d0cba77…`**（`SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…` 仅作对照；见 release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首）；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
 | tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #31）」的 tree sha256，kit #31 = **`52e77ee8…`**；#30 = `cc1ca935…` 仅作对照；`summary.txt` 的 `tree_digest` 同值） |
-| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 **v14** = `14`；v13 = `13` 为 #31 值；v12 = `12 (2026-09-28)` 为 #30 值） |
+| `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 **v14** = `14`（140,197 B / `a174fcd0…`、asset 595131362）；v13 = `13` 为 #31 值；v12 = `12 (2026-09-28)` 为 #30 值） |
 | 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前基线 `1.0.0-preview.24`，kit #32） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；

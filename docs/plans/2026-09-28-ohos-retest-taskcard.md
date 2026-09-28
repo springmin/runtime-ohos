@@ -1,7 +1,7 @@
 # 复测任务单（一页）：kit #32 一轮设备判定（含 WebView / B1 razor / Blazor 段）（2026-09-28）
 
 > 目标：一轮拿全 JIT / XWE / AOT / 解释器 / harmony 五态证据 + WebView 六项（9 项卡）+ B1 razor 首帧/JS 往返 + Blazor 组件两条标记，一并采无障碍。
-> 执行入口 = `tester-run.sh` **v14（大小/摘要以 release 资产页为准；#31 = v13）**（v12 = 126,658 B / `87763a3e…` 为 #30 值；
+> 执行入口 = `tester-run.sh` **v14（140,197 B / `a174fcd0…`，asset 595131362；#31 = v13）**（v12 = 126,658 B / `87763a3e…` 为 #30 值；
 > v13 增 `--blazor-probe`。`summary runtime_mode` 读 hap 的 `libs/<abi>/runtime-mode.txt`，优先级
 > file（interp.txt）> manifest（清单标记）> default；`--mode-matrix` 的 Run C 在清单 interp 包上直接跑
 > stock hap，`run_c_via=manifest`）；判定树与细节见
@@ -13,23 +13,23 @@
 
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | **以 release 资产页为准**（#31 = 207,023,588） | **以 release 为准**（#31 = `f4325d2f…`；sidecar `7d0cba77…`；树 `52e77ee8…` 对照） | 6 个 hap（5 MAUI JIT 重建 = 新壳 abc `289992` + 1 未签名 Blazor `hello-blazorwasm-host-unsigned.hap`，bundle `com.example.opendotnet`；#32 起无 INTERNET）＋`verify-kit.sh`＋文档；`SHA256SUMS` 以 release 为准 |
-| **B1 razor 独立资产**（kit #32 起） | 以 release 为准 | 以 release 为准 | MAUI Blazor Hybrid（`hello-maui-razor`，bundle `com.example.hellomauirazor`）；重签后按《WebView / Blazor Hybrid 真机验证卡》#8–#9 判读 |
+| `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | **207,114,608** | **`8f690949…`**（sidecar `344760e7…`；树 `645879bc…`；`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`） | 6 个 hap（5 MAUI JIT 重建 = 新壳 abc `289992` + 1 未签名 Blazor `hello-blazorwasm-host-unsigned.hap`，bundle `com.example.opendotnet`；#32 起无 INTERNET）＋`verify-kit.sh`（66,661 / `f72a4a3c…`）＋文档 |
+| **B1 razor 独立资产** `maui-razor-haps.tar.gz`（kit #32 起） | **38,968,818** | **`5e549506…`**（sidecar `3f4cc4d6…`；README 2,617 B / `ff56faff…`；内未签 hap **73,656,242 / `b4d305f0…`**，0 权限） | MAUI Blazor Hybrid（bundle `com.example.hellomauirazor`）；重签后按《WebView / Blazor Hybrid 真机验证卡》#8–#9 判读 |
 | `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`；对应 `-p:OpenHarmonyRuntimeMode=aot` 的产物形态） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`；旧 196,118,871/`f7a4faa2…` 无 overlay 记录已替换） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
-| `tester-run.sh` **v14**（随包） | 以 release 为准（v13 = **137,113**；v14 数字以 release 资产页为准） | 以 release 为准（v13 = `2caa06bd…`，asset 594519342） | 执行器（`--blazor-probe` 在 #32 起做 pid+nonce 绑定校验、`summary` 增 `blazor_marker_pid`/`blazor_session_nonce`；另有 `--mode-matrix` / `--a11y-probe`） |
+| `tester-run.sh` **v14**（随包） | **140,197** | **`a174fcd0…`**（asset 595131362；v13 = 137,113 / `2caa06bd…`） | 执行器（`--blazor-probe` 在 #32 起做 pid+nonce 绑定校验、`summary` 增 `blazor_marker_pid`/`blazor_session_nonce`；另有 `--mode-matrix` / `--a11y-probe`） |
 
-包内 6 hap（5 MAUI + 1 Blazor；kit #32 起 abc 期望 `289992`/`20916`、Blazor hap 无 INTERNET；#31 实测 `SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…` 对照）：
+包内 6 hap（5 MAUI + 1 Blazor；kit #32 实测，`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`；abc 期望 `289992`/`20916`、Blazor hap 0 权限）：
 
 | hap | 大小 (B) | sha256（前缀） |
 |---|---|---|
-| `hello-maui-app.hap` | 75,911,479 | `1aba610a…` |
-| `hello-maui-app-permissions.hap` | 75,911,514 | `97cb56b6…` |
-| `hello-maui-app-api20.hap` | 75,911,552 | `e36df60f…` |
-| `hello-maui-app-api20-permissions.hap` | 75,911,464 | `28e77e06…` |
-| `hello-maui-app-unsigned.hap` | 73,718,252 | `1a520fd2…` |
-| `hello-blazorwasm-host-unsigned.hap`（第 6 个，kit #31 起；#32 无 INTERNET） | 以 release 为准（#31 = 26,794,931） | 以 release 为准（#31 = `36010a9c…`；219 条目；宿主 abc 16,352 B） |
+| `hello-maui-app.hap` | 75,866,199 | `ffa545fd…`（0 权限） |
+| `hello-maui-app-permissions.hap` | 75,870,309 | `973f692f…`（5 权限） |
+| `hello-maui-app-api20.hap` | 75,866,219 | `b614f9a2…` |
+| `hello-maui-app-api20-permissions.hap` | 75,870,334 | `71bb121d…`（5 权限） |
+| `hello-maui-app-unsigned.hap` | 73,684,666 | `8658f45a…` |
+| `hello-blazorwasm-host-unsigned.hap`（第 6 个，kit #31 起；#32 无 INTERNET） | 26,803,570 | `5011cf73…`（219 条目；自身 abc 21,084/`4069e453…`；0 权限） |
 
 > #30 包内指纹（历史对照）：zip 279 = 24 + 254 payload + `runtime-mode.txt`；`libs` 270 = 14 `.so` + 254 payload +
 > `.dotnet-payload.json` + `runtime-mode.txt=jit`；hap 内宿主 285,600 B/`de9b30dd…`、pack 281,504/`f6b3581a…`。
@@ -78,5 +78,5 @@
 - AOT hap 只有 3 个 `.so`，勿用 kit 的 JIT 期望值核对；AOT/harmony 安装会顶替 kit 主包，回 JIT 需重装 kit hap。
 - 自建变体用 **`-p:OpenHarmonyRuntimeMode=jit|aot|interp`**（默认 jit；aot 需 `lib<stem>.so`，interp 可带
   `-p:OpenHarmonyInterpreterPack=<目录>`）；设备侧仍是 `xwe.txt`/`interp.txt` 优先（file>manifest>default）。
-- 所有数字以 release「## Integrity」与 `.tar.gz.sha256` sidecar 为准（重签/重打包后哈希必变）；#32 数字入口见 release「## Integrity（kit #32）」与侧车（#31 = tar 207,023,588 / `f4325d2f…`、bundle 30,570,394 / `43a78c8f…`、锚 `b2b79e27d9` 仅作对照）。
+- 所有数字以 release「## Integrity」与 `.tar.gz.sha256` sidecar 为准（重签/重打包后哈希必变）；#32 实测 tar **207,114,608 / `8f690949…`**、树 `645879bc…`、sidecar `344760e7…`、bundle **30,566,929 / `286a923e…`**（锚 **`b4e76a6239`**）、v14 **140,197 / `a174fcd0…`**。（#31 = tar 207,023,588 / `f4325d2f…`、bundle 30,570,394 / `43a78c8f…`、锚 `b2b79e27d9` 仅作对照。）
 - 细判（TTS/HUKS/文本编辑/动画/列表/图片/深链）：`2026-09-28-ohos-tester-handoff-kit30.md` §2；**WebView/B1/Blazor #32 细判**：`2026-09-28-ohos-tester-handoff-kit32.md` §2–§3 与 `2026-09-28-ohos-webview-blazor-device-card.md`（#31 Blazor 见 `2026-09-29-ohos-tester-handoff-kit31.md` §2/§4）；无障碍逐项判据：`2026-09-27-ohos-accessibility-device-verification.md`。

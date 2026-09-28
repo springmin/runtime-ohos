@@ -31,7 +31,7 @@ complete security/performance/startup fix set since #17 (frame allocation 241,68
 P17 extraction skip, H7 rawfile fd read, headless abc `13.0.1.0`) and `tester-run.sh` v6r2 now
 collects app-lib/dlopen evidence, kmsg and the XPM/fs-verity probes automatically. The comparison
 payloads (dynpkg/normalized/importb/importd/importprobe a–c) and P1–P4 remain on the same release.
-Numbers stay in the release notes `## Integrity` (kit #32 = release「## Integrity（kit #32）」; kit #31 measured: tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; kit #30 comparison: tar **196,992,264 B** / `a781c25b…`; kit #28 comparison: tar `196,220,486 B` / `091dcc56…`, tree `0a7a3215…`); the kit's `签名说明.txt` PA1 sentence is
+Numbers stay in the release notes `## Integrity` (kit #32 measured: tar **207,114,608 B** / `8f690949…`, tree **`645879bc…`**, sidecar **`344760e7…`** (bundle 30,566,929 / `286a923e…`, tester-run v14 140,197 / `a174fcd0…`, razor asset 38,968,818 / `5e549506…`); kit #31 measured: tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; kit #30 comparison: tar **196,992,264 B** / `a781c25b…`; kit #28 comparison: tar `196,220,486 B` / `091dcc56…`, tree `0a7a3215…`); the kit's `签名说明.txt` PA1 sentence is
 historical wording (source fixed, next kit packaging).
 
 Updated 2026-09-24 (kit #22): the current kit is #22 — a stock-runnable back-port of the on-device
@@ -190,7 +190,7 @@ Share panel, Scan return, AOT startup — see `2026-09-25-ohos-tester-handoff-ki
 
 **Step 0 — kit identity check (before installing anything).** Take the current tarball
 size/sha256 and the extracted-tree digest from the `device-test-kit` release notes
-(`## Integrity`; the kit #32 values = release「## Integrity（kit #32）」; the kit #31 notes carried (tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; the #30 comparison was tar **196,992,264 B** / `a781c25b…`; the #28 comparison was tar
+(`## Integrity`; the kit #32 values: tar **207,114,608 B** / `8f690949…`, tree `645879bc…`, sidecar `344760e7…`; the kit #31 notes carried (tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar **`7d0cba77…`**; the #30 comparison was tar **196,992,264 B** / `a781c25b…`; the #28 comparison was tar
 196,220,486 B / `091dcc56…`, tree `0a7a3215…`; `workload-latest` mirrors them) or the `.sha256` sidecar. Then run the
 quickstart's verify chain — ① `sha256sum -c device-test-kit.tar.gz.sha256` (or
 `verify-kit.sh --anchor-file …`), ② extract, ③
