@@ -90,6 +90,8 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 | 跨文件修正 | `ReadyToRunTypeMapManager.cs` 保留 ours（见 §7） |
 | 校验 | `--diff-filter=U`=0、`git diff --check` 干净、take-ours==HEAD / take-rc2==theirs（抽样逐字节）、`gentree.cpp`==`s3/resolved/gentree.cpp.resolved` |
 | CI 验证 | 双仓 ref 派发 run **36392095576**（`upload_release=false`；runtime+aspnetcore=`fix/ohos-rc2`，sdk=`feature/openharmony`） |
+| 迭代 1 | run 36392095576 **失败**（23m48s，runtime 构建 XCROSS ILC publish）：`NETSDK1112: The runtime pack for Microsoft.NETCore.App.Runtime.linux-musl-arm64 was not downloaded`。根因：取 rc2 的 `eng/Version.Details.props` 后 `MicrosoftNETCoreAppRefPackageVersion` 由 `rc.1.26431.109` → **`rc.2.26465.108`**，而 musl alias seed 列表（`VERSION_BAND`/`BOOTSTRAP_RUNTIME_VERSION`/`HOST_PACK_BRANCH_VERSION`/`RT_VERSION`，全 rc.1 pin）不覆盖它（pre-merge 的 26431.109 恰在列表里，故此前不炸）。修复：`build-ohos-all.sh` 的 `seed_musl_runtime_pack_alias_from_release()` 从 runtime/aspnetcore checkout 的 `Version.Details.props` **动态解析该属性**并入 seed 列表（幂等，随 band 前进自动生效）——sdk commit `55473eec99` |
+| 迭代 2 | run **36394814751**（冷启动，预期 ~58min）|
 
 产物索引：`/data/storage/el2/base/tmp/opencode/rc2-decisions/{s0,s1,s2,s3}.md`、`apply-list.tsv`、
 `apply.py`、S3 resolved 文件 `.../s3/resolved/`。
