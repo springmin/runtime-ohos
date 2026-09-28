@@ -27,16 +27,48 @@
 
 | 方案 | 内容 | 状态 |
 |---|---|---|
-| **A（推荐）CI 打包补丁** | 在 sdk-ohos stage4 之后，对 SDK 内的 `Microsoft.Build.Framework.dll` 应用上面的 IL 补丁（Cecil 补丁器）；可选同时补 Roslyn 编译器服务器 DLL。要求设备 `TMPDIR` 指向可建 socket 的目录（本机默认 `/data/storage/el2/base/tmp`） | 待实施 |
-| B 设备临时 | `taskhost-test/patcher/`（`dotnet patcher.dll <in> <out>`）+ `MBF.patched.dll`，覆盖前备份原文件 | 已可用 |
-| C 不改 SDK | 项目级 `UsingTask Override="true"`（现有规避）；`-p:UseSharedCompilation=false` 消除 Roslyn 服务器的 20 s 超时（非致命） | 已验证 |
+| **A（推荐）CI 打包补丁** | 在 sdk-ohos stage4 之后，对 SDK 内的 `Microsoft.Build.Framework.dll` 应用上面的 IL 补丁（Cecil 补丁器）；同时补 Roslyn 编译器服务器 DLL（见"实施"）。要求设备 `TMPDIR` 指向可建 socket 的目录（本机默认 `/data/storage/el2/base/tmp`） | **已实施并设备验证**（见下） |
+| B 设备临时 | `taskhost-test/patcher/`（`dotnet patcher.dll <in> <out>`）+ `MBF.patched.dll`，覆盖前备份原文件 | 已完成使命（备用） |
+| C 不改 SDK | 项目级 `UsingTask Override="true"`（现有规避）；`-p:UseSharedCompilation=false` 消除 Roslyn 服务器的 20 s 超时（非致命） | 仍有效（`test/hello-blazorwasm` 在旧 SDK 上自动回退此路径） |
 | 上游（可选） | 向 dotnet/msbuild 提案"TMPDIR 感知 + 路径长度（108 字节）回退" | 未做 |
+
+## 实施（2026-09-28，sdk-ohos `feature/openharmony`）
+
+三个提交（`b52765daab` → `3fb944b658` → `1cbc1b8a6a`，均已推送；联合发布 run
+[36367938255](https://github.com/springmin/sdk-ohos/actions/runs/36367938255)）：
+
+1. **MSBuild 管道补丁**（`b52765daab`）：`eng/ohos-install/build/msbuild-pipe-patch/`
+   （Cecil, `Microsoft.Build.Framework` 的 `NamedPipeUtil.GetPlatformSpecificPipeName`）+ 
+   `patch-msbuild-pipe.py`（布局与 tarball 双覆盖、跳过 `ref/`、流式重写）+ stage4 钩子；
+   补丁在 **签名前** 应用，`rc=0 已补 / 2 无类型 / 3 无方法 / 4 无需替换`。
+2. **Roslyn 编译器服务器补丁**（`1cbc1b8a6a`）：同一条 IL 替换
+   （`Microsoft.CodeAnalysis.NamedPipeUtil::GetPipeNameOrPath` 的 `ldstr "/tmp"` →
+   `Path.GetTempPath()`），覆盖 `Roslyn/bincore/{csc,vbc,VBCSCompiler}.dll` 与
+   `Roslyn/Microsoft.Build.Tasks.CodeAnalysis.dll`（客户端/服务器各有副本，需全部一致）；
+   缺目标按 DLL 跳过（新增 `--scan` 诊断模式），补丁器按源码 mtime 失效缓存。
+3. **`libdotnet-aot.so` 架构守卫**（`3fb944b658`）：布局陈旧 x86-64 残留清理（MSBuild target）
+   + `check-sdk-arch.py verify` 在签名/发布前拒绝异架构 ELF + 21 项回归测试
+   （根因：SDK 布局目录跨构建复用且从不清理）。
+
+### 设备验证（arm64 OpenHarmony）
+
+- **MSBuild**：把同一补丁器应用到设备 SDK 的 `Microsoft.Build.Framework.dll`，删除
+  `blazor2/Directory.Build.targets` 中全部 7 条 `UsingTask Override` 后，
+  `dotnet build`（Blazor WASM, Release）**rc=0 / 72 s（其中 40 s 为 restore）**、
+  **0 次 task-host 重试、0 × MSB4216**、0 警告 0 错误。
+- **Roslyn**：未补丁 `csc /shared` **22 s 回退** → 补丁后 **2 s**（socket 绑在 TMPDIR）；
+  真实 hello 构建 **30 s → 11 s**。
+- **端到端**：`test/hello-blazorwasm/run-smoke.sh`（ohos-workload）在补丁 SDK 上
+  "publish succeeded **without** the task-host override"（642 文件 / 52 MB）。
+- 前提：`TMPDIR` 可 bind（本机 `/data/storage/el2/base/tmp`）；管道名 43 字符 + TMPDIR(25) =
+  68 < 108 字节 AF_UNIX 上限。
 
 ## 其他发现
 
-- `libdotnet-aot.so` 是 **x86-64** 库却被 arm64 SDK 每次启动时尝试加载并报错（非致命，建议清理）
-- Roslyn 编译器服务器（`csc/vbc/VBCSCompiler`）含同类 `/tmp` 字面量：失败后回退进程内编译
-  （每次约 20 s 超时；`UseSharedCompilation=false` 可规避）
+- `libdotnet-aot.so`（arm64 SDK 内混入的 x86-64 库，每次启动报加载错误）：**已修**
+  （`3fb944b658`，布局清理 + 发布前架构守卫；设备上坏文件已移走，`dotnet --version` 输出干净）
+- Roslyn 编译器服务器（`csc/vbc/VBCSCompiler`）同类 `/tmp` 字面量：**已修**
+  （`1cbc1b8a6a`），不再有每次编译 ~20 s 的服务器超时回退
 
 ## 验证产物（设备，未提交 git）
 
