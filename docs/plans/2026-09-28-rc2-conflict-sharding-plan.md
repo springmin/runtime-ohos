@@ -77,3 +77,42 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 `src/libraries` 32、`eng/pipelines` 19、`src/coreclr` 5、`src/tests` 3、`src/tasks` 1、
 `src/native` 1（`minipal/thread.c`）、`src/installer` 1、`eng/common` 1、`global.json`、
 `eng/Version.Details.{xml,props}`、`.config/dotnet-tools.json`。
+
+## 6. 执行记录（2026-09-28）
+
+| 项 | 值 |
+|---|---|
+| aspnetcore 影子分支 | `fix/ohos-rc2` = `e10d030184`（4 文件取 rc2；归一化对比证明除版本号外仅一处上游重命名，且自闭环） |
+| runtime 影子分支 | `fix/ohos-rc2` = `d4a4e25c89f`（merge 于 feature `856b8047159`，已推送） |
+| 分类产物 | 4 张决策表（`s0–s3.md`）+ `apply-list.tsv`：67/67 覆盖 = 42 take-rc2 / 21 take-ours / 4 merge |
+| 自动应用 | 63 文件（applier 输出 `applied=63 merge=4 no-decision=0 table-not-unmerged=0`） |
+| merge 项 | `gentree.cpp`（theirs 变体 = ours+3 个主线修复，逐字节重放验证）、`Crossgen2.props`（并集）、`Regression_ro_2.csproj`（ours + `Runtime_133550` 条目）、`SCG.csproj`（theirs + 在 `Interop.AsymmetricEncryption.Types.cs` 后插回 ours-only 的 `Interop.BCrypt.Types.cs`） |
+| 跨文件修正 | `ReadyToRunTypeMapManager.cs` 保留 ours（见 §7） |
+| 校验 | `--diff-filter=U`=0、`git diff --check` 干净、take-ours==HEAD / take-rc2==theirs（抽样逐字节）、`gentree.cpp`==`s3/resolved/gentree.cpp.resolved` |
+| CI 验证 | 双仓 ref 派发 run **36392095576**（`upload_release=false`；runtime+aspnetcore=`fix/ohos-rc2`，sdk=`feature/openharmony`） |
+
+产物索引：`/data/storage/el2/base/tmp/opencode/rc2-decisions/{s0,s1,s2,s3}.md`、`apply-list.tsv`、
+`apply.py`、S3 resolved 文件 `.../s3/resolved/`。
+
+## 7. R2R 类型映射簇判定记录（#133038 vs #132984）
+
+`ReadyToRunTypeMapManager.cs` **不在** 67 冲突表内：rc2 改了它（+119/−2），fork 没改
+（`base..ours` 为空），git 会**静默取 rc2 版本**——但 rc2 的 manager 调 **5 参** node 主构造
+（rc2 给 node 主构造新增 `bool requiresRuntimeProcessing`），而 ours 的 node 是 4 参 +
+`ReadyToRunTypeMapEncoding`（序列化类型名）机制，两侧不兼容 → CS1729/CS1061。
+合并后执行：`git checkout HEAD -- src/coreclr/tools/aot/ILCompiler.ReadyToRun/Compiler/ReadyToRunTypeMapManager.cs`。
+
+**为什么不是"把 node 升到上游版本、整簇以上游为准"：**
+
+- ours = 主线正式修复 **#133038**；rc2 = release-only 权宜 **#132984**（rc2 自己的提交信息写明
+  "正式修复是 #133038"）。本簇的 take-ours 是"升级方向"，不是回避。
+- #133038 不止两个 node 文件：合并树中 `ReadyToRunTypeMapEncoding` 出现在 **4 个文件**；
+  整簇取 rc2 需连同 `TypeMapMetadata`/`ExternalTypeMapEntry` 等消费方一起回退，
+  否则就是本静默冲突的镜像版（rc2 node/manager 与 ours 元数据形状互斥）。
+- 本 fork 是**主线基线**（11 带 + A 合并 main 尾部），rc2 合并本质是"回移并集"；
+  整簇取 rc2 = 主动降级，且下次合 main 会再次冲突。
+- 自洽性核验（合并树）：`requiresRuntimeProcessing` 出现 **0 次**、
+  `ReadyToRunTypeMapEncoding` 4 文件在位、manager 为 4 参调用（与 ours node 配对）。
+
+若将来线切换为**严格跟踪 release 分支**（不带 main 演进），才适合"整簇以上游为准"；
+届时应单独影子分支实验（回退 #133038 机制），不动 `fix/ohos-rc2`。
