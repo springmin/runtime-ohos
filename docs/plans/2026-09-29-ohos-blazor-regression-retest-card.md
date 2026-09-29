@@ -22,5 +22,5 @@
 ## 3. MAUI 主体判读（FIX-TABBED / AOT v2 回退）
 
 - 装 kit #33 默认 MAUI hap（重签；新壳 abc **294,976 B / `6cf7dda2…`**）→ FlyoutPage → TabbedPage：期望**双页签内容出画**（修复前只画 tab 栏、主体黑屏），切页正常；异常时回传截图 + hilog。
-- JIT 路线若启动/主体仍崩（`SEGV_ACCERR`）：重签安装 `aot-haps-v2.tar.gz` 内未签 hap（asset 596991567 / `265e014f…`；会顶替 kit 主包）→ 启动 → `start_app: aot=1` → 判「主体渲染」。
+- JIT 路线若启动/主体仍崩（`SEGV_ACCERR`）：重签安装 `aot-haps-v3.tar.gz` 内未签 hap（asset 597904340 / `004ba03c…`；含 UIPage 修复，本侧本机已出画；会顶替 kit 主包）→ 启动 → `start_app: aot=1` → 判「主体渲染」。
 - 无障碍：加 `--a11y-probe` 确认影子树含当前页且切页跟随（A11Y-TABBED）；无 hdc/不能重签时自动项登记「未测」、人工项照做。

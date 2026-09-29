@@ -24,9 +24,9 @@
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60
 # Blazor 回归 A/B（先分别重签两个变体；见 §2 / 一页卡）
 sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe
-# 运行时四态一键（AOT 段请用 aot-haps-v2；见 §1.7）
+# 运行时四态一键（AOT 段请用 aot-haps-v3；见 §1.7）
 sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
-    --aot-haps ./aot-haps-v2.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
+    --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
 ```
 
 ## 1. kit #33 相对 #32 的增量（测试方视角）
@@ -39,7 +39,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 1.4 | **FIX-TABBED（MAUI 主体渲染）** | 切片 `ChildEnumerator` 补 `TabbedPage.CurrentPage`（此前只枚举 NavigationPage 可见页）——FlyoutPage → TabbedPage 链路上的主体页从未进入绘制遍历（kit #30/#31 真机「只画 tab 栏、主体黑屏」的根因）；修复后当前页入画 | TabbedPage 双页签内容出画 + 切页（§2） |
 | 1.5 | **A11Y-TABBED（无障碍影子树）** | 同款枚举缺口修复 `OpenHarmonyAccessibility.PushChildren`：无障碍树发布 `TabbedPage.CurrentPage`（选中页节点在、未选中页不在；切页后跟随） | `--a11y-probe` 树含当前页（§2） |
 | 1.6 | **W5 四件**（切片 + 套件） | T13 CollectionView `GroupFooter` 视图模板（非 Label）、N3 Picker/Date/TimePicker `IsOpen` 双向映射（开/关 + Opened/Closed）、T21 字体缩放跟随系统字号、T22 MainThread 桥接断言；交互套件 **470/floor 450**（#32 = 398/378），像素套件 `PIXEL ASSERTIONS PASSED` | 四项按 §2 逐条 + 套件自报行 |
-| 1.7 | **AOT v2 独立资产**（不在 kit 内） | 新并列资产 `aot-haps-v2.tar.gz`（**17,323,220 B / `265e014f…`**，asset 596991567；sidecar `720da730…`；README `3e2cb2db…`；内含含 TabbedPage 修复的已签/未签 AOT hap，未签 **20,100,211 B / `b869f67b…`**、已签 20,360,777 / `5db9c672…`）；旧 `aot-haps.tar.gz`（17,093,146 / `91e1b9d3…`）保留对照。**MAUI 主包 JIT 若仍 `SEGV_ACCERR` 崩溃，用本资产重签安装判「主体渲染」** | 重签安装 → 启动 → `aot=1` → 双页签出画（§2） |
+| 1.7 | **AOT v3 独立资产**（不在 kit 内） | 新并列资产 `aot-haps-v3.tar.gz`（**17,537,186 B / `004ba03c…`**，asset 597904340；sidecar `0e28a268…`；README `abe541dd…`；含 TabbedPage 修复 + **UIPage 修复**：UI 壳 abc `289992`/`e005f236…`、`main_pages=pages/Index`；已签 **20,624,089 / `46d7a9ee…`**（SDK `sign-hap.sh` + UDID `60CF7B27…`）、未签 **20,369,300 / `5422b683…`**；本侧本机真机出画已验证：RSTree `ohos_dotnet_surface` buffer=1、`uiContent is null`=0）。v2（17,323,220 / `265e014f…`，headless → 白窗）与 v1（17,093,146 / `91e1b9d3…`）保留对照。**MAUI 主包 JIT 若仍 `SEGV_ACCERR` 崩溃，用本资产重签安装判「主体渲染」** | 重签安装 → 启动 → `aot=1` → 主体出画（双页签/切页若能判定） |
 | 1.8 | **基线/脚本** | 基线 = rc.2 线（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28`；bundle **77,689,347 B / `155960f4…`**，锚 `e7727959cc`）；MAUI 5 hap 重建 = 新壳 abc **294,976 B / `6cf7dda2…`**；整包 tar **218,138,546 / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`；`verify-kit.sh` 承 2c dotnet.js 断言（selftest **108** 检查）；`tester-run.sh` 以包内 `SCRIPT_VERSION` 为准（#32 = v14） | `verify-kit.sh` 0 FAIL；版本自述 |
 
 > 尺寸预算：以 release 资产表为准（#32 = 207,114,608 B；#33 的 delta = Blazor hap 重建/双变体 + MAUI hap 重建）。
@@ -51,7 +51,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | **Blazor A/B：默认（CSP）** | 重签默认 `hello-blazorwasm-host-unsigned.hap` → 安装 → `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe` | `BLZ_BOOT` + `BLZ_RENDERED`（宿主 pid + `[blz:<nonce>]`），无 `BLZ_ERROR`；人工首屏 “Hello from Blazor WebAssembly” + `/counter` +1 | hilog 原文 + 首屏/点击截图 |
 | **Blazor A/B：`-nocsp` 对照** | 卸载默认件，重签安装 `…-nocsp.hap`（bundle 同名 `com.example.opendotnet`）→ 同一命令 | 同上；**判读**：默认能渲染 → CSP 非瓶颈、路径修复成立；默认不能而 nocsp 能 → CSP 至少是次因（记录）；两者都不能 → 路径修复未生效，按失败回传 | 同上 + 两个 hap 的 sha256 |
 | **MAUI 主体（FIX-TABBED）** | 装 kit #33 默认 MAUI hap（重签）→ 进入 FlyoutPage → TabbedPage 页面 | 双页签内容出画（不再是只画 tab 栏的「主体黑屏」）；切页内容切换、无残影 | 截图（两个页签）+ hilog 崩溃行（若有） |
-| **AOT v2 回退（可选/主体）** | 若 JIT 路线启动即崩（`SEGV_ACCERR`）或主体仍黑：重签 `aot-haps-v2.tar.gz` 内未签 hap → 安装（会顶替 kit 主包）→ 启动 | 主体渲染确认（双页签 + 切页）；`start_app: aot=1` 行 | 截图 + hilog（`aot=` 行） |
+| **AOT v3 回退（可选/主体）** | 若 JIT 路线启动即崩（`SEGV_ACCERR`）或主体仍黑：重签 `aot-haps-v3.tar.gz` 内未签 hap → 安装（会顶替 kit 主包）→ 启动 | 主体出画确认；`start_app: aot=1` 行（本侧本机已验：`ohos_dotnet_surface` buffer=1、`uiContent is null`=0） | 截图 + hilog（`aot=` 行） |
 | **无障碍（A11Y-TABBED）** | 加 `--a11y-probe` 跑任意一轮 | `a11y/selfcheck.txt` 节点含当前页标签；切页后跟随 `CurrentPage` | `a11y/` 两文件 + `summary a11y_*` |
 | **W5 四件：T13** | CollectionView 带 GroupFooter 模板的页面 | 页脚按模板视图渲染（非 Label 降级） | 截图 |
 | **W5 四件：N3** | Picker/DatePicker/TimePicker 打开/关闭 | `IsOpen` 双向映射；`Opened`/`Closed` 事件成对 | 截图 + 日志 |
@@ -85,7 +85,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 
 1. 包内 `sh verify-kit.sh` → 期望 **0 FAIL / 0 WARN**（2c 新增 `_framework/dotnet.js` 断言：存在且与指纹版逐字节一致；
    对 #31/#32 旧 hap 会 FAIL 属预期；selftest 108 检查）。
-2. `tester-run.sh`（版本以包内自述为准）：常规轮 / `--blazor-probe` / `--mode-matrix`（AOT 段用 `aot-haps-v2.tar.gz`）/
+2. `tester-run.sh`（版本以包内自述为准）：常规轮 / `--blazor-probe` / `--mode-matrix`（AOT 段用 `aot-haps-v3.tar.gz`）/
    `--a11y-probe` 四件同 #32。
 3. **7 hap 表（kit #33 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`）**：`hello-maui-app.hap` **76,072,282 / `04b45359…`**；`hello-maui-app-unsigned.hap` **73,880,100 / `218e8ca4…`**；`hello-maui-app-permissions.hap` **76,076,322 / `622c970a…`**；`hello-maui-app-api20.hap` **76,072,243 / `e4cb95f0…`**；`hello-maui-app-api20-permissions.hap` **76,076,383 / `cb50dd04…`**；Blazor 默认 **27,216,958 / `69de2eea…`**；Blazor `-nocsp`（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）**27,216,659 / `c1ef7e06…`**。整包 tar **218,138,546 / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`、bundle **77,689,347 / `155960f4…`**；**以 release「## Integrity（kit #33）」与随包校验为准**（重签/重打包后必变）；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#32）。

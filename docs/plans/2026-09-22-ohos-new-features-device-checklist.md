@@ -191,7 +191,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 > 见 `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` §2 与 `2026-09-29-ohos-blazor-regression-retest-card.md`：
 > Blazor 双 hap A/B（默认 CSP 与 `-nocsp` 各装一次、记录 `BLZ_*`）；MAUI 主体看 TabbedPage 双页签出画，
-> JIT 若仍 `SEGV_ACCERR` 用 `aot-haps-v2.tar.gz` 重签判读；W5 四件 T13/N3/T21/T22（套件 **470/floor 450**）。
+> JIT 若仍 `SEGV_ACCERR` 用 `aot-haps-v3.tar.gz` 重签判读（UIPage 修复；v2 为对照）；W5 四件 T13/N3/T21/T22（套件 **470/floor 450**）。
 
 ### 0.13 kit #32 增量判定点（WebView 六项接线 / B1 razor / SEC 收口）
 

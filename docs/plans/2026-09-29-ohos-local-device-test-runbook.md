@@ -51,3 +51,7 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
   # 可选 -p:OpenHarmonyRuntimeMode=aot（仅标记；路由由 lib<stem>.so 探测决定，不加也走 aot）
 ```
 修复后 `ets/modules.abc`=UI 壳（≈290 KB）、`main_pages={"src":["pages/Index"]}`；真机 RSTree 出 `ohos_dotnet_surface`（hasSurfaceBuffer=1）、进程有 .NET 线程、无 `uiContent is null`。
+> **2026-09-29 落地**：修复后的 AOT 包已作为 `aot-haps-v3.tar.gz` 发布（device-test-kit release，
+> 17,537,186 B / `004ba03c…`，asset 597904340；本机真机出画已验证）；v1/v2 保留对照。判定点回写
+> ohos-workload `30a1c7e`（`publish-aot.sh`/`AOT.md`/`make-mode-kit` 默认 UIPage）。见
+> `2026-09-29-ohos-aot-v3-rebuild.md`。
