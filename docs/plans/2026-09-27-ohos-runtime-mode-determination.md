@@ -1,5 +1,7 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
 > 判定用 `tester-run.sh` **v13**（v13 = **137,113 B / `2caa06bd…`** / asset **594519342**；v12 = 126,658 B / `87763a3e…` / `script_version=12 (2026-09-28)` 为 #30 值：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`，v12 起 `summary runtime_mode` 读 hap `libs/<abi>/runtime-mode.txt` 且 `interp_mode`/`aot_route` 按 file（interp.txt）> manifest（清单）> default 取值）：证据包 `tester-report-*.tar.gz` 含
 > `hilog/hilog-execmem.txt` 与 `summary.txt` 键 `aot_route=0|1|0+1|1(manifest)|<unavailable>`、`interp_mode=<v>(file|manifest|default)|<unavailable>`、`runtime_mode=<v>(hap)|invalid(<值>)|<absent>`（缺失容忍；file>manifest>default）；
@@ -20,6 +22,7 @@
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | 392356147 | **207,114,608** | **`8f690949…`**（sidecar `344760e7…`；树 `645879bc…`；`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`） | 6 个 hap（5 个 MAUI JIT（#32 新壳 abc 289992）+ 1 个未签名 Blazor `hello-blazorwasm-host-unsigned.hap`、#32 = **26,803,570 B / `5011cf73…`（0 权限）**、bundle `com.example.opendotnet`；`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker、`libs` 270）＋文档＋verify-kit；#29 196,990,205 / `e895cc0a…`、#28 196,220,486 / `091dcc56…` 为历史对照 |
+| `device-test-kit.tar.gz`（kit #33，2026-09-29 发布） | 以 release 为准 | **以 release「## Integrity（kit #33）」为准** | 同左（#33 = Blazor 回归修复/双 hap A/B + TabbedPage/A11Y + W5 四件；AOT 段用 `aot-haps-v2.tar.gz`；MAUI abc 期望以包内 verify-kit.sh 为准） |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
@@ -81,7 +84,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
 - `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
-### 2.1 JIT（kit #32 stock；#30/#31/#28 快照同流程）
+### 2.1 JIT（kit #33 stock；#32/#30 快照同流程）
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --out tester-report
 hdc shell "echo 1 > /data/storage/el2/base/haps/entry/files/xwe.txt"   # A/B：仅当 probe 1≠OK/SEGV 才写

@@ -1,6 +1,8 @@
 # 无障碍真机验证清单（P0b-A11Y，2026-09-27）
 
-**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #32 真机上的逐项验证（MAUI 主包承 #30/#31，abc 重建为 289,992；#31 的 Blazor 组件与 #32 的 WebView/B1 不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+
+**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #33 真机上的逐项验证（**A11Y-TABBED：影子树发布 `TabbedPage.CurrentPage`——选中页节点在、未选中页不在，切页后跟随**；MAUI 主包承 #30/#31；#32 的 WebView/B1 不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
 **样品**：默认 `hello-maui-app.hap`（重签后安装）；演示页含 Entry/CheckBox/Switch/Slider/ProgressBar/CollectionView/ListView/HybridWebView/BlazorWebView（无 Image 入口 → I1 登记未测）。
 **前置**：点左下角 `A11Y` 确认 `accessibilityStatus: 1 (attached - expected)`；读屏 =「设置 → 辅助功能 → 屏幕朗读」；每轮开始 `hdc shell hilog -r`（或直接 `--capture`）。
 **采集**：`sh tester-run.sh --kit-dir <kit> --install --start --capture 30 --a11y-probe`（v14；v12/v13 亦可，`--a11y-probe` 行为不变）→ `a11y/selfcheck.txt`、`a11y/selfcheck-layout.json`、`a11y/hilog-a11y.txt`，`summary.txt` 增 `a11y_*` 键（另含 `runtime_mode`）；旧脚本按文末「手动采集」。
@@ -23,6 +25,7 @@
 | F2 | 滚动中焦点保持 | 长列表读屏聚焦中间一行 → 滑动滚动 → 观察焦点 | 滚动后焦点仍在语义相邻行；不丢焦点、不跳回首行、不落到无关控件；朗读行与屏上一致 | 录屏 + 滚动前后 dump | 焦点保持 + 行文本对应；丢失/漂移 = FAIL |
 | T1 | 读屏关闭态 | 关读屏 → 常规触摸（按钮/输入/滚动） | 行为与无读屏一致；provider 仍 `status=1`；无残留焦点框 | 录屏 + 自检截图 | 操作全部正常、不崩；状态行不变 |
 | T2 | 读屏开启态 | 开读屏 → 遍历 E1–S1 控件 → 双击激活 → 关读屏 | 可聚焦、朗读角色+文本+状态；双击激活；关闭后恢复 T1 行为 | 两段录屏（开/关） | 两态切换无崩溃/卡死；覆盖 E1–S1 |
+| T3 | TabbedPage 当前页（A11Y-TABBED，kit #33） | 读屏遍历 FlyoutPage → TabbedPage → 切页 | 影子树只发布当前页的标签/内容节点；切页后跟随 `CurrentPage` | 录屏 + `a11y/` dump | 当前页节点在、未选中页不在；切页跟随（修复前缺该枚举，见 `fix-tab/CLOSE-STATE.md` 负控） |
 
 **动作面（发布契约）**：只发布并执行 Click（button/text/checkBox/switch/textInput）、ScrollForward/Backward（scroll/slider）、Copy/Paste/Cut/SelectText（textInput）；SET_TEXT/LONG_CLICK 未发布（监听器无值载荷、切片无长按路径）→ 读屏不出现这两类动作属预期。
 

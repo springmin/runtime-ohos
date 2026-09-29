@@ -1,5 +1,7 @@
 # WebView / Blazor Hybrid 真机验证卡（kit #32，2026-09-28）
 
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+
 > 对象：kit #32 的 MAUI WebView 六项接线（壳 + 切片，`OpenHarmony{WebView,HybridWebView,BlazorWebView}Handler`）
 > 与 B1 razor 独立资产（`hello-maui-razor`，bundle `com.example.hellomauirazor`）。每项 = 操作 → 期望 → 证据 → 判据；
 > 失败回传「原文 + 截图」，无 hdc 时自动项登记「未测（无 hdc）」。资产 = 独立 `maui-razor-haps.tar.gz`（38,968,818 B / `5e549506…`；内未签 hap 73,656,242 B / `b4d305f0…`，abc 289,992）；kit tar 207,114,608 B / `8f690949…`（数字以 release「## Integrity（kit #32）」为准）。
@@ -17,4 +19,4 @@
 | 9 | B1 JS 往返 | 进 `/counter` 点一次 `Click me`（或触发一次 `JS.InvokeVoidAsync` 往返） | 计数 0 → 1；往返无异常 | 截图 + 日志；判据：往返成功、计数变化 |
 
 回传：`tester-report-*.tar.gz`（含 `hilog/`、`summary.txt`）+ 截图；B1 失败附 `hilog -x` 原文与 `bm dump -n com.example.hellomauirazor`（可用时）。
-判读引用：`2026-09-28-ohos-tester-handoff-kit32.md` §2–§3；#31 的 ArkTS Blazor 宿主（`com.example.opendotnet`）见 `2026-09-29-ohos-tester-handoff-kit31.md` §2。
+判读引用：`2026-09-28-ohos-tester-handoff-kit32.md` §2–§3；#31 的 ArkTS Blazor 宿主（`com.example.opendotnet`）见 `2026-09-29-ohos-tester-handoff-kit31.md` §2。**#33 的 Blazor 回归 A/B（默认 CSP 与 `-nocsp` 双 hap）另见 `2026-09-29-ohos-blazor-regression-retest-card.md`。**

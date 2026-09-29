@@ -1,5 +1,15 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
+> **2026-09-29 update (kit #33 — current):** kit #33 = #32 + the Blazor regression fix (the rawfile read path
+> is `blazor/<x>` again, `_framework/dotnet.js` is materialized, CSP / no-csp twin haps for the A/B;
+> FIX-BLZ-PATH/FIX-BLZ-JS) + the MAUI TabbedPage render/a11y fix (FIX-TABBED/A11Y-TABBED) + Wave-5
+> (T13/N3/T21/T22; suite 470/floor 450) + the AOT-v2 asset (`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`).
+> **7 haps** = 5 rebuilt MAUI (new shell abc **294,976 B / `6cf7dda2…`**) + the Blazor default (27,216,958 / `69de2eea…`)
+> and `-nocsp` (27,216,659 / `c1ef7e06…`, in-kit name `hello-blazorwasm-host-nocsp-unsigned.hap`); bundle/preview.28
+> **77,689,347 B / `155960f4…`**; tar/tree/sidecar and gates pending — numbers follow the release notes
+> `## Integrity (kit #33)` and the in-kit checks; handoff:
+> `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`.
+
 Everything in this list is blocked on an install-eligible device (`hdc` is restricted in this
 environment). Each step names the artifact, the command and the observable result, so a single
 session on a device closes the whole port validation.
@@ -17,7 +27,7 @@ report template to what to return.
 Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, not here — §0
 reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
-this document. Kit #32 numbers are the published snapshot (release notes `## Integrity (kit #32)`; the kit #31 snapshot follows for comparison,
+this document. Kit #33 numbers are the published snapshot (release notes `## Integrity (kit #33)`; kit #32 numbers follow for comparison,
 PATCHed 2026-09-28): tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar
 **`7d0cba77…`**, `SHA256SUMS` 16 entries / 1,410 B / `f49b9a0e…` (the kit #31 handoff
 `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` carries the full table; tester-run v13
@@ -68,7 +78,7 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-09-28 (kit #32 — current): **WebView six-item wiring + B1 razor asset + SEC round**: MAUI WebView/Hybrid/Blazor handlers (history/CanGoBack, cookies, frame, events, failure clear; device card `2026-09-28-ohos-webview-blazor-device-card.md`), B1 `hello-maui-razor` (bundle `com.example.hellomauirazor`), tester-run **v14** (Blazor probe pid+nonce), Blazor hap without INTERNET; the kit #31 Blazor component (a 6th,
+Updated 2026-09-28 (kit #32 — previous; kit #33 current): **WebView six-item wiring + B1 razor asset + SEC round**: MAUI WebView/Hybrid/Blazor handlers (history/CanGoBack, cookies, frame, events, failure clear; device card `2026-09-28-ohos-webview-blazor-device-card.md`), B1 `hello-maui-razor` (bundle `com.example.hellomauirazor`), tester-run **v14** (Blazor probe pid+nonce), Blazor hap without INTERNET; the kit #31 Blazor component (a 6th,
 unsigned hap `hello-blazorwasm-host-unsigned.hap` (26,794,931 B / `36010a9c…`, 219 entries, bundle
 `com.example.opendotnet`, own shell abc 16,352 B @13.0.1.0; embedded site 210 files = `_framework` 208
 with 204 `.wasm` + `blazor.webassembly.js`; declares `ohos.permission.INTERNET` - development-only

@@ -1,5 +1,7 @@
 # 鸿蒙 Kit 能力缺口复核（KIT-GAP，2026-09-24）
 
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+
 > **目的**：用新装鸿蒙 Kit 技能库（`harmonyos-agent-skills/02-development/**`：`hmos-one-sdk-skill` 25-Kit 语料
 > + map-kit / scan-kit / push-kit / account-kit / live-view-kit / payment-kit / ads-kit 专项技能）重新盘点此前
 > 判定「缺失 / 被门控」的能力，产出可补齐清单与 API 证据。
@@ -82,7 +84,7 @@
 > 真机点亮需 harmony flavor + AGC 地图 AppKey（无 AppKey 时无 `Ready` 事件）。**kit #29 门禁** = 交互套件
 > **387 行/floor 367**、UI abc **281,052 B**（headless **20,916 B**）、宿主导出契约 **134/134 → 143/143**
 > （TTS 136、P0c 139、P1a 141、P2c 143）；**kit #30 门禁** = 交互套件 **391 行/floor 371**（MS-MODE：
-> 宿主 runtime-mode 标记解析/优先级与生效日志/aot 回退/pack 契约 4 检查）、abc 与导出契约不变；**kit #32 门禁** = WebView 六项接线与 SEC 收口（abc `289992`、交互 `398/floor 378`、tester-run `v14`（pid+nonce）、Blazor hap 无 INTERNET）；**kit #31 门禁** = 第 6 个 hap（Blazor WASM/ArkWeb 组件）+ `verify-kit.sh` Blazor 分节（`rawfile/blazor` 站点 / `_framework` wasm+JS / bundle `com.example.opendotnet` / 无 br/gz/map 与 ICU；verify-kit 63,301 B / `67622771…`），交互套件、abc 与导出契约不变（kit #31 发布实测 tar **207,023,588 B / `f4325d2f…`**）；
+> 宿主 runtime-mode 标记解析/优先级与生效日志/aot 回退/pack 契约 4 检查）、abc 与导出契约不变；**kit #32 门禁** = WebView 六项接线与 SEC 收口（abc `289992`、交互 `398/floor 378`、tester-run `v14`（pid+nonce）、Blazor hap 无 INTERNET）；**kit #33 门禁** = Blazor 回归修复（路径 + dotnet.js + 双 hap A/B）、TabbedPage 渲染/A11Y 修复与 W5 四件（交互 `470/floor 450`）、AOT v2 资产；数字以 release「## Integrity（kit #33）」为准；**kit #31 门禁** = 第 6 个 hap（Blazor WASM/ArkWeb 组件）+ `verify-kit.sh` Blazor 分节（`rawfile/blazor` 站点 / `_framework` wasm+JS / bundle `com.example.opendotnet` / 无 br/gz/map 与 ICU；verify-kit 63,301 B / `67622771…`），交互套件、abc 与导出契约不变（kit #31 发布实测 tar **207,023,588 B / `f4325d2f…`**）；
 > 发布实测 tar **196,992,264 B / `a781c25b…`**、树 **`cc1ca935…`**、sidecar `a63cd34f…`（下载解包复核 = tree OK + KIT OK）；
 > **MAPFIX（2026-09-28）**：旧 A1 harmony 件的 `MapOverlay` 从未进编译图（abc 无模块记录、bit1 恒 0），
 > 重切件 abc **291,628 B / `a637a513…`** 已真编译（tar `9b0506fa…`，旧 `d3a7b718…`/`f7a4faa2…` 已替换）；

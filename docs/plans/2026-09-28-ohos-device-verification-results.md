@@ -1,5 +1,7 @@
 # 真机验证结论入档（kit #30/#31，REC-VERIFY，2026-09-28）
 
+> **2026-09-29 更新（kit #33）**：本页三条行动项已全部落地并随 kit #33 出包——① `pack-host.sh` 静态资产路由（`_framework/dotnet.js` 等稳定名物化，FIX-BLZ-JS；另修复 kit #32 的读路径命名空间回归 FIX-BLZ-PATH）；② slice `ChildEnumerator` 补 TabbedPage case（`14bdb85f`，FIX-TABBED）+ 无障碍 `PushChildren` 同款修复（`dc9b19a6`，A11Y-TABBED）；③ `aot-haps-v2.tar.gz`（含 TabbedPage 修复，17,323,220 B / `265e014f…`）已发布。真机复测（Blazor A/B、TabbedPage 主体）见 `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md` 与 `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md`。
+
 > **来源**：测试方《.NET MAUI 鸿蒙真机验证总结（kit #30 → kit #31）》（`ohos-kit30-kit31-verification-summary.md`，420 行，2026-09-28）。
 > **口径**：只入档可复核的结论与去向；细粒度日志/参数引用来源总结。真机结论不回改离设备基线，只作状态注记。
 > **交叉引用**：覆盖矩阵 §6 真机状态、`2026-09-24-ohos-kit-gap-analysis.md` §5 结论。

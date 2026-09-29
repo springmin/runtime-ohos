@@ -1,8 +1,10 @@
-# Blazor 组件重签与验收操作卡（kit #32 · 一页版）
+# Blazor 组件重签与验收操作卡（kit #33 · 一页版；含 CSP/no-csp 双 hap A/B）
+
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
 
 > 日期口径：文件名按撰写日；kit #32 发布日 = **2026-09-28**，数字以 release「## Integrity（kit #32）」为准（#31 发布日 = 2026-09-28）。
 
-> 对象：kit #32 第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；#32 = **26,803,570 B / `5011cf73…`**（0 权限），#31 = 26,794,931 B / `36010a9c…`；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
+> 对象：kit #33 的 Blazor 宿主 hap（**默认 CSP 与 `-nocsp` 双变体，各重签/各装一次做 A/B**，判定表见 `2026-09-29-ohos-blazor-regression-retest-card.md`）；原 #32 条目：第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；#32 = **26,803,570 B / `5011cf73…`**（0 权限），#31 = 26,794,931 B / `36010a9c…`；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
 
 ## 1. 取件
 
@@ -27,7 +29,7 @@ hdc shell aa start -b com.example.opendotnet -a EntryAbility
 hdc shell "hilog -x | grep BlazorWebHost"    # 期望：marker: BLZ_BOOT 与 marker: BLZ_RENDERED
 ```
 
-- 两条都在 = 通过；出现 `marker: BLZ_ERROR <msg>` = 失败（原文记录并回传）。一键版（推荐）：`sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`（**kit #32 随包 v14**；标记只认宿主 pid + session nonce；失败自动落 `blazor-hilog.txt`）。
+- 两条都在 = 通过；出现 `marker: BLZ_ERROR <msg>` = 失败（原文记录并回传）。一键版（推荐）：`sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe`（**tester-run 版本以包内自述为准（#32 = v14）**；标记只认宿主 pid + session nonce；失败自动落 `blazor-hilog.txt`）。
 
 ## 5. 人工判读（截图 1 张）
 
