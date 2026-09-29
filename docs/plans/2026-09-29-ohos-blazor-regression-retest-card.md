@@ -2,7 +2,7 @@
 
 > 对象：kit #32 的 Blazor 组件回归（#33 修复）与 MAUI 主体（TabbedPage）判读；数字以 release「## Integrity（kit #33）」与随包 `SHA256SUMS` 为准；细节 `2026-09-29-ohos-tester-handoff-kit33.md`。
 
-> **构建中已知（16:12 骨架）**：**7 hap** = MAUI 5（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 以 release 为准。
+> **发布实测（FINAL）**：**7 hap** = MAUI 5（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`）；整包 tar **218,138,546 B / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`；bundle/preview.28 **77,689,347 B / `155960f4…`**（锚 `e7727959cc`）。
 
 ## 1. kit #32 现象 / 根因 / 修复证据
 

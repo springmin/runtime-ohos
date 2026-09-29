@@ -1,6 +1,6 @@
 # 真机回传模板（下一轮设备测试）
 
-> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**；tar/树/sidecar 与 gates pending —— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**（锚 `e7727959cc`）；整包 tar **218,138,546 B / `38e4d57a…`**、树 **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` **17 项 / 1,517 B / `37031b9a…`**（dtk id 597711909 / sidecar 597714378；重签/重打包后必变）—— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
 
 > 复制本页填空白；能填就填，填不了写「不可得 + 原因」。取证命令出处：`docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`（安装/启动/hilog/jscrash/dotnet-status）；探针 P1–P4 与 14 库自检：`docs/plans/2026-09-21-ohos-crash-probes.md`。本页只采集，不重复两文内容。
 
@@ -9,8 +9,8 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（kit #32 = tar **207,114,608 B / `8f690949…`**、tree **`645879bc…`**、sidecar **`344760e7…`**、`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`；kit #31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`**、sidecar **`7d0cba77…`**（`SHA256SUMS` 16 项 / 1,410 B / `f49b9a0e…` 仅作对照；见 release「## Integrity（kit #31）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` 文首）；#30 = tar **`a781c25b…`**、tree **`cc1ca935…`** 仅作对照；`tester-run.sh` v13 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #31）」的 tree sha256，kit #31 = **`52e77ee8…`**；#30 = `cc1ca935…` 仅作对照；`summary.txt` 的 `tree_digest` 同值） |
+| kit tar.gz sha256（实测） | `<...>`（kit #33 = tar **218,138,546 B / `38e4d57a…`**、tree **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`（7 hap）；kit #32 = tar **207,114,608 B / `8f690949…`**、tree **`645879bc…`**、sidecar **`344760e7…`**；#31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`** 仅作对照；见 release「## Integrity（kit #33）」/`docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` 文首；`tester-run.sh` v14 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #33）」的 tree sha256，kit #33 = **`064cb001…`**；#32 = `645879bc…`、#31 = `52e77ee8…` 仅作对照；`summary.txt` 的 `tree_digest` 同值） |
 | `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 **v14** = `14`（140,197 B / `a174fcd0…`、asset 595131362）；v13 = `13` 为 #31 值；v12 = `12 (2026-09-28)` 为 #30 值） |
 | 应用版本（`最终状态.md`「发布物」原文） | `<...>`（当前 kit #33 = rc.2 线（workload `1.0.0-preview.28`）；#32 及以前 = `1.0.0-preview.24`） |
 

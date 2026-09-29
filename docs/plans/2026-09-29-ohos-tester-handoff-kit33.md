@@ -1,13 +1,13 @@
 # 测试方交接：kit #33、Blazor 回归修复（路径命名空间 + dotnet.js + 双 hap A/B）+ MAUI TabbedPage/W5 + AOT v2（2026-09-29）
 
-> 日期口径：文件名按撰写日；**此文档窗口内 kit #33 构建中**（RELEASE-VALUES 16:12 骨架已填部分值；kit tar/树/sidecar 与 gates pending）：
-> 整包 tar / 树 / sidecar / `SHA256SUMS` / hap 表 / bundle / `verify-kit.sh` / `tester-run.sh` 的一切数字
-> **以 release「## Integrity（kit #33）」、`.tar.gz.sha256` sidecar 与随包 `SHA256SUMS` 为准**（重签/重打包后哈希必变）。
+> 日期口径：文件名按撰写日；**kit #33 已发布**（RELEASE-VALUES FINAL，2026-09-29 17:37）：
+> kit #33 发布实测：tar **218,138,546 B / `38e4d57a…`**、树 **`064cb001…`**、sidecar **`8297363e…`**、
+> `SHA256SUMS` **17 项 / 1,517 B / `37031b9a…`**（dtk id 597711909 / sidecar 597714378；7 hap 表见 §5；重签/重打包后哈希必变）。
 > 对照：#32 实测 tar **207,114,608 B / `8f690949…`**、树 **`645879bc…`**、sidecar **`344760e7…`**（仅作上一版对照）。
 > 构建基线以 release 与包内《最终状态.md》为准（rc.2 线：SDK **`11.0.100-rc.2.26451.112`** / workload
 > **`1.0.0-preview.28`**；rc.1 线 = preview.24 仍可回滚；rc.2 线细节见 `docs/plans/2026-09-28-rc2-conflict-sharding-plan.md` §9）。
 
-> **构建中已填值（RELEASE-VALUES 16:12 骨架）**：MAUI 5 hap 重建 = 新壳 abc **294,976 B / `6cf7dda2…`**；**7 hap** = 5 MAUI + Blazor 默认 **27,216,958 / `69de2eea…`** 与 `-nocsp` **27,216,659 / `c1ef7e06…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/`workload-1.0.0-preview.28` = **77,689,347 B / `155960f4…`**（release 398936638；sdk-ohos 锚 `e7727959cc` 本地已提交、待 push 复核；`ohos-workload` tip `48c6e6b`（含 fixes+pins），slice tip `dc9b19a6`）；AOT v2 不变。重签/重打包后哈希必变，最终以 release「## Integrity（kit #33）」为准。
+> **发布实测（RELEASE-VALUES FINAL 2026-09-29 17:37）**：MAUI 5 hap 重建 = 新壳 abc **294,976 B / `6cf7dda2…`**；**7 hap** = 5 MAUI + Blazor 默认 **27,216,958 / `69de2eea…`** 与 `-nocsp` **27,216,659 / `c1ef7e06…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/`workload-1.0.0-preview.28` = **77,689,347 B / `155960f4…`**（release 398936638，三处同哈希；sdk-ohos 锚 `e7727959cc`（+ test-fix `0e2ee7c9a5`）已 push）；整包 tar **218,138,546 / `38e4d57a…`**、树 **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` **17 项 / 1,517 B / `37031b9a…`**（dtk id 597711909 / sidecar 597714378）；`verify-kit.sh` **69,355 B / `08fe852c…`**（0 FAIL / 0 WARN，期望 abc 294,976/20,916）；`ohos-workload` tip **`aad545b`**（preview.28 pack + 双 hap 构建支持），slice tip **`dc9b19a6`**；CI **5/5**（interaction 36547872933 / pixel 36547872965 / host-export 36547872909 / ridgraph 36547872911 / markdownlint 36547872864）；AOT v2 不变。
 
 > 结论先行：kit #33 = **kit #32 + ①Blazor 回归修复（FIX-BLZ-PATH 路径命名空间 + FIX-BLZ-JS `_framework/dotnet.js`
 > 物化 + 双 hap 默认 CSP/`-nocsp` A/B） + ②MAUI TabbedPage 渲染修复（FIX-TABBED）与无障碍修复（A11Y-TABBED）
@@ -40,7 +40,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 1.5 | **A11Y-TABBED（无障碍影子树）** | 同款枚举缺口修复 `OpenHarmonyAccessibility.PushChildren`：无障碍树发布 `TabbedPage.CurrentPage`（选中页节点在、未选中页不在；切页后跟随） | `--a11y-probe` 树含当前页（§2） |
 | 1.6 | **W5 四件**（切片 + 套件） | T13 CollectionView `GroupFooter` 视图模板（非 Label）、N3 Picker/Date/TimePicker `IsOpen` 双向映射（开/关 + Opened/Closed）、T21 字体缩放跟随系统字号、T22 MainThread 桥接断言；交互套件 **470/floor 450**（#32 = 398/378），像素套件 `PIXEL ASSERTIONS PASSED` | 四项按 §2 逐条 + 套件自报行 |
 | 1.7 | **AOT v2 独立资产**（不在 kit 内） | 新并列资产 `aot-haps-v2.tar.gz`（**17,323,220 B / `265e014f…`**，asset 596991567；sidecar `720da730…`；README `3e2cb2db…`；内含含 TabbedPage 修复的已签/未签 AOT hap，未签 **20,100,211 B / `b869f67b…`**、已签 20,360,777 / `5db9c672…`）；旧 `aot-haps.tar.gz`（17,093,146 / `91e1b9d3…`）保留对照。**MAUI 主包 JIT 若仍 `SEGV_ACCERR` 崩溃，用本资产重签安装判「主体渲染」** | 重签安装 → 启动 → `aot=1` → 双页签出画（§2） |
-| 1.8 | **基线/脚本** | 基线 = rc.2 线（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28`；bundle **77,689,347 B / `155960f4…`**）；MAUI 5 hap 重建 = 新壳 abc **294,976 B / `6cf7dda2…`**；`verify-kit.sh` 承 2c dotnet.js 断言（selftest **108** 检查）；`tester-run.sh` 以包内 `SCRIPT_VERSION` 为准（#32 = v14） | `verify-kit.sh` 0 FAIL；版本自述 |
+| 1.8 | **基线/脚本** | 基线 = rc.2 线（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28`；bundle **77,689,347 B / `155960f4…`**，锚 `e7727959cc`）；MAUI 5 hap 重建 = 新壳 abc **294,976 B / `6cf7dda2…`**；整包 tar **218,138,546 / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`；`verify-kit.sh` 承 2c dotnet.js 断言（selftest **108** 检查）；`tester-run.sh` 以包内 `SCRIPT_VERSION` 为准（#32 = v14） | `verify-kit.sh` 0 FAIL；版本自述 |
 
 > 尺寸预算：以 release 资产表为准（#32 = 207,114,608 B；#33 的 delta = Blazor hap 重建/双变体 + MAUI hap 重建）。
 
@@ -87,7 +87,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
    对 #31/#32 旧 hap 会 FAIL 属预期；selftest 108 检查）。
 2. `tester-run.sh`（版本以包内自述为准）：常规轮 / `--blazor-probe` / `--mode-matrix`（AOT 段用 `aot-haps-v2.tar.gz`）/
    `--a11y-probe` 四件同 #32。
-3. **7 hap**（5 MAUI + Blazor 默认/`-nocsp`）与整包数字、bundle、脚本大小与摘要 **以 release「## Integrity（kit #33）」与随包校验为准**（构建中已知：新壳 abc **294,976 B / `6cf7dda2…`**、Blazor 双件 **27,216,958 / `69de2eea…`** 与 **27,216,659 / `c1ef7e06…`**、bundle/preview.28 **77,689,347 / `155960f4…`**；tar/树/sidecar 见 release）；
+3. **7 hap 表（kit #33 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`）**：`hello-maui-app.hap` **76,072,282 / `04b45359…`**；`hello-maui-app-unsigned.hap` **73,880,100 / `218e8ca4…`**；`hello-maui-app-permissions.hap` **76,076,322 / `622c970a…`**；`hello-maui-app-api20.hap` **76,072,243 / `e4cb95f0…`**；`hello-maui-app-api20-permissions.hap` **76,076,383 / `cb50dd04…`**；Blazor 默认 **27,216,958 / `69de2eea…`**；Blazor `-nocsp`（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）**27,216,659 / `c1ef7e06…`**。整包 tar **218,138,546 / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`、bundle **77,689,347 / `155960f4…`**；**以 release「## Integrity（kit #33）」与随包校验为准**（重签/重打包后必变）；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#32）。
 4. 离线修复证据（供复核）：FIX-BLZ-PATH 的 `rawfile-path.test.mjs` **43 checks** 全绿 + 双 hap 重建（213 站点文件、abc 路径字符串断言）；FIX-BLZ-JS 的 `verify-kit.sh` selftest **108** + `dotnet.js` 逐字节一致；FIX-TABBED/A11Y-TABBED 的交互/像素负控与 **CI 5/5**；AOT v2 的 `verify-aot-v2.sh` ALL PASSED + 发布校验（by-id/gh-proxy/零改动）。
 
@@ -97,4 +97,5 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Blazor 修复的拼写结论来自离线单元测试与打包断言；真机若无 hdc/不能重签，只能登记「未测」。
 - AOT v2 的 `dotnet.js` 归 kit #33（本资产不含该变更）；AOT hap 只有 3 个 `.so`，勿用 JIT 期望值核对。
 - W5 四件按套件自报与新入口判决；T22 为套件级断言（无独立 UI 入口）。
+- **门禁（FINAL）**：interaction **470/floor 450** PASS、host 143/143、像素 CI PASS、`verify-kit.sh` 0 FAIL/0 WARN（expect 294,976/20,916）、tester-run full **683/0**、preflight（sh -n 39 + markdownlint 0 + 全 selftest）全绿；CI **5/5** @ `aad545b`（本机 pixel 重跑两次被 MSBuild 锁卡住，以 CI `36547872965` 为准）。
 - 本次构建 = **rc.2 线**（SDK `.112` / workload `preview.28`，SDK/workload 安装冒烟已过）；应用侧构建请同步该线（`docs/plans/2026-09-28-rc2-conflict-sharding-plan.md` §9；rc.1 回滚路径保留）。

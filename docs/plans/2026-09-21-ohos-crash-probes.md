@@ -6,7 +6,8 @@
 > (T13/N3/T21/T22; suite 470/floor 450) + the AOT-v2 asset (`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`).
 > **7 haps** = 5 rebuilt MAUI (new shell abc **294,976 B / `6cf7dda2…`**) + the Blazor default (27,216,958 / `69de2eea…`)
 > and `-nocsp` (27,216,659 / `c1ef7e06…`, in-kit name `hello-blazorwasm-host-nocsp-unsigned.hap`); bundle/preview.28
-> **77,689,347 B / `155960f4…`**; tar/tree/sidecar and gates pending — numbers follow the release notes
+> **77,689,347 B / `155960f4…`** (anchor `e7727959cc`); kit tar **218,138,546 B / `38e4d57a…`**, tree **`064cb001…`**,
+> sidecar **`8297363e…`**, `SHA256SUMS` 17 entries / 1,517 B / `37031b9a…` — numbers follow the release notes
 > `## Integrity (kit #33)` and the in-kit checks; handoff:
 > `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`.
 

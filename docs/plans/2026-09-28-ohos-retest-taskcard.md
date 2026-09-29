@@ -9,17 +9,27 @@
 
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz`（kit #33） | 以 release 为准 | 以 release「## Integrity（kit #33）」为准 | **7 hap** = 5 MAUI（含 TabbedPage/W5 修复；重建 = 新壳 abc **294,976 B / `6cf7dda2…`**）+ **2 个 Blazor 对照 hap**（默认 27,216,958 / `69de2eea…` 与包内名 `hello-blazorwasm-host-nocsp-unsigned.hap` 27,216,659 / `c1ef7e06…`；bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（2c 断言 `_framework/dotnet.js`）+ 文档 |
+| `device-test-kit.tar.gz`（kit #33，2026-09-29 发布） | **218,138,546** | **`38e4d57a…`**（sidecar `8297363e…`；树 `064cb001…`；`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`；dtk id 597711909 / sidecar 597714378） | **7 hap** = 5 MAUI（含 TabbedPage/W5 修复；重建 = 新壳 abc **294,976 B / `6cf7dda2…`**）+ **2 个 Blazor 对照 hap**（默认 27,216,958 / `69de2eea…` 与包内名 `hello-blazorwasm-host-nocsp-unsigned.hap` 27,216,659 / `c1ef7e06…`；bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（2c 断言 `_framework/dotnet.js`）+ 文档 |
 | `aot-haps-v2.tar.gz`（复测取 v2；旧 `aot-haps.tar.gz` 仅对照） | **17,323,220** | **`265e014f…`**（asset 596991567；sidecar `720da730…`；README `3e2cb2db…`） | AOT hap（含 TabbedPage 修复；未签 20,100,211 / `b869f67b…`，已签 20,360,777 / `5db9c672…`）；**JIT 主体崩溃或仍黑屏时用它** |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
 | `tester-run.sh`（随包） | 以包内为准（#32 = 140,197 / `a174fcd0…`） | 以包内为准 | 执行器；`--blazor-probe`（pid+nonce 标记）、`--mode-matrix`、`--a11y-probe` |
 
-包内 hap（**以包内 `SHA256SUMS` 与 `verify-kit.sh` 输出为准**）：5 MAUI（已签 4 + 未签 1）＋ Blazor 双变体（默认 `hello-blazorwasm-host-unsigned*.hap` 与 `…-nocsp.hap`；#31/#32 的单 hap 口径作对照）。
+包内 7 hap（kit #33 实测，`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`）：
+
+| hap | 大小 (B) | sha256（前缀） |
+|---|---|---|
+| `hello-maui-app.hap` | 76,072,282 | `04b45359…` |
+| `hello-maui-app-unsigned.hap` | 73,880,100 | `218e8ca4…` |
+| `hello-maui-app-permissions.hap` | 76,076,322 | `622c970a…` |
+| `hello-maui-app-api20.hap` | 76,072,243 | `e4cb95f0…` |
+| `hello-maui-app-api20-permissions.hap` | 76,076,383 | `cb50dd04…` |
+| `hello-blazorwasm-host-unsigned.hap`（默认 CSP） | 27,216,958 | `69de2eea…` |
+| `hello-blazorwasm-host-nocsp-unsigned.hap`（对照） | 27,216,659 | `c1ef7e06…` |
 
 ## 2. 执行顺序（每步「期望 → 回传」）
 
-1. **校验 kit**：包内 `sh verify-kit.sh` → 期望 **0 FAIL / 0 WARN**（2c 起断言 `_framework/dotnet.js` 存在且与指纹版逐字节一致；abc 期望以包内脚本为准，#33 = `294976`/`6cf7dda2…`；对 #31/#32 旧包 FAIL 属预期）→ 回传终端输出。
+1. **校验 kit**：包内 `sh verify-kit.sh` → 发布实测 **0 FAIL / 0 WARN**（脚本 69,355 B / `08fe852c…`；2c 断言 `_framework/dotnet.js` 存在且与指纹版逐字节一致；abc 期望 `294976`/`20916`；对 #31/#32 旧包 FAIL 属预期）→ 回传终端输出。
 2. **Blazor A/B（本轮重点；先分别重签两个变体）**：装默认件 → `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe` → 记录 `BLZ_BOOT`/`BLZ_RENDERED`（宿主 pid + `[blz:<nonce>]`）与人工首屏/`/counter` +1/截图；**卸载后**装 `-nocsp` 件 → 同一命令 → 同样记录。判读：默认 ✅ → CSP 非瓶颈；默认 ❌ 而 nocsp ✅ → CSP 至少是次因；两者 ❌ → 按失败回传（`blazor-hilog.txt` + 截图 + 两 hap sha256）。
 3. **MAUI 主体（FIX-TABBED）**：重签装默认 MAUI hap → FlyoutPage → TabbedPage → 期望**双页签内容出画、切页正常**（修复前只画 tab 栏/主体黑屏）；失败回传截图 + hilog。**JIT 若启动/主体仍崩（`SEGV_ACCERR`）：重签安装 `aot-haps-v2.tar.gz` 内未签 hap（会顶替 kit 主包）→ 启动 → `aot=1` → 判主体渲染**。
 4. **一键四 Run**：`sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz --aot-haps ./aot-haps-v2.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60` → 期望四 Run 不中断、`mode-matrix/summary.txt` 键齐全（`conclusion` 给建议）→ 回传 `mode-matrix/` 全目录 + 四个 `tester-report-*.tar.gz`。
@@ -51,5 +61,5 @@
 
 - 包内 hap 为自签：**9568257 / 9568344 属预期**，先重签（需华为调试证书 + Profile 绑 UDID）；**Blazor 双变体同名（`com.example.opendotnet`），装前卸载**；两变体均无 INTERNET（重签保持）。
 - AOT v2 安装会顶替 kit 主包，回 JIT 需重装 kit hap；AOT hap 只有 3 个 `.so`，勿用 JIT 期望值核对。
-- 所有数字以 release「## Integrity（kit #33）」与随包校验为准（重签/重打包后必变）；构建中已知：**7 hap**（MAUI 5 新壳 abc 294,976 / `6cf7dda2…`；Blazor 默认 `69de2eea…` / `-nocsp` `c1ef7e06…`）、bundle/`workload-1.0.0-preview.28` 77,689,347 / `155960f4…`（release 398936638）；#32 实测 tar 207,114,608 / `8f690949…`、v14 140,197 / `a174fcd0…` 仅作对照。
+- 所有数字 = kit #33 发布实测（重签/重打包后必变）：**7 hap**（表见 §1）、tar **218,138,546 / `38e4d57a…`**、树 `064cb001…`、sidecar `8297363e…`、bundle/`workload-1.0.0-preview.28` **77,689,347 / `155960f4…`**（三处同哈希，锚 `e7727959cc`）；#32 实测 tar 207,114,608 / `8f690949…`、v14 140,197 / `a174fcd0…` 仅作对照；以 release「## Integrity（kit #33）」与随包校验为准。
 - 细判（TTS/HUKS/自绘深度/权限/Share-Scan）：`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §2 与 `…kit29/kit28/kit27/kit26/kit25`；无障碍逐项：`docs/plans/2026-09-27-ohos-accessibility-device-verification.md`。

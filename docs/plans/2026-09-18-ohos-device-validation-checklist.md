@@ -6,7 +6,8 @@
 > (T13/N3/T21/T22; suite 470/floor 450) + the AOT-v2 asset (`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`).
 > **7 haps** = 5 rebuilt MAUI (new shell abc **294,976 B / `6cf7dda2…`**) + the Blazor default (27,216,958 / `69de2eea…`)
 > and `-nocsp` (27,216,659 / `c1ef7e06…`, in-kit name `hello-blazorwasm-host-nocsp-unsigned.hap`); bundle/preview.28
-> **77,689,347 B / `155960f4…`**; tar/tree/sidecar and gates pending — numbers follow the release notes
+> **77,689,347 B / `155960f4…`** (anchor `e7727959cc`); kit tar **218,138,546 B / `38e4d57a…`**, tree **`064cb001…`**,
+> sidecar **`8297363e…`**, `SHA256SUMS` 17 entries / 1,517 B / `37031b9a…` — numbers follow the release notes
 > `## Integrity (kit #33)` and the in-kit checks; handoff:
 > `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`.
 
@@ -27,7 +28,7 @@ report template to what to return.
 Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, not here — §0
 reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
-this document. Kit #33 numbers are the published snapshot (release notes `## Integrity (kit #33)`; kit #32 numbers follow for comparison,
+this document. Kit #33 numbers are the published snapshot (measured: tar **218,138,546 B** / `38e4d57a…`, tree `064cb001…`, sidecar `8297363e…`; release notes `## Integrity (kit #33)`; kit #32 numbers follow for comparison,
 PATCHed 2026-09-28): tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar
 **`7d0cba77…`**, `SHA256SUMS` 16 entries / 1,410 B / `f49b9a0e…` (the kit #31 handoff
 `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` carries the full table; tester-run v13
