@@ -118,7 +118,7 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - `eng/ohos-install/Directory.Build.targets`：仅当 `PublishAot=true` 且 RID 为 `openharmony-*` 时，把 RID 追加进 `KnownILCompilerPack.ILCompilerRuntimeIdentifiers` + `KnownRuntimePack.RuntimePackRuntimeIdentifiers`（`%(...)` 自引用；曾因 `$(...)` 属性语法覆盖列表而触发 NETSDK1204），并把 `ILCompilerPackVersion` 钉到 `RuntimeFrameworkVersion`；
 - `pack-sdk.sh` 的 `stage_selfsign_release_assets()`：`selfsign-linux-x64`（复用 `ensure_selfsign`）+ `selfsign-ohos-arm64`（NativeAOT 跨发布：RID 图→标准名临时目录、过滤 feed 排除错标的 host ilc 包、静态 OpenSSL LinkerArg 注入、`CompressSymbols=false`）→ 落 sdk Shipping 随 release 上传；暂为 warn-and-continue（验证后翻严格）。
 
-**已通过的迭代**（热/冷交替，构建保持绿）：图路径（`59984c29ba`）→ RID 列表追加（`58d43f9187`）→ host ilc 过滤（`c40767432f`）→ 静态 OpenSSL（`67981c60d7`）。
+**已通过的迭代**（热/冷交替，构建保持绿）：图路径（`59984c29ba`）→ RID 列表追加（`58d43f9187`）→ host ilc 过滤（`c40767432f`）→ 静态 OpenSSL（`67981c60d7`）→ **产出成功**（run 36517927659：`5,880,568 B / 8d4f0ee6…`）→ **严格化**（`0445fd0429`，发布失败即红灯）→ **发布重跑**（run 36518982917，11m31s）：`selfsign-linux-x64`（1,464,224 B / `e05cb1db…`）+ `selfsign-ohos-arm64`（5,880,568 B / **`24b8aff1…`**）进 `v11.0.100-rc.2.26451.112-ohos`；selfsign 已**下载实测**（sha 一致 + ELF aarch64 ✓）。注：AOT 链接/打包非确定 → 每次发布重跑后 `SELFSIGN_SHA256`、`SDK_TARBALL_SHA256`、`RUNTIME_TARBALL_SHA256` 三锚都需重测（本轮已重锚，见 §9）。
 
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
@@ -127,7 +127,7 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 | 步骤 | 内容 | 素材/命令 |
 |---|---|---|
 | 1 | **selfsign 收尾**：selfsign 管线通过后 → 翻"必须成功"（`stage_selfsign_release_assets` 的 warn 分支改 die）→ 热跑一次 `upload_release=true` 发布 `selfsign-linux-x64`/`selfsign-ohos-arm64` 到 `v11.0.100-rc.2.26451.112-ohos` | run 命令同前（`buildid=20260901.112`） |
-| 2 | **pin 批次**（一次冷跑）：`fix/host-pack-pins`（`c8e4d516b5`，host pack 摘要加固：`26431.109`→`446adf8b…`、`26451.109`→`e9d57abe…`）＋ AOT pin（`fetch-nativeaot-packs.sh`/`aot_pack_sha256` → rc.2：OHOS 两包摘要 `ce5cfbe0…`（NativeAOT）/`2bb27f0e…`（ILCompiler）；官方 fallback `@.112` 在 dnceng 均可用）＋ `SELFSIGN_SHA256`（取发布资产实测） | 合并到 feature 后跑一次冷验证 |
+| 2 | **pin 批次**（一次冷跑）：`fix/host-pack-pins`（`c8e4d516b5`，host pack 摘要加固：`26431.109`→`446adf8b…`、`26451.109`→`e9d57abe…`）＋ AOT pin（`fetch-nativeaot-packs.sh`/`aot_pack_sha256` → rc.2：OHOS 两包摘要 `ce5cfbe0…`（NativeAOT）/`2bb27f0e…`（ILCompiler）；官方 fallback `@.112` 在 dnceng 均可用）＋ `SELFSIGN_SHA256`（取发布资产实测） | 合并到 feature 后跑一次冷验证 | **已执行（锚+host pin）**：feature `e114268339`（锚 `c90f758e…`/`1e068b05…`/`24b8aff1…` + host pin 表合并）；冷验证 run **36520418811**（构建前步骤即验证 pin 路径）。**AOT 镜像发布（`aot-packs-11.0.0-rc.2`：2 fork OHOS 包 + 3 官方 fallback + SHA256SUMS）仍待做**（摘要已备，建议 ③ 窗口在网络稳定时执行） |
 | 3 | **workload bundle 重打**（协调 kit 会话）：更新 `WORKLOAD_BUNDLE_VERSION`/`WORKLOAD_BUNDLE_SHA256`，发布 `openharmony-workload-*.tar.gz` | kit 窗口 |
 | 4 | **设备重装**：新目录安装发布 rc.2 SDK（tar sha `668b5d5b…` 已锚），安装期签名用 **OHOS SDK `binary-sign-tool`**（既定）；selfsign 资产发布后验证安装器**自动下载 + 自举签名**路径 | 设备 |
 | 5 | **设备冒烟**：`dotnet --info`（RID/版本 `11.0.0-rc.2.26451.112`）、tiny 构建、签名、AOT（可选，`fetch-nativeaot-packs.sh` rc.2 包）| 设备 |
