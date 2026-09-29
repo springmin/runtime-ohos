@@ -120,6 +120,12 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 
 **已通过的迭代**（热/冷交替，构建保持绿）：图路径（`59984c29ba`）→ RID 列表追加（`58d43f9187`）→ host ilc 过滤（`c40767432f`）→ 静态 OpenSSL（`67981c60d7`）→ **产出成功**（run 36517927659：`5,880,568 B / 8d4f0ee6…`）→ **严格化**（`0445fd0429`，发布失败即红灯）→ **发布重跑**（run 36518982917，11m31s）：`selfsign-linux-x64`（1,464,224 B / `e05cb1db…`）+ `selfsign-ohos-arm64`（5,880,568 B / **`24b8aff1…`**）进 `v11.0.100-rc.2.26451.112-ohos`；selfsign 已**下载实测**（sha 一致 + ELF aarch64 ✓）。注：AOT 链接/打包非确定 → 每次发布重跑后 `SELFSIGN_SHA256`、`SDK_TARBALL_SHA256`、`RUNTIME_TARBALL_SHA256` 三锚都需重测（本轮已重锚，见 §9）。
 
+**设备首装发现（on-device，2026-09-29）**：发布资产的 `selfsign-ohos-arm64` 带 **CI 自动签名块**（SDK 的 `OpenHarmonyCodesign` 对构建产物自动签名 ✓），但**设备拒绝该块**（exec → EPERM），而安装器只对**无 `.codesign`** 的签名器做自举 → 预置/下载的 selfsign 均不可执行 → 首装全部签名失败（29/29）。修复与验证：
+- **管线**（sdk `3827516b24`）：`stage_selfsign_release_assets` 在落盘前用 NDK `llvm-objcopy --remove-section .codesign` **剥离**该块（发布**未签名**资产，安装器首次使用时用设备 `binary-sign-tool` 自举 ✓）；失败仅告警。
+- **当前发布**：以剥离版替换 release 资产（5,874,376 B / **`8e99c091…`**）+ 更新 release `SHA256SUMS` 条目；`SELFSIGN_SHA256` 重锚（`25eb49a698`）。**注意**：release 资产核验用 API/`gh release download`（直接 curl 同 URL 会命中 CDN 旧缓存 ✗——本轮踩过）。
+- **设备工具**：可用 `binary-sign-tool` = `~/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_2/bin/`（`c7d6575d…`）；`~/.harmonybrew/bin` 的 shim（`725ca9b4…`）有 bug（安装器探测顺序会命中它 ✗）→ 安装时 `PATH` 前置 Cellar 目录 ✓；实测该工具**可覆盖** CI 块（普通 ELF ✓），strip+重签后的 selfsign **可执行** ✓。
+- **遗留加固**：安装器 `download()` 无 gh-proxy 回退（设备直连 GitHub ~40KB/s 且无总超时 → 自举前的 selfsign 下载长时间挂起）→ 建议同 `ohos-ci-env.sh` 加镜像回退；`BINARY_SIGN_TOOL_SHA256` 建议 pin 可用工具。
+
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
 **前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
