@@ -15,7 +15,7 @@
 |---|---|---|---|
 | `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | **207,114,608** | **`8f690949…`**（sidecar `344760e7…`；树 `645879bc…`；`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`） | 6 个 hap（5 MAUI JIT 重建 = 新壳 abc `289992` + 1 未签名 Blazor `hello-blazorwasm-host-unsigned.hap`，bundle `com.example.opendotnet`；#32 起无 INTERNET）＋`verify-kit.sh`（66,661 / `f72a4a3c…`）＋文档 |
 | **B1 razor 独立资产** `maui-razor-haps.tar.gz`（kit #32 起） | **38,968,818** | **`5e549506…`**（sidecar `3f4cc4d6…`；README 2,617 B / `ff56faff…`；内未签 hap **73,656,242 / `b4d305f0…`**，0 权限） | MAUI Blazor Hybrid（bundle `com.example.hellomauirazor`）；重签后按《WebView / Blazor Hybrid 真机验证卡》#8–#9 判读 |
-| `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`；对应 `-p:OpenHarmonyRuntimeMode=aot` 的产物形态） |
+| `aot-haps.tar.gz` | 17,093,146 | `91e1b9d3…` | AOT hap（已内置桥宿主，开箱 `aot=1`；对应 `-p:OpenHarmonyRuntimeMode=aot` 的产物形态）；**v2 重建（含 TabbedPage 修复）见 `2026-09-29-ohos-aot-v2-rebuild.md`，复测取 `aot-haps-v2.tar.gz`（17,323,220 / `265e014f…`，asset 596991567）** |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`；旧 196,118,871/`f7a4faa2…` 无 overlay 记录已替换） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
 | `tester-run.sh` **v14**（随包） | **140,197** | **`a174fcd0…`**（asset 595131362；v13 = 137,113 / `2caa06bd…`） | 执行器（`--blazor-probe` 在 #32 起做 pid+nonce 绑定校验、`summary` 增 `blazor_marker_pid`/`blazor_session_nonce`；另有 `--mode-matrix` / `--a11y-probe`） |
