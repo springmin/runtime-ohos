@@ -133,8 +133,13 @@ are what tooling (MSBuild, ILCompiler) must observe on device.
 
 Implementation / validation: runtime `fix/ohos-rc2` `417ab220532` ("CoreLib:
 accept LINUX as a platform-name alias on OpenHarmony"); CI run 36552629066
-(cold, `upload_release=false`), then the on-device AOT retest
-(selfsign / workload bundle repack).
+green (cold, 57m33s, `upload_release=false`). Device-verified 2026-09-29 (SDK
+installed to `~/.dotnet.rc2-fix`): `dotnet --info` reports `OS Platform: Linux`;
+`[MSBuild]::IsOSPlatform('Linux')` and
+`RuntimeInformation.IsOSPlatform(OSPlatform.Linux)` are true; `Exec` runs
+sh-style scripts successfully (the baseline wrote `.exec.cmd` and failed with
+MSB3073). Follow-up: on-device AOT selfsign build, then the workload bundle
+repack paths this unlocks.
 
 Upstream note (方案 B): when a public `IsOpenHarmony()` / OHOS TFM lands,
 revisit whether the LINUX alias stays as a compatibility affordance or is
