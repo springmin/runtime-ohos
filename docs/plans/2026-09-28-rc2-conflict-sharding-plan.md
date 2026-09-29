@@ -126,6 +126,12 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - **设备工具**：可用 `binary-sign-tool` = `~/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_2/bin/`（`c7d6575d…`）；`~/.harmonybrew/bin` 的 shim（`725ca9b4…`）有 bug（安装器探测顺序会命中它 ✗）→ 安装时 `PATH` 前置 Cellar 目录 ✓；实测该工具**可覆盖** CI 块（普通 ELF ✓），strip+重签后的 selfsign **可执行** ✓。
 - **遗留加固**：安装器 `download()` 无 gh-proxy 回退（设备直连 GitHub ~40KB/s 且无总超时 → 自举前的 selfsign 下载长时间挂起）→ 建议同 `ohos-ci-env.sh` 加镜像回退；`BINARY_SIGN_TOOL_SHA256` 建议 pin 可用工具。
 
+**selfsign 跨构建崩溃与设备本地构建（2026-09-29 处置链）**：
+- 管线跨构建（host x64 ilc + OHOS NDK link）的 `selfsign-ohos-arm64` 在真机 **SIGSEGV（rc=139）** ✗（排除了缺失库：`readelf -d` 仅 `libc.so`；ILCompiler pack 无 README 所称 libstdc++/libgcc；LD_LIBRARY_PATH 全试无效）→ **撤下发布资产**（避免安装器优先使用坏签名器 ✗）+ 管线加 `OHOS_SELFSIGN_PUBLISH` 门（默认关 ✓）。
+- **AOT 线（rc.2）**：发布 `aot-packs-11.0.0-rc.2` 镜像（NativeAOT `46d221f2…` / ILCompiler `1c518a46…`；API 摘要因重传漂移 → 判据改 zip+nuspec ✓）；`fetch-nativeaot-packs.sh`/`aot_pack_sha256` → rc.2（sdk `34b93714ca`）。
+- **设备本地 AOT 构建的最终阻塞（2026-09-29，重要发现）**：设备上 `[MSBuild]::IsOSPlatform('Windows')=False` ✓ 但 **`IsOSPlatform('Linux')=False`** ✗（`OS=Unix` ✗）——fork 运行时的 `RuntimeInformation` 在 OHOS 上 **不报告 Linux** ✗ → MSBuild 内部 `IsUnix` 判定为假 ✗ → 所有 `Exec` 生成 **Windows 风格 `.exec.cmd`**（`setlocal`/`%errorlevel%` ✗）→ NativeAOT targets 的链接器探针误报 “linker not found” ✗（`command -v` 探针本身在设备可用 ✓；`_WhereLinker=0`/`_CommandProbe` 全局属性覆盖被探针 Output 覆写 ✗）。**这是 fork 运行时的平台上报缺陷，影响设备上一切 MSBuild 工具链** ✗ → 修复方向：让 OHOS 运行时按 Linux 上报（或 MSBuild 侧兼容 `OSPlatform` 未知的情形）——做成后可解锁设备本地 AOT selfsign/bundle 重打等 ✗。自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。
+- **遗留加固**：安装器 `download()` 无 gh-proxy 回退（设备直连 GitHub ~40KB/s 且无总超时 → 自举前的 selfsign 下载长时间挂起）→ 建议同 `ohos-ci-env.sh` 加镜像回退；`BINARY_SIGN_TOOL_SHA256` 建议 pin 可用工具。
+
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
 **前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
