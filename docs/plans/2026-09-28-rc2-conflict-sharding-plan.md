@@ -120,6 +120,21 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 
 **已通过的迭代**（热/冷交替，构建保持绿）：图路径（`59984c29ba`）→ RID 列表追加（`58d43f9187`）→ host ilc 过滤（`c40767432f`）→ 静态 OpenSSL（`67981c60d7`）。
 
+## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
+
+**前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
+
+| 步骤 | 内容 | 素材/命令 |
+|---|---|---|
+| 1 | **selfsign 收尾**：selfsign 管线通过后 → 翻"必须成功"（`stage_selfsign_release_assets` 的 warn 分支改 die）→ 热跑一次 `upload_release=true` 发布 `selfsign-linux-x64`/`selfsign-ohos-arm64` 到 `v11.0.100-rc.2.26451.112-ohos` | run 命令同前（`buildid=20260901.112`） |
+| 2 | **pin 批次**（一次冷跑）：`fix/host-pack-pins`（`c8e4d516b5`，host pack 摘要加固：`26431.109`→`446adf8b…`、`26451.109`→`e9d57abe…`）＋ AOT pin（`fetch-nativeaot-packs.sh`/`aot_pack_sha256` → rc.2：OHOS 两包摘要 `ce5cfbe0…`（NativeAOT）/`2bb27f0e…`（ILCompiler）；官方 fallback `@.112` 在 dnceng 均可用）＋ `SELFSIGN_SHA256`（取发布资产实测） | 合并到 feature 后跑一次冷验证 |
+| 3 | **workload bundle 重打**（协调 kit 会话）：更新 `WORKLOAD_BUNDLE_VERSION`/`WORKLOAD_BUNDLE_SHA256`，发布 `openharmony-workload-*.tar.gz` | kit 窗口 |
+| 4 | **设备重装**：新目录安装发布 rc.2 SDK（tar sha `668b5d5b…` 已锚），安装期签名用 **OHOS SDK `binary-sign-tool`**（既定）；selfsign 资产发布后验证安装器**自动下载 + 自举签名**路径 | 设备 |
+| 5 | **设备冒烟**：`dotnet --info`（RID/版本 `11.0.0-rc.2.26451.112`）、tiny 构建、签名、AOT（可选，`fetch-nativeaot-packs.sh` rc.2 包）| 设备 |
+| 6 | **文档回填**：本计划 §7 记录设备结果、锚点/版本表更新 | runtime docs |
+
+**备查（并行已备）**：host pack 加固 = 分支 `fix/host-pack-pins`（`c8e4d516b5`，含 `host_pack_sha256()` 表 + `host_pack_expected_sha256` 优先查 pin）；rc.2 AOT 资产摘要（API）＝ `Microsoft.NETCore.App.Runtime.NativeAOT.openharmony-arm64.11.0.0-rc.2.26451.112`→`ce5cfbe0…`、`runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rc.2.26451.112`→`2bb27f0e…`；发布自产出摘要（API）＝ meta `80ccb91e…`、`runtime.linux-x64…ILCompiler`（错标包）`123efb21…`。
+
 产物索引：`/data/storage/el2/base/tmp/opencode/rc2-decisions/{s0,s1,s2,s3}.md`、`apply-list.tsv`、
 `apply.py`、S3 resolved 文件 `.../s3/resolved/`。
 
