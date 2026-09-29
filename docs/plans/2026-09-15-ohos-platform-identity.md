@@ -138,8 +138,11 @@ installed to `~/.dotnet.rc2-fix`): `dotnet --info` reports `OS Platform: Linux`;
 `[MSBuild]::IsOSPlatform('Linux')` and
 `RuntimeInformation.IsOSPlatform(OSPlatform.Linux)` are true; `Exec` runs
 sh-style scripts successfully (the baseline wrote `.exec.cmd` and failed with
-MSB3073). Follow-up: on-device AOT selfsign build, then the workload bundle
-repack paths this unlocks.
+MSB3073). Follow-up: the on-device AOT selfsign build is done - a
+device-built selfsign runs and its signatures are accepted by the device, and
+the installer self-sign bug it surfaced is fixed (sdk `c1cd3d89c4`); the recipe
+is sdk `eng/ohos-install/build/build-selfsign-device.sh`. Next: the workload
+bundle repack paths this unlocks.
 
 Upstream note (方案 B): when a public `IsOpenHarmony()` / OHOS TFM lands,
 revisit whether the LINUX alias stays as a compatibility affordance or is
