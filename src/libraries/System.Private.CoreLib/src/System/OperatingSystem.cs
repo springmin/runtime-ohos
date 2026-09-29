@@ -131,6 +131,14 @@ namespace System
             ArgumentNullException.ThrowIfNull(platform);
 
             return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
+#if TARGET_OPENHARMONY
+            // OpenHarmony is Linux-ABI (the fork maps openharmony-* RIDs to
+            // linux-musl-*). Accept LINUX as an alias so callers that probe for
+            // Linux - e.g. MSBuild's IsOSPlatform(OSPlatform.Linux), which
+            // selects sh vs Windows-style Exec scripts - behave as on Linux on
+            // device, while OPENHARMONY stays the canonical name.
+            || platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase)
+#endif
 #if TARGET_OSX
             || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)
 #elif TARGET_MACCATALYST
@@ -177,7 +185,7 @@ namespace System
         /// </summary>
         [NonVersionable]
         public static bool IsLinux() =>
-#if TARGET_LINUX && !TARGET_ANDROID
+#if (TARGET_LINUX && !TARGET_ANDROID) || TARGET_OPENHARMONY
             true;
 #else
             false;
