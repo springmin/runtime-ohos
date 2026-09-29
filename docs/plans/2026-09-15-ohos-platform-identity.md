@@ -108,3 +108,34 @@ does not trigger CA1418; use only where adding the item is impossible.
 - runtime `eng/versioning.targets`: `SupportedPlatform` entry when first needed;
 - revisit only after the platform lands upstream (blocked on the tracking
   discussion in #132866).
+
+## 2026-09-29 addendum — LINUX alias for Linux-ABI tooling (device MSBuild)
+
+Device diagnosis (rc.2 line): `RuntimeInformation.IsOSPlatform(OSPlatform.Linux)`
+returned `false` on OpenHarmony, so MSBuild's `NativeMethodsShared.IsUnixLike`
+(`s_isUnixLike = IsLinux || IsOSX || IsBSD || IsHaiku`, with `IsLinux =
+RuntimeInformation.IsOSPlatform(OSPlatform.Linux)` — dotnet/msbuild
+`src/Framework/NativeMethods.cs`) selected Windows-style `Exec` scripts
+(`.exec.cmd` with `setlocal`/`%errorlevel%`), breaking the NativeAOT linker
+probe on device ("linker not found" although clang++ is on PATH; `_WhereLinker`
+global-property overrides were clobbered by the probe output).
+
+Decision: keep `OSPlatformName = "OPENHARMONY"` as the canonical identity
+(layer 2 unchanged; `IsOSPlatform("openharmony")` keeps working; the `ohos`
+alias stays retired), and add a **LINUX alias** under `#if TARGET_OPENHARMONY`
+inside `IsOSPlatform(string)` — the same layer-3 technique macOS uses for
+`MACOS`. `OperatingSystem.IsLinux()` also becomes true for OpenHarmony
+(`#if (TARGET_LINUX && !TARGET_ANDROID) || TARGET_OPENHARMONY`).
+
+Rationale: the fork maps `openharmony-*` RIDs to `linux-musl-*` and the managed
+libraries compile in the linux group (layer 5 / N15), so Linux-ABI semantics
+are what tooling (MSBuild, ILCompiler) must observe on device.
+
+Implementation / validation: runtime `fix/ohos-rc2` `417ab220532` ("CoreLib:
+accept LINUX as a platform-name alias on OpenHarmony"); CI run 36552629066
+(cold, `upload_release=false`), then the on-device AOT retest
+(selfsign / workload bundle repack).
+
+Upstream note (方案 B): when a public `IsOpenHarmony()` / OHOS TFM lands,
+revisit whether the LINUX alias stays as a compatibility affordance or is
+superseded by the platform model (`SupportedPlatform` items).
