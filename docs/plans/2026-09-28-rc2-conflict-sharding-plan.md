@@ -108,6 +108,17 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 | 发布（①） | run **36504623184** ✅（11m58s，缓存命中；`upload_release=true`）：三仓 release 发布——runtime-ohos `v11.0.0-rc.2.26451.112-ohos`（20 资产，含 runtime tar 35,055,587 B + runtime pack 39,778,421 B + AOT/Crossgen2/host packs）、aspnetcore-ohos 同名、sdk-ohos `v11.0.100-rc.2.26451.112-ohos`（11 资产，SDK tar 180,476,414 B；含 SHA256SUMS） |
 | 锚点/pin（②） | sdk `02809efa26` + `18c55a2a28`（feature）：`RT_VERSION`/`SDK_VERSION` → `11.0.0-rc.2.26451.112`/`11.0.100-rc.2.26451.112`；`SDK_TARBALL_SHA256=668b5d5b…`、`RUNTIME_TARBALL_SHA256=5783ef3f…`（**两者均按新发布资产重新下载实测一致** ✓）；`DEFAULT_BUILDID` 保持 `.109`（rc.1 线安全）+ 注释（rc.2 派发显式带 `buildid=20260901.112`）；BUILD-GUIDE 示例同步。遗留：`selfsign-ohos-arm64` 未被当前管线产出（安装器**非致命**回退 `binary-sign-tool`，与设备现状一致）；`REFERENCE_RUNTIME_PACK_*` 保持 rc.1（rc.2 R2R-PGO 参考包待生成） |
 | ③ 待办（等 kit 空档） | workload bundle 重打（协调 kit）、设备重装 + 冒烟（rc.2 线：`SDK_VERSION=.112` 安装路径）、设备 AOT pin（`fetch-nativeaot-packs.sh` → `.112`）、文档回填。**另发现（低优先，不影响产物）**：发布资产的 `productCommit-openharmony-arm64.txt` 记录的是 sdk 仓声明的上游依赖（`11.0.0-rc.1.26453.118` / `3c8d132bfb`），而不是 fork 构建的 runtime/aspnetcore（`d4a4e25c89f`/`e10d030184`，`11.0.0-rc.2.26451.112`）——可在 SDK pin 重写步骤补 productCommit 元数据 |
+| selfsign 管线（①② 追加） | 见下方 §8 记录；另两笔待办：①**host pack 摘要加固**（`host-runtime-packs` release 无 SHA256SUMS，github 版 host pack 的锚依赖 API/瞬时网络——run 36517651718 即因此误拒 `26431.109`；应从 API 摘要补 pin 表：`26431.109`→`446adf8b…`、`26451.109`→`e9d57abe…`，并让 `host_pack_expected_sha256` 优先查 pin）；②**runtime 侧 host ilc 包内容问题**（`runtime.linux-x64.Microsoft.DotNet.ILCompiler` 内 `tools/ilc` 实为 aarch64，`PackHostILCompiler` 布线把 target ilc 装进 host 包名；CI selfsign 已用官方 host ilc 绕开） |
+
+## 8. selfsign-ohos-arm64 管线补产出（2026-09-29）
+
+目标：把 `selfsign-ohos-arm64`（设备端签名工具，安装器的 `SELFSIGN_ASSET`）重新纳入 sdk release（当前管线只产 `selfsign-linux-x64`，设备安装回退 `binary-sign-tool`）。
+
+**实现**（sdk feature）：
+- `eng/ohos-install/Directory.Build.targets`：仅当 `PublishAot=true` 且 RID 为 `openharmony-*` 时，把 RID 追加进 `KnownILCompilerPack.ILCompilerRuntimeIdentifiers` + `KnownRuntimePack.RuntimePackRuntimeIdentifiers`（`%(...)` 自引用；曾因 `$(...)` 属性语法覆盖列表而触发 NETSDK1204），并把 `ILCompilerPackVersion` 钉到 `RuntimeFrameworkVersion`；
+- `pack-sdk.sh` 的 `stage_selfsign_release_assets()`：`selfsign-linux-x64`（复用 `ensure_selfsign`）+ `selfsign-ohos-arm64`（NativeAOT 跨发布：RID 图→标准名临时目录、过滤 feed 排除错标的 host ilc 包、静态 OpenSSL LinkerArg 注入、`CompressSymbols=false`）→ 落 sdk Shipping 随 release 上传；暂为 warn-and-continue（验证后翻严格）。
+
+**已通过的迭代**（热/冷交替，构建保持绿）：图路径（`59984c29ba`）→ RID 列表追加（`58d43f9187`）→ host ilc 过滤（`c40767432f`）→ 静态 OpenSSL（`67981c60d7`）。
 
 产物索引：`/data/storage/el2/base/tmp/opencode/rc2-decisions/{s0,s1,s2,s3}.md`、`apply-list.tsv`、
 `apply.py`、S3 resolved 文件 `.../s3/resolved/`。
