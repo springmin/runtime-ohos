@@ -133,7 +133,13 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - 迭代链（均为环境/配方项）：v1 restore `NU1101`（工作负载 `.28` 令 AspNetCore pack 成为传递 downloadDependency ✗）→ v2 加 `DisableTransitiveFrameworkReferenceDownloads=true` + 最小 `RestoreConfigFile` ✓ → 探针**执行** ✓（平台修复首个可见效果）→ NDK `lld` 缺 `libxml2.so.16`（harmonybrew 2.15.4 经 `LD_LIBRARY_PATH` 抢先 ✗）→ v3 `LD_LIBRARY_PATH` 前置 `$NDK/llvm/lib` ✓ → 进入真链接 → OpenSSL 未定义符号（NativeAOT OHOS crypto shim 需 app 链接提供 ✗）→ v4 复用 CI 的 `build/selfsign-ohos-link.targets` + `-p:OhosStaticOpenSslDir=$HOME/.harmonybrew/opt/openssl@3/lib`（设备静态 libssl.a/libcrypto.a ✓）+ NDK 前缀工具（`aarch64-unknown-linux-ohos-clang*`）→ **publish 成功** ✓✓
 - 产出与验证（`aot-out/selfsign`）：6,343,400 B / `4a74b2f4…`（AArch64、仅 `libc.so` 依赖、静态 OpenSSL、**无 SIGSEGV** ✗→✓）；库文件剥离→签名 0→1 块 ✓；可执行文件剥离→设备拒绝（EACCES）→ 自建 selfsign 签名 → **运行** ✓。注：链接期 `.codesign` 块**不稳定**（同脚本两次构建一次有效、一次 EPERM ✗）→ 按 CI 模式**剥离为未签名** + `binary-sign-tool` 自举副本验证 ✓（脚本已固化，见下）
 - **安装器端到端** ✓✓：自建 selfsign 预置 → `using selfsign … (preferred signer)` → **`signed=28 already_signed=1 failed=0`** → install `rc=0`（`~/.dotnet.rc2-fix2`）。途中发现安装器缺陷：`sign_all` 会把签名器**自身**拿去重签（运行中文件 ETXTBSY ✗）→ 修复 sdk `c1cd3d89c4`（跳过签名器自身 ✗→✓）
-- 固化：sdk `eng/ohos-install/build/build-selfsign-device.sh`（设备侧配方 + 自检，实测通过 ✓，sdk `947a7399bb`）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注：该 CoreLib 修复目前仅在 `fix/ohos-rc2`（rc.2 线）；随 **C3 rebase/N 组**并入 `feature/openharmony` 主线时一并对齐（并评估是否单列上游项，与 `2026-09-15-ohos-platform-identity.md` 附录的"方案 B"呼应）。
+- 固化：sdk `eng/ohos-install/build/build-selfsign-device.sh`（设备侧配方 + 自检，实测通过 ✓，sdk `947a7399bb`）
+
+**自建 selfsign 重上发布线（2026-09-29，用户确认）** ✓：
+- 资产 = 脚本产出（**剥离未签名**、6,321,296 B / `a403a1b4…`）→ 上传 `-ohos` 的 `selfsign-ohos-arm64` + `SHA256SUMS` 追加（delete-then-upload ✓）→ 镜像工作流**全量重跑**（run 36565484313 全绿 ✓）覆盖 `-openharmony` 上的坏资产（旧跨构建 `24b8aff1…` ✗→新 ✓）
+- **发布形态端到端复验** ✓✓：未签名预置 → 安装器 `bootstrap_selfsign`（Cellar `binary-sign-tool`）→ `using selfsign (preferred signer)` → **`signed=28 already_signed=1 failed=0`** → install rc=0（`~/.dotnet.rc2-fix2`）；发布字节下载复验：sha 一致 ✓ + 自举后运行 ✓
+- `SELFSIGN_SHA256` 置锚 `a403a1b4…`（fail-closed 恢复 ✓；sdk `06884ccb13`）
+- 运维注意：CI 的 `OHOS_SELFSIGN_PUBLISH` 门仍默认关；将来 release 重跑会重建 SDK/runtime 并可能重算 SHA256SUMS → 按锚刷新协议重测/必要时重挂 selfsign。`BINARY_SIGN_TOOL_SHA256` 建议 operator 侧 pin Cellar 工具（`c7d6575d…`）；`~/.harmonybrew/bin` 的 shim（`725ca9b4…`）实测不可靠（install3 以 shim 自举后签名环节挂起 ✗；install3b 用 Cellar 完成 ✓）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注：该 CoreLib 修复目前仅在 `fix/ohos-rc2`（rc.2 线）；随 **C3 rebase/N 组**并入 `feature/openharmony` 主线时一并对齐（并评估是否单列上游项，与 `2026-09-15-ohos-platform-identity.md` 附录的"方案 B"呼应）。
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
 **前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
