@@ -174,18 +174,22 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
   此前 `24.0.0.0` 超出设备 ark runtime）。**kit #32 为当前发布**（WebView 六项接线 + B1 razor 独立资产 + SEC 收口，abc 289992/交互 398/378/tester-run v14；#31 = Blazor WASM/ArkWeb 组件批 = 第 6 个 hap **`hello-blazorwasm-host-unsigned.hap`**（26,794,931 B / `36010a9c…`，未签名，bundle `com.example.opendotnet`，需自签）+ tester-run v13（`--blazor-probe`：`BLZ_BOOT`/`BLZ_RENDERED`）；#30 批 = runtime-mode 打包开关（`libs/<abi>/runtime-mode.txt`；宿主 file>manifest>default）+ tester-run v12 + MAPFIX harmony 重切（MapOverlay 真编译）；含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关，R3 批 = CoreSpeechKit TTS + HUKS-first SecureStorage + 自绘深度五连（文本编辑/动画/列表/图片/深链）；kit #31 实测 tar 207,023,588/`f4325d2f…`、树 `52e77ee8…`、sidecar `7d0cba77…`、`SHA256SUMS` 16 项 / 1,410 B（#30 = 196,992,264/`a781c25b…` 仅作对照；#29 196,990,205/`e895cc0a…`））；
   详情见 `2026-09-22-ohos-startup-crash-rootcause.md` §5b/§5f 与 `2026-09-22-ohos-arkts-abc-version-history.md`。
   **2026-09-24 设备里程碑**：kit #18 + 测试方 5 项本地修复后首次完整运行成功（`managed app hello-maui-app.dll started (UI shell)`、无崩溃）；
-  旧「黑屏 #4 = napi 记录名」结论已修正为无害加固 —— 直接链见 `2026-09-24-ohos-device-milestone.md` §2，**stock kit（#22 起，当前 #30）尚未上机**。
+  旧「黑屏 #4 = napi 记录名」结论已修正为无害加固 —— 直接链见 `2026-09-24-ohos-device-milestone.md` §2，**stock kit（#22 起）已在 #30/#31 上机（2026-09-28，见下条）**。
   P1–P4 阶梯仍适用于 dlopen / 缺库 / 宿主入口 / .NET 运行时类崩溃（判读分支见
   `2026-09-21-ohos-crash-probes.md` §4.0/§4.0b）。
+- **2026-09-28 真机实测（kit #30/#31，HUAWEI MateBook Pro HAD-W32；来源 `2026-09-28-ohos-device-verification-results.md`）**：
+  - **Blazor WASM（ArkWeb）组件 ✅（真机）**：修复打包缺 `_framework/dotnet.js`（正式修复在 `pack-host.sh` 静态资产路由；tester 手工复制仅应急、不进包）后 `BLZ_BOOT`+`BLZ_RENDERED` 全达成。
+  - **MAUI 主体渲染：阻塞已知 → 修复中（TabbedPage）**：BITMAP-DIAG 证实只画 tab 栏；根因 = slice `ChildEnumerator` 缺 `TabbedPage.CurrentPage` 枚举（springmin 原版同样复现）；补丁已写 + IL 级确认，待重编验证。
+  - **AOT：预编译可跑，本地重编待工具链**：so 加载 / MAUI 初始化 / GPU 呈现 100+ 帧已证；本地重编 so 运行时初始化崩溃（`GetModuleSection` NULL @0x8）= runtime-ohos 专用 ilc 工具链差异。
 - 因此本矩阵中"已实现"仅代表代码路径与离设备套件证据，不代表真机行为。
 
 ## 7. 剩余缺口 Top-10（2026-09-22 刷新）
 
 | # | 工作项 | 工作量 / 依赖 | 状态（2026-09-26 刷新） |
 |---|---|---|---|
-| 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；待 **stock kit #28** 复测（判定点见里程碑 §6） |
+| 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；**stock kit #30/#31 实测无启动崩溃**（2026-09-28，见 §6）；后续 kit 仍按判定点复测（里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（387 条套件 + 像素 + 真机行为） | 仅设备 | 待设备（stock kit #28 重签后；套件现为 387/floor 367；P2c 深链还需真机 want/App Linking 投递与清单声明验证） |
+| 3 | 真机验证扫尾（387 条套件 + 像素 + 真机行为） | 仅设备 | **2026-09-28 #30/#31 已真机实测**：Blazor WASM 组件 ✅（真机）、MAUI 主体渲染 = 阻塞已知→修复中（TabbedPage）、AOT = 预编译可跑（本地重编待工具链）；其余套件项（P2c 深链 want/App Linking 投递与清单声明、WebView 等）仍待后续 kit |
 | 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」 |
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
