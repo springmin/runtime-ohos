@@ -18,6 +18,7 @@
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
 | `device-test-kit.tar.gz`（kit #34，2026-09-30） | **375,181,367** | **`55834aeb…`**（sidecar `c03ea23d…`；树 `d08de3ec…`；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`；dtk id 以 release 为准） | **7 hap** = 5 MAUI（~133.8 MB/件，rc.2 payload 变大；abc **311,424**/20,916）+ **2 个 Blazor 对照 hap**（默认 27,216,958 / `8e407504…` 与 `-nocsp` 27,216,659 / `68606606…`；bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（69,522 / `dcd81f33…`）+ 文档 |
+| `preSigned-haps.tar.gz`（**预签直装**，2026-09-30 加发；asset 600101072） | **375,834,798** | **`b492b284…`**（sidecar 88 B / `83cbff13…`；树 `e693ae3a…`） | **7 hap 全部按 tester UDID `60CF7B27…F8A19` 预签**（MAUI 5 + Blazor 默认/`-nocsp`；SDK 默认调试材料）：`sha256sum -c SHA256SUMS` → `hdc install -r` **直装、无需重签**；每件 bundle/原 sha/新 sha/安装命令见包内 `preSigned-README.md`；非本 UDID 设备仍 `9568344`（包内附重签指引）；并列附加件、不替换 kit |
 | `aot-haps-v3.tar.gz`（复测取 v3；v2/旧包仅对照） | **17,537,186** | **`004ba03c…`**（asset 597904340；sidecar `0e28a268…`；README `abe541dd…`） | AOT hap（含 TabbedPage 修复 + **UIPage 修复/UI 壳出画**；已签 20,624,089 / `46d7a9ee…`、未签 20,369,300 / `5422b683…`；本侧本机已出画：`ohos_dotnet_surface` buffer=1）；**JIT 主体崩溃或仍黑屏时用它**；如本轮另发 AOT 资产以 release 为准 |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
@@ -27,13 +28,19 @@
 `…-unsigned` **131,304,609 / `f0def954…`**、`…-permissions` **133,831,417 / `a7a3391c…`**、`…-api20` **133,831,490 / `701104e8…`**、
 `…-api20-permissions` **133,831,449 / `d3bf37f6…`**；Blazor 默认 **27,216,958 / `8e407504…`**、`-nocsp` **27,216,659 / `68606606…`**。
 
+**预签直装捷径（可选；2026-09-30 加发）**：`preSigned-haps.tar.gz` 的 7 hap 已全部按 tester UDID `60CF7B27…F8A19`
+预签——`sha256sum -c SHA256SUMS` 后 `hdc install -r` 直装，**§2 步骤 5 的「先分别重签两个变体」可跳过**（同 bundle
+换件仍先卸载）；每件 bundle/原 sha/新 sha/安装命令见包内 `preSigned-README.md`。它是并列附加件：`verify-kit.sh`
+全包校验与 `tester-run.sh` 完整轮仍用 `device-test-kit.tar.gz`。交付方本机对照（HAD-W32/7.0.0.111）：同法本机-UDID
+件与本 tester 绑定件在本机均 `hdc install -r` 成功并启动（本机桌面镜像不校验 `device-ids`；tester 机被拒按 `9568344` 流程）。
+
 ## 2. 执行顺序（每步「期望 → 回传」）
 
 1. **校验 kit**：包内 `sh verify-kit.sh` → 发布实测 **0 FAIL / 0 WARN**（深度断言逐 hap；abc 期望 311,424/20,916；脚本 69,522 / `dcd81f33…`）→ 回传终端输出。
 2. **rc.2 版本自述**：读包内《最终状态.md》/`README-交付说明.md` + `tester-run.sh` summary → 期望 SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`；无 rc.1 混装告警 → 回传自述原文 + summary。
 3. **W6 三项 + 一修复**：① T14 富 Shell flyout（头/尾/项模板行出画、点行选中+关闭、模板内按钮可点）；② T12 分组 CarouselView（GroupHeader/Footer 滑片、滑动跨组、`CurrentItem` 跟随）；③ FIX-SHELL（Shell 页面主体出画、切页重绘）；④ N1 多指（Pinch 两指轨迹正确）→ 逐条截图 + 结果。
 4. **W7/W8 六项**：T15 富 TitleView（标题带出模板视图 + 视图内按钮；隐藏/清除回退）；T16 结构化菜单（组头/嵌套/禁用门控/叶激活）；N4 TitleBar a11y（`--a11y-probe` 含 TitleBar 行/文本/按钮）；T18 Essentials IMap（`Map.Default.OpenAsync` 拉起系统地图；无 app 时 `TryOpenAsync=false` 不抛）；N5 覆盖层触摸抑制（选择器开 → 下层 Entry 不聚焦；关 → 恢复）；N6 系统装饰（桌面窗口最小化/最大化/关闭 + 拖拽 + `TitleBar.Content` 按钮不被抢）→ 逐条截图/终端输出。
-5. **承 #33：Blazor A/B（先分别重签两个变体）**：装默认件 → `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe` → 记录 `BLZ_BOOT`/`BLZ_RENDERED`（宿主 pid + `[blz:<nonce>]`）与人工首屏/`/counter` +1/截图；**卸载后**装 `-nocsp` 件 → 同一命令 → 同样记录；按 #33 判读表落结论。
+5. **承 #33：Blazor A/B（先分别重签两个变体；用预签直装包可直接装，跳过重签、见 §1 捷径注）**：装默认件 → `sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe` → 记录 `BLZ_BOOT`/`BLZ_RENDERED`（宿主 pid + `[blz:<nonce>]`）与人工首屏/`/counter` +1/截图；**卸载后**装 `-nocsp` 件 → 同一命令 → 同样记录；按 #33 判读表落结论。
 6. **承 #33：MAUI 主体（TabbedPage/W5）**：FlyoutPage → TabbedPage 双页签内容出画、切页正常；T13 GroupFooter / N3 `IsOpen` / T21 字号跟随 / T22 套件自报 **513/floor 493**；失败回传截图 + hilog。**JIT 若启动/主体仍崩（`SEGV_ACCERR`）或黑屏：重签安装 `aot-haps-v3.tar.gz` 内未签 hap（会顶替 kit 主包）→ 启动 → `aot=1` → 判主体渲染**。
 7. **一键四 Run**：`sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60` → 期望四 Run 不中断、`mode-matrix/summary.txt` 键齐全 → 回传 `mode-matrix/` 全目录 + 四个 `tester-report-*.tar.gz`。
 8. **无障碍（含 N4 新判点）**：加 `--a11y-probe` → `a11y/selfcheck.txt`（status=1 + 正整数节点数）+ `a11y/hilog-a11y.txt`；TabbedPage 当前页跟随（承 #33）+ `Window.TitleBar` 行进树（#34）→ 回传 `a11y/` 两文件 + `summary a11y_*` + 录屏。

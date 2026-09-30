@@ -30,6 +30,25 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
     --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
 ```
 
+## 0b. 预签直装（加发资产；tester 直装、无需重签）
+
+`device-test-kit` release 新增并列资产 **`preSigned-haps.tar.gz`**（2026-09-30 加发；asset **600101072**，
+**375,834,798 B / `b492b284…`**；sidecar `preSigned-haps.tar.gz.sha256` 88 B / `83cbff13…`，asset 600109338；
+树摘要 `e693ae3a…`）：**7 hap = MAUI 5 + Blazor 默认/`-nocsp`**，全部按 **tester UDID
+`60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`** 预签（SDK 默认调试材料 +
+`sign-hap.sh`；7/7 `hap-sign-tool verify-app` success、profile `device-ids` 单值 = tester）。
+
+- 用法：解包 → `sha256sum -c SHA256SUMS` → `hdc install -r <hap>` **直装**（§0/§2 的「先重签」可跳过；
+  同 bundle 换件仍先卸载）；每件 bundle / 原 sha / 新 sha / 安装命令见包内 `preSigned-README.md`。
+- 预签**不改内容**：7 件 ZIP 条目与 kit #34 原件**逐字节一致**（仅签名块 / `META-INF` 不同）；非 tester UDID
+  的设备仍报 `9568344` → 回传 UDID 重出，或按 README 自签：
+  `sh sign-hap.sh <ohos-sdk>/toolchains/lib <原hap> <out.hap> <bundle> <目标UDID>`。
+- 直装包是**并列附加件**：不替换 kit；完整一轮（`verify-kit.sh` / 文档 / `tester-run.sh`）仍用 `device-test-kit.tar.gz`。
+- 交付方本机对照（2026-09-30，HAD-W32 / 7.0.0.111 / UDID `1BCE13C8…AEA0`）：同法本机-UDID 件（Blazor 默认 +
+  AOT v3-rc2 未签件）本机 `hdc install -r` 成功并启动（Blazor 双标记 `BLZ_BOOT→BLZ_RENDERED`；AOT RSTree
+  `ohos_dotnet_surface` `hasSurfaceBuffer:1`）——「同法预签件可装」成立；**tester-UDID 绑定件在本机也装成功**
+  （本机桌面镜像不校验 `device-ids`），tester 机若被拒按 `9568344` 流程（差异在镜像策略，非包缺陷）。
+
 ## 1. kit #34 相对 #33 的增量（测试方视角）
 
 | # | 变化 | 测试方看到什么 | 判定点 |
