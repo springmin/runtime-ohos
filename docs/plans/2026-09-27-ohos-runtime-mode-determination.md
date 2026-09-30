@@ -1,6 +1,6 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
-> **2026-09-30 更新（kit #34，当前）**：kit #34 = #33 + **rc.2 基线并入主线**（SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** / MAUI **`11.0.0-rc.2.26478.12`**（dnceng daily：restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并移除 feed）+ CoreLib `LINUX` 别名 → `OS Platform: Linux`）+ **MAUI W6/W7/W8 新特性**（T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL；T15 富 TitleView / T16 结构化菜单 / N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**）+ **AOT v3 独立资产**（`aot-haps-v3.tar.gz` 17,537,186 / `004ba03c…`）。数字以 release「## Integrity（kit #34）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（#33 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #35，当前）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164**/headless **23,516**、导出 **149**、套件 **540/floor 520**。数字以 release「## Integrity（kit #35）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
 
 > 目标：**一轮设备定运行时模式**。三条硬证据：`hilog/hilog-execmem.txt`（路由行）、managed 输出/首帧、`/proc/<pid>/maps`。
 > 判定用 `tester-run.sh` **v13**（v13 = **137,113 B / `2caa06bd…`** / asset **594519342**；v12 = 126,658 B / `87763a3e…` / `script_version=12 (2026-09-28)` 为 #30 值：v10 起 `--mode-matrix` 一键矩阵（见 §2.0），v11 起另加 `--a11y-probe`，v12 起 `summary runtime_mode` 读 hap `libs/<abi>/runtime-mode.txt` 且 `interp_mode`/`aot_route` 按 file（interp.txt）> manifest（清单）> default 取值）：证据包 `tester-report-*.tar.gz` 含
@@ -22,7 +22,7 @@
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | 392356147 | **207,114,608** | **`8f690949…`**（sidecar `344760e7…`；树 `645879bc…`；`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`） | 6 个 hap（5 个 MAUI JIT（#32 新壳 abc 289992）+ 1 个未签名 Blazor `hello-blazorwasm-host-unsigned.hap`、#32 = **26,803,570 B / `5011cf73…`（0 权限）**、bundle `com.example.opendotnet`；`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker、`libs` 270）＋文档＋verify-kit；#29 196,990,205 / `e895cc0a…`、#28 196,220,486 / `091dcc56…` 为历史对照 |
-| `device-test-kit.tar.gz`（kit #34，2026-09-30 发布） | 以 release 为准 | **375,181,367** | **`55834aeb…`**（sidecar `c03ea23d…`；树 `d08de3ec…`；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`） | 7 hap（MAUI 5 rc.2 重建含 W6/W7/W8 + Blazor 默认/`-nocsp`；AOT 段用 `aot-haps-v3.tar.gz`；abc 311,424/20,916） |
+| `device-test-kit.tar.gz`（kit #35，2026-09-30 发布） | 以 release 为准 | 以 release「## Integrity（kit #35）」为准（#34 = 375,181,367） | 以 release「## Integrity（kit #35）」为准（#34 = `55834aeb…`/`c03ea23d…`/`d08de3ec…`） | 7 hap（承 #34；AOT 段用本轮 AOT 资产（rc.1 pack 钉注见 handoff §3）；abc **339,164/23,516**） |
 | `aot-haps.tar.gz` | 592465115 | 17,093,146 | `91e1b9d3…` | `hello-maui-app-aot{,-unsigned}.hap`＋README（**已内置桥宿主 `bb51826e…`**，开箱 `aot=1`，见 §2.2） |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 593868367 | 196,898,796 | `9b0506fa…`（sidecar `c0b86645…`；README `4cd711df…`） | 5 个 harmony-flavor hap（壳 **291,628 B / `a637a513…` @13.0.1.0，overlay 真编译**；`MapOverlay.ets`/LiveView sink 在包内）＋README；**前置 = 自备重签材料 + AGC 开通/权益**（Map 地图服务＋签名指纹 / LiveView TIMER 权益 / Push/Account），判定见 §2.5。旧 A1 件 592541627 / 196,118,871 / `f7a4faa2…`（abc 263,784 / `d3a7b718…`）**无 overlay 模块记录**，已 clobber 替换 |
 | `ohos-interpreter-pack.tar.gz` | 590052493 | 2,419,988 | `a10699b3…` | `native/libcoreclr.so`＋`libclrinterpreter.so`＋README/sidecar |
@@ -84,7 +84,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
 - `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
-### 2.1 JIT（kit #34 stock（承 #33）；#32/#30 快照同流程）
+### 2.1 JIT（kit #35 stock（承 #33/#34）；#32/#30 快照同流程）
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --out tester-report
 hdc shell "echo 1 > /data/storage/el2/base/haps/entry/files/xwe.txt"   # A/B：仅当 probe 1≠OK/SEGV 才写

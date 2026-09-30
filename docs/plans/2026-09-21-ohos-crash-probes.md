@@ -1,11 +1,13 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-09-30 update (kit #34 — current):** kit #34 = #33 + the rc.2 baseline (SDK `11.0.100-rc.2.26451.112` /
-> workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`, a dnceng daily until it reaches nuget.org) + the
-> CoreLib `LINUX` alias (`OS Platform: Linux` on device/CI) + MAUI waves W6/W7/W8 (T14/T12/N1/FIX-SHELL;
-> T15/T16/N4/T18/N5/N6; suite 513/floor 493, host export 145) + the AOT-v3 asset (`aot-haps-v3.tar.gz`
-> 17,537,186 / `004ba03c…`). Numbers follow the release notes `## Integrity (kit #34)` and the in-kit checks;
-> handoff: `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`.
+> **2026-09-30 update (kit #35 — current):** kit #35 = #34 + the W9/W10 waves (W9A B2: Blazor WASM in the
+MAUI WebView, now passing on device with `BLZ_BOOT`/`BLZ_RENDERED`; W9B T14/T21; W9C T8; W9D the T20
+media transport layer + the T19 deep-link determination; W10 the AOT-entry fix — host own-libs
+`lib<stem>.so` resolution + `dotnet-status.txt` observability, the shell AOT payload probe / `fs` alias /
+static-asset fingerprint, and the rc.2 AOT pack OpenSSL-shim regression with a local rc.1 pack pin); new
+shell abc 339,164 / headless 23,516, host export 149/149, suite 540/floor 520. Numbers follow the release
+notes `## Integrity (kit #35)` and the in-kit checks; handoff:
+`docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`.
 
 > Companion to `2026-09-21-ohos-device-crash-diagnostics.md`. The tester's device
 > (OpenHarmony 7.0.0.105 / API 26 / 2in1, UDID `60CF7B27…F8A19`) installs the kit hap but the app
@@ -76,12 +78,19 @@
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-09-30 update (kit #34 — current):** the kit moves to the rc.2 baseline (SDK `11.0.100-rc.2.26451.112` /
-> workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`, a dnceng daily until it reaches nuget.org) and adds
+> **2026-09-30 update (kit #35 — current):** the kit adds the W9/W10 waves: B2 (Blazor WASM in the MAUI WebView)
+> now passes on device (`BLZ_BOOT`/`BLZ_RENDERED`), T14/T21 and T8 (uneven-height TableView), the T20 media
+> transport layer + the T19 deep-link determination, and the W10 AOT-entry fix (host own-libs `lib<stem>.so`
+> resolution + `dotnet-status.txt` observability, the shell AOT payload probe / `fs` alias / static-asset
+> fingerprint; the rc.2 AOT pack OpenSSL-shim regression is pinned to the rc.1 pack locally). Suite
+> **540/floor 520**, host export **149/149**, shell abc 339,164 / headless 23,516. Numbers follow the release
+> notes `## Integrity (kit #35)`; handoff: `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`.
+>
+> **2026-09-30 update (kit #34 — previous):** the kit moved to the rc.2 baseline (SDK `11.0.100-rc.2.26451.112` /
+> workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`, a dnceng daily until it reaches nuget.org) and added
 > the MAUI W6/W7/W8 waves (T14/T12/N1/FIX-SHELL; T15/T16/N4/T18/N5/N6; suite **513/floor 493**, host export
-> **145/145**); the AOT fallback is `aot-haps-v3.tar.gz` (17,537,186 / `004ba03c…`). Numbers follow the release
-> notes `## Integrity (kit #34)`; handoff: `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`. The kit #33
-> Blazor A/B and TabbedPage/W5 points keep working.
+> **145/145**); the AOT fallback is `aot-haps-v3.tar.gz` (17,537,186 / `004ba03c…`). The kit #33 Blazor A/B and
+> TabbedPage/W5 points keep working.
 >
 > **2026-09-28 update (kit #32 — history; kit #33 previous):**
 > MAUI WebView/Hybrid/Blazor handlers now map back/forward/reload + CanGoBack/CanGoForward, cookies,

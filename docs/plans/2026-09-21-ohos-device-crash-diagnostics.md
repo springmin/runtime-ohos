@@ -1,6 +1,6 @@
 # 设备侧启动崩溃：诊断与重测包（JsError / exit 254）
 
-> **2026-09-30 更新（kit #34，当前）**：kit #34 = #33 + **rc.2 基线并入主线**（SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** / MAUI **`11.0.0-rc.2.26478.12`**（dnceng daily：restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并移除 feed）+ CoreLib `LINUX` 别名 → `OS Platform: Linux`）+ **MAUI W6/W7/W8 新特性**（T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL；T15 富 TitleView / T16 结构化菜单 / N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**）+ **AOT v3 独立资产**（`aot-haps-v3.tar.gz` 17,537,186 / `004ba03c…`）。数字以 release「## Integrity（kit #34）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（#33 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #35，当前）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164**/headless **23,516**、导出 **149**、套件 **540/floor 520**。数字以 release「## Integrity（kit #35）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
 
 > 对象：本轮真机首发报告的测试方 —— 设备 **OpenHarmony 7.0.0.105 / API 26 / 2in1**，
 > UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`。

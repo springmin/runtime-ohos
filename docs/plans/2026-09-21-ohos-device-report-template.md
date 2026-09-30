@@ -1,6 +1,6 @@
 # 真机回传模板（下一轮设备测试）
 
-> **2026-09-30 更新（kit #34，当前）**：kit #34 = #33 + **rc.2 基线并入主线**（SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** / MAUI **`11.0.0-rc.2.26478.12`**（dnceng daily：restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并移除 feed）+ CoreLib `LINUX` 别名 → `OS Platform: Linux`）+ **MAUI W6/W7/W8 新特性**（T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL；T15 富 TitleView / T16 结构化菜单 / N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**）+ **AOT v3 独立资产**（`aot-haps-v3.tar.gz` 17,537,186 / `004ba03c…`）。数字以 release「## Integrity（kit #34）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（#33 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #35，当前）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164**/headless **23,516**、导出 **149**、套件 **540/floor 520**。数字以 release「## Integrity（kit #35）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
 
 > 复制本页填空白；能填就填，填不了写「不可得 + 原因」。取证命令出处：`docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`（安装/启动/hilog/jscrash/dotnet-status）；探针 P1–P4 与 14 库自检：`docs/plans/2026-09-21-ohos-crash-probes.md`。本页只采集，不重复两文内容。
 
@@ -9,10 +9,10 @@
 | 项 | 值 |
 |---|---|
 | 设备 UDID（`hdc shell bm get -u`） | `<...>` |
-| kit tar.gz sha256（实测） | `<...>`（kit #34 = tar **375,181,367 B / `55834aeb…`**、tree **`d08de3ec…`**、sidecar **`c03ea23d…`**、`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`（7 hap）；#33 = tar **218,138,546 B / `38e4d57a…`**、tree **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`（7 hap）；kit #32 = tar **207,114,608 B / `8f690949…`**、tree **`645879bc…`**、sidecar **`344760e7…`**；#31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`** 仅作对照；见 release「## Integrity（kit #34）」/`docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` 文首；`tester-run.sh` v14 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
-| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #34）」的 tree sha256，kit #34 = **`d08de3ec…`**（#33 = `064cb001…`；#32 = `645879bc…`、#31 = `52e77ee8…` 仅作对照）；`summary.txt` 的 `tree_digest` 同值） |
+| kit tar.gz sha256（实测） | `<...>`（kit #35 = 以 release「## Integrity（kit #35）」为准（发布在途）；#34 = tar **375,181,367 B / `55834aeb…`**、tree **`d08de3ec…`**、sidecar **`c03ea23d…`**、`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`（7 hap）；#33 = tar **218,138,546 B / `38e4d57a…`**、tree **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…`（7 hap）；kit #32 = tar **207,114,608 B / `8f690949…`**、tree **`645879bc…`**、sidecar **`344760e7…`**；#31 = tar **207,023,588 B / `f4325d2f…`**、tree **`52e77ee8…`** 仅作对照；见 release「## Integrity（kit #34）」/`docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` 文首；`tester-run.sh` v14 会写入 `meta/kit-hap-sha256.txt` 与 `summary.txt` 的 `main_hap_sha256`） |
+| tree digest（实测） | `<...>`（期望 = release「## Integrity（kit #35）」的 tree sha256（kit #35 = 以 release 为准；#34 = **`d08de3ec…`**；#33 = `064cb001…`；#32 = `645879bc…`、#31 = `52e77ee8…` 仅作对照）；`summary.txt` 的 `tree_digest` 同值） |
 | `tester-run.sh` 版本（`summary.txt` 的 `script_version`） | `<...>`（当前 **v14** = `14`（140,197 B / `a174fcd0…`、asset 595131362）；v13 = `13` 为 #31 值；v12 = `12 (2026-09-28)` 为 #30 值） |
-| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（kit #34 = rc.2 线（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`）；#32 及以前 = `1.0.0-preview.24`） |
+| 应用版本（`最终状态.md`「发布物」原文） | `<...>`（kit #35 = rc.2 线（SDK 同 #34）；#34 = rc.2 线（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`）；#32 及以前 = `1.0.0-preview.24`） |
 
 > 里程碑背景：2026-09-24 kit #18 + 测试方 5 项本地修复后设备首次完整运行（`managed app hello-maui-app.dll started (UI shell)`）；
 > **stock kit（#22 起；#23 为同负载工具刷新、#24 为 payload-in-libs 正式版、#25 为权限链 + Share/Scan 探测 + AOT 启动路径、#26 为 P2-INTEROP/TASK-MIG/PLAT-GAP 收口、#27 为 KIT-EXT2、#28 为 R2、#29 为 R3、#30 为 MS-MODE、#31 为 Blazor WASM/ArkWeb 组件）的首次设备复测就是本轮**，判定点（宿主加载 / bootstrap / 里程碑回归）见 `docs/plans/2026-09-24-ohos-device-milestone.md` §6；#25 判定点见 §4d，#26 增量判定点见 §4e，#27 见 §4f，#28 见 §4g，#29 见 §4h，#30 见 §4i，#31 见 §4j，#32 见 §4k，#33 见文首更新块，#34 见 §4l。
@@ -176,7 +176,13 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - Map 覆盖层点亮（MAPFIX harmony + AppKey + 同指纹重签）：`<IsOverlayAvailable=true + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`
 - 新 payload 首次运行（新宿主 MS-MODE + #29 abc）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
 
-## 4l. kit #34 增量（rc.2 基线 + MAUI W6/W7/W8 + AOT v3）
+## 4m. kit #35 增量（W9/W10：B2 真机 BLZ 打通 / T20 媒体传输层 / T14+T21+T8 余项 / AOT 入口修复）
+
+> 见 `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md` §2：B2（MAUI WebView 内嵌 Blazor WASM，`BLZ_BOOT`/`BLZ_RENDERED`）、
+> T20 媒体传输层（无 MediaKit 属预期）、T14 收尾 / T21 字体缩放 / T8 不等高 TableView、AOT 入口修复
+> （`dotnet-status.txt`；rc.2 AOT 包 shim 缺陷 → 本地钉 rc.1）；套件 **540/floor 520**、导出 **149**、abc **339,164**/23,516。
+
+## 4l. kit #34 增量（rc.2 基线 + MAUI W6/W7/W8 + AOT v3；上一版）
 
 > 见 `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` §2/§3：rc.2 版本自述（SDK `11.0.100-rc.2.26451.112` /
 > workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`）；W6（T14/T12/N1/FIX-SHELL）+ W7/W8（T15/T16/N4/T18/N5/N6）

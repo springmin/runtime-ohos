@@ -1,10 +1,10 @@
-# Blazor 组件重签与验收操作卡（kit #34 · 一页版；含 CSP/no-csp 双 hap A/B）
+# Blazor 组件重签与验收操作卡（kit #35 · 一页版；含 CSP/no-csp 双 hap A/B + B2 WASM 真机打通）
 
-> **2026-09-30 更新（kit #34，当前）**：kit #34 = #33 + **rc.2 基线并入主线**（SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** / MAUI **`11.0.0-rc.2.26478.12`**（dnceng daily：restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并移除 feed）+ CoreLib `LINUX` 别名 → `OS Platform: Linux`）+ **MAUI W6/W7/W8 新特性**（T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL；T15 富 TitleView / T16 结构化菜单 / N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**）+ **AOT v3 独立资产**（`aot-haps-v3.tar.gz` 17,537,186 / `004ba03c…`）。数字以 release「## Integrity（kit #34）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（#33 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #35，当前）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164**/headless **23,516**、导出 **149**、套件 **540/floor 520**。数字以 release「## Integrity（kit #35）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
 
 > 日期口径：文件名按撰写日；kit #32 发布日 = **2026-09-28**，数字以 release「## Integrity（kit #32）」为准（#31 发布日 = 2026-09-28）。
 
-> 对象：kit #34（承 #33）的 Blazor 宿主 hap（**默认 CSP 与 `-nocsp` 双变体，各重签/各装一次做 A/B**，判定表见 `2026-09-29-ohos-blazor-regression-retest-card.md`）；原 #32 条目：第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；#32 = **26,803,570 B / `5011cf73…`**（0 权限），#31 = 26,794,931 B / `36010a9c…`；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
+> 对象：kit #35（承 #33/#34；#35 起 B2 = MAUI WebView 内嵌 Blazor WASM 已在真机打通：`BLZ_BOOT`/`BLZ_RENDERED`）的 Blazor 宿主 hap（**默认 CSP 与 `-nocsp` 双变体，各重签/各装一次做 A/B**，判定表见 `2026-09-29-ohos-blazor-regression-retest-card.md`）；原 #32 条目：第 6 个 hap `hello-blazorwasm-host-unsigned.hap`（#31 起；**#32 起无 INTERNET**，重签保持；#32 = **26,803,570 B / `5011cf73…`**（0 权限），#31 = 26,794,931 B / `36010a9c…`；bundle **`com.example.opendotnet`**）；流程 = 重签 → 安装 → 启动 → 自动/人工判读 → 失败回传；细节见包内《自签说明》与 `2026-09-28-ohos-tester-handoff-kit32.md` §2。
 
 ## 1. 取件
 
