@@ -64,6 +64,7 @@ extends:
           parameters:
             isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
             isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+            isRollingBuild: ${{ variables.isRollingBuild }}
             useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add iOS/tvOS jobs
@@ -71,6 +72,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add iOS/tvOS simulator jobs
@@ -78,6 +80,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Android jobs
@@ -85,6 +88,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Android emulator jobs
@@ -92,6 +96,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Mac Catalyst jobs
@@ -99,6 +104,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Add Linux Bionic jobs
@@ -106,6 +112,7 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
 
       # Any jobs that are not specific to any platform
       - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:

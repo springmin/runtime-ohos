@@ -28,4 +28,5 @@ extends:
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
           isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
