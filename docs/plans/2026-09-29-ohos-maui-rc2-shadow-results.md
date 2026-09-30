@@ -30,11 +30,18 @@
 
 - 切片门禁在 **fork 布局的 sparse 车辆**中执行（rc2 全树 checkout 下切片 restore 不收敛，见 §5）；交互/像素/导出按 CI 原样针对影子切片。
 
-## 4. 门禁 2（设备冒烟，未做）
+## 4. 门禁 2（设备冒烟 ✓ 已验，2026-09-30）
 
-- 设备在线 `127.0.0.1:35111`（hdc 可用）。
-- 未做原因：`publish-aot.sh` 的 heavy-build guard 会等并发构建 30 min 后 `GUARD-TIMEOUT`；另一会话 bundle-retest 构建已跑 8h+ 仍占用 CPU，按内存纪律不并跑 ILC。
-- 重跑：`AOT_WORKDIR=<scratch>/aot OpenHarmonyMauiPlatformDir=<slice> sh test/hello-maui-app/publish-aot.sh` → `scripts/sign-for-device.sh <udid>` → `hdc install` + `aa start` + 截图/RSTree。
+| 项 | 结果 |
+|---|---|
+| rc2 线 | ow `fix/ohos-rc2` `b531cc98` + maui 稀疏车辆 `fix/ohos-maui-rc2` `41ec990196`；SDK `.dotnet.rc2-fix` 11.0.100-rc.2.26451.112 / workload preview.28 / rc2 AOT packs |
+| 发布 | guard 旁路（主会话裁决：唯一并发 = bundle-retest 1 核构建，无 OOM 风险）；记录坑照用（`-m:1`、`UseSharedCompilation=false`、`RestoreDisableParallel=true`、`DOTNET_NUGET_SIGNATURE_VERIFICATION=false`、flat feed）；EXIT=0，IL2026/IL3050/IL3051=0；so 18,529,040 B `3f9983e0…`；unsigned hap 21,210,762 B `2d52a33b…`；host-in-hap `f6b3581a…` == rc1 v3 host 逐字节相同 |
+| 签名/安装 | `hello-maui-app-rc2-aot-60cf.hap` 21,478,557 B `223fd333…`（UDID 60CF7B27… 单值 profile，verify-app ✓；本机桌面不校验 device-ids，同 rc1）→ `hdc install -r` ✓ → `aa start` ✓（pid 61286；VmRSS 184 MB；Threads 71 含 OS_GC_Thread/ThreadPool） |
+| 出画 | RSTree `ohos_dotnet_surface` ×2 全 **hasSurfaceBuffer=1**（重启后复核同）；WMS `uiContent is null`=0；截图 = 渐变底 + 居中「Accessibility self-check」对话卡（status 1 attached / nodeCount 0 / OK，preview.28 ArkTS 壳渲染，host 供状态）；rc1 v3 对照 = 渐变底 + 仅按钮（当帧对话卡未绘出）；edge-density 0.83% vs 0.02%，均非白窗 |
+| 证据 | scratch `/data/storage/el2/base/tmp/opencode/rc2-gate2/`（EVIDENCE.md、publish-aot.log、signed/、device/ 全套 + 截图） |
+
+- 过程注：首次 `aa start` 被 springmin 锁屏拦（10106102；dev mode 不自动解锁），解锁后成功；窗口一度浮于全屏 shell 之下，最小化 shell 截得应用窗口后恢复。
+- 重跑口径：`DOTNET=$HOME/.dotnet.rc2-fix/dotnet AOT_WORKDIR=<scratch>/aot OpenHarmonyMauiPlatformDir=<slice> sh test/hello-maui-app/publish-aot.sh` → `scripts/sign-for-device.sh 60CF7B27…` → `hdc install -r` + `aa start` + RSTree/截图；本轮 publish 由 `rc2-gate2/publish-aot-rc2-noguard.sh` 旁路 guard 复刻。
 
 ## 5. 漂移与环境发现
 
@@ -45,4 +52,4 @@
 ## 6. 回滚
 
 - 两影子分支均未合并，丢弃即可；rc1 pin 未动，主线可复现。
-- 若后续采用：`feature/openharmony` 快进前打 backup tag；kit #34 前必须换 rc2 正式 pin、删本地 feed 配置、补设备门禁 2。
+- 若后续采用：`feature/openharmony` 快进前打 backup tag；kit #34 前必须换 rc2 正式 pin、删本地 feed 配置（设备门禁 2 已于 2026-09-30 在影子上验过，§4）。
