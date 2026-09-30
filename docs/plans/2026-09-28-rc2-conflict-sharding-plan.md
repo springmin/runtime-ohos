@@ -146,7 +146,7 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - 修正配方后**完整 repack** ✓✓：`prepare-packs.sh`（RID 图 + 4 项目 + 布局）**15s** ✓ + `pack-workload-bundle.sh`（`SDK_BAND=11.0.100`）**5s** ✓ → `dist/openharmony-workload-1.0.0-preview.28.tar.gz`（40,976,433 B / `dabfaf36…`）
 - 与发布版 `.28` 对比 ✓：`WorkloadManifest.json` **字节级一致** ✓✓；新 feed = 当前线 7 包（发布版 143 包 = 历史版本冗余 ✗ → 重打更精简 ✓；新 feed 为旧集**子集**，无缺失 ✗）
 - 环境教训（已记录 ✗）：本环境 `timeout` 无 `-k` 时若 child 忽略 TERM 会**陪着挂** ✗（曾挂 11h ✗）→ 长任务需外置看门狗 ✓；后台遗留孤儿 VBCSCompiler（Mode A 产物 ✗）已清 ✓
-- 待办（建议 ✓）：`lib-dotnet-env.sh` 增加 `UseSharedCompilation=false`（否则**全新 checkout 开箱构建即挂** ✗）；本机 07:37 起有一个疑似 kit 会话的 VBCSCompiler 空转进程（未触碰 ✗）
+- 待办（**已完成 ✓**，2026-09-30）：`lib-dotnet-env.sh` 已默认关闭 Roslyn 编译器服务器（`UseSharedCompilation=false`，可覆盖 ✓；ohos-workload `e22aecd`）——净环境探针 `SHAREDCOMP=false` ✓ + **全新 checkout 构建 4.9s** ✓✓（此前同场景挂 300s+ ✗）；网络还原风险已文档化（不设默认，避免破坏有包依赖的构建 ✓）。注：本机 VBCSCompiler 活动进程为 kit 的活跃构建（正常 ✓）
 
 **合并后认证（2026-09-30，RC2-MERGE）** ✓：
 - 五仓 rc.2 影子并入主线（gated 全绿 ✗）：runtime `00bf8209296`、sdk `469eae2734`（含"rc.2 线为默认 buildid"）、aspnetcore `e10d030184`、ow `5305873`（cherry-pick 式 ✓）、maui `ebffdd787c` ✓；只读复核（`postmerge-verify.sh` ✓）：runtime 别名 ✓、sdk selfsign 锚/安装器修复/设备脚本三件全在位 ✓
