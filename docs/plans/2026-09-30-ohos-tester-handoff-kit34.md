@@ -77,6 +77,9 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 3. **dnceng daily**：MAUI `11.0.0-rc.2.26478.12` 尚未上 nuget.org；交付方 CI 两个 workflow 在 restore 前加
    dnceng `dotnet11` feed（workload `004b7f8`）。**官方 rc.2 上架后换 pin、删 feed step**（kit #34 后立即）。
 4. **回归基线**：rc2 前后门禁层面 0 漂移（套件/像素/导出同数通过）；#33 的 Blazor/TabbedPage/W5 判定点照跑。
+5. **五仓 tip（本波）**：runtime `9b31ed2d08a`（rc.2 五仓线并入 merge）+ 本仓 docs；maui **`ebffdd787c`**（rc.2 re-anchor + CA 作用域；
+   W7/W8 链 `5a24b0c597`(T15)/`038449e803`(T16)/`43996268ff`(N4)/`b386b1c451`(T18)/`163e7554cf`(N5)/`63d6fe7019`(N6)）；
+   ohos-workload `5305873`（三 workflow pin `ebffdd787c`）；sdk `469eae2734`；aspnetcore `e10d030184`。
 
 ## 4. 本机直测（交付方自验能力，2026-09-30 起）
 
@@ -105,15 +108,14 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 ## 6. 校验与取证
 
 1. 包内 `sh verify-kit.sh` → 期望 **0 FAIL / 0 WARN**（深度断言逐 hap：`resources.index`/abc/libs/`dotnet.zip`/
-   payload-in-libs/宿主依赖；新壳 abc 期望以包内为准——#33 = 294,976/20,916，本波新壳 = 311,424 量级）。
+   payload-in-libs/宿主依赖；abc 期望 = **311,424/20,916**；包内脚本 69,522 / `dcd81f33…`，selftest 108/0）。
 2. `tester-run.sh`（版本以包内自述为准，承 v14）：常规轮 / `--blazor-probe` / `--mode-matrix`（AOT 段用
    `aot-haps-v3.tar.gz`）/ `--a11y-probe` 四件同 #33。
 3. **7 hap 表（kit #34 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`）**：`hello-maui-app.hap` **133,827,313 / `9614f69d…`**、
    `…-unsigned` **131,304,609 / `f0def954…`**、`…-permissions` **133,831,417 / `a7a3391c…`**、
    `…-api20` **133,831,490 / `701104e8…`**、`…-api20-permissions` **133,831,449 / `d3bf37f6…`**、
    Blazor 默认 **27,216,958 / `8e407504…`**、`-nocsp` **27,216,659 / `68606606…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
-   整包 tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`；bundle = `workload-1.0.0-preview.28`
-   **77,689,347 / `155960f4…`**（锚 `e7727959cc`）；重签/重打包后必变，以 release 与随包校验为准；
+   整包 tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`；bundle = `workload-1.0.0-preview.28`（**rc.2 重打包进行中，新 sha 以 release 为准**；#33 = 77,689,347 / `155960f4…`，锚 `e7727959cc`）；重签/重打包后必变，以 release 与随包校验为准；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#33）。
 4. 离线证据（供复核）：套件 **513/493**、像素 PASS、导出 **145**（CI run 36656123464 / 36656123473 / 36656123543
    + 本地同树复跑）；FIX-SHELL/T12/T14/T15/T16/N4/T18/N5/N6 的交互/像素断言与负控（`w7/`、`w8/` scratch）；
