@@ -1,6 +1,6 @@
 # 测试方交接：kit #35、W9/W10 并入主线（B2 真机 BLZ / T20 媒体传输层 / T14+T21+T8 余项 / AOT 入口修复）（2026-09-30）
 
-> 日期口径：文件名按撰写日；**kit #35 发布实测（release「## Integrity（kit #35）」；发布在途，一切数字以
+> 日期口径：文件名按撰写日；**kit #35 发布实测（release「## Integrity（kit #35）」；发布已完成，一切数字以
 > release 与随包 `SHA256SUMS` / `.tar.gz.sha256` sidecar 为准）**：tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**；
 > **7 hap** 表见 §6.3（#34 = tar 375,181,367 B / `55834aeb…` 对照）。重签/重打包后哈希必变；CI run id 见 §1.6。
 > 构建基线（rc.2 线，同 #34）：SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** /
@@ -27,7 +27,7 @@
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60
 # Blazor 探针（#35：B2 走 MAUI WebView 内嵌 WASM；已有资产的路径以包内清单为准）
 sh tester-run.sh --kit-dir ./device-test-kit --blazor-probe
-# 运行时四态一键（AOT 段请用本轮 AOT 资产；资产名/数字以 release 为准）
+# 运行时四态一键（AOT 段请用本轮 AOT 资产；当前 = aot-haps-v3-rc2.tar.gz，资产名/数字以 release 为准）
 sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
     --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
 ```
@@ -37,8 +37,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 `device-test-kit` release 自 #34 起有并列预签资产 **`preSigned-haps.tar.gz`**（#34 = asset 600101072，
 375,834,798 B / `b492b284…`）：7 hap 全部按 **tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`**
 预签，`sha256sum -c SHA256SUMS` 后 `hdc install -r` **直装、无需重签**（同 bundle 换件仍先卸载）；
-非 tester UDID 设备报 `9568344` → 回传 UDID 重出或按包内 README 自签。**#35 若加发新预签件，以 release 与
-包内 `preSigned-README.md` 为准**；预签包是并列附加件，完整一轮仍用 `device-test-kit.tar.gz`。
+非 tester UDID 设备报 `9568344` → 回传 UDID 重出或按包内 README 自签。**#35 本批未刷新预签件（沿 #34 件：375,834,798 / `b492b284…`，asset 600101072；如需 #35 预签请回传 UDID 代签）**；预签包是并列附加件，完整一轮仍用 `device-test-kit.tar.gz`。
 
 ## 1. kit #35 相对 #34 的增量（测试方视角）
 
@@ -83,7 +82,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 5. **五仓 tip（本波）**：runtime = 本仓 `feature/openharmony` docs（本文随附）；maui = **`eec30c01cd`**
    （W9 四线并入：B2/T20/T21/T8；`0dcd972617`/`ae03a1af45`/`640de39638`/`6d6fd92b4b` 等为分支提交）；
    ohos-workload master **`080a63aa`**（W10 收口；其上 `bad7475` 为 W10 功能提交；三 workflow pin `eec30c01cd`）；
-   sdk `4e3f16ceb1`（rc.2 AOT 文档两笔，承 #34 锚 `fb6c15e6d1`）；aspnetcore `e10d030184`（以 release/仓库页为准）。
+   sdk 锚 **`02a31ef348`**（bundle 锚更新 338541db → **acd26821**；承 #34 锚 `fb6c15e6d1`；SDK CI run `36733970777`）；
+   runtime 本仓 manifest 刷新 **`f5fe6f35dc5`**（`7b531a19eec..f5fe6f35dc5`，no force）；aspnetcore `e10d030184`（以 release/仓库页为准）。
 
 ## 4. 本机直测（交付方自验能力，2026-09-30 起）
 
@@ -119,9 +119,14 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
    **133,969,645 / `7cf2183c…`**、`…-api20` **133,965,601 / `711374cb…`**、`…-api20-permissions`
    **133,969,757 / `39292e9b…`**、Blazor 默认 **27,216,958 / `6227d0e6…`**（own abc 21,200 B、site 213 files）、
    `-nocsp` **27,216,659 / `a83ea068…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
-   整包 tar **375,629,423 / `419d42e2…`**、树 `d3b1b317…`、sidecar `d7e79d39…`；bundle/anchor 待刷新（以 release 为准）；
+   整包 tar **375,629,423 / `419d42e2…`**、树 `d3b1b317…`、sidecar `d7e79d39…`；bundle
+   `openharmony-workload-1.0.0-preview.28.tar.gz` **77,754,383 / `acd26821…`**（三处同步 versioned `398936638` /
+   latest `392077166` / sdkrc2 `398739326`；dist `SHA256SUMS` 212 B / `f8933bdb…`；sdkrc2 合并 sums 1,960 B / `7ea5332c…`；
+   sdk-ohos 锚 **`02a31ef348`**，`WORKLOAD_BUNDLE_SHA256` 338541db → acd26821）；
    重签/重打包后必变，以 release 与随包校验为准；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#34）。
+   发布已完成（23:07-23:15）：kit tar/边车两处（dtk **392356147** / latest **392077166**）+ bundle 三处；四条 release body
+   含 `## Integrity (kit #35)`；by-id 抽验 0 FAIL + gh-proxy 校验通过（dtk 38 资产 2 changed / 36 unchanged）。
 4. 离线证据（供复核）：套件 **540/520**、像素 PASS、导出 **149/149**、壳 abc **339,164/23,516**（四包一致 +
    provenance）、切片 0 error/0 IL、CI 5/5；W10 设备证据见 `w10/EVIDENCE.md`（BLZ 标记、`delivered=1`、
    `dotnet-status.txt` 根因链、ICU FailFast、`fileIo` 404 根因、指纹映射）；W9 证据见
@@ -147,6 +152,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - **门禁（FINAL）**：交互 540/floor 520、导出 149/149、像素 PASS、包内 `verify-kit.sh` 0 FAIL/0 WARN
   （abc 期望 339,164（`74054e2d…`）/23,516（`6bce4063…`）；脚本 69,522 / `c3cd4d38…`）、`ohos-workload` CI
   5/5 @ `080a63a`（interaction `36725822753` / pixel `36725822670` / host-export `36725822303` / ridgraph
-  `36725822702` / markdownlint `36725822841`）；`preflight --quick` 全绿（`selftest-tasks` S3 已修，tasks 9 PASS）。
+  `36725822702` / markdownlint `36725822841`）、sdk `ohos-install-tests` @ `02a31ef348` run `36733970777` success
+  （installer 43/43 · hostfeed 10/10 · codesign-filewrites 5/5；本地 selftests 全绿：tester-run 683/0、verify-kit 108/0 等）；
+  `preflight --quick` 全绿（`selftest-tasks` S3 已修，tasks 9 PASS）。
 - 本次构建基线 = **rc.2 线**（SDK `.112` / workload `preview.28` / MAUI `rc2.26478.12`）；应用侧构建请同步该线
   （`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5；rc.1 回滚路径保留）。
