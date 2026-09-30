@@ -146,7 +146,12 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - 修正配方后**完整 repack** ✓✓：`prepare-packs.sh`（RID 图 + 4 项目 + 布局）**15s** ✓ + `pack-workload-bundle.sh`（`SDK_BAND=11.0.100`）**5s** ✓ → `dist/openharmony-workload-1.0.0-preview.28.tar.gz`（40,976,433 B / `dabfaf36…`）
 - 与发布版 `.28` 对比 ✓：`WorkloadManifest.json` **字节级一致** ✓✓；新 feed = 当前线 7 包（发布版 143 包 = 历史版本冗余 ✗ → 重打更精简 ✓；新 feed 为旧集**子集**，无缺失 ✗）
 - 环境教训（已记录 ✗）：本环境 `timeout` 无 `-k` 时若 child 忽略 TERM 会**陪着挂** ✗（曾挂 11h ✗）→ 长任务需外置看门狗 ✓；后台遗留孤儿 VBCSCompiler（Mode A 产物 ✗）已清 ✓
-- 待办（建议 ✓）：`lib-dotnet-env.sh` 增加 `UseSharedCompilation=false`（否则**全新 checkout 开箱构建即挂** ✗）；本机 07:37 起有一个疑似 kit 会话的 VBCSCompiler 空转进程（未触碰 ✗）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注：该 CoreLib 修复目前仅在 `fix/ohos-rc2`（rc.2 线）；随 **C3 rebase/N 组**并入 `feature/openharmony` 主线时一并对齐（并评估是否单列上游项，与 `2026-09-15-ohos-platform-identity.md` 附录的"方案 B"呼应）。
+- 待办（建议 ✓）：`lib-dotnet-env.sh` 增加 `UseSharedCompilation=false`（否则**全新 checkout 开箱构建即挂** ✗）；本机 07:37 起有一个疑似 kit 会话的 VBCSCompiler 空转进程（未触碰 ✗）
+
+**合并后认证（2026-09-30，RC2-MERGE）** ✓：
+- 五仓 rc.2 影子并入主线（gated 全绿 ✗）：runtime `00bf8209296`、sdk `469eae2734`（含"rc.2 线为默认 buildid"）、aspnetcore `e10d030184`、ow `5305873`（cherry-pick 式 ✓）、maui `ebffdd787c` ✓；只读复核（`postmerge-verify.sh` ✓）：runtime 别名 ✓、sdk selfsign 锚/安装器修复/设备脚本三件全在位 ✓
+- **认证跑 36657188182 全绿**（50m31s）：checkout `runtime=00bf8209296`/`aspnetcore=e10d030184`/`buildid=20260901.112` ✓；`R2R compiled=180 failed=0` ✓、`msbuild-pipe-patch patched=16` ✓、`sign:27 ELF` ✓；SDK tar `11.0.100-rc.2.26451.112`（180,467,229 B ✓）——**合并主线无回归，产出与合并前同版本 SDK** ✓✓
+- 备注：`aspnetcore R2R: no App.Runtime pack found - skipped` 与合并前各跑一致（该线既定状态 ✓）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注（2026-09-30 更新 ✓）：该 CoreLib 修复已随 **RC2-MERGE 五仓并入**进入 `feature/openharmony` 主线（runtime `00bf8209296` 链上 ✓；合并后认证跑 36657188182 全绿 ✓）；上游项评估仍与 `2026-09-15-ohos-platform-identity.md` 附录"方案 B"呼应。
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
 **前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
