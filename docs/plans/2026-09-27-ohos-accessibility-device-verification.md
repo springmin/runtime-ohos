@@ -1,8 +1,8 @@
 # 无障碍真机验证清单（P0b-A11Y，2026-09-27）
 
-> **2026-09-29 更新（kit #33，当前）**：kit #33 = #32 + **Blazor 回归修复**（读路径恢复 `blazor/<x>`、`_framework/dotnet.js` 物化、**双 hap 默认 CSP/`-nocsp` A/B**；FIX-BLZ-PATH/FIX-BLZ-JS）+ **MAUI TabbedPage 渲染/无障碍修复**（FIX-TABBED/A11Y-TABBED）+ **W5 四件**（T13/N3/T21/T22，套件 **470/floor 450**）+ **AOT v2 独立资产**（`aot-haps-v2.tar.gz` 17,323,220 / `265e014f…`）。**7 hap** = MAUI 5 重建（新壳 abc **294,976 B / `6cf7dda2…`**）+ Blazor 默认（27,216,958 / `69de2eea…`）与 `-nocsp`（27,216,659 / `c1ef7e06…`，包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）；bundle/preview.28 **77,689,347 B / `155960f4…`**（锚 `e7727959cc`）；整包 tar **218,138,546 B / `38e4d57a…`**、树 **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` **17 项 / 1,517 B / `37031b9a…`**（dtk id 597711909 / sidecar 597714378；重签/重打包后必变）—— 数字以 release「## Integrity（kit #33）」与随包校验为准；判定点 = `docs/plans/2026-09-29-ohos-tester-handoff-kit33.md` + `docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`（#32 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #34，当前）**：kit #34 = #33 + **rc.2 基线并入主线**（SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** / MAUI **`11.0.0-rc.2.26478.12`**（dnceng daily：restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并移除 feed）+ CoreLib `LINUX` 别名 → `OS Platform: Linux`）+ **MAUI W6/W7/W8 新特性**（T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL；T15 富 TitleView / T16 结构化菜单 / N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**）+ **AOT v3 独立资产**（`aot-haps-v3.tar.gz` 17,537,186 / `004ba03c…`）。数字以 release「## Integrity（kit #34）」与随包校验为准；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（#33 = 上一版，见其交接文）。
 
-**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #33 真机上的逐项验证（**A11Y-TABBED：影子树发布 `TabbedPage.CurrentPage`——选中页节点在、未选中页不在，切页后跟随**；MAUI 主包承 #30/#31；#32 的 WebView/B1 不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
+**范围**：影子无障碍树（托管 `OpenHarmonyAccessibility` → 宿主 ArkUI provider）在 kit #34 真机上的逐项验证（**A11Y-TABBED（承 #33）：影子树发布 `TabbedPage.CurrentPage`——选中页节点在、未选中页不在，切页后跟随**；**N4（#34 新增）：`Window.TitleBar` 行进影子树（根首子节点 + bounds）、模板按钮角色与 `TryFindView`**；MAUI 主包承 #30/#31；#32 的 WebView/B1 不改变 MAUI 无障碍路径）；只做验证与采集，不改壳/托管源码。
 **样品**：默认 `hello-maui-app.hap`（重签后安装）；演示页含 Entry/CheckBox/Switch/Slider/ProgressBar/CollectionView/ListView/HybridWebView/BlazorWebView（无 Image 入口 → I1 登记未测）。
 **前置**：点左下角 `A11Y` 确认 `accessibilityStatus: 1 (attached - expected)`；读屏 =「设置 → 辅助功能 → 屏幕朗读」；每轮开始 `hdc shell hilog -r`（或直接 `--capture`）。
 **采集**：`sh tester-run.sh --kit-dir <kit> --install --start --capture 30 --a11y-probe`（v14；v12/v13 亦可，`--a11y-probe` 行为不变）→ `a11y/selfcheck.txt`、`a11y/selfcheck-layout.json`、`a11y/hilog-a11y.txt`，`summary.txt` 增 `a11y_*` 键（另含 `runtime_mode`）；旧脚本按文末「手动采集」。
@@ -25,7 +25,8 @@
 | F2 | 滚动中焦点保持 | 长列表读屏聚焦中间一行 → 滑动滚动 → 观察焦点 | 滚动后焦点仍在语义相邻行；不丢焦点、不跳回首行、不落到无关控件；朗读行与屏上一致 | 录屏 + 滚动前后 dump | 焦点保持 + 行文本对应；丢失/漂移 = FAIL |
 | T1 | 读屏关闭态 | 关读屏 → 常规触摸（按钮/输入/滚动） | 行为与无读屏一致；provider 仍 `status=1`；无残留焦点框 | 录屏 + 自检截图 | 操作全部正常、不崩；状态行不变 |
 | T2 | 读屏开启态 | 开读屏 → 遍历 E1–S1 控件 → 双击激活 → 关读屏 | 可聚焦、朗读角色+文本+状态；双击激活；关闭后恢复 T1 行为 | 两段录屏（开/关） | 两态切换无崩溃/卡死；覆盖 E1–S1 |
-| T3 | TabbedPage 当前页（A11Y-TABBED，kit #33） | 读屏遍历 FlyoutPage → TabbedPage → 切页 | 影子树只发布当前页的标签/内容节点；切页后跟随 `CurrentPage` | 录屏 + `a11y/` dump | 当前页节点在、未选中页不在；切页跟随（修复前缺该枚举，见 `fix-tab/CLOSE-STATE.md` 负控） |
+| T3 | TabbedPage 当前页（A11Y-TABBED，承 #33） | 读屏遍历 FlyoutPage → TabbedPage → 切页 | 影子树只发布当前页的标签/内容节点；切页后跟随 `CurrentPage` | 录屏 + `a11y/` dump | 当前页节点在、未选中页不在；切页跟随（修复前缺该枚举，见 `fix-tab/CLOSE-STATE.md` 负控） |
+| N4 | Window.TitleBar 进树（W7，kit #34） | `Window.TitleBar`（标题/副标题 + 模板按钮）页面，`--a11y-probe` | 影子树渲染根首子节点 = TitleBar 行（bounds 0,0,300,64 风格），标题/副标题文本节点 + 模板按钮节点（button 角色，可 `TryFindView`）；隐藏 → 节点消失，恢复 → 再现，清除 → 消失 | `a11y/` dump + 录屏 + hilog | 行/文本/按钮节点在且角色正确；隐藏/恢复/清除跟随 |
 
 **动作面（发布契约）**：只发布并执行 Click（button/text/checkBox/switch/textInput）、ScrollForward/Backward（scroll/slider）、Copy/Paste/Cut/SelectText（textInput）；SET_TEXT/LONG_CLICK 未发布（监听器无值载荷、切片无长按路径）→ 读屏不出现这两类动作属预期。
 

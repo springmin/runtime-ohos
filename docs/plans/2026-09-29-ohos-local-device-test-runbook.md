@@ -55,3 +55,18 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
 > 17,537,186 B / `004ba03c…`，asset 597904340；本机真机出画已验证）；v1/v2 保留对照。判定点回写
 > ohos-workload `30a1c7e`（`publish-aot.sh`/`AOT.md`/`make-mode-kit` 默认 UIPage）。见
 > `2026-09-29-ohos-aot-v3-rebuild.md`。
+
+## 6. rc.2 线与本机直测（2026-09-30 更新）
+
+- **rc.2 线本机环境**：`DOTNET=$HOME/.dotnet.rc2-fix/dotnet`（SDK `11.0.100-rc.2.26451.112` + workload
+  `1.0.0-preview.28` + rc2 AOT packs；`OS Platform: Linux`）；默认根 `~/.dotnet` 保留 rc.1 回滚线，**勿覆盖**；
+  dnceng daily feed 与构建三坑（MSBuild server / VBCSCompiler / 无超时 restore）见 `ohos-workload/docs/rc2-line-notes.md`
+  与 `kit-build-env.sh`。
+- **已可直测**：hdc 无线 + SDK 自签 + AOT 路径 —— `DOTNET=$HOME/.dotnet.rc2-fix/dotnet AOT_WORKDIR=<scratch>/aot
+  OpenHarmonyMauiPlatformDir=<slice> sh test/hello-maui-app/publish-aot.sh` → `scripts/sign-for-device.sh <UDID>` →
+  `hdc install -r` + `aa start` + RSTree/截图（2026-09-30 rc2 冒烟：`ohos_dotnet_surface` buffer=1、`uiContent is null`=0）。
+- **已知限制（非 kit 缺陷）**：**JIT payload-in-libs 主包在本机新镜像（≥7.0.0.111 系）装不上**（`9568393`，
+  `libs/**` 非 ELF 载荷被拒）；主包 JIT 真机判定仍以 tester 机为准，或用 `-p:OpenHarmonyHapPayloadInLibs=false`
+  重出包/`aot-haps-v3` 复测。
+- **kit #34 复测入口**：`docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` §2–§4 与
+  `docs/plans/2026-09-28-ohos-retest-taskcard.md`。
