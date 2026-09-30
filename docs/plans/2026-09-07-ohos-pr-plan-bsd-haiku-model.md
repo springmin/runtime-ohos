@@ -504,3 +504,26 @@ in, modeled on #130761 (+32/-4, eng/pipelines only). Not part of any earlier PR.
    carries the openharmony RID. The legacy `RuntimeIdentifierGraph.openharmony.json` override stays
    fork-local bootstrap injection (stock bootstrap SDKs ship a frozen legacy graph), not
    upstream-bound.
+
+---
+## 附：先例规模统计（2026-09-30，label 实测）
+
+方法：`search/issues?q=repo:dotnet/runtime+label:os-*+is:pr+is:merged`（≤100）+ 逐 PR
+`pulls/<n>` 的 `changed_files/additions/deletions` 求和；时间为**首个 PR 创建 → 最后一个已合并
+PR 的合并时刻**。
+
+| OS | 首 PR 创建 | 末 PR 合并 | 历时 | PR 数 | Σ 文件 | Σ 行 |
+|---|---|---|---|---|---|---|
+| **OpenBSD**（参考模型） | 2026-02-24 (#124774) | 2026-09-09 (#133441) | **≈6.5 个月** | **38** | **169** | **+2,133/−410** |
+| **Haiku** | 2023-05-16 (#86303) | 2026-08-08 (#131700) | **≈3 年 3 个月** | **16** | **153** | **+971/−301** |
+| **SunOS/illumos** | 2024-06-27 (#104118) | 2026-08-08 (#131700) | **≈2 年 1.5 个月** | **13** | **59** | **+1,051/−190** |
+
+注意：① label 口径（未打标的早期 PR 可能遗漏；后续维护 PR 计入）；② `#131700` 同时带
+Haiku/SunOS 两标（跨行重复 1 笔）；③ 末 PR = 维护性 PR——OpenBSD 的"功能完成"里程碑（CI leg）
+≈ seed+5 个月（§1.2）。
+
+**OHOS 对照（2026-09-30）**：已提 3 PR（自 2026-08-27）= #132827（3 文件，open）/ #132953
+（11 文件，open）/ #134670（3 文件，已合 09-26）；剩余计划 N1–N16（≈26 文件）+ SDK S1
+（≈15）+ aspnetcore A1（≈5）→ 预计总量 **≈20 PR / ≈63 文件**——规模介于 SunOS 与 Haiku 之间，
+远小于 OpenBSD；按 OpenBSD 节奏（≈6.5 个月）推算完成窗口 ≈ **2027-03**——**前置闸门 =
+#132953 合并**（N 组尚未起跑）。
