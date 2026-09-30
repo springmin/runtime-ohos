@@ -139,7 +139,14 @@ file | category | rc2-delta(sum) | ours-delta(sum) | decision(take-rc2/take-ours
 - 资产 = 脚本产出（**剥离未签名**、6,321,296 B / `a403a1b4…`）→ 上传 `-ohos` 的 `selfsign-ohos-arm64` + `SHA256SUMS` 追加（delete-then-upload ✓）→ 镜像工作流**全量重跑**（run 36565484313 全绿 ✓）覆盖 `-openharmony` 上的坏资产（旧跨构建 `24b8aff1…` ✗→新 ✓）
 - **发布形态端到端复验** ✓✓：未签名预置 → 安装器 `bootstrap_selfsign`（Cellar `binary-sign-tool`）→ `using selfsign (preferred signer)` → **`signed=28 already_signed=1 failed=0`** → install rc=0（`~/.dotnet.rc2-fix2`）；发布字节下载复验：sha 一致 ✓ + 自举后运行 ✓
 - `SELFSIGN_SHA256` 置锚 `a403a1b4…`（fail-closed 恢复 ✓；sdk `06884ccb13`）
-- 运维注意：CI 的 `OHOS_SELFSIGN_PUBLISH` 门仍默认关；将来 release 重跑会重建 SDK/runtime 并可能重算 SHA256SUMS → 按锚刷新协议重测/必要时重挂 selfsign。`BINARY_SIGN_TOOL_SHA256` 建议 operator 侧 pin Cellar 工具（`c7d6575d…`）；`~/.harmonybrew/bin` 的 shim（`725ca9b4…`）实测不可靠（install3 以 shim 自举后签名环节挂起 ✗；install3b 用 Cellar 完成 ✓）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注：该 CoreLib 修复目前仅在 `fix/ohos-rc2`（rc.2 线）；随 **C3 rebase/N 组**并入 `feature/openharmony` 主线时一并对齐（并评估是否单列上游项，与 `2026-09-15-ohos-platform-identity.md` 附录的"方案 B"呼应）。
+- 运维注意：CI 的 `OHOS_SELFSIGN_PUBLISH` 门仍默认关；将来 release 重跑会重建 SDK/runtime 并可能重算 SHA256SUMS → 按锚刷新协议重测/必要时重挂 selfsign。`BINARY_SIGN_TOOL_SHA256` 建议 operator 侧 pin Cellar 工具（`c7d6575d…`）；`~/.harmonybrew/bin` 的 shim（`725ca9b4…`）实测不可靠（install3 以 shim 自举后签名环节挂起 ✗；install3b 用 Cellar 完成 ✓）
+
+**bundle 重打复测（2026-09-30，修复后实证）** ✓：
+- 三处同源 host 怪癖（AF_UNIX/网络 ✗）：① MSBuild server 握手挂起（`lib-dotnet-env.sh` 已挡 ✓）；② **Roslyn 编译器服务器（VBCSCompiler）握手挂起** ✗（未挡 ✗——实证：`-t:Rebuild` 无开关挂 300s+ ✗；`UseSharedCompilation=false` 下 **6s** ✓）；③ **网络还原无超时挂起** ✗（卡死进程仅 6.8MB RSS + futex/eventpoll 空等 ✗）→ 以**离线 NuGet 配置**（`<clear/>` 无源 ✓）经环境变量路由绕过 ✓
+- 修正配方后**完整 repack** ✓✓：`prepare-packs.sh`（RID 图 + 4 项目 + 布局）**15s** ✓ + `pack-workload-bundle.sh`（`SDK_BAND=11.0.100`）**5s** ✓ → `dist/openharmony-workload-1.0.0-preview.28.tar.gz`（40,976,433 B / `dabfaf36…`）
+- 与发布版 `.28` 对比 ✓：`WorkloadManifest.json` **字节级一致** ✓✓；新 feed = 当前线 7 包（发布版 143 包 = 历史版本冗余 ✗ → 重打更精简 ✓；新 feed 为旧集**子集**，无缺失 ✗）
+- 环境教训（已记录 ✗）：本环境 `timeout` 无 `-k` 时若 child 忽略 TERM 会**陪着挂** ✗（曾挂 11h ✗）→ 长任务需外置看门狗 ✓；后台遗留孤儿 VBCSCompiler（Mode A 产物 ✗）已清 ✓
+- 待办（建议 ✓）：`lib-dotnet-env.sh` 增加 `UseSharedCompilation=false`（否则**全新 checkout 开箱构建即挂** ✗）；本机 07:37 起有一个疑似 kit 会话的 VBCSCompiler 空转进程（未触碰 ✗）自修复前的可用路径：安装器 **`binary-sign-tool` 回退**（已验证 ✓）+ 发布资产撤下（✓ 现状）。追踪注：该 CoreLib 修复目前仅在 `fix/ohos-rc2`（rc.2 线）；随 **C3 rebase/N 组**并入 `feature/openharmony` 主线时一并对齐（并评估是否单列上游项，与 `2026-09-15-ohos-platform-identity.md` 附录的"方案 B"呼应）。
 ## 9. ③ 设备/捆绑落地清单（rc.2 线，等 kit 空档）
 
 **前置**：kit/tester 无进行中的轮次（不移动 workload bundle）；本清单的所有 pin 素材已备。
