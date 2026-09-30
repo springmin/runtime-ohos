@@ -34,6 +34,9 @@
 ## 4. MAUI：JIT ⛔ / AOT ✅
 - **JIT**：kit 未签 hap 本机 UDID 重签 → `hdc install -r` 报 **`9568393 verify code signature failed`**
   （payload-in-libs 被本机 ≥7.0.0.111 镜像拒）——与预期一致（非 kit 缺陷；JIT 真机判定以 tester 机为准）。
+  **根因更正（2026-09-30）**：拒装与“非 ELF”无关，系（a）无扩展名文件 `createdump` 不在 HAP 码签块、
+  （b）恰好 4096 B 的 `Microsoft.OpenHarmony.dll` fs-verity 使能失败；对策见
+  `2026-09-30-ohos-jit-payload-install-policy.md`。
 - **AOT v3**：release 并列资产 `aot-haps-v3`（17,537,186 / `004ba03c…` 已核）未签件本机重签（20,624,093 B）
   → 安装/启动成功（pid 51951）；**RSTree `ohos_dotnet_surfaceSurface` `hasSurfaceBuffer:1`**、`Visible:1`、
   Bounds 2090×1324；截图 = 渐变主体窗口出画（复核 rc.2 前证）。hap 深核：UI 壳 abc **289,992 / `e005f236…`**、

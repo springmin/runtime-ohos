@@ -66,8 +66,11 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
 - **已可直测**：hdc 无线 + SDK 自签 + AOT 路径 —— `DOTNET=$HOME/.dotnet.rc2-fix/dotnet AOT_WORKDIR=<scratch>/aot
   OpenHarmonyMauiPlatformDir=<slice> sh test/hello-maui-app/publish-aot.sh` → `scripts/sign-for-device.sh <UDID>` →
   `hdc install -r` + `aa start` + RSTree/截图（2026-09-30 rc2 冒烟：`ohos_dotnet_surface` buffer=1、`uiContent is null`=0）。
-- **已知限制（非 kit 缺陷）**：**JIT payload-in-libs 主包在本机新镜像（≥7.0.0.111 系）装不上**（`9568393`，
-  `libs/**` 非 ELF 载荷被拒）；主包 JIT 真机判定仍以 tester 机为准，或用 `-p:OpenHarmonyHapPayloadInLibs=false`
-  重出包/`aot-haps-v3` 复测。
+- **已知限制（根因更正 2026-09-30）**：**JIT payload-in-libs 主包在本机新镜像（≥7.0.0.111 系）装不上**（`9568393`）。
+  实测与“非 ELF”无关：libs 内**无扩展名**文件不在 HAP 码签块、**恰好 4096 B** 文件 fs-verity 使能失败；
+  检测 = `hdc install` 后 `hilog -x -e 'CODE_SIGN|ParseNativeLibSignInfo'`。主包 JIT 真机判定仍以 tester 机为准，
+  本机可用 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true`（重写分包）或 `-p:OpenHarmonyHapPayloadInLibs=false`
+  重出包 / `aot-haps-v3` 复测（两种布局本机均已安装通过）；证据与对策见
+  `docs/plans/2026-09-30-ohos-jit-payload-install-policy.md`。
 - **kit #34 复测入口**：`docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` §2–§4 与
   `docs/plans/2026-09-28-ohos-retest-taskcard.md`。

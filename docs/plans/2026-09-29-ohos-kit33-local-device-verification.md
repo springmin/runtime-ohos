@@ -39,6 +39,9 @@
   即 PASS。故 JIT 启动 / `SEGV_ACCERR`（禁 JIT）本轮本机不可得，需 payload-in-libs=false 的重出包或旧镜像。
 - AOT v3：资产尚未发布（同机 `aot-v3/` 仍处构建等待期；release 仍只有 v2 / `265e014f…`），未复测出画。
 - 反证一条（有利）：同机 locally-built、无 payload-in-libs 的 `ui-fix-60cf.hap` 可装可启动 —— 签名链本身通，堵点在布局。
+- **根因更正（2026-09-30）**：并非“本镜像拒 `libs/` 内非 ELF”（AOT hap 含非 ELF 且可装）。实测为两个文件级陷阱：
+  无扩展名文件（`createdump`）不在 HAP 码签块、恰好 4096 B 文件（`Microsoft.OpenHarmony.dll`）fs-verity 使能失败；
+  完整证据与对策见 `2026-09-30-ohos-jit-payload-install-policy.md`。
 
 ## 4. 本机 vs tester 机（本轮实测，判读用）
 | 项 | 本机桌面（HAD-W24 7.0.0.111 SP3 / API 26） | tester 机（HAD-W32 7.0.0.105） |

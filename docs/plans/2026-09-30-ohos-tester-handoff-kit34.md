@@ -89,9 +89,11 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - **rc2 线本机环境**：`DOTNET=$HOME/.dotnet.rc2-fix/dotnet`（SDK `.112` + workload `preview.28` + rc2 AOT packs；
   `OS Platform: Linux`）；dnceng feed/离线 `RestoreConfigFile` 按 `ohos-workload/docs/rc2-line-notes.md`；
   构建环境三坑（MSBuild server / VBCSCompiler / 无超时 restore）先用 `kit-build-env.sh` 规避。
-- **已知（非 kit 缺陷）**：**JIT payload-in-libs 主包在本机新镜像装不上**（≥7.0.0.111 系拒绝 `libs/**` 非 ELF 载荷，
-  安装报 `9568393`）——主包 JIT 真机判定仍以 tester 机（旧镜像/在线签名）为准；本机可用 AOT 路径或
-  `-p:OpenHarmonyHapPayloadInLibs=false` 重出包复测。
+- **已知（根因更正见 `2026-09-30-ohos-jit-payload-install-policy.md`）**：**JIT payload-in-libs 主包在本机
+  新镜像装不上**（≥7.0.0.111 起强制逐文件代码签名：libs 内**无扩展名**文件不在 HAP 码签块、**恰好 4096 B** 的文件
+  fs-verity 使能失败，均报 `9568393`；与“非 ELF”无关）——主包 JIT 真机判定仍以 tester 机（7.0.0.105）为准；
+  本机可用 AOT 路径，或用预览版 workload 的 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true` /
+  `-p:OpenHarmonyHapPayloadInLibs=false` 重出包复测（两种布局本机均已安装通过）。
 - **本机可直接闭环**：Blazor 双 hap A/B（#33 已验）、AOT 出画、a11y/日志/截图回路；命令模板 =
   `docs/plans/2026-09-29-ohos-local-device-test-runbook.md`（窗口竞态与 hilog 缓冲注见其 §4）。
 
