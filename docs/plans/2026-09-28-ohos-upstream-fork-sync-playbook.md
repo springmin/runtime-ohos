@@ -36,3 +36,13 @@
 
 - **评论需许可**：上游评论/催评草稿（`2026-09-23-ohos-upstream-reply-drafts.md`）**未经明确许可不得发送**；#132953 rerun 的对外动作同样先报备。
 - 禁强推；`pr/*` 演练只读重放；数字以 release「## Integrity」/`.sha256` sidecar 为准。
+
+## 4. #134670 对账与两处可预期冲突（2026-09-30 核对）
+
+上游 `#134670`（`main` @ `7408c77328c2`，单提交 `12457f848b5d`）与 fork 逐文件对账，印证 §3 的"已决例外"（`pr/ohos-platform-numa` 丢弃 ✓，**fork 内容已在**）：
+
+- `src/coreclr/gc/unix/numasupport.cpp` — **逐字节一致** ✓（下次合并该文件零冲突）
+- `System.Private.CoreLib.Shared.projitems` — `TARGET_OPENHARMONY` 行一致 ✓
+- `OperatingSystem.cs` — 身份链一致（`#elif TARGET_OPENHARMONY "OPENHARMONY"` ✓）；52 行 diff 中 fork 独有仅两簇，**post-infra main 合并时按此处置**：
+  1. **LINUX 别名 + `IsLinux()` 对 OHOS 为真**（fork `417ab220532`）= **保 ours** ✓（上游尚无该别名；语义与上游路径见 `2026-09-15-ohos-platform-identity.md` 附录"方案 B"）
+  2. **OpenBSD 簇陈旧**（fork 仍是 `internal IsOpenBSD()` 且无 `IsOpenBSDVersionAtLeast`，上游已 public）= **take upstream** ✓（非刻意分歧，纯滞后）
