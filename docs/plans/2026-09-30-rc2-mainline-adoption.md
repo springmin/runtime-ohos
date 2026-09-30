@@ -52,6 +52,7 @@
 - `dotnet workload list`：`openharmony 1.0.0-preview.28/11.0.100-rc.2`；AOT packs 为 rc.2 线（`fetch-nativeaot-packs.sh`）。
 - 发布版安装 `~/.dotnet.rc2-112` 同为 rc.2/.28；默认根 `~/.dotnet` 保留 rc.1 回退线（有意，未动）。
 - 本轮本地门禁即用该根执行（§3）。
+- 2026-09-30 安装侧 Sdk pack 刷新（微遗①）：`~/.dotnet.rc2-fix/packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.28/**` 与 ohos-workload 仓库 pack 重新对齐 —— tasks DLL sha256 `7b4d145c…`、`OpenHarmony.Hap.targets` 含 `OpenHarmonyHapPayloadInLibsDeviceCompat`（`2c538f6e…`）、安装 nupkg 一并重打；其余 4 个 preview.28 pack 原已一致。验证：`selftest-tasks` 9/9 绿（新构建复现 `7b4d145c`）、`.112` `dotnet --info` 正常、`test/hello-lib` 构建 0 警告 0 错误、DeviceCompat 直探 `hostelf`→`hostelf.so` / `payload`→`payload.bin` / `padded.bin` 4096→4100 B（rewrites=3）。
 
 ## 6. CI 记录（ohos-workload，push 触发）
 
