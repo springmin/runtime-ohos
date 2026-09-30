@@ -1,9 +1,8 @@
 # 测试方交接：kit #36、payload 原地直载 / host 预注册缓冲 / 像素 Known 清零 / a11y 修复 / rc.2 AOT pack `-r2`（2026-10-01）
 
-> 日期口径：文件名按撰写日；**kit #36 发布数字以 release「## Integrity（kit #36）」、`.tar.gz.sha256`
-> sidecar 与随包 `SHA256SUMS` 为准**（发布在途；#35 实测 = tar **375,629,423 B / `419d42e2…`**、树
-> **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**，
-> 仅作上一版对照）。重签/重打包后哈希必变；CI run id 以 release 正文为准。
+> 日期口径：文件名按撰写日；**kit #36 发布实测（release「## Integrity（kit #36）」；发布已完成，一切数字以
+> release 与随包 `SHA256SUMS` / `.tar.gz.sha256` sidecar 为准）**：tar **375,627,841 B / `9eb9cecf…`**、树 **`9764827c…`**、sidecar
+> **`4d7062c3…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `d643493c…`**（#35 = tar **375,629,423 B / `419d42e2…`** 对照）。重签/重打包后哈希必变；CI run id 见 §7。
 > 构建基线（rc.2 线，同 #34/#35）：SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** /
 > MAUI **`11.0.0-rc.2.26478.12`**；rc.1 线（preview.24）保留回滚（默认根 `~/.dotnet` 未动）。
 > **AOT 包（#36 撤钉）**：rc.2 NativeAOT OpenHarmony pack 的 OpenSSL shim 缺陷（EVP/SSL/X509 定义 0 vs
@@ -53,7 +52,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 1.3 | **像素 Known 清零（PIXEL-KNOWN-CLEAR）** | selection tint 旧报 `Known`：光栅写 `#3959B3` vs 浮点 Blend 期望 `#395AB3`（绿色差 1 LSB）。根因是 fixture 字节量化（0.35 alpha → 89/255 且逐通道截断）；期望改用同量化 `QuantizedBlend`、容差 0，**套件不再有 `Known(...)`**（`selection tint: got #3959B3 expected #3959B3`；`PIXEL ASSERTIONS PASSED`） | `test/headless-render` 全断言 PASS（无 `[KNOWN]`/`Known(`） |
 | 1.4 | **a11y 渲染帧修复（A11Y-FRAME）** | rc.2 的 `nodeCount 0` 自检发现 = **影子树从未发布**：W10 AOT 修复前托管入口不可达，枚举已绘制帧并交给宿主的渲染路径从未运行（**不是导出损坏**）。S2a 检查现 pin 渲染帧挂接（`OpenHarmonyWindowRenderer` 在枚举后立刻 `Refresh(content)` + `Publish()`），注释/README 记录设备复核：`accessibilityStatus 1 (attached)`、`accessibilityNodeCount 5`（wasm 演示页）/ `24`（hello-maui-app），重复读稳定；套件 `renderAttached=True` | `--a11y-probe`：`status=1` + 正整数 nodeCount（5/24）稳定 |
 | 1.5 | **rc.2 AOT pack `-r2`（撤 rc.1 钉）** | 修正版 pack 仅替换坏归档（36 成员 / 5 `local_(EVP\|SSL\|X509)` / raw undefined OpenSSL = 0），其余 409 条目原字节；asset **601289590**（28,904,657 / `542058cf…`）。sdk-ohos 侧 `versions.env` 换锚 + `fetch-nativeaot-packs.sh` 新增 shim 内容校验（失败拒入 feed 并删除）；`NATIVE-AOT.md` 记录 NuGet 缓存注意项 | 设备/本机 AOT 构建直接用 `-r2`（无需本地 hooks）；坏包缓存需删 `~/.nuget/packages/microsoft.netcore.app.runtime.nativeaot.openharmony-arm64/11.0.0-rc.2.26451.112` 再 publish |
-| 1.6 | **门禁/指纹** | 交互套件 **540/floor 520**（declared==printed；新增 pin `moduleRoot`/`webPending`/`renderAttached`）、像素 `PIXEL ASSERTIONS PASSED`（无 `Known`）、宿主导出契约 **149/149**；**新壳 abc = 339,964 B（`fc54d2b8…`）/ headless 24,324 B（`798b2477…`）**、hap 内宿主 **293,792 B（`cfbbe461…`）**；四包 `preview.22/23/24/28` 字节一致 + 同 provenance；`verify-kit` 期望已重锚（339964/24324）；`build-arkts-shell` 185/0、`verify-kit` 108/0、packs 25/0、repo-hygiene 25/0、hap-targets 50/0+1skip；CI run id 以 release 正文为准 | 包内 `sh verify-kit.sh` → **0 FAIL / 0 WARN**（abc 期望 339964/24324）；套件自报行 `[suite] checks=540 total=540 floor=520 assert=True` |
+| 1.6 | **门禁/指纹** | 交互套件 **540/floor 520**（declared==printed；新增 pin `moduleRoot`/`webPending`/`renderAttached`）、像素 `PIXEL ASSERTIONS PASSED`（无 `Known`）、宿主导出契约 **149/149**；**新壳 abc = 339,964 B（`fc54d2b8…`）/ headless 24,324 B（`798b2477…`）**、hap 内宿主 **293,792 B（`cfbbe461…`）**；四包 `preview.22/23/24/28` 字节一致 + 同 provenance；`verify-kit` 期望已重锚（339964/24324）；`build-arkts-shell` 185/0、`verify-kit` 108/0、packs 25/0、repo-hygiene 25/0、hap-targets 50/0+1skip；CI **5/5** @ `ce4588c`（run id 见 §7） | 包内 `sh verify-kit.sh` → **0 FAIL / 0 WARN**（abc 期望 339964/24324）；套件自报行 `[suite] checks=540 total=540 floor=520 assert=True` |
 
 > 尺寸预算：以 release 资产表为准（#35 = 375,629,423 B；#36 的 delta = 新壳/宿主 + 门禁/pin 重建 + 本轮产物）。
 
@@ -82,11 +81,11 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 3. **应用侧构建**：请同步 rc.2 线发布（不混装）；设备/本机 `OS Platform: Linux`（CoreLib `417ab220532` 起）。
 4. **dnceng daily**：MAUI `11.0.0-rc.2.26478.12` 若仍未上 nuget.org，交付方 restore 走 dnceng `dotnet11` feed；
    官方 rc.2 上架后换 pin、删 feed step（承 #34 注记）。
-5. **五仓 tip（本波）**：runtime = 本仓 `feature/openharmony` docs（本文随附）；maui = **`eec30c01cd`**
-   （本波未动；W9 四线并入：B2/T20/T21/T8）；ohos-workload master **`ce4588c`**（#36 三笔：
-   `7c2bb60` payload 原地直载 + `7190940` 像素精确 + `ce4588c` a11y；其上 `080a63a` 为 W10 收口）；
-   sdk **`48c8b210dc`**（`-r2` 换锚 + shim 内容校验；合并/锚以 release 为准）；aspnetcore `e10d030184`
-   （以 release/仓库页为准）。
+5. **五仓 tip（本波）**：runtime = 本仓 `feature/openharmony` docs（本文随附；kit #36 manifest 刷新
+   **`90371046940`**）；maui = **`eec30c01cd`**（本波未动；W9 四线并入：B2/T20/T21/T8）；ohos-workload master
+   **`ce4588c`**（#36 三笔：`7c2bb60` payload 原地直载 + `7190940` 像素精确 + `ce4588c` a11y；其上 `080a63a`
+   为 W10 收口）；sdk 锚 **`b59c3d02e3`**（含 `48c8b210dc` 的 `-r2` AOT pack 引用/校验；bundle 锚
+   acd26821 → **aeb6888a**；SDK CI run `36751032331`）；aspnetcore `e10d030184`（以 release/仓库页为准）。
 
 ## 4. 本机直测（交付方自验能力）
 
@@ -117,14 +116,13 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
    payload-in-libs/宿主依赖；abc 期望 = **339,964（`fc54d2b8…`）/24,324（`798b2477…`）**，脚本哈希以包内为准）。
 2. `tester-run.sh`（版本以包内自述为准，承 v14）：常规轮 / `--blazor-probe` / `--mode-matrix` /
    `--a11y-probe` 四件同 #35。
-3. **7 hap 表（kit #36 以 release「## Integrity（kit #36）」与包内 `SHA256SUMS` 为准）**：#35 表仅作上一版
-   对照 —— `hello-maui-app.hap` **133,965,654 / `e0f49a57…`**、`…-unsigned` **131,444,590 / `55d84827…`**、
-   `…-permissions` **133,969,645 / `7cf2183c…`**、`…-api20` **133,965,601 / `711374cb…`**、
-   `…-api20-permissions` **133,969,757 / `39292e9b…`**、Blazor 默认 **27,216,958 / `6227d0e6…`**、
-   `-nocsp` **27,216,659 / `a83ea068…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
-   整包 tar/树/sidecar/bundle 以 release 为准（#35 = tar **375,629,423 / `419d42e2…`**、树 `d3b1b317…`、
-   sidecar `d7e79d39…`；bundle `openharmony-workload-1.0.0-preview.28.tar.gz` **77,754,383 / `acd26821…`**；
-   sdk-ohos 锚 **`02a31ef348`**；dtk **392356147** / latest **392077166**）；
+3. **7 hap 表（kit #36 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `d643493c…`）**：`hello-maui-app.hap` **133,973,033 / `43e7a001…`**、`…-unsigned` **131,445,371 / `838c745e…`**、`…-permissions` **133,977,133 / `e79ac4a8…`**、`…-api20` **133,973,059 / `0fe1431a…`**、`…-api20-permissions` **133,977,127 / `4779b9b7…`**、Blazor 默认 **27,216,958 / `aa3b2461…`**（own abc 21,200 B、site 213 files、dotnet.js 93,218 B）、`-nocsp` **27,216,659 / `43d6ec78…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`；own abc 21,016 B）。
+   整包 tar **375,627,841 / `9eb9cecf…`**、树 `9764827c…`、sidecar `4d7062c3…`；bundle
+   `openharmony-workload-1.0.0-preview.28.tar.gz` **77,749,969 / `aeb6888a…`**（三处同步 versioned
+   `398936638` / latest `392077166` / sdkrc2 `398739326`；dist sums 212 B / `4cabf06d…`；sdkrc2 合并 sums
+   1,960 B / `73eb9b77…`；sdk-ohos 锚 **`b59c3d02e3`**，`WORKLOAD_BUNDLE_SHA256` acd26821 → aeb6888a）；
+   发布已完成（01:25-01:35）：kit tar/边车两处（dtk **392356147** / latest **392077166**；tar/边车 asset **601446043**/**601448752**，latest 同件 **601449011**/**601451184**）+ bundle 三处；四条
+   release body 含 `## Integrity (kit #36)`；by-id 抽验 0 FAIL + gh-proxy 校验通过（tar HEAD 200/375,627,841）。
    重签/重打包后必变，以 release 与随包校验为准；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#35）。
 4. 离线证据（供复核）：套件 **540/520**、像素 PASS（Known 清零）、导出 **149/149**、壳 abc **339,964/24,324**
@@ -148,6 +146,6 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - **门禁（本轮已跑）**：交互 540/floor 520（pin 重锚 `moduleRoot`/`webPending`/`renderAttached`）、
   像素 PASS（无 `Known(...)`）、导出 149/149、包内 `verify-kit.sh` 0 FAIL/0 WARN（abc 期望
   339,964（`fc54d2b8…`）/24,324（`798b2477…`））、`ohos-workload` master **`ce4588c`**（#36 三笔）；
-  CI/selftests 明细与 run id 以 release 正文为准。
+  CI **5/5** @ `ce4588c`（interaction `36744674822` / pixel `36744675484` / host-export `36744675135` / ridgraph `36744674874` / markdownlint `36744675021`）；sdk `ohos-install-tests` @ `b59c3d02e3` run `36751032331`（installer 43/43 · hostfeed 10/10 · codesign-filewrites 5/5）。
 - 本次构建基线 = **rc.2 线**（SDK `.112` / workload `preview.28` / MAUI `rc2.26478.12`）；应用侧构建请同步该线
   （`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5；rc.1 回滚路径保留）。
