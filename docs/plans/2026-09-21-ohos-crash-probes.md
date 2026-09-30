@@ -1,6 +1,18 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-09-30 update (kit #35 — current):** kit #35 = #34 + the W9/W10 waves (W9A B2: Blazor WASM in the
+> **2026-10-01 update (kit #36 — current):** kit #36 = #35 + the payload-in-place direct start (the shell
+`findLibsPayloadDir` accepts the module layout `<bundleCodeDir>/<module>/libs/<abi>` — on device
+hello-maui-wasm starts from `/data/storage/el1/bundle/entry/libs/arm64` with `dotnet.zip not unpacked`
+(pid 49565) and `BLZ_BOOT`/`BLZ_RENDERED` both land), the host pre-registration buffer (web commands
+arriving before the shell registers `registerWebSink` are buffered — 16 commands / 64 KiB — and flushed
+on registration; suite pins `moduleRoot`/`webPending`), the pixel suite with no `Known(...)` left
+(selection tint asserted byte-exactly), the a11y render-frame attachment fix (`nodeCount 0` was the
+unpublished shadow tree; `status=1`, nodeCount 5/24 stable) and the rc.2 AOT pack `-r2` fix (OpenSSL shim;
+the rc.1 pin can be dropped). New shell abc 339,964 / 24,324, host export 149/149, suite 540/floor 520.
+Numbers follow the release notes `## Integrity (kit #36)`; handoff:
+`docs/plans/2026-10-01-ohos-tester-handoff-kit36.md`.
+>
+> **2026-09-30 update (kit #35 — previous):** kit #35 = #34 + the W9/W10 waves (W9A B2: Blazor WASM in the
 MAUI WebView, now passing on device with `BLZ_BOOT`/`BLZ_RENDERED`; W9B T14/T21; W9C T8; W9D the T20
 media transport layer + the T19 deep-link determination; W10 the AOT-entry fix — host own-libs
 `lib<stem>.so` resolution + `dotnet-status.txt` observability, the shell AOT payload probe / `fs` alias /
@@ -78,7 +90,16 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-09-30 update (kit #35 — current):** the kit adds the W9/W10 waves: B2 (Blazor WASM in the MAUI WebView)
+> **2026-10-01 update (kit #36 — current):** the kit adds the payload-in-place direct start (the shell
+> `findLibsPayloadDir` accepts the module layout `<bundleCodeDir>/<module>/libs/<abi>`; hello-maui-wasm runs
+> from `/data/storage/el1/bundle/entry/libs/arm64` with `dotnet.zip not unpacked` and `BLZ_BOOT`/`BLZ_RENDERED`
+> both land), the host pre-registration buffer (web commands arriving before `registerWebSink` are buffered —
+> 16 commands / 64 KiB — and flushed on registration), the pixel suite with no `Known(...)` left, and the a11y
+> render-frame attachment fix (`nodeCount 0` was the unpublished shadow tree; `status=1`, nodeCount 5/24
+> stable). Suite **540/floor 520**, host export **149/149**, shell abc 339,964 / headless 24,324. Numbers
+> follow the release notes `## Integrity (kit #36)`; handoff: `docs/plans/2026-10-01-ohos-tester-handoff-kit36.md`.
+>
+> **2026-09-30 update (kit #35 — previous):** the kit adds the W9/W10 waves: B2 (Blazor WASM in the MAUI WebView)
 > now passes on device (`BLZ_BOOT`/`BLZ_RENDERED`), T14/T21 and T8 (uneven-height TableView), the T20 media
 > transport layer + the T19 deep-link determination, and the W10 AOT-entry fix (host own-libs `lib<stem>.so`
 > resolution + `dotnet-status.txt` observability, the shell AOT payload probe / `fs` alias / static-asset

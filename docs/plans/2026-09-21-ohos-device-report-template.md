@@ -1,6 +1,7 @@
 # 真机回传模板（下一轮设备测试）
 
-> **2026-09-30 更新（kit #35，当前）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164（`74054e2d…`）**/headless **23,516（`6bce4063…`）**、hap 内宿主 **293,792（`983e8f74…`）**、导出 **149**、套件 **540/floor 520**；发布实测 tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**（发布已完成，以 release「## Integrity（kit #35）」与随包校验为准）；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
+> **2026-10-01 更新（kit #36，当前）**：kit #36 = #35 + **payload 原地直载（AOT 路径真机 BLZ）+ host 预注册缓冲 + 像素 Known 清零 + a11y 渲染帧修复 + rc.2 AOT pack `-r2`**（①壳 `findLibsPayloadDir` 兼容模块布局 `<bundleCodeDir>/<module>/libs/<abi>`——真机 hello-maui-wasm 直接自 `/data/storage/el1/bundle/entry/libs/arm64` 原地启动（`dotnet.zip not unpacked`，pid 49565）且 `BLZ_BOOT`/`BLZ_RENDERED` 双标记齐；②host 缓冲壳 `registerWebSink` 注册前到达的 web 命令（16 条 / 64 KiB，注册即 flush；套件 pin `moduleRoot`/`webPending`）；③像素套件不再有 `Known(...)`（selection tint 改字节量化精确断言 `#3959B3`）；④a11y `nodeCount 0` 根因 = shadow tree 未 publish，S2a pin `renderAttached=True`、`--a11y-probe` 实测 `status=1`、nodeCount 5/24 稳定；⑤rc.2 AOT pack 修正版 `-r2`（28,904,657 B / `542058cf…`，asset 601289590）修复 OpenSSL shim → 撤 rc.1 钉）；新壳 abc **339,964（`fc54d2b8…`）/24,324（`798b2477…`）**、hap 内宿主 **293,792（`cfbbe461…`）**、导出 **149**、套件 **540/floor 520**；数字以 release「## Integrity（kit #36）」与随包校验为准；判定点 = `docs/plans/2026-10-01-ohos-tester-handoff-kit36.md`（#35 = 上一版，见其交接文）。
+> **2026-09-30 更新（kit #35，上一版）**：kit #35 = #34 + **W9/W10 并入主线**（W9A **B2：MAUI WebView 承载 Blazor WASM**——真机 `BLZ_BOOT`/`BLZ_RENDERED` 打通（pid 6157），#34 的 AOT 入口缺口由 W10 修复；W9B T14 收尾 + T21 字体缩放；W9C T8 不等高 TableView；W9D **T20 媒体传输层**（本机镜像无 MediaKit 属预期，`IsSupported=false` 降级不抛）+ T19 深链判定（热 `delivered=1`）；W10 **AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/`fs` 别名/静态资源指纹；rc.2 AOT 包 OpenSSL shim 缺陷 → 本地钉 rc.1）；新壳 abc **339,164（`74054e2d…`）**/headless **23,516（`6bce4063…`）**、hap 内宿主 **293,792（`983e8f74…`）**、导出 **149**、套件 **540/floor 520**；发布实测 tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**（发布已完成，以 release「## Integrity（kit #35）」与随包校验为准）；判定点 = `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`（#34 = 上一版，见其交接文）。
 
 > 复制本页填空白；能填就填，填不了写「不可得 + 原因」。取证命令出处：`docs/plans/2026-09-21-ohos-device-crash-diagnostics.md`（安装/启动/hilog/jscrash/dotnet-status）；探针 P1–P4 与 14 库自检：`docs/plans/2026-09-21-ohos-crash-probes.md`。本页只采集，不重复两文内容。
 
@@ -176,7 +177,13 @@ hdc shell "cat /data/storage/el2/base/haps/entry/files/dotnet.marker"           
 - Map 覆盖层点亮（MAPFIX harmony + AppKey + 同指纹重签）：`<IsOverlayAvailable=true + 地图截图 + Ready/MarkerClick/CameraIdle 事件日志 / 未做>`
 - 新 payload 首次运行（新宿主 MS-MODE + #29 abc）：`<启动两行日志原文 + verify-kit 结果（abc=281052/20916）+ 是否存活>`
 
-## 4m. kit #35 增量（W9/W10：B2 真机 BLZ 打通 / T20 媒体传输层 / T14+T21+T8 余项 / AOT 入口修复）
+## 4n. kit #36 增量（payload 原地直载（AOT 路径真机 BLZ）/ host 预注册缓冲 / 像素 Known 清零 / a11y 修复 / rc.2 AOT pack `-r2`）
+
+> 见 `docs/plans/2026-10-01-ohos-tester-handoff-kit36.md` §2：payload 原地直载（`entry/libs/arm64` 原地启动 +
+> `BLZ_BOOT`/`BLZ_RENDERED`）、host 预注册缓冲（16 条 / 64 KiB）、像素无 `Known(...)`、a11y `status=1`
+> 与 nodeCount 5/24、rc.2 AOT pack `-r2`（撤 rc.1 钉）；套件 **540/floor 520**、导出 **149**、abc **339,964**/24,324。
+
+## 4m. kit #35 增量（W9/W10：B2 真机 BLZ 打通 / T20 媒体传输层 / T14+T21+T8 余项 / AOT 入口修复；上一版）
 
 > 见 `docs/plans/2026-09-30-ohos-tester-handoff-kit35.md` §2：B2（MAUI WebView 内嵌 Blazor WASM，`BLZ_BOOT`/`BLZ_RENDERED`）、
 > T20 媒体传输层（无 MediaKit 属预期）、T14 收尾 / T21 字体缩放 / T8 不等高 TableView、AOT 入口修复
