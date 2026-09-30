@@ -12,24 +12,24 @@
 > `docs/plans/2026-09-27-ohos-runtime-mode-determination.md`（JIT/XWE/AOT/解释器）、
 > 承 `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`（rc.2 + W6/W7/W8）、
 > `docs/plans/2026-09-28-ohos-webview-blazor-device-card.md`（WebView/B1）。
-> 本页只给「取件 → 执行 → 回传 → 判定」。**kit #35 的一切数字以 release「## Integrity（kit #35）」、
-> `.tar.gz.sha256` sidecar 与随包 `SHA256SUMS` 为准**（发布在途；#34 实测 tar **375,181,367 / `55834aeb…`**、
-> 树 `d08de3ec…`、sidecar `c03ea23d…` 仅作上一版对照）。
+> 本页只给「取件 → 执行 → 回传 → 判定」。**kit #35 发布实测（release「## Integrity（kit #35）」；发布在途，
+> 一切数字以 release 与随包 `SHA256SUMS` / `.tar.gz.sha256` 为准）**：tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**
+> （#34 = tar 375,181,367 / `55834aeb…` 对照）。
 
 ## 1. 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`）
 
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz`（kit #35，2026-09-30） | **以 release 为准**（#34 = 375,181,367 对照） | **以 release 为准**（#34 = `55834aeb…`；sidecar `c03ea23d…`；树 `d08de3ec…`；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…` 对照） | **7 hap** = 5 MAUI（新壳 abc **339,164**/23,516）+ **2 个 Blazor 对照 hap**（bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh` + 文档 |
+| `device-test-kit.tar.gz`（kit #35，2026-09-30） | **375,629,423** | **`419d42e2…`**（sidecar `d7e79d39…`；树 `d3b1b317…`；`SHA256SUMS` 17 项 / 1,517 B / `2dd447a7…`；dtk id 以 release 为准） | **7 hap** = 5 MAUI（新壳 abc **339,164**/23,516、hap 内宿主 293,792）+ **2 个 Blazor 对照 hap**（bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（69,522 / `c3cd4d38…`）+ 文档 |
 | `preSigned-haps.tar.gz`（**预签直装**；#34 起加发） | 以 release 为准（#34 = 375,834,798 / `b492b284…`） | 以 release 为准（#34 = sidecar 88 B / `83cbff13…`；树 `e693ae3a…`） | 7 hap 按 tester UDID `60CF7B27…F8A19` 预签（#35 若加发新件以 release/包内 `preSigned-README.md` 为准）：`sha256sum -c SHA256SUMS` → `hdc install -r` **直装**；非本 UDID 设备仍 `9568344` |
 | AOT 复测取件（`aot-haps*`；**本轮设备构建注意 rc.1 钉**） | 以 release 为准（#34 = `aot-haps-v3-rc2.tar.gz` 18,185,012 / `3d24f716…`） | 以 release 为准 | AOT hap（含 UIPage 出画修复）；**rc.2 NativeAOT 包 OpenSSL shim 缺陷 → 本机/设备 AOT 构建钉 rc.1 `11.0.0-rc.1.26451.109`（本地 hooks）**；JIT 主体崩溃或黑屏时用它；装前重签 |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
 | `tester-run.sh`（随包） | 以包内为准（承 v14 = 140,197 / `a174fcd0…`） | 以包内为准 | 执行器；`--blazor-probe`、`--mode-matrix`、`--a11y-probe` 承 #33 |
 
-包内 7 hap（**kit #35 实测以 release `SHA256SUMS` 为准**；#34 = `hello-maui-app.hap` 133,827,313 / `9614f69d…`、
-`…-unsigned` 131,304,609 / `f0def954…`、`…-permissions` 133,831,417 / `a7a3391c…`、`…-api20` 133,831,490 / `701104e8…`、
-`…-api20-permissions` 133,831,449 / `d3bf37f6…`、Blazor 默认 27,216,958 / `8e407504…`、`-nocsp` 27,216,659 / `68606606…` 仅作对照）。
+包内 7 hap（kit #35 实测，`SHA256SUMS` 17 项 / 1,517 B / `2dd447a7…`）：`hello-maui-app.hap` **133,965,654 / `e0f49a57…`**、
+`…-unsigned` **131,444,590 / `55d84827…`**、`…-permissions` **133,969,645 / `7cf2183c…`**、`…-api20` **133,965,601 / `711374cb…`**、
+`…-api20-permissions` **133,969,757 / `39292e9b…`**；Blazor 默认 **27,216,958 / `6227d0e6…`**、`-nocsp` **27,216,659 / `a83ea068…`**。
 
 **预签直装捷径（可选）**：`sha256sum -c SHA256SUMS` 后 `hdc install -r` 直装，**§2 的「先重签」可跳过**（同 bundle
 换件仍先卸载）；每件 bundle/原 sha/新 sha/安装命令见包内 `preSigned-README.md`。它是并列附加件：`verify-kit.sh`
@@ -90,5 +90,5 @@
 - **AOT 包钉（本轮新增）**：rc.2 NativeAOT OpenHarmony pack OpenSSL shim 回归（0 vs 5 定义）→ 设备 AOT 构建**本地 pin rc.1 `11.0.0-rc.1.26451.109`**（本地 hooks，不落仓；最小复现见 handoff §7）；pack 修复后撤钉复核。AOT hap 只有 3 个 `.so`，勿用 JIT 期望值核对。
 - **hilog 缓冲（探针误报防护）**：本机实测 512K 环在噪声大时只保留 ≈4–5 s，`--blazor-probe` 4 s 窗口曾丢 `BLZ_BOOT` 报 `boot=no`（同轮流式复核两标记齐全，非渲染缺陷）；临时 `hilog -G 16M -t app,core` 重跑即全绿（**跑完还原 512K**）。tester 机缓冲待核对。
 - **本机直测（交付方）**：设备已可测（hdc 无线 `127.0.0.1:35111` + SDK 自签 + AOT 路径）；**JIT payload-in-libs 主包在本机新镜像装不上属已知**（`9568393`，非 kit 缺陷），主包 JIT 判定仍以 tester 机为准。
-- 所有数字 = **kit #35 以 release「## Integrity（kit #35）」与随包校验为准**（发布在途；#34 = tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`、`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`；#33 = tar 218,138,546 / `38e4d57a…`；tester-run v14 = 140,197 / `a174fcd0…` 仅作对照）。
+- 所有数字 = **kit #35 发布实测（以 release「## Integrity（kit #35）」与随包校验为准）**：tar **375,629,423 / `419d42e2…`**、树 `d3b1b317…`、sidecar `d7e79d39…`、`SHA256SUMS` 17 项 / 1,517 B / `2dd447a7…`；#34 = tar 375,181,367 / `55834aeb…`、#33 = tar 218,138,546 / `38e4d57a…`；tester-run v14 = 140,197 / `a174fcd0…` 仅作对照）。
 - 细判（TTS/HUKS/自绘深度/权限/Share-Scan）：`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §2 与 `…kit29/kit28/kit27/kit26/kit25`；无障碍逐项：`docs/plans/2026-09-27-ohos-accessibility-device-verification.md`（含 N4）；B2 细节：`docs/plans/2026-09-30-ohos-blazor-wasm-webview-b2.md` 与 `…wave10-consolidation.md`。

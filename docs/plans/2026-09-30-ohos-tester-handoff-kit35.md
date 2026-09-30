@@ -1,9 +1,8 @@
 # 测试方交接：kit #35、W9/W10 并入主线（B2 真机 BLZ / T20 媒体传输层 / T14+T21+T8 余项 / AOT 入口修复）（2026-09-30）
 
-> 日期口径：文件名按撰写日；**kit #35 发布实测 —— 一切数字以 release「## Integrity（kit #35）」、
-> `.tar.gz.sha256` sidecar 与随包 `SHA256SUMS` 为准**（发布在途；#34 实测 = tar **375,181,367 B / `55834aeb…`**、
-> 树 **`d08de3ec…`**、sidecar **`c03ea23d…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `94fedc66…`**，
-> 7 hap 表见 §6.3，仅作上一版对照）。重签/重打包后哈希必变；CI run id 以 release 正文为准。
+> 日期口径：文件名按撰写日；**kit #35 发布实测（release「## Integrity（kit #35）」；发布在途，一切数字以
+> release 与随包 `SHA256SUMS` / `.tar.gz.sha256` sidecar 为准）**：tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**（89 B）、`SHA256SUMS` **17 项 / 1,517 B / `2dd447a7…`**；
+> **7 hap** 表见 §6.3（#34 = tar 375,181,367 B / `55834aeb…` 对照）。重签/重打包后哈希必变；CI run id 见 §1.6。
 > 构建基线（rc.2 线，同 #34）：SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** /
 > MAUI **`11.0.0-rc.2.26478.12`**；rc.1 线（preview.24）保留回滚（默认根 `~/.dotnet` 未动）。
 > **AOT 包注意（上游缺陷）**：rc.2 NativeAOT OpenHarmony pack 的 OpenSSL shim 回归（EVP/SSL/X509 定义
@@ -17,8 +16,8 @@
 > （本机镜像无 `@kit.MediaKit` media 命名空间属**预期**，sink `IsSupported=false`/`-1` 降级不抛；真播放需
 > Kit 完整镜像/HMS 设备）+ T19 深链判定（want 冷/热投递成立；热 **`delivered=1`**，冷 `delivered=0` 为设计内）；
 > ⑤**W10 AOT 入口修复**（宿主自身 libs 解析 `lib<stem>.so` + `dotnet-status.txt` 可观测、壳 AOT payload 探针/
-> `fs` 别名/静态资源指纹；rc.2 AOT 包 shim 缺陷 → 本地钉 rc.1）。**新壳 abc 339,164 / headless 23,516、
-> 导出 149/149、套件 540/floor 520**。判定点见 §2；承接 #34 的 rc.2/W6/W7/W8 与 #33 W5/Blazor A/B 的判定点
+> `fs` 别名/静态指纹映射（双向）；rc.2 AOT 包 shim 缺陷 → 本地钉 rc.1）。**新壳 abc 339,164（`74054e2d…`）/
+> headless 23,516（`6bce4063…`）、hap 内宿主 293,792（`983e8f74…`）、导出 149/149、套件 540/floor 520**。判定点见 §2；承接 #34 的 rc.2/W6/W7/W8 与 #33 W5/Blazor A/B 的判定点
 > **继续有效**，本文只覆盖 #35 增量与判读引用。
 
 ## 0. 一键执行（tester-run v14 不变；版本/大小以包内自述与 release 为准）
@@ -49,8 +48,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 1.2 | **W9B：T14 富 flyout 收尾 + T21 字体缩放** | T14 补齐：flyout 内容模板/`Shell.ItemTemplate` 行（`as-multiple-items`、项行选择 `selected='Beta'` 且关抽屉）、模板内按钮点击不被选择/关闭抢走、菜单项模板回落；T21：字体缩放 `FontScale` API（默认 1、clamp `[0.5,3]`、非法/负值干净处理）+ Label/FormattedString 尺寸随缩放（`w=77→154→77`）、Entry 光标随缩放 | 抽屉富行（头/项/尾 + 按钮）；系统字号变化后 Label/Formatted 尺寸与光标跟随、越界值被钳制 |
 | 1.3 | **W9C：T8 不等高 TableView** | `OpenHarmonyTableViewHandler` 支持**行高不等**的 TableView：行 pin 90/高 120 混排、堆叠链一致（`lastBottom=content`）、滚动窗口（`window=9/25`）、`UnevenRows=false` 回落均一行高；单元格 switch/image/明细、分区头、更新/滚动 | 不等高行渲染不重叠、滚动/更新正确；切回等高即恢复 |
 | 1.4 | **W9D：T20 媒体传输层 + T19 深链判定** | 切片 `OpenHarmonyMediaPlayer`（ops 0 load/1 play/2 pause/3 stop/4 seek/5 release/6 status；`state\|time\|duration\|error` 事件；请求串行化）；壳 `registerMediaSink`（懒加载 `@kit.MediaKit`、单 AVPlayer、fd 生命周期、状态镜像 + hilog）；宿主导出 `ohos_host_media_*` + NAPI。**本机镜像无 MediaKit media 命名空间属预期**：`canIUse` 为真但运行时无 `createAVPlayer` → sink `-1`（`IsSupported=false`，调用降级不抛）；真播放需 Kit 完整镜像/HMS 设备。T19：`-U`/`--ps` 冷/热投递到 ability 成立（热 `delivered=1`；冷为启动前入队、`delivered=0` 设计内） | 无 Kit 设备：`IsSupported=false` + 各调用 `Unavailable/Failed` **不抛**；有 Kit 设备：load/play/pause/stop/seek/release/status + 事件；深链冷/热各一次看 `delivered` 行 |
-| 1.5 | **W10：AOT 入口修复（AOTENTRY）** | ①宿主在**自身 libs** 解析 AOT 启动镜像 `lib<stem>.so`（签名、namespace 允许）并 dlopen；②宿主把 AOT 决策/入口调用/返回镜像进 `<filesDir>/dotnet-status.txt`（本镜像唯一可读通道）；③壳 `findLibsPayloadDir` 接受 AOT 形态（`markerAotEntry`），避免 zip 回退；④壳 `fs` 别名修复（原 `fileIo` 未定义 → 所有 served 资源 404）；⑤静态资源**指纹映射**（.NET 指纹为 10 位字母数字、非 hex：`dotnet.js` → `dotnet.<fp>.js`）；⑥AOT demo 配方加 `InvariantGlobalization`（无 ICU 镜像不再 FailFast）。设备结果：wasm `BLZ_BOOT`+`BLZ_RENDERED`；MAUI 热激活 `delivered=1`；`[media-probe] load=Unavailable(-1)`（E9 镜像无 Media Kit） | 启动后 `dotnet-status.txt` 出现托管入口行（不再只宿主 probe 行）；应用可写 breadcrumb/状态文件；AOT hap 主体出画（承 #34 §2） |
-| 1.6 | **门禁/指纹** | 交互套件 **540/floor 520**（declared==printed；perf/a11y 5 线 `within=True`）、像素 `PIXEL ASSERTIONS PASSED`、宿主导出契约 **149/149**（`--cross-check`；#34 = 145）；**新壳 abc = 339,164 B**（headless **23,516 B**；四包 `preview.22/23/24/28` 字节一致 + 同 provenance；`verify-kit` 期望已重锚）；切片 **0 error / 0 IL**；CI **5/5**（interaction/pixel/host-export/ridgraph/markdownlint，run id 以 release 正文为准） | 包内 `sh verify-kit.sh` → **0 FAIL / 0 WARN**（abc 期望以包内为准）；套件自报行 `[suite] checks=540 total=540 floor=520 assert=True` |
+| 1.5 | **W10：AOT 入口修复（AOTENTRY）** | ①宿主在**自身 libs** 解析 AOT 启动镜像 `lib<stem>.so`（签名、namespace 允许）并 dlopen；②宿主把 AOT 决策/入口调用/返回镜像进 `<filesDir>/dotnet-status.txt`（本镜像唯一可读通道）；③壳 `findLibsPayloadDir` 接受 AOT 形态（`markerAotEntry`），避免 zip 回退；④壳 `fs` 别名修复（原 `fileIo` 未定义 → 所有 served 资源 404）；⑤静态资源**指纹映射**（双向；.NET 指纹为 10 位字母数字、非 hex：`dotnet.js` → `dotnet.<fp>.js`）；⑥AOT demo 配方加 `InvariantGlobalization`（无 ICU 镜像不再 FailFast）。设备结果：wasm `BLZ_BOOT`+`BLZ_RENDERED`；MAUI 热激活 `delivered=1`；`[media-probe] load=Unavailable(-1)`（E9 镜像无 Media Kit） | 启动后 `dotnet-status.txt` 出现托管入口行（不再只宿主 probe 行）；应用可写 breadcrumb/状态文件；AOT hap 主体出画（承 #34 §2） |
+| 1.6 | **门禁/指纹** | 交互套件 **540/floor 520**（declared==printed；perf/a11y 5 线 `within=True`）、像素 `PIXEL ASSERTIONS PASSED`、宿主导出契约 **149/149**（`--cross-check`；新增 T20 媒体四导出；#34 = 145）；**新壳 abc = 339,164 B（`74054e2d…`）/ headless 23,516 B（`6bce4063…`）**、hap 内宿主 **293,792 B（`983e8f74…`）**；四包 `preview.22/23/24/28` 字节一致 + 同 provenance（`sources pages/Index.ets 292,241/`9027f61…``）；`verify-kit` 期望已重锚；切片 **0 error / 0 IL**；CI **5/5** @ `080a63a`（interaction `36725822753` / pixel `36725822670` / host-export `36725822303` / ridgraph `36725822702` / markdownlint `36725822841`） | 包内 `sh verify-kit.sh` → **0 FAIL / 0 WARN**（abc 期望以包内为准）；套件自报行 `[suite] checks=540 total=540 floor=520 assert=True` |
 
 > 尺寸预算：以 release 资产表为准（#34 = 375,181,367 B；#35 的 delta = 新壳/宿主 + W9/W10 门禁重建 + 本轮产物）。
 
@@ -82,9 +81,9 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 4. **dnceng daily**：MAUI `11.0.0-rc.2.26478.12` 若仍未上 nuget.org，交付方 restore 走 dnceng `dotnet11` feed；
    官方 rc.2 上架后换 pin、删 feed step（承 #34 注记）。
 5. **五仓 tip（本波）**：runtime = 本仓 `feature/openharmony` docs（本文随附）；maui = **`eec30c01cd`**
-   （W9A/W9B/W9C/W9D 并入：`0dcd972617`/`ae03a1af45`/`640de39638`/`6d6fd92b4b` 等）；ohos-workload master
-   **`bad7475`**（收口注释 `080a63a`；三 workflow pin `eec30c01cd`）；sdk `469eae2734`；aspnetcore `e10d030184`
-   （以 release/仓库页为准）。
+   （W9 四线并入：B2/T20/T21/T8；`0dcd972617`/`ae03a1af45`/`640de39638`/`6d6fd92b4b` 等为分支提交）；
+   ohos-workload master **`080a63aa`**（W10 收口；其上 `bad7475` 为 W10 功能提交；三 workflow pin `eec30c01cd`）；
+   sdk `4e3f16ceb1`（rc.2 AOT 文档两笔，承 #34 锚 `fb6c15e6d1`）；aspnetcore `e10d030184`（以 release/仓库页为准）。
 
 ## 4. 本机直测（交付方自验能力，2026-09-30 起）
 
@@ -112,15 +111,16 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 ## 6. 校验与取证
 
 1. 包内 `sh verify-kit.sh` → 期望 **0 FAIL / 0 WARN**（深度断言逐 hap：`resources.index`/abc/libs/`dotnet.zip`/
-   payload-in-libs/宿主依赖；abc 期望 = **339,164/23,516**，脚本哈希以包内为准）。
+   payload-in-libs/宿主依赖；abc 期望 = **339,164（`74054e2d…`）/23,516（`6bce4063…`）**，脚本哈希以包内为准）。
 2. `tester-run.sh`（版本以包内自述为准，承 v14）：常规轮 / `--blazor-probe` / `--mode-matrix` /
    `--a11y-probe` 四件同 #34。
-3. **7 hap 表（kit #35；以 release「## Integrity（kit #35）」与包内 `SHA256SUMS` 为准）**：#34 表仅作上一版
-   对照 —— `hello-maui-app.hap` **133,827,313 / `9614f69d…`**、`…-unsigned` **131,304,609 / `f0def954…`**、
-   `…-permissions` **133,831,417 / `a7a3391c…`**、`…-api20` **133,831,490 / `701104e8…`**、
-   `…-api20-permissions` **133,831,449 / `d3bf37f6…`**、Blazor 默认 **27,216,958 / `8e407504…`**、
-   `-nocsp` **27,216,659 / `68606606…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
-   整包 tar / 树 / sidecar / bundle（preview.28）以 release 为准；重签/重打包后必变；
+3. **7 hap 表（kit #35 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `2dd447a7…`）**：`hello-maui-app.hap`
+   **133,965,654 / `e0f49a57…`**、`…-unsigned` **131,444,590 / `55d84827…`**、`…-permissions`
+   **133,969,645 / `7cf2183c…`**、`…-api20` **133,965,601 / `711374cb…`**、`…-api20-permissions`
+   **133,969,757 / `39292e9b…`**、Blazor 默认 **27,216,958 / `6227d0e6…`**（own abc 21,200 B、site 213 files）、
+   `-nocsp` **27,216,659 / `a83ea068…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
+   整包 tar **375,629,423 / `419d42e2…`**、树 `d3b1b317…`、sidecar `d7e79d39…`；bundle/anchor 待刷新（以 release 为准）；
+   重签/重打包后必变，以 release 与随包校验为准；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#34）。
 4. 离线证据（供复核）：套件 **540/520**、像素 PASS、导出 **149/149**、壳 abc **339,164/23,516**（四包一致 +
    provenance）、切片 0 error/0 IL、CI 5/5；W10 设备证据见 `w10/EVIDENCE.md`（BLZ 标记、`delivered=1`、
@@ -145,7 +145,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - **ICU/InvariantGlobalization**：无 ICU 镜像的 AOT demo 需 `InvariantGlobalization`（W10 已入 demo 配方；
   应用侧如遇 hosting 模块初始化 FailFast 可参考）。
 - **门禁（FINAL）**：交互 540/floor 520、导出 149/149、像素 PASS、包内 `verify-kit.sh` 0 FAIL/0 WARN
-  （abc 期望 339,164/23,516）、`ohos-workload` CI 5/5 @ `bad7475`/`080a63a`（ridgraph 20/20；run id 以 release
-  正文为准）；`selftest-tasks` S3 预存项（承 #34，建议随 kit 窗口重锚）。
+  （abc 期望 339,164（`74054e2d…`）/23,516（`6bce4063…`）；脚本 69,522 / `c3cd4d38…`）、`ohos-workload` CI
+  5/5 @ `080a63a`（interaction `36725822753` / pixel `36725822670` / host-export `36725822303` / ridgraph
+  `36725822702` / markdownlint `36725822841`）；`preflight --quick` 全绿（`selftest-tasks` S3 已修，tasks 9 PASS）。
 - 本次构建基线 = **rc.2 线**（SDK `.112` / workload `preview.28` / MAUI `rc2.26478.12`）；应用侧构建请同步该线
   （`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5；rc.1 回滚路径保留）。

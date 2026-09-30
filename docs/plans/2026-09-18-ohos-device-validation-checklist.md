@@ -26,7 +26,7 @@ report template to what to return.
 Updated 2026-09-22 (kit #7): the kit identity values live in the release notes, not here — §0
 reads the tarball sha256 and the extracted-tree digest from the `device-test-kit` release notes
 (`## Integrity`) or the `.sha256` sidecar, so a re-signed or repacked kit can never contradict
-this document. Kit #35 numbers follow the release notes `## Integrity (kit #35)` and the in-kit checks (the kit #34 snapshot: tar **375,181,367 B** / `55834aeb…`, tree `d08de3ec…`, `SHA256SUMS` 17 entries / 1,517 B / `94fedc66…`); the kit #33 snapshot (measured: tar **218,138,546 B** / `38e4d57a…`, tree `064cb001…`, sidecar `8297363e…`; release notes `## Integrity (kit #33)`; kit #32 numbers follow for comparison,
+this document. Kit #35 numbers (release notes `## Integrity (kit #35)`) are: tar **375,629,423 B** / `419d42e2…`, tree `d3b1b317…`, `SHA256SUMS` 17 entries / 1,517 B / `2dd447a7…`; the kit #34 snapshot: tar **375,181,367 B** / `55834aeb…`, tree `d08de3ec…`; the kit #33 snapshot (measured: tar **218,138,546 B** / `38e4d57a…`, tree `064cb001…`, sidecar `8297363e…`; release notes `## Integrity (kit #33)`; kit #32 numbers follow for comparison,
 PATCHed 2026-09-28): tar **207,023,588 B** / `f4325d2f…`, tree **`52e77ee8…`**, sidecar
 **`7d0cba77…`**, `SHA256SUMS` 16 entries / 1,410 B / `f49b9a0e…` (the kit #31 handoff
 `docs/plans/2026-09-29-ohos-tester-handoff-kit31.md` carries the full table; tester-run v13
