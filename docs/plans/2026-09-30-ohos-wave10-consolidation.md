@@ -34,7 +34,16 @@ nm --defined-only $A/11.0.0-rc.2.26451.112/runtimes/openharmony-arm64/native/lib
 
 rc.2 档案 574 定义 / 35 对象 vs rc.1 1184 / 36；rc.2 链接的 AOT 镜像遗留 ~401 OpenSSL 未决引用，设备 dlopen 拒绝（now=err lazy=err）→ 本机 hooks 钉 rc.1.26451.109（不落仓）。
 
+> **已修（2026-09-30，RC2-AOTPACK）**：`aot-packs-11.0.0-rc.2` 新增修正资产
+> `...rc.2.26451.112-r2.nupkg`（`542058cf…`，asset 601289590；归档重编 shim 版，
+> 判据 5/5），sdk-ohos `48c8b210dc` 换锚并在 fetch 端做 shim 内容校验；
+> 详见 `2026-09-30-rc2-aotpack-openssl-shim-fix.md`。下方 §4 首条（rc.1 钉）可撤。
+
 ## 4. 未决
 
-- **rc.2 AOT 包路径**：`...NativeAOT.openharmony-arm64/11.0.0-rc.2.26451.112` shim 修复前，设备 AOT 构建保持 rc.1 pack 钉（本地 hooks）；pack 修复后复核并撤钉。
+- **rc.2 AOT 包路径（✅ 已修，2026-09-30）**：修正资产 `...rc.2.26451.112-r2.nupkg`
+  + sdk-ohos `48c8b210dc`（fetch 端 shim 校验）已发布；原「设备 AOT 构建保持
+  rc.1 pack 钉（本地 hooks）」可撤，改用 `aot-packs-11.0.0-rc.2` 的 `-r2` feed 即可
+  （缓存里已恢复过坏 `.112` 包的机器先删
+  `~/.nuget/packages/microsoft.netcore.app.runtime.nativeaot.openharmony-arm64/11.0.0-rc.2.26451.112`）。
 - **payload 探针 bundleCodeDir**：壳 `findLibsPayloadDir` 在本机镜像仍探测不到 libs 内 AOT payload（bundleCodeDir 形态无 module 段）；启动已由宿主 libs 解析覆盖，探针优化待后续。
