@@ -150,7 +150,8 @@ sha256sum -c ./tester-report-<时间戳>.tar.gz.sha256
 
 - 快速上手（一页版）：`docs/plans/2026-09-20-ohos-tester-quickstart.md`（包内名 `快速开始.md`）
 - kit #29 交接（R3 CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 / 自绘深度五连判定点）：`docs/plans/2026-09-28-ohos-tester-handoff-kit29.md`
-- **kit #35 交接（W9/W10：B2 真机 BLZ 打通 + T20 媒体传输层 + T14/T21/T8 余项 + AOT 入口修复；判定点；当前）：`docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`**
+- **kit #36 交接（payload 原地直载（AOT 路径真机 BLZ）+ host 预注册缓冲 + 像素 Known 清零 + a11y 修复 + rc.2 AOT pack `-r2`；判定点；当前）：`docs/plans/2026-10-01-ohos-tester-handoff-kit36.md`**
+- **kit #35 交接（W9/W10：B2 真机 BLZ 打通 + T20 媒体传输层 + T14/T21/T8 余项 + AOT 入口修复；上一版）：`docs/plans/2026-09-30-ohos-tester-handoff-kit35.md`**
 - **kit #34 交接（rc.2 基线 + MAUI W6/W7/W8 + AOT v3 + 本机直测；上一版）：`docs/plans/2026-09-30-ohos-tester-handoff-kit34.md`**
 - kit #33 交接（Blazor 回归修复/双 hap A/B + TabbedPage/A11Y + W5 470/450 + AOT v2；上一版）：`docs/plans/2026-09-29-ohos-tester-handoff-kit33.md`
 - Blazor A/B 与 MAUI 主体一页卡（承 #33）：`docs/plans/2026-09-29-ohos-blazor-regression-retest-card.md`
