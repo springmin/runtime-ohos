@@ -17,19 +17,19 @@
 
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
-| `device-test-kit.tar.gz`（kit #34，2026-09-30） | **以 release 为准**（#33 = 218,138,546 对照） | **以 release 为准**（#33 = `38e4d57a…`；sidecar `8297363e…`；树 `064cb001…`；`SHA256SUMS` 17 项 / 1,517 B / `37031b9a…` 对照） | **7 hap** = 5 MAUI（rc.2 重建，含 W6/W7/W8 新壳；abc 期望以包内为准）+ **2 个 Blazor 对照 hap**（默认与包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`；bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh` + 文档 |
+| `device-test-kit.tar.gz`（kit #34，2026-09-30） | **375,181,367** | **`55834aeb…`**（sidecar `c03ea23d…`；树 `d08de3ec…`；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`；dtk id 以 release 为准） | **7 hap** = 5 MAUI（~133.8 MB/件，rc.2 payload 变大；abc **311,424**/20,916）+ **2 个 Blazor 对照 hap**（默认 27,216,958 / `8e407504…` 与 `-nocsp` 27,216,659 / `68606606…`；bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（69,522 / `dcd81f33…`）+ 文档 |
 | `aot-haps-v3.tar.gz`（复测取 v3；v2/旧包仅对照） | **17,537,186** | **`004ba03c…`**（asset 597904340；sidecar `0e28a268…`；README `abe541dd…`） | AOT hap（含 TabbedPage 修复 + **UIPage 修复/UI 壳出画**；已签 20,624,089 / `46d7a9ee…`、未签 20,369,300 / `5422b683…`；本侧本机已出画：`ohos_dotnet_surface` buffer=1）；**JIT 主体崩溃或仍黑屏时用它**；如本轮另发 AOT 资产以 release 为准 |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
 | `tester-run.sh`（随包） | 以包内为准（承 v14 = 140,197 / `a174fcd0…`） | 以包内为准 | 执行器；`--blazor-probe`、`--mode-matrix`、`--a11y-probe` 承 #33 |
 
-包内 7 hap（kit #34 实测）：**以 release `SHA256SUMS` 与 `.tar.gz.sha256` 为准**（#33 表 —— MAUI 5 件
-76,072,282 / `04b45359…`、73,880,100 / `218e8ca4…`、76,076,322 / `622c970a…`、76,072,243 / `e4cb95f0…`、
-76,076,383 / `cb50dd04…`；Blazor 默认 27,216,958 / `69de2eea…`、`-nocsp` 27,216,659 / `c1ef7e06…` —— 仅作对照）。
+包内 7 hap（kit #34 实测，`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`）：`hello-maui-app.hap` **133,827,313 / `9614f69d…`**、
+`…-unsigned` **131,304,609 / `f0def954…`**、`…-permissions` **133,831,417 / `a7a3391c…`**、`…-api20` **133,831,490 / `701104e8…`**、
+`…-api20-permissions` **133,831,449 / `d3bf37f6…`**；Blazor 默认 **27,216,958 / `8e407504…`**、`-nocsp` **27,216,659 / `68606606…`**。
 
 ## 2. 执行顺序（每步「期望 → 回传」）
 
-1. **校验 kit**：包内 `sh verify-kit.sh` → 发布实测 **0 FAIL / 0 WARN**（深度断言逐 hap；abc 期望以包内为准）→ 回传终端输出。
+1. **校验 kit**：包内 `sh verify-kit.sh` → 发布实测 **0 FAIL / 0 WARN**（深度断言逐 hap；abc 期望 311,424/20,916；脚本 69,522 / `dcd81f33…`）→ 回传终端输出。
 2. **rc.2 版本自述**：读包内《最终状态.md》/`README-交付说明.md` + `tester-run.sh` summary → 期望 SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`；无 rc.1 混装告警 → 回传自述原文 + summary。
 3. **W6 三项 + 一修复**：① T14 富 Shell flyout（头/尾/项模板行出画、点行选中+关闭、模板内按钮可点）；② T12 分组 CarouselView（GroupHeader/Footer 滑片、滑动跨组、`CurrentItem` 跟随）；③ FIX-SHELL（Shell 页面主体出画、切页重绘）；④ N1 多指（Pinch 两指轨迹正确）→ 逐条截图 + 结果。
 4. **W7/W8 六项**：T15 富 TitleView（标题带出模板视图 + 视图内按钮；隐藏/清除回退）；T16 结构化菜单（组头/嵌套/禁用门控/叶激活）；N4 TitleBar a11y（`--a11y-probe` 含 TitleBar 行/文本/按钮）；T18 Essentials IMap（`Map.Default.OpenAsync` 拉起系统地图；无 app 时 `TryOpenAsync=false` 不抛）；N5 覆盖层触摸抑制（选择器开 → 下层 Entry 不聚焦；关 → 恢复）；N6 系统装饰（桌面窗口最小化/最大化/关闭 + 拖拽 + `TitleBar.Content` 按钮不被抢）→ 逐条截图/终端输出。
@@ -74,5 +74,5 @@
 - **rc.2 相关**：MAUI `11.0.0-rc.2.26478.12` 为 dnceng daily（nuget.org 尚未上架）；交付方 restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并删 feed（kit #34 后立即）。rc.1 回滚线保留；应用侧构建请同步 rc.2 线（`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5）。
 - AOT v3 安装会顶替 kit 主包，回 JIT 需重装 kit hap；AOT hap 只有 3 个 `.so`，勿用 JIT 期望值核对。
 - **本机直测（交付方）**：设备已可测（hdc 无线 `127.0.0.1:35111` + SDK 自签 + AOT 路径）；**JIT payload-in-libs 主包在本机新镜像装不上属已知**（`9568393`，非 kit 缺陷），主包 JIT 判定仍以 tester 机为准。
-- 所有数字 = kit #34 发布实测（重签/重打包后必变）：**以 release「## Integrity（kit #34）」与随包校验为准**；#33 实测（tar 218,138,546 / `38e4d57a…`、树 `064cb001…`、sidecar `8297363e…`、bundle/preview.28 77,689,347 / `155960f4…` 锚 `e7727959cc`）与 tester-run v14（140,197 / `a174fcd0…`）仅作对照。
+- 所有数字 = kit #34 发布实测（重签/重打包后必变）：tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`、`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`；bundle/preview.28 **77,689,347 / `155960f4…`**（锚 `e7727959cc`）；#33（tar 218,138,546 / `38e4d57a…`）与 tester-run v14（140,197 / `a174fcd0…`）仅作对照；以 release「## Integrity（kit #34）」与随包校验为准。
 - 细判（TTS/HUKS/自绘深度/权限/Share-Scan）：`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §2 与 `…kit29/kit28/kit27/kit26/kit25`；无障碍逐项：`docs/plans/2026-09-27-ohos-accessibility-device-verification.md`（含新增 N4）。

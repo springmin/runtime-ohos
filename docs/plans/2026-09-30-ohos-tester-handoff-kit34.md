@@ -1,10 +1,9 @@
 # 测试方交接：kit #34、rc.2 基线并入主线 + MAUI W6/W7/W8（T12/T14/N1/FIX-SHELL/T15/T16/N4/T18/N5/N6）+ AOT v3（2026-09-30）
 
-> 日期口径：文件名按撰写日；**kit #34 发布在途 —— 一切数字以 release「## Integrity（kit #34）」、
-> `.tar.gz.sha256` sidecar 与随包 `SHA256SUMS` 为准**（#33 实测 = tar **218,138,546 B / `38e4d57a…`**、
-> 树 **`064cb001…`**、sidecar **`8297363e…`**、`SHA256SUMS` **17 项 / 1,517 B / `37031b9a…`** 仅作上一版对照；
-> 重签/重打包后哈希必变）。kit #34 的 7 hap 表（MAUI 5 重建 + Blazor 默认/`-nocsp` 双变体）在 release
-> 资产表与 `SHA256SUMS` 内，本文不预写死。
+> 日期口径：文件名按撰写日；**kit #34 发布实测（release「## Integrity（kit #34）」）**：tar
+> **375,181,367 B / `55834aeb…`**、树 **`d08de3ec…`**、sidecar **`c03ea23d…`**（89 B）、
+> `SHA256SUMS` **17 项 / 1,517 B / `94fedc66…`**；**7 hap**（MAUI 5 + Blazor 默认/`-nocsp`；MAUI ~133.8 MB/件，
+> rc.2 payload 变大）表见 §6.3。重签/重打包后哈希必变；CI run id 以 release 正文为准。
 > 构建基线（rc.2 线）：SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** /
 > MAUI **`11.0.0-rc.2.26478.12`**；rc.1 线（preview.24）保留回滚（默认根 `~/.dotnet` 未动）。
 > **nuget/daily 注**：MAUI `11.0.0-rc.2.26478.12` 为 **dnceng daily**（nuget.org 尚未上架）→ 交付方 CI/本地
@@ -44,7 +43,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | 1.7 | **N4 TitleBar 进行 a11y 影子树** | `Window.TitleBar` 行 + 模板子树进影子树（渲染根首个 a11y 子节点，含 bounds 0,0,300,64 风格）；模板按钮节点带 button 角色并可 `TryFindView` 回真实控件；隐藏/恢复/清除跟随 | 读屏可遍历 TitleBar 行/标题/按钮；隐藏后节点消失、恢复再现 |
 | 1.8 | **T18 Essentials IMap + N5 覆盖层触摸抑制 + N6 系统装饰** | T18：`Map.Default` / DI `IMap` 解析到切片 `OpenHarmonyMapLauncher`，`OpenAsync` 以文档化 `geo:` URI 拉起系统地图（无处理 app 时 `TryOpenAsync=false`，**不抛**）；N5：诊断覆盖层元素选择器激活时**消费触摸**（下层控件不被激活），关闭即恢复穿透；N6：应用自管装饰时把系统 min/max/close + 标题带拖拽映射到 `Window.TitleBar` 行（全屏手机窗口不交付装饰；像素 = 三个 caption 字形） | T18 设备上拉起地图/无 app 降级不抛；N5 选择器下 Entry 不聚焦、关闭可聚焦；N6 桌面窗最小化/最大化/关闭 + 拖拽 + `TitleBar.Content` 按钮不被拖走 |
 | 1.9 | **AOT v3 独立资产**（不在 kit 内） | `aot-haps-v3.tar.gz`（**17,537,186 B / `004ba03c…`**，asset 597904340；sidecar `0e28a268…`；README `abe541dd…`；含 TabbedPage 修复 + **UIPage 修复**：UI 壳 abc `289992`/`e005f236…`、`main_pages=pages/Index`；已签 **20,624,089 / `46d7a9ee…`**、未签 **20,369,300 / `5422b683…`**；本侧本机真机出画已验证：RSTree `ohos_dotnet_surface` buffer=1、`uiContent is null`=0）。v2/v1 保留对照。**MAUI 主包 JIT 若仍 `SEGV_ACCERR` 崩溃，用本资产重签安装判「主体渲染」**；如本轮另有 AOT 资产发布，以 release 为准 | 重签安装 → 启动 → `aot=1` → 主体出画 |
-| 1.10 | **门禁/指纹** | 交互套件 **513/floor 493**（#33 = 470/450）、像素 `PIXEL ASSERTIONS PASSED`、宿主导出契约 **145/145**（#33 = 143）；新壳 abc 以 release/包内 `verify-kit.sh` 期望为准（仓库构建 = **311,424 B**，headless 20,916）；`tester-run.sh` 承 **v14**（140,197 / `a174fcd0…`），`verify-kit.sh` 以包内为准 | `verify-kit.sh` 0 FAIL；版本自述 |
+| 1.10 | **门禁/指纹** | 交互套件 **513/floor 493**（#33 = 470/450）、像素 `PIXEL ASSERTIONS PASSED`、宿主导出契约 **145/145**（#33 = 143）；新壳 abc = **311,424 B**（`7c1a3cac…`；headless 20,916；hap 内宿主 285,600 / `00ee9c84…`；包内 `verify-kit.sh` 69,522 / `dcd81f33…`）；`tester-run.sh` 承 **v14**（140,197 / `a174fcd0…`），`verify-kit.sh` 以包内为准 | `verify-kit.sh` 0 FAIL；版本自述 |
 
 > 尺寸预算：以 release 资产表为准（#33 = 218,138,546 B；#34 的 delta = rc.2 重建 + 新壳 abc + Blazor 双件重建）。
 
@@ -109,11 +108,12 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
    payload-in-libs/宿主依赖；新壳 abc 期望以包内为准——#33 = 294,976/20,916，本波新壳 = 311,424 量级）。
 2. `tester-run.sh`（版本以包内自述为准，承 v14）：常规轮 / `--blazor-probe` / `--mode-matrix`（AOT 段用
    `aot-haps-v3.tar.gz`）/ `--a11y-probe` 四件同 #33。
-3. **7 hap 表**：kit #34 发布实测见 release「## Integrity（kit #34）」与随包 `SHA256SUMS`
-   （#33 表仅作上一版对照：`hello-maui-app.hap` 76,072,282 / `04b45359…`、`…-unsigned` 73,880,100 / `218e8ca4…`、
-   `…-permissions` 76,076,322 / `622c970a…`、`…-api20` 76,072,243 / `e4cb95f0…`、
-   `…-api20-permissions` 76,076,383 / `cb50dd04…`、Blazor 默认 27,216,958 / `69de2eea…`、
-   `-nocsp` 27,216,659 / `c1ef7e06…`）；bundle = `workload-1.0.0-preview.28` **77,689,347 / `155960f4…`**（锚 `e7727959cc`）；
+3. **7 hap 表（kit #34 发布实测；`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`）**：`hello-maui-app.hap` **133,827,313 / `9614f69d…`**、
+   `…-unsigned` **131,304,609 / `f0def954…`**、`…-permissions` **133,831,417 / `a7a3391c…`**、
+   `…-api20` **133,831,490 / `701104e8…`**、`…-api20-permissions` **133,831,449 / `d3bf37f6…`**、
+   Blazor 默认 **27,216,958 / `8e407504…`**、`-nocsp` **27,216,659 / `68606606…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`）。
+   整包 tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`；bundle = `workload-1.0.0-preview.28`
+   **77,689,347 / `155960f4…`**（锚 `e7727959cc`）；重签/重打包后必变，以 release 与随包校验为准；
    有 harmony flavor / HMS 的测试者请附壳构建出处与 Map/LiveView/TTS/HUKS 证据（同 #29–#33）。
 4. 离线证据（供复核）：套件 **513/493**、像素 PASS、导出 **145**（CI run 36656123464 / 36656123473 / 36656123543
    + 本地同树复跑）；FIX-SHELL/T12/T14/T15/T16/N4/T18/N5/N6 的交互/像素断言与负控（`w7/`、`w8/` scratch）；
@@ -125,7 +125,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - **rc.2 应用侧**本机未重跑（内存纪律）；以 CI/发布/设备证据为准（§3、§6.4）。
 - **T18 真拉起、N6 系统装饰、T15/T16 的交互细节**依赖设备是否具备对应窗口/地图能力；无入口按「未测」登记，不判失败。
 - Blazor 双 hap 与 #33 相同（rc.2 重建后哈希必变）；主包 JIT `SEGV_ACCERR` 仍可能（平台禁 JIT），以 AOT v3 回退判主体。
-- **门禁（FINAL，以 release 为准）**：交互 513/floor 493、导出 145/145、像素 PASS、`verify-kit.sh` 0 FAIL/0 WARN、
-  `ohos-workload` CI 5/5 @ `5305873`（ridgraph 20/20）；`selftest-tasks` S3 为预存项（与本次并入 0 diff，建议随 kit 窗口重锚）。
+- **门禁（FINAL）**：交互 513/floor 493、导出 145/145、像素 PASS、包内 `verify-kit.sh` 0 FAIL/0 WARN
+  （69,522 / `dcd81f33…`，abc 期望 311,424/20,916）、`ohos-workload` CI 5/5 @ `5305873`（ridgraph 20/20；run id 以 release 正文为准）；
+  `selftest-tasks` S3 为预存项（与本次并入 0 diff，建议随 kit 窗口重锚）。
 - 本次构建 = **rc.2 线**（SDK `.112` / workload `preview.28` / MAUI `rc2.26478.12`）；应用侧构建请同步该线
   （`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5；rc.1 回滚路径保留）。

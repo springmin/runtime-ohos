@@ -191,7 +191,7 @@ sh tester-run.sh --kit-dir ./device-test-kit --probes ./probes
 
 > 见 `docs/plans/2026-09-30-ohos-tester-handoff-kit34.md` §2/§3：rc.2 版本自述（SDK `11.0.100-rc.2.26451.112` / workload `1.0.0-preview.28` / MAUI `11.0.0-rc.2.26478.12`）；
 > W6 = T14 富 Shell flyout / T12 CarouselView 分组 / N1 多指坐标 / FIX-SHELL 主体；W7/W8 = T15 富 TitleView / T16 结构化菜单 /
-> N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**；
+> N4 TitleBar a11y / T18 Essentials IMap / N5 覆盖层触摸抑制 / N6 标题栏系统装饰；套件 **513/floor 493**、导出 **145**、abc **311,424**/20,916；
 > JIT 主包崩溃/黑屏时用 `aot-haps-v3.tar.gz` 重签判读。
 
 ### 0.14 kit #33 增量判定点（Blazor 回归 A/B / TabbedPage / W5 / AOT v2）
