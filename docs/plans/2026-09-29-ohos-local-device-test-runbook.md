@@ -39,6 +39,7 @@ $HDC shell "ls -la /data/app/el2/101/base/com.example.hellomauiapp/haps/entry/fi
 | 项 | 本机（桌面） | tester 机（手机） |
 |---|---|---|
 | hdc | `tconn 127.0.0.1:<port>` 本地无线调试 | USB/同网，`list targets` 直见 |
+| hilog 缓冲 | 512K 环仅 ≈4–5 s；噪声大时 `--blazor-probe`（4 s 窗口）曾丢 `BLZ_BOOT` 误报 `boot=no`——临时 `hilog -G 16M -t app,core` 后全绿（已还原） | **待核对**；必要时临时调大缓冲（事后还原），或先 `--capture 60` 流式复核 |
 | host/`[maui]` 日志 | 本镜像无 `libhilog_ndk.z.so` → stderr，hilog 不可见 | 有该库 → `aot=`/`xwe=`/`interp=` 行可见 |
 | 应用 filesDir | `/data/app/el2/101/base/<bundle>/haps/entry/files/`（`/data/storage/el2/...` 是 shell 用户自己的） | 同 userId 规则；`tester-run.sh` 可列 |
 | 窗口/a11y | PC 窗可被 ✕ 关（退出码 0，非崩溃）；`dumpLayout -b` 空；`snapshot_display` 能截 XComponent | 全屏 ability；`--a11y-probe` 走 kit 自检 |

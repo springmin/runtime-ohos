@@ -68,3 +68,13 @@
 3. `documentation/ohos-install/NATIVE-AOT.md` 仍描述 rc.1 AOT 镜像（`versions.env` 已 pin `aot-packs-11.0.0-rc.2`）——既有文档漂移，另单。
 4. sdk legacy rc.1 构建路径（显式 buildid）未实测；默认路径（rc.2）由已发布全链证据覆盖。
 5. runtime/sdk/aspnetcore 本波未在设备旁本地重跑构建（内存纪律），以已执行的 CI/发布/设备证据为准。
+
+## 8. rc.2 daily → 正式 pin 切换（步骤清单）
+
+触发：MAUI `11.0.0-rc.2.26478.12`（dnceng `dotnet11` daily）对应的**官方 rc.2 包上 nuget.org**。
+
+1. **换 pin**：`ohos-workload` 三个 workflow 的 `MAUI_OHOS_REF`（`interaction-regression.yml` / `pixel-regression.yml` / `host-export-contract.yml`，当前 `ebffdd787c`）→ 指向包版本已换到 nuget.org 正式 rc.2 的 maui-ohos 提交（切片 csproj 的 `Microsoft.Maui.*` 版本随之更新）。
+2. **移除 feed step**：删 `004b7f8` 在 `interaction-regression.yml` / `pixel-regression.yml` restore 前加的 dnceng `dotnet11` feed（`dotnet nuget add source …` 一步及注释）；`blazor-recipe.yml` 的 dnceng 依赖一并复核。
+3. **门禁**：交互 ≥513/floor 493、像素 `PIXEL ASSERTIONS PASSED`、导出 145/145、ridgraph 20/20 全绿（ohos-workload CI 5/5）；本地同树复跑一遍（同 §3 口径）。
+4. **记录**：`docs/rc2-line-notes.md` 与 kit #34 交接/复测卡的「dnceng daily 换 pin」句改为「正式 rc.2」；随下一版 kit 窗口出包。
+5. **回滚**：pin 与 feed 删除同批 revert（feed step 加回 + `MAUI_OHOS_REF` 回 `ebffdd787c`）；rc.1 回滚线（`~/.dotnet` / preview.24）与 SDK `.112` 默认均不变。

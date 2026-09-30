@@ -112,6 +112,7 @@ grep -E 'hellomaui|maui|dotnet|openharmonyhost|AppKilledReporter|JsError|appspaw
 | `payload=no`（kit 自检） | 包内 hap 缺 `.dotnet-payload.json`（该 hap 会回退到 data 目录解包，在被 namespace 拒绝的设备上必然起不来）：换当前 kit；`verify-kit.sh` 对此会直接 FAIL |
 | `payload_present=no` | **kit #24 起属正常**（payload 在 hap `libs/` 原地运行，本键只看 `<filesDir>/dotnet`/`dotnet.marker` 回退布局）；回退布局/旧包首次启动前也为 no，已启动仍为 no（尤其伴随 `bootstrap_errors>0`）= payload 未解包成功 |
 | `execmem_lines=0` | 未捕获到 `probe:`/`xwe=` 行（录制窗口未覆盖首次启动或 ROM hilog 缓冲问题）：加长 `--capture` 重跑；无此行不能判定 JIT 可用性 |
+| `--blazor-probe` 报 `boot=no`（而 `rendered=yes`） | **先核对 hilog 缓冲再判失败**：小缓冲（如 512K）在噪声大的机器上只保留 ≈4–5 s，4 s 探针窗口会把 `BLZ_BOOT`/nonce 滚出 → 误报。本机实测（2026-09-30）：512K 环丢 `BLZ_BOOT`；临时 `hilog -G 16M -t app,core` 重跑后两变体全绿（跑完已还原 512K）。**tester 机缓冲待核对**——必要时临时调大缓冲（事后还原），或先 `--capture 60` 流式复核再判 |
 
 ## 6. 回传什么
 

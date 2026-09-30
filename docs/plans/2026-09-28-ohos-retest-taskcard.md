@@ -73,6 +73,7 @@
 - 包内 hap 为自签：**9568257 / 9568344 属预期**，先重签（需华为调试证书 + Profile 绑 UDID）；**Blazor 双变体同名（`com.example.opendotnet`），装前卸载**；两变体均无 INTERNET（重签保持）。
 - **rc.2 相关**：MAUI `11.0.0-rc.2.26478.12` 为 dnceng daily（nuget.org 尚未上架）；交付方 restore 走 dnceng `dotnet11` feed，官方 rc.2 上 nuget.org 后换 pin 并删 feed（kit #34 后立即）。rc.1 回滚线保留；应用侧构建请同步 rc.2 线（`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5）。
 - AOT v3 安装会顶替 kit 主包，回 JIT 需重装 kit hap；AOT hap 只有 3 个 `.so`，勿用 JIT 期望值核对。
+- **hilog 缓冲（探针误报防护）**：本机实测 512K 环在噪声大时只保留 ≈4–5 s，`--blazor-probe` 4 s 窗口曾丢 `BLZ_BOOT` 报 `boot=no`（同轮流式复核两标记齐全，非渲染缺陷）；临时 `hilog -G 16M -t app,core` 重跑即全绿（**跑完还原 512K**）。**tester 机缓冲待核对**——若同样报 `boot=no` 而 `rendered=yes`，先临时调大缓冲（事后还原）或先 `--capture 60` 流式复核，再判失败。
 - **本机直测（交付方）**：设备已可测（hdc 无线 `127.0.0.1:35111` + SDK 自签 + AOT 路径）；**JIT payload-in-libs 主包在本机新镜像装不上属已知**（`9568393`，非 kit 缺陷），主包 JIT 判定仍以 tester 机为准。
 - 所有数字 = kit #34 发布实测（重签/重打包后必变）：tar **375,181,367 / `55834aeb…`**、树 `d08de3ec…`、sidecar `c03ea23d…`、`SHA256SUMS` 17 项 / 1,517 B / `94fedc66…`；bundle/preview.28（rc.2 重打包进行中，新 sha 以 release 为准；#33 = 77,689,347 / `155960f4…`，锚 `e7727959cc`）；#33（tar 218,138,546 / `38e4d57a…`）与 tester-run v14（140,197 / `a174fcd0…`）仅作对照；以 release「## Integrity（kit #34）」与随包校验为准。
 - 细判（TTS/HUKS/自绘深度/权限/Share-Scan）：`docs/plans/2026-09-28-ohos-tester-handoff-kit30.md` §2 与 `…kit29/kit28/kit27/kit26/kit25`；无障碍逐项：`docs/plans/2026-09-27-ohos-accessibility-device-verification.md`（含新增 N4）。
