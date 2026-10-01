@@ -1,6 +1,15 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-01 update (kit #36 — current):** kit #36 = #35 + the payload-in-place direct start (the shell
+> **2026-10-01 update (kit #37 — current):** kit #37 = #36 + FIX-HOME (the slice descends a
+NavigationPage's `PlatformArrange` into its `CurrentPage` — the Home tab now draws its full page on the
+AOT device, screenshot-proved; the suite gains 4 pins, 544/floor 524) and FIX-ITOUCH (the host reports
+touch points in element coordinates — the same surface space as the mouse — so uitest-injected taps hit
+content: "fading out…" -> "animations done" on device; host `4e9f3c3e`). The shell abc is unchanged
+(339,964 / 24,324), host export 149/149. Release: tar 375,652,577 B / `3a7259d6…`, tree `ab517b57…`,
+sidecar `7db60a77…`; numbers follow the release notes `## Integrity (kit #37)`; handoff:
+`docs/plans/2026-10-01-ohos-tester-handoff-kit37.md`.
+>
+> **2026-10-01 update (kit #36 — previous):** kit #36 = #35 + the payload-in-place direct start (the shell
 `findLibsPayloadDir` accepts the module layout `<bundleCodeDir>/<module>/libs/<abi>` — on device
 hello-maui-wasm starts from `/data/storage/el1/bundle/entry/libs/arm64` with `dotnet.zip not unpacked`
 (pid 49565) and `BLZ_BOOT`/`BLZ_RENDERED` both land), the host pre-registration buffer (web commands
@@ -90,7 +99,14 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-01 update (kit #36 — current):** the kit adds the payload-in-place direct start (the shell
+> **2026-10-01 update (kit #37 — current):** the kit adds FIX-HOME (a NavigationPage's `PlatformArrange`
+> descends into `CurrentPage` — the Home tab draws its full page on the AOT device) and FIX-ITOUCH (the host
+> reports touch points in element coordinates, the same surface space as the mouse, so uitest-injected taps
+> hit content). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324
+> (unchanged), host `4e9f3c3e`. Tar **375,652,577** / `3a7259d6…`, tree `ab517b57…`. Numbers follow the
+> release notes `## Integrity (kit #37)`; handoff: `docs/plans/2026-10-01-ohos-tester-handoff-kit37.md`.
+>
+> **2026-10-01 update (kit #36 — previous):** the kit adds the payload-in-place direct start (the shell
 > `findLibsPayloadDir` accepts the module layout `<bundleCodeDir>/<module>/libs/<abi>`; hello-maui-wasm runs
 > from `/data/storage/el1/bundle/entry/libs/arm64` with `dotnet.zip not unpacked` and `BLZ_BOOT`/`BLZ_RENDERED`
 > both land), the host pre-registration buffer (web commands arriving before `registerWebSink` are buffered —

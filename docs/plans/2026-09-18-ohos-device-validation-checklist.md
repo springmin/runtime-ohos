@@ -1,6 +1,15 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
-> **2026-10-01 update (kit #36 — current):** kit #36 = #35 + the payload-in-place direct start (the shell
+> **2026-10-01 update (kit #37 — current):** kit #37 = #36 + FIX-HOME (the slice descends a
+NavigationPage's `PlatformArrange` into its `CurrentPage` — the Home tab now draws its full page on the
+AOT device, screenshot-proved; the suite gains 4 pins, 544/floor 524) and FIX-ITOUCH (the host reports
+touch points in element coordinates — the same surface space as the mouse — so uitest-injected taps hit
+content: "fading out…" -> "animations done" on device; host `4e9f3c3e`). The shell abc is unchanged
+(339,964 / 24,324), host export 149/149. Release: tar 375,652,577 B / `3a7259d6…`, tree `ab517b57…`,
+sidecar `7db60a77…`; numbers follow the release notes `## Integrity (kit #37)`; handoff:
+`docs/plans/2026-10-01-ohos-tester-handoff-kit37.md`.
+>
+> **2026-10-01 update (kit #36 — previous):** kit #36 = #35 + the payload-in-place direct start (the shell
 `findLibsPayloadDir` accepts the module layout `<bundleCodeDir>/<module>/libs/<abi>` — on device
 hello-maui-wasm starts from `/data/storage/el1/bundle/entry/libs/arm64` with `dotnet.zip not unpacked`
 (pid 49565) and `BLZ_BOOT`/`BLZ_RENDERED` both land), the host pre-registration buffer (web commands
@@ -89,7 +98,10 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-10-01 (kit #36 — current): **payload in place + host pre-registration buffer + pixel Known-clear + a11y render-frame fix + rc.2 AOT pack `-r2`**: hello-maui-wasm starts from the module libs layout (`/data/storage/el1/bundle/entry/libs/arm64`, `dotnet.zip not unpacked`) and `BLZ_BOOT`/`BLZ_RENDERED` both land; the host buffers pre-registration web commands (16 / 64 KiB, flushed on registration); no `Known(...)` remains in the pixel suite; the a11y node count now pins the render-frame attachment (`status=1`, nodeCount 5/24 stable); the rc.2 AOT pack `-r2` asset (`601289590`) fixes the OpenSSL shim and drops the rc.1 pin. Suite **540/floor 520**, host export **149/149**, shell abc 339,964 / headless 24,324; tar **375,627,841** / `9eb9cecf…`, tree `9764827c…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #36)`; handoff:
+Updated 2026-10-01 (kit #37 — current): **FIX-HOME + FIX-ITOUCH**: the Home tab (FlyoutPage -> TabbedPage -> NavigationPage) now draws its full page on the AOT device (screenshot-proved) and uitest-injected taps hit MAUI content (the host reports touch points in element coordinates, the same surface space as the mouse; "fading out…" -> "animations done"). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324 (unchanged), host `4e9f3c3e`; tar **375,652,577** / `3a7259d6…`, tree `ab517b57…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #37)`; handoff:
+> `docs/plans/2026-10-01-ohos-tester-handoff-kit37.md`.
+>
+> Updated 2026-10-01 (kit #36 — previous): **payload in place + host pre-registration buffer + pixel Known-clear + a11y render-frame fix + rc.2 AOT pack `-r2`**: hello-maui-wasm starts from the module libs layout (`/data/storage/el1/bundle/entry/libs/arm64`, `dotnet.zip not unpacked`) and `BLZ_BOOT`/`BLZ_RENDERED` both land; the host buffers pre-registration web commands (16 / 64 KiB, flushed on registration); no `Known(...)` remains in the pixel suite; the a11y node count now pins the render-frame attachment (`status=1`, nodeCount 5/24 stable); the rc.2 AOT pack `-r2` asset (`601289590`) fixes the OpenSSL shim and drops the rc.1 pin. Suite **540/floor 520**, host export **149/149**, shell abc 339,964 / headless 24,324; tar **375,627,841** / `9eb9cecf…`, tree `9764827c…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #36)`; handoff:
 > `docs/plans/2026-10-01-ohos-tester-handoff-kit36.md`.
 >
 > Updated 2026-09-30 (kit #35 — previous): **the W9/W10 waves**: B2 (Blazor WASM in the MAUI WebView) now passes on device (`BLZ_BOOT`/`BLZ_RENDERED`); T14/T21 and T8 (uneven-height TableView); the T20 media transport layer + the T19 deep-link determination; the W10 AOT-entry fix (host own-libs `lib<stem>.so` resolution + `dotnet-status.txt` observability, the shell AOT payload probe / `fs` alias / static-asset fingerprint; the rc.2 AOT pack OpenSSL-shim regression pins the rc.1 pack locally); suite **540/floor 520**, host export **149/149**, shell abc 339,164 / headless 23,516; numbers follow the release notes `## Integrity (kit #35)`; handoff:
