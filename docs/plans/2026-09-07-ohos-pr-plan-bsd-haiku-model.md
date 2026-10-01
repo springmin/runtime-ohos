@@ -174,21 +174,25 @@ single-concern PRs dominate; infra and CI wiring are separate.
 
 ---
 
-## 2. Current OHOS upstream state (updated 2026-09-21)
+## 2. Current OHOS upstream state (updated 2026-10-01)
 
-Open PRs (dotnet/runtime):
+Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
 
-- **#132827** sandbox fixes (6 files, libraries+gc) — in review; RID naming
-  resolved as `openharmony`. The last reviewer ask (`akoeplinger` 09-14:
-  `IsOSPlatform("openharmony")` in MutexTests) is in the current head
-  `6ed2f9ab9a` (09-15); build/test legs green, only the known Helix/infra
-  checks fail. **Awaiting approval** (no pending review request); reminder
-  posted 2026-09-21 (`#issuecomment-5757951615`).
-- **#132953** infra + RID graph (11 files, eng/+coreclr+RID; +134/-18) —
-  **@jkotas APPROVED 2026-09-10**, renamed to the final OpenHarmony wording on
-  09-16; the remaining review request is with @am11. Build/test legs green;
-  only the known Helix/infra checks fail. Reminder posted 2026-09-21
-  (`#issuecomment-5757951166`).
+- **#132953** infra + RID graph (11 files, +123/−15) — **@jkotas APPROVED 09-10**;
+  all review items addressed (`ohos`→`openharmony` rename, `runtime.json`
+  reverted, `openharmony` imports `any`, single-line cmake comment); the
+  `eng/common` ask is **resolved** (dotnet/arcade#17608 **merged 09-24**).
+  Head `be8e6f69`, mergeable; the 5 red checks are infra/aggregate
+  (Build Analysis/Insights, the `runtime` umbrella, Helix Monitor Jobs,
+  osx-arm64 libraries = tracked #132585, closed 09-22). **Idle since our
+  09-21 16:32 reply (10 d)** — an arcade-merged status update is prepared and
+  is the highest-leverage action before the .NET 11 GA train closes.
+- **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**, awaiting
+  the maintainer merge; idle 5 d; no-nag policy holds.
+- **#134670** platform identity + NUMA — **MERGED 09-26** ✓ (content reconciled
+  against the fork; fork-sync playbook §4).
+- **#132866** tracking issue — no maintainer reply since our 09-14 plan update
+  (17 d); the C2/C3 attribution question stays open.
 
 Remaining feature-branch inventory (from plan §13 + inclusion audit
 `2026-09-03-ohos-pr-inclusion-audit.md`, refreshed 2026-09-14): runtime N1-N16
