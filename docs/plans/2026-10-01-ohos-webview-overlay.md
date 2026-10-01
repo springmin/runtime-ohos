@@ -4,7 +4,7 @@
 > （publish rc=0、IL2026/IL3050/IL3051=0）：`hello-maui-app-fixwvp-signed.hap`（壳 abc 341,560 / 24,324）；
 > 窗口 (515,281) 2090×1394、系统标题栏 70 → element 原点 (515,351)。证据 scratch
 > `/data/storage/el2/base/tmp/opencode/fix-wvp/`：`device/`（w0-home/s3c/ping/drawer/anim/f0..f6 +
-> hilog-phase1/final + rstree-now）、`suite-run5.log`、abc 构建/签名日志。
+> hilog-phase1/final + rstree-now）、`suite-retry3.log`（终版绿）、abc 构建/签名日志。
 
 ## 根因（三处叠加 = UI-LOCAL-3 白区无内容）
 1. **element px 当 vp**：合成器按设备像素布局（`RequestDisplayDensity`=1），`frame` 发像素；壳直接当
