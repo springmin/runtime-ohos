@@ -184,9 +184,9 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   `eng/common` ask is **resolved** (dotnet/arcade#17608 **merged 09-24**).
   Head `be8e6f69`, mergeable; the 5 red checks are infra/aggregate
   (Build Analysis/Insights, the `runtime` umbrella, Helix Monitor Jobs,
-  osx-arm64 libraries = tracked #132585, closed 09-22). **Idle since our
-  09-21 16:32 reply (10 d)** — an arcade-merged status update is prepared and
-  is the highest-leverage action before the .NET 11 GA train closes.
+  osx-arm64 libraries = tracked #132585, closed 09-22). Preceded by our 09-21
+  reply; **status update posted 2026-10-01** (`#issuecomment-5932455043`) —
+  awaiting re-review; the next action is the maintainer response, then C3.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**, awaiting
   the maintainer merge; idle 5 d; no-nag policy holds.
 - **#134670** platform identity + NUMA — **MERGED 09-26** ✓ (content reconciled
