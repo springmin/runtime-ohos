@@ -72,5 +72,5 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
   本机可用 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true`（重写分包）或 `-p:OpenHarmonyHapPayloadInLibs=false`
   重出包 / `aot-haps-v3` 复测（两种布局本机均已安装通过）；证据与对策见
   `docs/plans/2026-09-30-ohos-jit-payload-install-policy.md`。
-- **kit #37 复测入口**：`docs/plans/2026-10-01-ohos-tester-handoff-kit37.md` §2–§4（FIX-HOME/FIX-ITOUCH 注入复测见 §2/§4）与
+- **kit #38 复测入口**：`docs/plans/2026-10-01-ohos-tester-handoff-kit38.md` §2–§4（FIX-DISMISS 外点关闭 / FIX-WVP Hybrid 出画+bridge 见 §2；FIX-BACK 未入包注见 §7）与
   `docs/plans/2026-09-28-ohos-retest-taskcard.md`。

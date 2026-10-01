@@ -1,6 +1,17 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
-> **2026-10-01 update (kit #37 — current):** kit #37 = #36 + FIX-HOME (the slice descends a
+> **2026-10-01 update (kit #38 — current):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
+dismiss: the `Default` layout threw `InvalidOperationException` under the device's non-Phone idiom /
+landscape snapshot — the exception was swallowed at the touch-callback boundary — so `Default` now maps to
+`Popover`; maui 86b439ffc8) and FIX-WVP (the Hybrid overlay: element px rendered as ArkUI vp → ×1.9
+off-window, hybrid origin `0.0.0.1` registration arbitration, `Web` moved above the ContentSlot for
+z-order, and suspend/resume/hide under a drawer or tab switch; maui 47d79add01 + shell acbe750).
+FIX-HOME/FIX-ITOUCH are kept. Shell abc 341,560 (`4f02cb1d…`), headless 24,324 (unchanged), host
+`4e9f3c3e`, export 149/149, suite 550/floor 530. The FIX-BACK wave is not in this kit (Back-closes-drawer
+and BlazorWebView sizing are in flight for the next version). Numbers follow the release notes
+`## Integrity (kit #38)`; handoff: `docs/plans/2026-10-01-ohos-tester-handoff-kit38.md`.
+>
+> **2026-10-01 update (kit #37 — previous):** kit #37 = #36 + FIX-HOME (the slice descends a
 NavigationPage's `PlatformArrange` into its `CurrentPage` — the Home tab now draws its full page on the
 AOT device, screenshot-proved; the suite gains 4 pins, 544/floor 524) and FIX-ITOUCH (the host reports
 touch points in element coordinates — the same surface space as the mouse — so uitest-injected taps hit
@@ -98,7 +109,10 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-10-01 (kit #37 — current): **FIX-HOME + FIX-ITOUCH**: the Home tab (FlyoutPage -> TabbedPage -> NavigationPage) now draws its full page on the AOT device (screenshot-proved) and uitest-injected taps hit MAUI content (the host reports touch points in element coordinates, the same surface space as the mouse; "fading out…" -> "animations done"). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324 (unchanged), host `4e9f3c3e`; tar **375,652,577** / `3a7259d6…`, tree `ab517b57…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #37)`; handoff:
+Updated 2026-10-01 (kit #38 — current): **FIX-DISMISS + FIX-WVP**: the flyout drawer now dismisses on an outside click (re-open/re-close both work; no residue) and the Hybrid overlay really renders (element px converted to vp, hybrid origin `0.0.0.1` registration, `Web` above the ContentSlot, suspend/resume/hide under a drawer or tab switch; the page bridge round-trips `window.external.sendMessage`). FIX-HOME/FIX-ITOUCH are kept; the FIX-BACK wave (Back-closes-drawer, BlazorWebView sizing) is not in this kit. Suite **550/floor 530**, host export **149/149**, shell abc 341,560 (`4f02cb1d…`) / headless 24,324, host `4e9f3c3e`; tar **375,641,619** / `ced5583f…`, tree `307004e1…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #38)`; handoff:
+> `docs/plans/2026-10-01-ohos-tester-handoff-kit38.md`.
+>
+> Updated 2026-10-01 (kit #37 — previous): **FIX-HOME + FIX-ITOUCH**: the Home tab (FlyoutPage -> TabbedPage -> NavigationPage) now draws its full page on the AOT device (screenshot-proved) and uitest-injected taps hit MAUI content (the host reports touch points in element coordinates, the same surface space as the mouse; "fading out…" -> "animations done"). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324 (unchanged), host `4e9f3c3e`; tar **375,652,577** / `3a7259d6…`, tree `ab517b57…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #37)`; handoff:
 > `docs/plans/2026-10-01-ohos-tester-handoff-kit37.md`.
 >
 > Updated 2026-10-01 (kit #36 — previous): **payload in place + host pre-registration buffer + pixel Known-clear + a11y render-frame fix + rc.2 AOT pack `-r2`**: hello-maui-wasm starts from the module libs layout (`/data/storage/el1/bundle/entry/libs/arm64`, `dotnet.zip not unpacked`) and `BLZ_BOOT`/`BLZ_RENDERED` both land; the host buffers pre-registration web commands (16 / 64 KiB, flushed on registration); no `Known(...)` remains in the pixel suite; the a11y node count now pins the render-frame attachment (`status=1`, nodeCount 5/24 stable); the rc.2 AOT pack `-r2` asset (`601289590`) fixes the OpenSSL shim and drops the rc.1 pin. Suite **540/floor 520**, host export **149/149**, shell abc 339,964 / headless 24,324; tar **375,627,841** / `9eb9cecf…`, tree `9764827c…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #36)`; handoff:

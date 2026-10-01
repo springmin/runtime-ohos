@@ -1,6 +1,17 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-01 update (kit #37 — current):** kit #37 = #36 + FIX-HOME (the slice descends a
+> **2026-10-01 update (kit #38 — current):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
+dismiss: the `Default` layout threw `InvalidOperationException` under the device's non-Phone idiom /
+landscape snapshot — the exception was swallowed at the touch-callback boundary — so `Default` now maps to
+`Popover`; maui 86b439ffc8) and FIX-WVP (the Hybrid overlay: element px rendered as ArkUI vp → ×1.9
+off-window, hybrid origin `0.0.0.1` registration arbitration, `Web` moved above the ContentSlot for
+z-order, and suspend/resume/hide under a drawer or tab switch; maui 47d79add01 + shell acbe750).
+FIX-HOME/FIX-ITOUCH are kept. Shell abc 341,560 (`4f02cb1d…`), headless 24,324 (unchanged), host
+`4e9f3c3e`, export 149/149, suite 550/floor 530. The FIX-BACK wave is not in this kit (Back-closes-drawer
+and BlazorWebView sizing are in flight for the next version). Numbers follow the release notes
+`## Integrity (kit #38)`; handoff: `docs/plans/2026-10-01-ohos-tester-handoff-kit38.md`.
+>
+> **2026-10-01 update (kit #37 — previous):** kit #37 = #36 + FIX-HOME (the slice descends a
 NavigationPage's `PlatformArrange` into its `CurrentPage` — the Home tab now draws its full page on the
 AOT device, screenshot-proved; the suite gains 4 pins, 544/floor 524) and FIX-ITOUCH (the host reports
 touch points in element coordinates — the same surface space as the mouse — so uitest-injected taps hit
@@ -99,7 +110,15 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-01 update (kit #37 — current):** the kit adds FIX-HOME (a NavigationPage's `PlatformArrange`
+> **2026-10-01 update (kit #38 — current):** the kit adds FIX-DISMISS (the flyout drawer now dismisses on an
+> outside click — the `Default` layout mapped to `Popover` under the device idiom) and FIX-WVP (the Hybrid
+> overlay: element px rendered as vp fixed, hybrid origin `0.0.0.1` registration, `Web` above the ContentSlot,
+> suspend/resume/hide under a drawer or tab switch); FIX-HOME/FIX-ITOUCH are kept; the FIX-BACK wave is not in
+> this kit. Suite **550/floor 530**, host export **149/149**, shell abc 341,560 / headless 24,324, host
+> `4e9f3c3e`. Tar **375,641,619** / `ced5583f…`, tree `307004e1…`. Numbers follow the release notes
+> `## Integrity (kit #38)`; handoff: `docs/plans/2026-10-01-ohos-tester-handoff-kit38.md`.
+>
+> **2026-10-01 update (kit #37 — previous):** the kit adds FIX-HOME (a NavigationPage's `PlatformArrange`
 > descends into `CurrentPage` — the Home tab draws its full page on the AOT device) and FIX-ITOUCH (the host
 > reports touch points in element coordinates, the same surface space as the mouse, so uitest-injected taps
 > hit content). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324
