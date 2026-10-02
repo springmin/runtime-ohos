@@ -68,13 +68,22 @@ else
     # from the root build) links the OpenSSL libraries found by
     # find_package(OpenSSL) instead; the archives must be built with -fPIC.
     # See docs/plans/2026-09-23-ohos-tls-policy.md.
+    #
+    # The static archive cannot follow that switch: NativeAOT's ilc links it
+    # into the app and does not link libcrypto/libssl, so the archive must keep
+    # the dlopen shim. FEATURE_DISTRO_AGNOSTIC_SSL_STATIC therefore stays 1 when
+    # -linkstaticopenssl makes the shared library use OpenSSL directly.
+    # See docs/plans/2026-10-03-ohos-aotpack-structural.md.
     __FeatureDistroAgnosticSsl=$__PortableBuild
+    __FeatureDistroAgnosticSslStatic=$__FeatureDistroAgnosticSsl
     if [[ "$__TargetOS" == openharmony && "$__LinkStaticOpenSsl" == 1 ]]; then
         __FeatureDistroAgnosticSsl=0
+        __FeatureDistroAgnosticSslStatic=1
         __StaticLibLink=1
     fi
 
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__FeatureDistroAgnosticSsl $__CMakeArgs"
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL_STATIC=$__FeatureDistroAgnosticSslStatic $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
     if [[ "$__TargetOS" != linux-bionic && "$__TargetOS" != openharmony && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
