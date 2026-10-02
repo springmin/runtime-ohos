@@ -51,4 +51,4 @@
 ## 7. 复用 / 未覆盖 / 不确定
 - 复用：kit #41 发布/门禁证据（交互 563/543、pixel PASS、导出 150/150、preflight、CI 5/5 @ `4bfcd68`）为本轮发布证据，未重跑。
 - 未覆盖：JIT 9568393 原包 A/B（用发布记录）、interp 首帧、真机 live Navigate、套件/像素本地重跑、tester 机预签包。
-- 不确定：共享桌面窗口竞态（判定以 hilog/状态/截图/dumpLayout 为准）；interp 首帧（§5）；FULL 演示无同页 Blazor（§4）。设备末态：`hellomauiapp` AOT pid 11768 `#BACKGROUND`、`hellomauirazor` pid 16882 `#FOREGROUND`、`opendotnet`（nocsp 件）已装未运行；hilog 512K 已还原（03:04:40）；PowerManager AWAKE。
+- 不确定：共享桌面窗口竞态（判定以 hilog/状态/截图/dumpLayout 为准）；interp 首帧（§5）；FULL 演示无同页 Blazor（§4）。设备末态：`hellomauiapp` AOT pid 11768 `#FOREGROUND`、`hellomauirazor` pid 16882 `#FOREGROUND`、`opendotnet`（nocsp 件）已装未运行；hilog 512K 已还原（03:04:40）；PowerManager AWAKE。
