@@ -26,7 +26,7 @@
 | 资产 | 大小 (B) | sha256（前缀） | 用途 |
 |---|---|---|---|
 | `device-test-kit.tar.gz`（kit #40，2026-10-02） | **375,836,470** | **`31ab8732…`**（sidecar `9b051247…`；树 `e950de54…`；`SHA256SUMS` 17 项 / 1,517 B / `7667b6bd…`；dtk **392356147** / latest **392077166**；tar/边车 asset **605346629**/**605372761**，latest 同件 **605373164**/**605385920**） | **7 hap** = 5 MAUI（壳 abc **342,160（`ffda66da…`）**/24,324（未变）、hap 内宿主 **293,792（`384e552a…`）**（未变）、UND 238；FIX-JSCALL 切片重建 +13KB/hap）+ **2 个 Blazor 对照 hap**（bundle `com.example.opendotnet`，无 INTERNET）+ `verify-kit.sh`（69,522 / `0b7dbfe9…`）+ 文档 |
-| `preSigned-haps.tar.gz`（**预签直装**；#34 起加发） | **375,834,798**（#35–#40 本批未刷新，沿 #34 件；#40 如需预签请回传 UDID 代签） | **`b492b284…`**（sidecar 88 B / `83cbff13…`；树 `e693ae3a…`） | 7 hap 按 tester UDID `60CF7B27…F8A19` 预签：`sha256sum -c SHA256SUMS` → `hdc install -r` **直装**；非本 UDID 设备仍 `9568344` |
+| `preSigned-haps.tar.gz`（**预签直装**；#34 起加发；**已刷新至 kit #40**） | **376,463,885**（2026-10-02 刷新；asset **605502130**；sidecar 88 B / `9fa506e3…`，asset **605534061**；树 `175c8a4a…`；包内 `SHA256SUMS` 8 项 / 764 B / `efbb28ae…`） | **`193f5fb1…`** | **7 hap = kit #40 原名件**（MAUI 5 + Blazor 默认/`-nocsp`），按 tester UDID `60CF7B27…F8A19` 预签：`sha256sum -c SHA256SUMS` → `hdc install -r` **直装**；非本 UDID 设备仍 `9568344`；#34 旧件（`b492b284…`/asset 600101072）已显式替换、旧哈希作废 |
 | AOT 复测取件（`aot-haps*`；**rc.2 pack `-r2` 已修 OpenSSL shim，撤 rc.1 钉**） | **18,185,012**（`aot-haps-v3-rc2.tar.gz`；本批未动） | **`3d24f716…`** | AOT hap（含 UIPage 出画修复）；rc.2 设备/本机构建用修正版 pack **`…11.0.0-rc.2.26451.112-r2.nupkg`**（28,904,657 B / `542058cf…`，asset 601289590）；JIT 主体崩溃或黑屏时用它；装前重签。**#40 的 FIX-JSCALL 请用本轮 kit 件（切片重建）** |
 | `harmony-haps.tar.gz`（MAPFIX 重切 2026-09-28） | 196,898,796 | `9b0506fa…` | harmony 壳 5 变体（AGC 就绪时用；overlay 真编译，abc 291,628 B/`a637a513…`） |
 | `ohos-interpreter-pack.tar.gz` | 2,419,988 | `a10699b3…` | 解释器载荷（`-p:OpenHarmonyInterpreterPack=<解包目录>` 或设备侧 `interp.txt=3`） |
@@ -35,8 +35,8 @@
 包内 7 hap（kit #40 发布实测，`SHA256SUMS` 17 项 / 1,517 B / `7667b6bd…`）：`hello-maui-app.hap` **134,016,353 / `712bd947…`**、`…-unsigned` **131,497,113 / `87e10197…`**、`…-permissions` **134,016,342 / `8773a913…`**、`…-api20` **134,016,335 / `88c6a165…`**、`…-api20-permissions` **134,016,346 / `a35c3467…`**、Blazor 默认 **27,216,958 / `8db8e4ec…`**（own abc 21,200 B、site 213 files、dotnet.js 93,218 B == `dotnet.17opwway9i.js` / `43f9f87e…`）、`-nocsp` **27,216,659 / `0e0af68b…`**（包内名 `hello-blazorwasm-host-nocsp-unsigned.hap`；own abc 21,016 B）。
 
 **预签直装捷径（可选）**：`sha256sum -c SHA256SUMS` 后 `hdc install -r` 直装，**§2 的「先重签」可跳过**（同 bundle
-换件仍先卸载）；每件 bundle/原 sha/新 sha/安装命令见包内 `preSigned-README.md`。它是并列附加件：`verify-kit.sh`
-全包校验与 `tester-run.sh` 完整轮仍用 `device-test-kit.tar.gz`。
+换件仍先卸载）；每件 bundle/原 sha/新 sha/安装命令见包内 `preSigned-README.md`（**#40 件已就位**，2026-10-02 刷新；
+#34 旧件作废）。它是并列附加件：`verify-kit.sh` 全包校验与 `tester-run.sh` 完整轮仍用 `device-test-kit.tar.gz`。
 
 ## 2. 执行顺序（每步「期望 → 回传」）
 

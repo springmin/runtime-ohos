@@ -40,13 +40,14 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
     --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack.tar.gz --capture 60
 ```
 
-## 0b. 预签直装（#34 起加发资产；#35–#40 本批未刷新）
+## 0b. 预签直装（#34 起加发资产；**已刷新至 kit #40**）
 
-`device-test-kit` release 自 #34 起有并列预签资产 **`preSigned-haps.tar.gz`**（asset 600101072，
-375,834,798 B / `b492b284…`）：7 hap 全部按 **tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`**
+`device-test-kit` release 的并列预签资产 **`preSigned-haps.tar.gz`** 已**刷新至 kit #40**（2026-10-02；asset
+**605502130**，**376,463,885 B / `193f5fb1…`**；sidecar `preSigned-haps.tar.gz.sha256` 88 B / `9fa506e3…`，
+asset **605534061**；解包树 `175c8a4a…`；#34 旧件 asset 600101072/600109338 已被**显式替换**、旧哈希 `b492b284…` 作废）：
+7 hap 全部按 **tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`**
 预签，`sha256sum -c SHA256SUMS` 后 `hdc install -r` **直装、无需重签**（同 bundle 换件仍先卸载）；
-非 tester UDID 设备报 `9568344` → 回传 UDID 重出或按包内 README 自签。**#35–#40 本批未刷新预签件
-（沿 #34 件；#40 如需预签请回传 UDID 代签）**；预签包是并列附加件，完整一轮仍用 `device-test-kit.tar.gz`。
+非 tester UDID 设备报 `9568344` → 回传 UDID 重出或按包内 README 自签；预签包是并列附加件，完整一轮仍用 `device-test-kit.tar.gz`。
 
 ## 1. kit #40 相对 #39 的增量（测试方视角）
 
