@@ -104,6 +104,10 @@ ninja -C artifacts/obj/native/net11.0-openharmony-Release-arm64 -j4 \
   本次为 **fork 构型缺陷**，上游 mainline 不设 `LinkStaticOpenSsl`；
   但“AOT pack 静态归档必须自带 shim（或把静态 OpenSSL 归档纳入 ilc 链接输入）”
   对上游同样成立。
+  > **2026-10-03 闭合（L-AOTPACK）**：已按“拆分对象库”落地——
+  > `FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 让静态归档始终带 shim，共享 `.so`
+  > 仍静态链 OpenSSL；`build-ohos-all.sh` 在布局与 nupkg 两处加 shim 校验。
+  > 见 `docs/plans/2026-10-03-ohos-aotpack-structural.md`。
 - **NuGet 缓存**：修正资产复用 `.112` 版本号，已恢复过坏包的环境需删
   `~/.nuget/packages/microsoft.netcore.app.runtime.nativeaot.openharmony-arm64/11.0.0-rc.2.26451.112`
   再 publish（文档已写明）；本机已处理。
