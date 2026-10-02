@@ -37,8 +37,8 @@
   内件 abc 356,140/`2a90f0d7…`、宿主 `8d67def3…`、`libcoreclr` BuildID `bc5ff740…`、`libclrinterpreter` `ba83106b…`、`runtime-mode.txt=interp`；
   重签 **125,803,699 / `44ea0d46…`**。
 - install OK；启动后 pid 存活 >25 s–5 min；faultlogger **0 条新 `cppcrash`**（最新仍是 §3 的 02:31 JIT 记录）→ `coreclr_initialize+440`/写屏障崩溃点消失。
-- **不确定（登记，不判失败）**：本轮 FULL 件与 23:39 pre-FULL e2e interp 件同镜像均"存活但未出首帧"（窗口停在 shell/launch 画面、`canvas presented`=0）；
-  与 INTERP-FIX §4 正文的 411 行（23:35 一次）不一致、与其 final 快照（canvas=0）一致 → interp 首帧呈现为本镜像未决/偶发项。
+- **已定位（INTERP-FRAME，2026-10-03）**：非偶发——托管运行时未启动：`coreclr_initialize` 在 CoreLib 装载失败
+  `0x800701E7`（HAP 域拒绝全部 exec 内存策略，interp 仍需 RWX 执行页），详见 `2026-10-03-ohos-interp-frame.md`。
 
 ## 6. razor 计数 + 抽屉/Back 回归（kit #41 线）✅
 - razor AOT 重建（maui `07423dfe93` + 壳 abc **356,152/`6782cee3…`**（`hellomauirazor` bundle 名变体）+ 宿主 `8d67def3…`；

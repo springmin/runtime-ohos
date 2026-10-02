@@ -67,6 +67,8 @@ interp libcoreclr BuildID `0b3291010a9b8ba189800f814f56d3348503a045`）反查：
   `canvas presented (2090x1324)`**，含 `[maui] media self-test` 与 ArkWeb 首帧记录。
 - 判定：`coreclr_initialize+440` 崩溃点消失、无后续 `InitThreadManager` 崩溃。本镜像 hilog 看不到
   `interp=3` 行（宿主 stderr 混流被 ArkWeb 日志淹没），以上行为链为本机判据。
+- **更正（INTERP-FRAME，2026-10-03）**：上述「411 行 `canvas presented`」系状态文件残留伪影（同刻 23:35:23.367
+  由壳轮询输出上一轮 AOT 行）；interp 实际在 CoreLib 装载失败 `0x800701E7`，从未出画。见 `2026-10-03-ohos-interp-frame.md`。
 
 ## 5. 资产与发布
 
