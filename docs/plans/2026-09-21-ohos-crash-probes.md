@@ -1,6 +1,21 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-02 update (kit #40 — current):** kit #40 = #39 + FIX-JSCALL (the BlazorWebView IPC outbound
+> **2026-10-03 update (kit #41 — current):** kit #41 = #40 + MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT +
+INTERP-FIX. MULTI-OVERLAY-FULL (maui 07423dfe93 + ow 0e0129e): a two-slot ArkWeb overlay pool with
+owner-aware LRU preemption/restore (`IOpenHarmonyOverlaySlotOwner`), per-slot hybrid serve/message/invoke
+channels (slot-tagged invoke ids), activation-order z-order; two Hybrids on one page each round-trip
+invoke/message, a third control preempts by LRU and activate replays the load. DEVCOMPAT-DEFAULT (ow
+12be59c): the per-file code-sign rewrite is on by default (no-extension -> `.so`, exactly 4096 B -> +4 B),
+so enforcing 7.0.0.111+ installs out of the box (15 `.so` / 257 zip entries). INTERP-FIX (ow c9916cd): the
+host uses an 8 MB app thread stack and disables the GC write-barrier copy under `interp=3`; the rc.2
+interpreter pack is a new asset `ohos-interpreter-pack-rc2.tar.gz` (2,409,070 B / `34709a94…`, asset
+605924427). The pre-signed assets are refreshed to #41 (tester UDID; 376,684,381 / `2075650a…`, asset
+606183753). FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount/FIX-JSCALL are kept. Shell abc 356,140
+(`2a90f0d7…`), headless 24,324, host `8d67def3`, exports 150/150, suite 563/floor 543. Release: tar
+376,036,502 B / `bed460ae…`, tree `7ce1946e…`, sidecar `2a95e764…`; numbers follow the release notes
+`## Integrity (kit #41)`; handoff: `docs/plans/2026-10-03-ohos-tester-handoff-kit41.md`.
+>
+> **2026-10-02 update (kit #40 — previous):** kit #40 = #39 + FIX-JSCALL (the BlazorWebView IPC outbound
 half is now AOT-rooted: `IpcSender.BeginInvokeJS` serializes `JSCallResultType`/`JSCallType` and
 `IpcSender.Navigate` serializes `NavigationOptions` through the WebView package's reflection resolver,
 where NativeAOT had no code for the `EnumConverter<T>`/`JsonTypeInfo<T>` closed instances — the attach
@@ -134,7 +149,17 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-02 update (kit #40 — current):** the kit adds FIX-JSCALL (the BlazorWebView IPC outbound half is
+> **2026-10-03 update (kit #41 — current):** the kit lands the three thorough fixes: MULTI-OVERLAY-FULL (a
+> two-slot ArkWeb overlay pool with owner-aware LRU preemption/restore and per-slot hybrid invoke/message
+> channels), DEVCOMPAT-DEFAULT (the per-file code-sign rewrite is on by default, so enforcing 7.0.0.111+
+> installs out of the box: no-extension -> `.so`, 4096 B -> +4 B) and INTERP-FIX (8 MB app thread stack +
+> GC write-barrier copy off under `interp=3`; the rc.2 interpreter pack is the new
+> `ohos-interpreter-pack-rc2.tar.gz`, 2,409,070 B). The pre-signed assets are refreshed to #41 (tester UDID).
+> Suite **563/floor 543**, exports **150/150**, shell abc 356,140 / headless 24,324, host `8d67def3`. Tar
+> **376,036,502** / `bed460ae…`, tree `7ce1946e…`. Numbers follow the release notes `## Integrity (kit #41)`;
+> handoff: `docs/plans/2026-10-03-ohos-tester-handoff-kit41.md`.
+>
+> **2026-10-02 update (kit #40 — previous):** the kit adds FIX-JSCALL (the BlazorWebView IPC outbound half is
 > AOT-rooted: the `JSCall` enums and `NavigationOptions` are carried in the slice's source-gen context so the
 > WebView package's reflection resolver finds their converters — the razor counter now round-trips 0 -> 1 -> 2
 > on device). FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount are kept. Suite **555/floor 535**, exports
