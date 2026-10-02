@@ -40,6 +40,7 @@
   对 Blazor 页消息的噪声日志），Blazor handler 无拒绝日志。下一环：在 manager 边界记录 JS→.NET 载荷，
   核对首个 `__bwv` 握手/挂载批次。
 - 单覆盖层：hybrid 已注册时 Blazor 的 frame 被有意 withheld（多覆盖层仍是后续；Blazor-only 页不受影响）。
-- 未改 pin：CI 三处 maui ref 仍指 `47d79add01`（新切片 `be09a48817` 须按流程单独推进，否则 CI 交互
-  套件编译旧 tip 会在新断言处失败）。
+- pin 已收口（MAUI-CONSOLIDATE-FIX3，2026-10-01）：CI 三处 maui ref `47d79add01` → `be09a48817`
+  （ow `641e6ea`），套件注释 554/534、导出 150/150；收口记录见
+  `docs/plans/2026-10-01-ohos-fix3-consolidation.md`。
 - 真机为共享桌面（脚本时段外偶发外部输入）；本报告只采信时序内状态/像素/hilog 一致的轮次。
