@@ -5,7 +5,7 @@
 ## 1. 启动序（host stderr → `<filesDir>/dotnet-status.txt` → 壳轮询 hilog `[maui] status:`）
 
 fresh 装 kit 线 interp HAP（`44ea0d46…`；内件 BuildID `bc5ff740…`/`ba83106b…` 与 rc2 pack 一致）：`probe 1=22 2=22 3=13 4=1` → `start_app aot=0` → `launching app thread` → `run_app entering`
-→ `Failed to load System.Private.CoreLib.dll (error code 0x800701E7)` / `Attempt to access invalid address.` → `Failed to create CoreCLR, HRESULT: 0x800701E7` → `run_app exited: -2147450743`；pid `#FOREGROUND` 存活、`canvas presented`=0。`managed started`/MAUI init/surface/canvas 均未到达。
+→ `Failed to load System.Private.CoreLib.dll (error code 0x800701E7)` / `Attempt to access invalid address.` → `Failed to create CoreCLR, HRESULT: 0x800701E7` → `run_app exited: -2147450743`；pid `#FOREGROUND` 存活、`canvas presented`=0。壳的 `managed app … started (UI shell)` 只是 startApp 返回；托管入口/MAUI init/surface/canvas 均未到达。
 
 ## 2. 判定：HAP 域无可用可执行内存，纯解释绕不开
 
