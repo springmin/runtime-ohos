@@ -110,6 +110,16 @@
 5. **风险与口径**：残余匿名 exec 页可能来自 `Precode`/UMEntryThunk stub（解释器代码堆本身不可执行）；③ 不达标先记录，勿改 W^X。解释器性能数量级慢于 JIT，本 pack 只回答「可用性/可行性」。
 6. **包内文档勘误**：`VERIFICATION.md` 的 `libclrinterpreter.so` BuildID 行（`7380afe1…`）系 R1 spike 残留，实际 `0bd8fdfc…`；「未发布 release」为打包时状态，以本小节为准。哈希/尺寸/`NEEDED`（`libc++_shared.so, libc.so`）/宽字符串已逐项复核一致。
 
+### INTERP-FIX（2026-10-02）：rc.1 pack 换入 rc.2 runtime 的「起步崩」已完成根因更正与重建
+
+R2 资产后被记为「pack/runtime 兼容性」的 `coreclr_initialize+440` 崩溃，经复现和 addr2line **不是**
+pack 问题：stock rc.2 libcoreclr 在同一设备、同一 app 线程以同样两处崩溃（`EnsureStackSize` 的 1.5 MB
+`_alloca` 对 1 MB OHOS musl 默认线程栈；HAP 域拒绝 GC 写屏障页的 RWX commit）。修复 = 宿主
+（8 MB 线程栈 + `interp=3` 时 `DOTNET_UseGCWriteBarrierCopy=0`，ohos-workload `c9916cd`）+ rc.2 主线
+重建（`libcoreclr.so` BuildID `bc5ff740…` / `libclrinterpreter.so` `ba83106b…`）+ 重打资产
+`ohos-interpreter-pack-rc2.tar.gz`（新 pack HAP 端到端 411 帧出画、0 新崩溃）。详见
+[`2026-10-02-ohos-interp-fix.md`](2026-10-02-ohos-interp-fix.md)。
+
 ## 3. 四条路线对比
 
 | 路线 | 机制 | OHOS 现状（本仓证据） | 阻塞/成本 | 结论 |

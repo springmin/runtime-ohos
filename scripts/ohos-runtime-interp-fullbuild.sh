@@ -35,6 +35,8 @@
 #      NUGET_CONFIG (if set, passed as /p:RestoreConfigFile; on this host all
 #              NuGet feeds are unreachable, so a local-only config restores from
 #              the global packages cache instead of hanging in socket retries)
+#      RC_LABEL / RC_NUMBER / BUILD_ID (default the rc.2 line the runtime pack
+#              ships: rc / 2 / 20260901.112; the R1/R2 runs used rc/1/...109)
 # Logs: $SCR/logs/{configure,full-build}.log + .binlog
 #
 # NOTE (running the result): on HarmonyOS the hishell/CLI domain refuses
@@ -56,6 +58,9 @@ OHOS_NDK_HOME="${OHOS_NDK_HOME:-/storage/Users/currentUser/.harmonybrew/Cellar/o
 ICU_DIR="${ICU_DIR:-$SCR/icu}"
 OPENSSL_DIR="${OPENSSL_DIR:-$SCR/openssl}"
 JOBS="${JOBS:-4}"
+RC_LABEL="${RC_LABEL:-rc}"
+RC_NUMBER="${RC_NUMBER:-2}"
+BUILD_ID="${BUILD_ID:-20260901.112}"
 CONFIGURE_ONLY=0
 RESTORE_ARGS=()
 if [ -n "${NUGET_CONFIG:-}" ]; then
@@ -147,6 +152,11 @@ PYEOF
 export DOTNET_NOLOGO=1
 export MSBUILDDISABLENODEREUSE=1
 export DOTNET_CLI_USE_MSBUILD_SERVER=0
+# rc.2's csc deadlocks/livelocks running the repo task projects' source generators in
+# parallel on this OHOS host (observed: 8 h CPU spin on one project; removing any single
+# generator or passing /parallel- compiles in seconds). Run the managed side with one
+# processor; the native build is driven by ninja/clang and keeps $JOBS.
+export DOTNET_PROCESSOR_COUNT=1
 
 cd "$REPO"
 CMAKE_ARGS=(
@@ -171,12 +181,21 @@ EXTRA=(/p:ConfigureOnly=true) ; [ "$CONFIGURE_ONLY" != "1" ] && EXTRA=()
 echo "== full build ($SUBSET, FEATURE_INTERPRETER=1) =="
 echo "ICU_DIR=$ICU_DIR"
 echo "OPENSSL_DIR=$OPENSSL_DIR"
+# rc.2 bumped the dotnet-optimization dependencies to 1.0.0-prerelease.26420.2, which are
+# only on the internal dotnet-optimization feed; the public feeds stopped at older data.
+# OpenHarmony never consumes the data (NativeOptimizationDataSupported covers windows/linux),
+# so the host pins the versions that exist in the local NuGet cache instead of hanging on
+# the missing feed. Override OPTIMIZATION_PGO / OPTIMIZATION_MIBC when a mirror is available.
+OPT_PGO="${OPTIMIZATION_PGO:-1.0.0-prerelease.26407.1}"
+OPT_MIBC="${OPTIMIZATION_MIBC:-1.0.0-prerelease.26451.1}"
 ./build.sh -subset "$SUBSET" -os openharmony -arch arm64 --cross -c Release -lc Release -rc Release \
   -clrinterpreter \
   /p:UseBootstrapLayout=true \
   /p:RuntimeIdentifierGraphPath="$SCR/ridgraph.json" \
   /p:ApiCompatValidateAssemblies=false /p:IncludeSymbols=false \
-  /p:PreReleaseVersionLabel=rc /p:PreReleaseVersion=1 /p:OfficialBuildId=20260901.109 \
+  /p:PreReleaseVersionLabel="$RC_LABEL" /p:PreReleaseVersion="$RC_NUMBER" /p:OfficialBuildId="$BUILD_ID" \
+  /p:optimizationPGOCoreCLRVersion="$OPT_PGO" \
+  /p:optimizationlinuxx64MIBCRuntimeVersion="$OPT_MIBC" \
   /p:_RepoToolManifest=/nonexistent-r2interp \
   /p:RestoreUseStaticGraphEvaluation=false \
   /p:GenerateRestoreUseStaticGraphEvaluationBinlog=false \
