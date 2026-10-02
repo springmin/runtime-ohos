@@ -15,7 +15,9 @@
   回退字节不变、逃生口不打印状态行等）。
 - `selftest-hap-targets` T8（19 断言）：默认解析 `[true]`、`createdump.so`/`notes.bin`、4096→4100、嵌套
   `wwwroot` 保留、marker 计数 + zip 回退身份、逃生口告警/原名原字节、AOT/interp 预置 natives 不改动。
-- 全 selftest 绿（隔离 worktree）：ridgraph 20 / packs 25 / hap-targets 68 / tasks 9 / repo-hygiene 25。
+- 全 selftest 绿（隔离 worktree）：ridgraph 20 / packs 25 / hap-targets 68 / tasks 9 / repo-hygiene 25 /
+  build-arkts 182 / commit-paths 29 / devloop 109 / make-mode-kit 82 / sign-for-device 209 / tester-run 683 /
+  verify-kit 108（全部 failed=0）。
 
 ## 3. 本机端到端（enforcing 7.0.0.111，默认设置）
 - hello-app JIT（默认）：2 rewrite（`createdump→createdump.so`、`Microsoft.OpenHarmony.dll` 4096→4100）→
