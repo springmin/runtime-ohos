@@ -121,7 +121,7 @@
     现有 viewData want 路径；④ PKCE/state 存储按 MAUI 契约为 app 侧职责。剩余为 ① 的清单声明 + 设备侧回调投递验证 —— 提交
     `maui-ohos 783a7fcb`、`4b5756de`；`ohos-workload 402ed46`。
 - MediaElement
-- TableView + legacy compatibility renderers + TitleBar + Core Toolbar
+- ~~TableView + legacy compatibility renderers + TitleBar + Core Toolbar~~（2026-10-03 LEGACY 复核：TableView=T8、TitleBar=N6/T9 已实现；Core Toolbar 已由 LEGACY 切片闭合——图标/文字/Order+Priority/IsEnabled/事件/溢出，见 `2026-10-03-ohos-legacy-toolbar.md`；legacy compatibility renderers 为骨架提交 `e55e1e27bb` 有意移除的层，与上游 net11 移除兼容包一致，不在切片范围）
 
 2026-09-22：Email / Sms / PhoneDialer、Screenshot / Geocoding、`SemanticScreenReader.Announce`、
 Shell 扩展（SearchHandler / FlyoutHeader / TabBarIsVisible / FlyoutBehavior）已转 §1b 的
