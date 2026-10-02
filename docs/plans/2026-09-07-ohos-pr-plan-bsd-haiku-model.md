@@ -186,7 +186,9 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   (Build Analysis/Insights, the `runtime` umbrella, Helix Monitor Jobs,
   osx-arm64 libraries = tracked #132585, closed 09-22). Preceded by our 09-21
   reply; **status update posted 2026-10-01** (`#issuecomment-5932455043`) —
-  awaiting re-review; the next action is the maintainer response, then C3.
+  and within hours the review request was **re-targeted to @jkoritzinsky**
+  (2026-10-01 17:58:49Z; previously with @am11) — awaiting that re-review;
+  then C3.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**, awaiting
   the maintainer merge; idle 5 d; no-nag policy holds.
 - **#134670** platform identity + NUMA — **MERGED 09-26** ✓ (content reconciled
