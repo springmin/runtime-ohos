@@ -1,6 +1,18 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
-> **2026-10-01 update (kit #38 — current):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
+> **2026-10-02 update (kit #39 — current):** kit #39 = #38 + FIX-BACKSIZE (the system Back key now
+closes the drawer via the shell `onBackPress(): boolean` -> host `host.backPressed` /
+`ohos_host_register_back_pressed` (exports 149->150); a second Back falls back to the system
+`#BACKGROUND`; `BlazorWebView` overrides `GetDesiredSize` — it returned 0 before, so its frame
+degraded and was ignored; maui be09a48817 + shell/host 9e6519e) and FIX-BWVMount (`.razor` components
+now mount under NativeAOT — the handler static ctor keeps the WebView package's reflection-built
+`JsonElement[]` converter in the AOT image; maui 52b082a071). FIX-HOME/FIX-ITOUCH/FIX-DISMISS/FIX-WVP
+are kept. Shell abc 342,160 (`ffda66da…`), headless 24,324, host `384e552a`, exports 150/150, suite
+554/floor 534. Release: tar 375,765,521 B / `e95eed49…`, tree `932e7955…`, sidecar `e5fc82de…`;
+numbers follow the release notes `## Integrity (kit #39)`; handoff:
+`docs/plans/2026-10-02-ohos-tester-handoff-kit39.md`.
+>
+> **2026-10-01 update (kit #38 — previous):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
 dismiss: the `Default` layout threw `InvalidOperationException` under the device's non-Phone idiom /
 landscape snapshot — the exception was swallowed at the touch-callback boundary — so `Default` now maps to
 `Popover`; maui 86b439ffc8) and FIX-WVP (the Hybrid overlay: element px rendered as ArkUI vp → ×1.9
@@ -109,7 +121,10 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-10-01 (kit #38 — current): **FIX-DISMISS + FIX-WVP**: the flyout drawer now dismisses on an outside click (re-open/re-close both work; no residue) and the Hybrid overlay really renders (element px converted to vp, hybrid origin `0.0.0.1` registration, `Web` above the ContentSlot, suspend/resume/hide under a drawer or tab switch; the page bridge round-trips `window.external.sendMessage`). FIX-HOME/FIX-ITOUCH are kept; the FIX-BACK wave (Back-closes-drawer, BlazorWebView sizing) is not in this kit. Suite **550/floor 530**, host export **149/149**, shell abc 341,560 (`4f02cb1d…`) / headless 24,324, host `4e9f3c3e`; tar **375,641,619** / `ced5583f…`, tree `307004e1…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #38)`; handoff:
+Updated 2026-10-02 (kit #39 — current): **FIX-BACKSIZE + FIX-BWVMount**: the system Back key now closes the drawer (the shell `onBackPress()` routes to host `host.backPressed` / `ohos_host_register_back_pressed`, exports 150; a second Back falls back to the system) and `BlazorWebView` reports a real desired size; the `.razor` components now mount and render under NativeAOT (the WebView package's reflection-built `JsonElement[]` converter is kept in the AOT image). FIX-HOME/FIX-ITOUCH/FIX-DISMISS/FIX-WVP are kept. Suite **554/floor 534**, exports **150/150**, shell abc 342,160 (`ffda66da…`) / headless 24,324, host `384e552a`; tar **375,765,521** / `e95eed49…`, tree `932e7955…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #39)`; handoff:
+> `docs/plans/2026-10-02-ohos-tester-handoff-kit39.md`.
+>
+> Updated 2026-10-01 (kit #38 — previous): **FIX-DISMISS + FIX-WVP**: the flyout drawer now dismisses on an outside click (re-open/re-close both work; no residue) and the Hybrid overlay really renders (element px converted to vp, hybrid origin `0.0.0.1` registration, `Web` above the ContentSlot, suspend/resume/hide under a drawer or tab switch; the page bridge round-trips `window.external.sendMessage`). FIX-HOME/FIX-ITOUCH are kept; the FIX-BACK wave (Back-closes-drawer, BlazorWebView sizing) is not in this kit. Suite **550/floor 530**, host export **149/149**, shell abc 341,560 (`4f02cb1d…`) / headless 24,324, host `4e9f3c3e`; tar **375,641,619** / `ced5583f…`, tree `307004e1…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #38)`; handoff:
 > `docs/plans/2026-10-01-ohos-tester-handoff-kit38.md`.
 >
 > Updated 2026-10-01 (kit #37 — previous): **FIX-HOME + FIX-ITOUCH**: the Home tab (FlyoutPage -> TabbedPage -> NavigationPage) now draws its full page on the AOT device (screenshot-proved) and uitest-injected taps hit MAUI content (the host reports touch points in element coordinates, the same surface space as the mouse; "fading out…" -> "animations done"). Suite **544/floor 524**, host export **149/149**, shell abc 339,964 / headless 24,324 (unchanged), host `4e9f3c3e`; tar **375,652,577** / `3a7259d6…`, tree `ab517b57…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #37)`; handoff:

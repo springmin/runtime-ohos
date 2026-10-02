@@ -1,6 +1,18 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-01 update (kit #38 — current):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
+> **2026-10-02 update (kit #39 — current):** kit #39 = #38 + FIX-BACKSIZE (the system Back key now
+closes the drawer via the shell `onBackPress(): boolean` -> host `host.backPressed` /
+`ohos_host_register_back_pressed` (exports 149->150); a second Back falls back to the system
+`#BACKGROUND`; `BlazorWebView` overrides `GetDesiredSize` — it returned 0 before, so its frame
+degraded and was ignored; maui be09a48817 + shell/host 9e6519e) and FIX-BWVMount (`.razor` components
+now mount under NativeAOT — the handler static ctor keeps the WebView package's reflection-built
+`JsonElement[]` converter in the AOT image; maui 52b082a071). FIX-HOME/FIX-ITOUCH/FIX-DISMISS/FIX-WVP
+are kept. Shell abc 342,160 (`ffda66da…`), headless 24,324, host `384e552a`, exports 150/150, suite
+554/floor 534. Release: tar 375,765,521 B / `e95eed49…`, tree `932e7955…`, sidecar `e5fc82de…`;
+numbers follow the release notes `## Integrity (kit #39)`; handoff:
+`docs/plans/2026-10-02-ohos-tester-handoff-kit39.md`.
+>
+> **2026-10-01 update (kit #38 — previous):** kit #38 = #37 + FIX-DISMISS (the flyout drawer outside-click
 dismiss: the `Default` layout threw `InvalidOperationException` under the device's non-Phone idiom /
 landscape snapshot — the exception was swallowed at the touch-callback boundary — so `Default` now maps to
 `Popover`; maui 86b439ffc8) and FIX-WVP (the Hybrid overlay: element px rendered as ArkUI vp → ×1.9
@@ -110,7 +122,16 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-01 update (kit #38 — current):** the kit adds FIX-DISMISS (the flyout drawer now dismisses on an
+> **2026-10-02 update (kit #39 — current):** the kit adds FIX-BACKSIZE (the system Back key now closes the
+> drawer via the shell `onBackPress()` -> host `host.backPressed` / `ohos_host_register_back_pressed`,
+> exports 150; `BlazorWebView.GetDesiredSize` now reports a real size) and FIX-BWVMount (`.razor` components
+> mount under NativeAOT — the WebView package's reflection-built `JsonElement[]` converter stays in the
+> AOT image). FIX-HOME/FIX-ITOUCH/FIX-DISMISS/FIX-WVP are kept. Suite **554/floor 534**, exports **150/150**,
+> shell abc 342,160 / headless 24,324, host `384e552a`. Tar **375,765,521** / `e95eed49…`, tree
+> `932e7955…`. Numbers follow the release notes `## Integrity (kit #39)`; handoff:
+> `docs/plans/2026-10-02-ohos-tester-handoff-kit39.md`.
+>
+> **2026-10-01 update (kit #38 — previous):** the kit adds FIX-DISMISS (the flyout drawer now dismisses on an
 > outside click — the `Default` layout mapped to `Popover` under the device idiom) and FIX-WVP (the Hybrid
 > overlay: element px rendered as vp fixed, hybrid origin `0.0.0.1` registration, `Web` above the ContentSlot,
 > suspend/resume/hide under a drawer or tab switch); FIX-HOME/FIX-ITOUCH are kept; the FIX-BACK wave is not in
