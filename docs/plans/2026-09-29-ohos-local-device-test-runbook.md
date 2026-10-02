@@ -72,5 +72,5 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
   本机可用 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true`（重写分包）或 `-p:OpenHarmonyHapPayloadInLibs=false`
   重出包 / `aot-haps-v3` 复测（两种布局本机均已安装通过）；证据与对策见
   `docs/plans/2026-09-30-ohos-jit-payload-install-policy.md`。
-- **kit #39 复测入口**：`docs/plans/2026-10-02-ohos-tester-handoff-kit39.md` §2–§4（FIX-BACKSIZE Back 关抽屉 / FIX-BWVMount `.razor` 挂载见 §2）与
+- **kit #40 复测入口**：`docs/plans/2026-10-02-ohos-tester-handoff-kit40.md` §2–§4（FIX-JSCALL 计数往返 0→1→2 见 §2）与
   `docs/plans/2026-09-28-ohos-retest-taskcard.md`。

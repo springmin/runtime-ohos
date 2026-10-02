@@ -1,6 +1,18 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-02 update (kit #39 — current):** kit #39 = #38 + FIX-BACKSIZE (the system Back key now
+> **2026-10-02 update (kit #40 — current):** kit #40 = #39 + FIX-JSCALL (the BlazorWebView IPC outbound
+half is now AOT-rooted: `IpcSender.BeginInvokeJS` serializes `JSCallResultType`/`JSCallType` and
+`IpcSender.Navigate` serializes `NavigationOptions` through the WebView package's reflection resolver,
+where NativeAOT had no code for the `EnumConverter<T>`/`JsonTypeInfo<T>` closed instances — the attach
+interop died in `IpcCommon.Serialize` and the FIX-BWVMount stub interop swallowed later clicks; the slice
+re-carries the three types in its source-gen context, touches the type infos in the handler static ctor
+and removes the stub probe; maui 15d81f31b1 + suite pin 2028cc2/9073c65). Device: the razor counter
+round-trips **0 -> 1 -> 2** (screenshots r0/r1/r2; `missing native code`=0). Shell abc 342,160
+(`ffda66da…`), headless 24,324, host `384e552a`, exports 150/150, suite 555/floor 535. Release: tar
+375,836,470 B / `31ab8732…`, tree `e950de54…`, sidecar `9b051247…`; numbers follow the release notes
+`## Integrity (kit #40)`; handoff: `docs/plans/2026-10-02-ohos-tester-handoff-kit40.md`.
+>
+> **2026-10-02 update (kit #39 — previous):** kit #39 = #38 + FIX-BACKSIZE (the system Back key now
 closes the drawer via the shell `onBackPress(): boolean` -> host `host.backPressed` /
 `ohos_host_register_back_pressed` (exports 149->150); a second Back falls back to the system
 `#BACKGROUND`; `BlazorWebView` overrides `GetDesiredSize` — it returned 0 before, so its frame
@@ -122,7 +134,15 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-02 update (kit #39 — current):** the kit adds FIX-BACKSIZE (the system Back key now closes the
+> **2026-10-02 update (kit #40 — current):** the kit adds FIX-JSCALL (the BlazorWebView IPC outbound half is
+> AOT-rooted: the `JSCall` enums and `NavigationOptions` are carried in the slice's source-gen context so the
+> WebView package's reflection resolver finds their converters — the razor counter now round-trips 0 -> 1 -> 2
+> on device). FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount are kept. Suite **555/floor 535**, exports
+> **150/150**, shell abc 342,160 / headless 24,324, host `384e552a`. Tar **375,836,470** / `31ab8732…`,
+> tree `e950de54…`. Numbers follow the release notes `## Integrity (kit #40)`; handoff:
+> `docs/plans/2026-10-02-ohos-tester-handoff-kit40.md`.
+>
+> **2026-10-02 update (kit #39 — previous):** the kit adds FIX-BACKSIZE (the system Back key now closes the
 > drawer via the shell `onBackPress()` -> host `host.backPressed` / `ohos_host_register_back_pressed`,
 > exports 150; `BlazorWebView.GetDesiredSize` now reports a real size) and FIX-BWVMount (`.razor` components
 > mount under NativeAOT — the WebView package's reflection-built `JsonElement[]` converter stays in the
