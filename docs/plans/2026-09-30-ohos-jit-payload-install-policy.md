@@ -1,5 +1,12 @@
 # 本机镜像拒绝 JIT payload-in-libs 的根因与对策（JIT-PAYLOAD-POLICY，2026-09-30）
 
+> **2026-10-02 更新（DEVCOMPAT-DEFAULT）**：打包侧已把本轮对策从可选改为**默认开启**——
+> `OpenHarmonyHapPayloadInLibsDeviceCompat` 默认 `true`（ohos-workload 全 7 个 preview pack 副本
+> 同源）：默认构建即把 libs 内无扩展名文件落为 `.so`/`.bin`、恰 4096 B 文件补 4 B（`dotnet.zip`
+> 保原名原字节，marker 计数/语义不变），构建输出加一行状态；`-p:...DeviceCompat=false` 保留为
+> 逃生口（原名原字节 + 告警点名）。默认构建的本机 enforcing 安装/启动复测见
+> `docs/plans/2026-10-02-ohos-payload-sign-default.md`。
+
 > 设备：HAD-W24 `7.0.0.111(SP3ENTC293E104R2P1log)`（API 26，UDID `1BCE13C8…AEA0`，无线 hdc `127.0.0.1:35111`）。
 > 证据 scratch：`/data/storage/el2/base/tmp/opencode/lo-c/`（各轮 `e*-install-stream.txt` 安装流日志、探针
 > `test/e*-signed.hap`、离线签名器解析脚本）。背景：kit #33/#34 JIT hap（`libs/arm64-v8a/` 270 文件）本机
@@ -34,9 +41,10 @@
 
 ## 4. 对策
 
-- **打包（已实施，ohos-workload）**：新增 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true`：staging 把无扩展名文件
-  落为 `.so`（ELF）/`.bin`（其它）、把 4096 B 文件补 4 B；dotnet.zip 保持原名原字节，码签（OpenHarmonyCodesign）
-  随后覆盖补丁后的 ELF。默认 false，但检测到不兼容文件时**告警**点名，并列出两个属性（不会静默出货坏包）。
+- **打包（已实施，ohos-workload；DEVCOMPAT-DEFAULT 后默认 true）**：`OpenHarmonyHapPayloadInLibsDeviceCompat`
+  默认 `true`：staging 把无扩展名文件落为 `.so`（ELF）/`.bin`（其它）、把 4096 B 文件补 4 B；dotnet.zip 保持
+  原名原字节，码签（OpenHarmonyCodesign）随后覆盖补丁后的 ELF；构建输出一行状态。`false` 为逃生口（原名原
+  字节 + 不兼容文件点名告警），不会静默出货坏包。
 - **设备复测**：JIT 真机判定仍以 tester 7.0.0.105 为准；≥7.0.0.111 上测 JIT 用 DeviceCompat 重写包或
   `-p:OpenHarmonyHapPayloadInLibs=false` 重出包；AOT（aot-haps-v3）不受影响。
 
