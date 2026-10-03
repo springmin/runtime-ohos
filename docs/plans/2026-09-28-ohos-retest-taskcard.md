@@ -78,7 +78,7 @@
 | **FIX-JSCALL（承 #40）** | razor 点两次 → count 0→1→2；`missing native code`=0 | 承 #40 保持 |
 | **FIX-BACKSIZE / FIX-BWVMount（承 #39）** | Back 关抽屉；`.razor` 挂载 | 承 #39 保持 |
 | **FIX-DISMISS / FIX-WVP / FIX-HOME / FIX-ITOUCH（承 #38/#37）** | 外点关；Hybrid 出画+bridge；Home 整页出画；注入命中 | 承 #37/#38 保持 |
-| **payload / 像素 / a11y / AOT `-r2`（承 #36）** | `payload-in-libs: running from …`；无 `Known`；`status=1`+nodeCount；`-r2` 构建成立 | 承 #36 保持 |
+| **payload / 像素 / a11y / AOT `-struct1`（承 #36）** | `payload-in-libs: running from …`；无 `Known`；`status=1`+nodeCount；`-struct1` 构建成立（`-r2` 仅历史） | 承 #36 保持 |
 | **B2 / W9 / W10（承 #35）** | 双标记齐；T14/T21/T8/T20/T19；AOT 入口行 | 承 #35 落地 |
 | rc.2 基线 + W6/W7/W8（承 #34） | 版本自述；T12/N1/FIX-SHELL/T15/T16/N4/T18/N5/N6 | rc.2 线成立 |
 | Blazor A/B + 主体（承 #33） | 默认/nocsp 双标记；TabbedPage/W5；套件 `578 total=580 floor=560` | #33 保持 |
