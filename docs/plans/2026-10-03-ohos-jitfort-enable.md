@@ -43,3 +43,7 @@
 - 设备在测试前已被并发探针置为解锁（未重启），fortified 基线取自 WX-PROBE A/B；未再测
   relock→新宿主 的完整因果序。
 - JIT 首帧随实例竞争波动（截图 08:15 轮）；release/生产签名域与跨重启未测；解释器 NULL 栈未符号化。
+- **更正（INTERP-NULL，2026-10-03）**：解释器 NULL 已符号化并定性——stale interp 测试件把 rc.1 托管
+  CoreLib（3 参 QCall）配 rc.2 原生（隐藏第 4 参），`BEGIN_QCALL` 的 `*qcallError=0` 写 NULL；
+  按 rc.2 kit HAP 重组后无 NULL、推进到 MAUI init 且可出首帧（flaky）。见
+  `2026-10-03-ohos-interp-null.md`。
