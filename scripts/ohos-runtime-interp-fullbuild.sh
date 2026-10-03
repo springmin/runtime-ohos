@@ -37,7 +37,10 @@
 #              the global packages cache instead of hanging in socket retries)
 #      RC_LABEL / RC_NUMBER / BUILD_ID (default the rc.2 line the runtime pack
 #              ships: rc / 2 / 20260901.112; the R1/R2 runs used rc/1/...109)
-# Logs: $SCR/logs/{configure,full-build}.log + .binlog
+#      CSC_WATCHDOG (default 1; 0 disables the csc livelock watchdog) and
+#              CSC_WATCHDOG_SPIN_TIMEOUT / CSC_WATCHDOG_IDLE_TIMEOUT /
+#              CSC_WATCHDOG_RETRIES (see scripts/ohos-csc-watchdog.sh)
+# Logs: $SCR/logs/{configure,full-build}.log + .binlog + csc-watchdog/
 #
 # NOTE (running the result): on HarmonyOS the hishell/CLI domain refuses
 # file-backed PROT_EXEC for any freshly built (untrusted) ELF, so the produced
@@ -164,8 +167,14 @@ export DOTNET_CLI_USE_MSBUILD_SERVER=0
 #   2) a rarer idle deadlock (2026-10-03, this host, WITH the workaround below): the
 #      installer.tasks csc sat with 0 CPU, frozen I/O and the main thread on futex until it
 #      was killed (build MSB6006 rc 137). The workaround reduces the spin but does not
-#      eliminate every csc wedge; rerun the build, and consider an external watchdog that
-#      kills a managed compiler whose I/O and CPU are frozen for several minutes.
+#      eliminate every csc wedge.
+# Both shapes are now recovered automatically: the build below runs under
+# scripts/ohos-csc-watchdog.sh, which detects a compiler with no I/O/artifact progress
+# (CPU spinning for CSC_WATCHDOG_SPIN_TIMEOUT, default 30 min; or idle for
+# CSC_WATCHDOG_IDLE_TIMEOUT, default 5 min), snapshots /proc evidence to
+# $SCR/logs/csc-watchdog/ and SIGKILLs the compiler's process tree, then retries the
+# whole build once. Set CSC_WATCHDOG=0 to disable, or CSC_WATCHDOG_SPIN_TIMEOUT /
+# CSC_WATCHDOG_IDLE_TIMEOUT / CSC_WATCHDOG_RETRIES to tune it.
 # Keep the managed side serialized (the native build is driven by ninja/clang and keeps $JOBS).
 export DOTNET_PROCESSOR_COUNT=1
 
@@ -199,7 +208,13 @@ echo "OPENSSL_DIR=$OPENSSL_DIR"
 # the missing feed. Override OPTIMIZATION_PGO / OPTIMIZATION_MIBC when a mirror is available.
 OPT_PGO="${OPTIMIZATION_PGO:-1.0.0-prerelease.26407.1}"
 OPT_MIBC="${OPTIMIZATION_MIBC:-1.0.0-prerelease.26451.1}"
-./build.sh -subset "$SUBSET" -os openharmony -arch arm64 --cross -c Release -lc Release -rc Release \
+# csc livelock auto-recovery (see the block above): the build command runs under
+# scripts/ohos-csc-watchdog.sh unless CSC_WATCHDOG=0.
+WATCHDOG_CMD=()
+if [ "${CSC_WATCHDOG:-1}" != "0" ] && [ -x "$REPO/scripts/ohos-csc-watchdog.sh" ]; then
+  WATCHDOG_CMD=("$REPO/scripts/ohos-csc-watchdog.sh" --log-dir "$SCR/logs/csc-watchdog")
+fi
+"${WATCHDOG_CMD[@]}" ./build.sh -subset "$SUBSET" -os openharmony -arch arm64 --cross -c Release -lc Release -rc Release \
   -clrinterpreter \
   /p:UseBootstrapLayout=true \
   /p:RuntimeIdentifierGraphPath="$SCR/ridgraph.json" \
