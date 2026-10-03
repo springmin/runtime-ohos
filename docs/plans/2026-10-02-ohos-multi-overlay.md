@@ -120,3 +120,44 @@
   **已修（SAMPLE-FIX，2026-10-03）**：pack 期新增 `_OpenHarmonyStageHybridWebViewScript` +
   `OpenHarmonyExtractEmbeddedResource`，脚本进 dotnet.zip 与 `libs/<abi>/_framework/`；真机
   hybrid C 页 `stock hybridwebview.js loaded` + raw/invoke 闭环。
+
+## §DYNAMIC（SLOTS-DYNAMIC：N_max=4 动态槽池，2026-10-03）
+
+### 设计
+- 托管 `OpenHarmonyOverlays`：上限可配（env `OHOS_OVERLAY_MAX`/`OHOS_OVERLAY_HOT`，默认 4/2，
+  clamp 2..8 / 2..max）；`Acquire(owner)` 无空闲槽→按需新建（`slot ensure\n<k>`），达容量仍无槽
+  →既有 owner-LRU 抢占（保持，被抢 suspend/恢复重放不回归）；`Release` 后动态槽（>=hot）立即
+  销毁（`slot destroy\n<k>`）：热对 [0,1] 常驻、空闲 >2 不养 ArkWeb 引擎/文档，重建只付一次
+  组件+加载（权衡写在类头，无定时器）。
+- 壳：`@State webSlots`（热对 [0,1]）+ `ForEach` 动态建 ArkWeb（`WEB_SLOT_MAX=4/HOT=2`）；
+  `ensureWebSlot/destroyWebSlot`；未 attach 的命令按槽排队（上限 32）在 `onControllerAttached`
+  按序重放；`capacity`/`4` 事件带 3 次有界重试；线协议不变（`s<slot>`/`s<slot>|state`/
+  `__OHNAV|s<slot>|…`，slot 0..3）。
+- 切片 `OnPageEvent("capacity")` → `SetShellCapacity`；容量下调按 suspend 抢占超容量 claim
+  （旧 2 槽壳安全降级）。宿主/native 零改动，导出 151/151。
+
+### 实现
+- maui-ohos `OpenHarmonyWebViewHandler.cs`；ohos-workload `OpenHarmonyOverlays.cs` + 壳 4 包
+  `Index.ets`/abc + 套件(+6) + 样例 + verify-kit/selftest/打包文档；Hosting 73,728 B 同步 preview.28 pack。
+
+### 验证
+- headless `[suite] checks=584 total=586 floor=566 assert=True`；`selftest-verify-kit 129/0`、
+  `selftest-build-arkts-shell 185/0`、`repo-hygiene 25/0`、exports 151/151（--cross-check）。
+- 壳 abc UI 368,812/`1076a700…`（Index.ets 325,055/`c29640dd…`；headless 24,324/`798b2477…`
+  不变；provenance `ee41386e…`），22/23/24/28 一致；AOT `libhello-maui-app.so` 19,344,144 B、
+  IL2026/IL3050/IL3051=0/0/0、hap `ets/modules.abc` 368,812/`1076a700…`（signed 22,460,158 B）。
+- 真机 HAD-W32（`slots-dyn/`）：① 3 控件并发出画/可交互（`addC.jpeg`、
+  `abc-3controls-interactive.jpeg`、`abc-interactive.jpeg`、`round/r4-remove-c.jpeg`：A
+  `invoke: "A-echo:Echo:1"`、B `sent raw B-raw-ping`、C `invoke: "C-echo:Echo:1" (stock)` + label
+  `A/B/C raw`）；② 按需创建 `hilog-cycle2-add.txt`：`web cmd: slot`→`web slot create: 2`→defer
+  hybrid/frame→`hybrid assets slot=2`→`web page (slot 2)`，容量 `web capacity: 4`；③ 回收重建
+  `remove-c.jpeg`（C 区消失、label `removed (slot destroy)`）→`readd-c.jpeg`/`readd-raw.jpeg`
+  （slot 2 重建后 C 仍 `sent raw C-raw-ping (stock)`）；④ N=2 对照：既有
+  `multi-ovl-full/device/r13-after-c.jpeg`（N=2 加第 3 控件 A 被抢空白）vs 本轮 3 控件全在画。
+- 提交：maui-ohos `3feb347414`、ohos-workload `88e5aec`（commit-paths.sh）；CI pin 未推进
+  （`549967f2f0`）；本报告在 runtime-ohos。
+
+### 剩余缺口
+- `web slot destroy: 2` hilog 原文未取到（设备日志秒级轮转；同轮 create 已取到），销毁由截图 +
+  重建交互闭环佐证；tester 可静置复核。设备与并发 subagent 共享，一轮合并脚本被打散，主证据来自
+  独立轮次；env 不可按应用注入，真机 N=2 对照用既有证据 + headless 限值 drill；第 4 槽未真机点验。
