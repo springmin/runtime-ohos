@@ -154,8 +154,22 @@
   `remove-c.jpeg`（C 区消失、label `removed (slot destroy)`）→`readd-c.jpeg`/`readd-raw.jpeg`
   （slot 2 重建后 C 仍 `sent raw C-raw-ping (stock)`）；④ N=2 对照：既有
   `multi-ovl-full/device/r13-after-c.jpeg`（N=2 加第 3 控件 A 被抢空白）vs 本轮 3 控件全在画。
-- 提交：maui-ohos `3feb347414`、ohos-workload `88e5aec`（commit-paths.sh）；CI pin 未推进
-  （`549967f2f0`）；本报告在 runtime-ohos。
+- 提交：maui-ohos `3feb347414`、ohos-workload `88e5aec`（commit-paths.sh）；本报告在 runtime-ohos；
+  pin/CI 收口见下。
+
+### 收口（MAUI-CONSOLIDATE-SLOTS，2026-10-04）
+- origin/线性：maui `feature/openharmony` tip = `3feb347414`（父 `549967f2f0`）；ohos-workload
+  `master` tip = `88e5aec`（父 `aa6f485`）；两仓 tip 与 origin 一致且线性。
+- 合并树（`3feb347414` + `88e5aec`）门禁复核：切片 trim/AOT 0 error / 0 IL；交互
+  `[suite] checks=584 total=586 floor=566 assert=True`、584 printed `[verify]`（declared==printed）、
+  perf 全 `within=True`；pixel `PIXEL ASSERTIONS PASSED`；导出 151/151（`--cross-check`）；四包
+  preview.22/23/24/28 provenance 一致（`--check-pack-abc` + .28 复核，ui 368,812/`1076a700…`、
+  headless 24,324/`798b2477…`）；`selftest-build-arkts-shell 185/0`、`repo-hygiene 25/0`。
+- pin：ohos-workload `86b0e89` 把三 workflow（interaction/pixel/host-export）的默认与
+  `MAUI_OHOS_REF` fallback 推进到 `3feb347414`（注释同步 584/586、151/151）；快进推送、未强推。
+- CI 5/5 @ `86b0e89`（push 事件）：interaction `37161898886`（日志 `[suite] 584/586 floor 566`、切片
+  0 IL）/ pixel `37161898880` / host-export `37161898883` / ridgraph `37161898877` /
+  markdownlint `37161898899`。
 
 ### 剩余缺口
 - `web slot destroy: 2` hilog 原文未取到（设备日志秒级轮转；同轮 create 已取到），销毁由截图 +
