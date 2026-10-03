@@ -6,10 +6,11 @@
 > （#41 = tar **376,036,502 B / `bed460ae…`** 对照）。重签/重打包后哈希必变；CI run id 见 §7。
 > 构建基线（rc.2 线，同 #34–#41）：SDK **`11.0.100-rc.2.26451.112`** / workload **`1.0.0-preview.28`** /
 > MAUI **`11.0.0-rc.2.26478.12`**；rc.1 线（preview.24）保留回滚（默认根 `~/.dotnet` 未动）。
-> **AOT 包（承 #36；结构修复已入源）**：修正版 `-r2`（28,904,657 / `542058cf…`，asset 601289590）保持；
-> **结构性修复 `c1c85422715`（`FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分对象库）已入 runtime 源**——静态 `.a`
-> 保留 dlopen shim、共享 `.so` 仍静态链 OpenSSL，sdk 构建在布局与 nupkg 两处校验 shim，**后续 runtime pack
-> 无需再 `-r2` 重打包**。
+> **AOT 包（结构修复后重出）**：rc.2 runtime pack 现取 **`-struct1`**（28,905,116 / `09345f95…`，asset 607541145；
+> sha `09345f9515612f2b090fd0e0f54c815156105127cc1686240a3cad8521dab11c`，= sdk fetch 现锚）；结构修复
+> `c1c85422715`（`FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分对象库）已入 runtime 源——静态 `.a` 保留 dlopen shim、
+> 共享 `.so` 仍静态链 OpenSSL，sdk 构建在布局与 nupkg 两处校验 shim；旧的 `-r2`（601289590 / `542058cf…`）与原包
+> （`46d221f2…`）保留为历史、不再钉锚（重出记录见 `2026-10-03-ohos-aotpack-rebuild.md`）。
 > **预签已刷新（#42）**：dtk 上的 `preSigned-haps.tar.gz` 已重签为 **kit #42 件**（376,887,481 B / `8f64fd5a…`，asset 607199769；旧 #41 件已替换）
 > （376,887,481 / `8f64fd5a…`，asset 607199769；sidecar `4e158bfb…`/607262997，指向 #42 内容）——**#42 内容
 > 请用 kit tar，或回传 UDID 代签后续预签件**。
@@ -22,7 +23,7 @@
 > `docs/plans/2026-10-03-ohos-three-path-baseline.md` §5）。**JIT 仅 debug/内测签名域免 ACL；release/生产域需
 > AGC ACL（`ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`，2in1/平板）或厂商豁免；手机只发 AOT**。
 > interp 仍不随主包（独立 pack）。kit #42 本身仍为 JIT 件（该包内 `runtime-mode.txt` 未带）；AOT 默认首个变体
-> 为旁路 tar，正式 7-hap 版随下一 kit。
+> 为旁路 tar，正式 7-hap 版随下一 kit——**口径：默认 AOT（kit #43 起）；JIT 需 ACL/豁免；interp 实验**。
 
 > 结论先行：kit #42 = **kit #41 + 三路径首帧 + 一大批收口**：①**JIT 解锁**（WX-HOST-PRCTL）：宿主在两条启动路径
 > 共用处、hostfxr 初始化前调 `prctl(0x6a6974)`（`PR_SET_JITFORT`，默认开；NDK 无定义用字面量；失败不致命、保持
@@ -108,9 +109,11 @@ asset **607199769**，**376,887,481 B / `8f64fd5a…`**；sidecar 88 B / `4e158b
 
 1. **设备测试栈**（同 #34–#41）：rc.2 线 = SDK `11.0.100-rc.2.26451.112` + workload `1.0.0-preview.28` + rc.2 packs；
    rc.1（`11.0.100-rc.2.26451.109` / preview.24）保留回滚（本机 `~/.dotnet` 未动）。
-2. **AOT pack（承 #36；结构修复入源）**：当前用修正版 `-r2`（asset 601289590）；`c1c85422715` 起
-   `FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分对象库（静态 `.a` 保 shim、共享 `.so` 静态 OpenSSL；sdk 布局+nupkg
-   两处校验），后续 pack 无需 `-r2` 重打包；最小复现见 `2026-09-30-rc2-aotpack-openssl-shim-fix.md`。
+2. **AOT pack（结构修复后重出）**：当前用 **`-struct1`**（28,905,116 / `09345f95…`，asset 607541145；sdk fetch
+   现锚，`versions.env` sha `09345f9515612f2b090fd0e0f54c815156105127cc1686240a3cad8521dab11c`）；`c1c85422715`
+   起 `FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分对象库（静态 `.a` 保 shim、共享 `.so` 静态 OpenSSL；sdk 布局+nupkg
+   两处校验）；`-r2`（601289590）/原包（`46d221f2…`）仅历史；最小复现见 `2026-09-30-rc2-aotpack-openssl-shim-fix.md`、
+   重出记录见 `2026-10-03-ohos-aotpack-rebuild.md`。
 3. **解释器 pack（#42 更新）**：用 **`ohos-interpreter-pack-rc2b.tar.gz`**（2,410,595 / `5974430509…`，asset 606999003）
    + **rc.2 kit hap**（重签）+ #42 宿主；**勿用 rc.1 托管 CoreLib 的旧测试件**（QCall ABI 错配会 NULL 崩）；
    `interp.txt=1|2` 混合模式保留默认；判定见 `2026-10-03-ohos-interp-null.md`。
@@ -122,8 +125,9 @@ asset **607199769**，**376,887,481 B / `8f64fd5a…`**；sidecar 88 B / `4e158b
    **`ed504b85a46`**）；maui = **`549967f2f0`**（FIX-SLICERACE 切片；父 `96034e2acf` L6 / `1926cf68b6` SAMPLE-FIX /
    `7064bb8c1c` LEGACY / `07423dfe93` MULTI-OVERLAY-FULL）；ohos-workload master **`740980d`**（验证器期望
    356,468/258；其上 `f80f0d2` pin / `65be592` merge / `f6cbbe8` FIX-SLICERACE / `3a4bcbf` WX-HOST-PRCTL /
-   `e5d1d62` L6）；sdk 锚 **`35101fe1f5`**（bundle 锚 c98375a5 → **570c0821**；`-r2`/interp pack 引用保留；
-   镜像扩展分支 `m-web-mirror d47f1fcb3b`；SDK CI run `37096319182`）；aspnetcore `e10d030184`（以 release/仓库页为准）。
+   `e5d1d62` L6）；sdk 锚 **`35101fe1f5`**（kit #42 发布时；bundle 锚 c98375a5 → **570c0821**；interp pack 引用保留；
+   镜像扩展分支 `m-web-mirror d47f1fcb3b`；SDK CI run `37096319182`）；其后 **`7d62af56ba`** 并入 `-struct1` AOT
+   换锚（§3.2）；aspnetcore `e10d030184`（以 release/仓库页为准）。
 
 ## 4. 本机直测（交付方自验能力）
 
@@ -144,8 +148,8 @@ asset **607199769**，**376,887,481 B / `8f64fd5a…`**；sidecar 88 B / `4e158b
   （重签保持）；标记带 per-launch nonce，`--blazor-probe` 只接受宿主 pid + nonce 的标记。
 - **MAUI 5 hap**：payload-in-libs + DEVCOMPAT 重写（15 `.so` / 258 zip）；**壳 abc 356,468（`dd04dad1…`）**、
   宿主 **297,888（`08abe185…`）**、headless 24,324；新 hap sha 以 release/包内 `SHA256SUMS` 为准。
-- **AOT/解释器资产**：均为独立资产，不在 kit tar 内；AOT 用 `-r2`（结构修复后无需重打）；解释器用 **rc2b** +
-  **rc.2 kit hap**；安装会顶替 kit 主包，回 JIT 需重装 kit hap。
+- **AOT/解释器资产**：均为独立资产，不在 kit tar 内；AOT 用 **`-struct1`**（asset 607541145；`-r2` 仅历史）；
+  解释器用 **rc2b** + **rc.2 kit hap**；安装会顶替 kit 主包，回 JIT 需重装 kit hap。
 - **重建/重签后哈希必变**：一切数字以 release「## Integrity（kit #42）」与随包 `SHA256SUMS` / `.tar.gz.sha256` 为准；
   **预签件仍 #41 内容**——#42 预签请回传 UDID 代签。
 
@@ -188,7 +192,8 @@ asset **607199769**，**376,887,481 B / `8f64fd5a…`**；sidecar 88 B / `4e158b
 - **JIT 解锁边界**：JITFORT 为平台接口（`prctl(0x6a6974)`；MAP_JIT 非解锁通道，WX-TOKENS 矩阵已验证）；失败不致命
   （保持 xwe=0 路径并记录）；`runtime-mode=aot` 跳过；无 ICU 镜像自动 invariant（应用预置 Invariant 兼容）。
 - **解释器口径**：rc2b pack 只配 rc.2 kit hap + #42 宿主；旧 rc.1 托管 CoreLib 测试件会 QCall ABI NULL 崩（测试件问题）。
-- **AOT pack 结构性缺陷（已修复入源）**：`c1c85422715` 拆分对象库；当前资产仍以 `-r2` 为准，后续 pack 无需重打。
+- **AOT pack 结构性缺陷（已修复入源）**：`c1c85422715` 拆分对象库；当前资产 = **`-struct1`**（asset 607541145）——
+  `-r2`（601289590）/原包（`46d221f2…`）仅历史，后续 pack 无需重打。
 - **ICU/InvariantGlobalization**：本镜像无系统 ICU——宿主自动 invariant（#42）；应用侧如遇 hosting FailFast 可参考。
 - **hilog 缓冲/状态伪影**：512K 环噪声大时 ≈4–5 s；`dotnet-status.txt`/轮询可能含上一轮残留行（INTERP-FRAME 曾记录
   411 行同刻伪影）——以时序内状态为准。
