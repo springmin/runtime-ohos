@@ -39,9 +39,13 @@
 - 两 HybridWebView 同页未验证：hybrid invoke 通道（`host.notifyHybridInvoke`）无 slot，切片仍以
   “最后注册的 hybrid”为 invoker 归属；已验证组合为 Hybrid + BlazorWebView。
 - 槽 z-order 固定 slot1 在 slot0 上（帧不重叠时可忽略；重叠控件需按注册顺序调整）。
-- hello-maui-app 的 Blazor `#app`（BlazorCounter）未挂载：该样例缺 `modules.json`（既有限制；
-  razor 样例在 kit #40 已挂载），多覆盖层路由本身工作（AttachPage 被接受）。
-- Blazor 页滚动到 `#app` 与计数器点击未在真机取到；tester 机复核待做。
+- ~~hello-maui-app 的 Blazor `#app`（BlazorCounter）未挂载：该样例缺 `modules.json`（既有限制；
+  razor 样例在 kit #40 已挂载），多覆盖层路由本身工作（AttachPage 被接受）。~~ **更正+已修
+  （SAMPLE-FIX，2026-10-03）**：`modules.json` 自 `2fee278` 起就在载荷里；真正原因是 `0e0129e`
+  把页面的 BlazorWebView 换成了第三 Hybrid。样例恢复按需 BlazorWebView 后，AOT 真机
+  `AttachToDocument #app` / `RenderBatch` 闭环（见 `2026-10-03-ohos-sample-fix.md` §2）。
+- Blazor 页滚动到 `#app` 与计数器点击未在真机取到；tester 机复核待做（SAMPLE-FIX 已取到挂载
+  链路的 hilog 证据；`#app` 在 host page 折线下，滚动截图仍待 tester）。
 
 ## §FULL（MULTI-OVERLAY-FULL，彻底方案①，2026-10-02/03）
 
@@ -107,7 +111,12 @@
   tester 可在重叠页复核。
 - 三 HAP 启动模式（payload-in-libs 与 dotnet.zip 提取）仍按 EntryAbility 的标记选择；本轮修了壳侧
   appDir 的二次发布，但 zip 提取树在异常中断后的陈旧性由既有 marker 逻辑负责（未改）。
-- hello-maui-app 的 Blazor `#app` 演示仍受 `_framework/blazor.webview.js` 的 payload staging 影响，
-  本轮槽演示改用第三 Hybrid，未回归 Blazor 页在两种 payload 模式下的挂载。
-- 两 Hybrid 的页内按钮走 fetch `__hwv*`（已按 Origin 门放行）；若 tester 用 stock
-  `hybridwebview.js`（AOT 载荷未 stage 该脚本）仍需先补 `_framework/hybridwebview.js` 抽取。
+- ~~hello-maui-app 的 Blazor `#app` 演示仍受 `_framework/blazor.webview.js` 的 payload staging 影响，
+  本轮槽演示改用第三 Hybrid，未回归 Blazor 页在两种 payload 模式下的挂载。~~ **已修
+  （SAMPLE-FIX，2026-10-03）**：BlazorWebView 恢复为按需第三控件，AOT payload-in-libs 下
+  `blazor assets`/`AttachPage`/`AttachToDocument #app`/`RenderBatch` 全链路真机取到。
+- ~~两 Hybrid 的页内按钮走 fetch `__hwv*`（已按 Origin 门放行）；若 tester 用 stock
+  `hybridwebview.js`（AOT 载荷未 stage 该脚本）仍需先补 `_framework/hybridwebview.js` 抽取。~~
+  **已修（SAMPLE-FIX，2026-10-03）**：pack 期新增 `_OpenHarmonyStageHybridWebViewScript` +
+  `OpenHarmonyExtractEmbeddedResource`，脚本进 dotnet.zip 与 `libs/<abi>/_framework/`；真机
+  hybrid C 页 `stock hybridwebview.js loaded` + raw/invoke 闭环。

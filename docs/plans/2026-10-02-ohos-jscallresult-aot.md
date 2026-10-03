@@ -25,6 +25,6 @@
 - commits: maui-ohos `15d81f31b1`（fast-forward 推送）, ohos-workload `2028cc2`（harness）+ `9073c65`（CI pin 三 workflow → `15d81f31b1`，注释 555/535、150/150）, runtime-ohos this note；合并树门禁复跑：切片 0/0 IL、交互 555/555 floor 535（declared==printed）、像素 PASS、导出 150/150；CI 5/5（interaction `36989506879` / pixel `36989506893` / host-export `36989506617` / ridgraph `36989506653` / markdownlint `36989506646`）。
 
 ## 6. Uncertain / open
-- `blzProbe` is not defined by the razor sample, so that probe call reports a JSException after crossing the wire; `plain ok` proves the managed->JS half. Sample left untouched.
+- ~~`blzProbe` is not defined by the razor sample, so that probe call reports a JSException after crossing the wire; `plain ok` proves the managed->JS half. Sample left untouched.~~ **Resolved (SAMPLE-FIX, 2026-10-03)**: the sample now defines `window.blzProbe` and the AOT device run reports `probe: dotnet-ref ok` at count 0/1/2; see `2026-10-03-ohos-sample-fix.md` §1.
 - `NavigationOptions` was rooted proactively; a live Navigate was not clicked on device this round.
 - CI 首跑 interaction / pixel / host-export 三 workflow 在 slice checkout 处红（maui `15d81f31b1` 当时只在本地；补推后 `gh run rerun` attempt=2 全绿）；ridgraph / markdownlint 首跑即绿。
