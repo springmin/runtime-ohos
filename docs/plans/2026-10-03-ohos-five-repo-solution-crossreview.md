@@ -25,7 +25,7 @@
 | | | sdk（selfsign 线） | ④跨构建 selfsign（SIGSEGV ✗）→ ⑤**设备自建 AOT**（剥离未签名 + 自举验证）→ 重上发布 + 锚 | ★ |
 | | | ohos-workload | ⑥宿主 `.so`/壳 **预签**（`SKIP_SIGN=1` 可选）+ 打包期 ElfSigner | ★ |
 | G | NativeAOT 在 OHOS | sdk | fork **aot-packs 镜像**（`fetch-nativeaot-packs.sh` + 摘要）；AOT 覆盖层（ILCompiler/RuntimePack RID 追加） | ★ |
-| | | 工具链 | 链接器修复：CI 静态 OpenSSL vs 设备 `LD_LIBRARY_PATH` 前置 NDK `llvm/lib`（libxml2 遮蔽）+ 系统 OpenSSL 后备 | ★ |
+| | | 工具链 | 链接器修复：CI 静态 OpenSSL vs 设备 `LD_LIBRARY_PATH` 前置 NDK `llvm/lib`（libxml2 遮蔽）+ 系统 OpenSSL 后备；**另有 kit 的 AOT OpenSSL dlopen shim**（`fix/aotpack-structural`，10-03 合并） | ★ |
 | H | GitHub 下载抖动/限速 | sdk | 安装器 `gh-proxy` 回退 + 有界重试；CI env 镜像 | ✓ |
 | | | kit/设备 | by-id 下载 + `.sha256` sidecar 判据；注意 proxy 按**原 URL** 缓存（查询串击穿无效） | ✓ |
 | I | 发布面一致性 | sdk | 锚刷新协议（三锚→**四锚**）；`SELFSIGN_SHA256` fail-closed；镜像工作流（当前不覆盖 `workload-*`，已发现一次滞后） | ✓ |
