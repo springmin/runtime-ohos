@@ -5,6 +5,7 @@ Fork-only helpers (not part of upstream dotnet/runtime). Run them from the repos
 | Script | Purpose |
 | --- | --- |
 | `ohos-csc-spin-repro.sh` | Reproduce the OHOS csc concurrent-compilation spin (frozen I/O counters, one spinning thread). |
+| `ohos-csc-watchdog.sh` | Run a build under a no-progress watchdog for per-compile `csc` and the `VBCSCompiler` shared-compilation server: kill the stalled compiler/server (with `/proc` evidence) and retry once. |
 | `ohos-runtime-clrinterpreter-build.sh` | Cross-build `libclrinterpreter.so` for openharmony-arm64 (`FEATURE_INTERPRETER=1`) without the full coreclr. |
 | `ohos-runtime-clrinterpreter-overlay.sh` | Overlay an interpreter build into a runtime pack/layout so `DOTNET_InterpMode=3` can load it. |
 | `ohos-runtime-interp-fullbuild.sh` | Full feature-enabled CoreCLR + libraries build, packed as the interpreter payload. |

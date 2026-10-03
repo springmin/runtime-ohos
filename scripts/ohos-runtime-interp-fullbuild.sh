@@ -169,12 +169,14 @@ export DOTNET_CLI_USE_MSBUILD_SERVER=0
 #      was killed (build MSB6006 rc 137). The workaround reduces the spin but does not
 #      eliminate every csc wedge.
 # Both shapes are now recovered automatically: the build below runs under
-# scripts/ohos-csc-watchdog.sh, which detects a compiler with no I/O/artifact progress
-# (CPU spinning for CSC_WATCHDOG_SPIN_TIMEOUT, default 30 min; or idle for
-# CSC_WATCHDOG_IDLE_TIMEOUT, default 5 min), snapshots /proc evidence to
-# $SCR/logs/csc-watchdog/ and SIGKILLs the compiler's process tree, then retries the
-# whole build once. Set CSC_WATCHDOG=0 to disable, or CSC_WATCHDOG_SPIN_TIMEOUT /
-# CSC_WATCHDOG_IDLE_TIMEOUT / CSC_WATCHDOG_RETRIES to tune it.
+# scripts/ohos-csc-watchdog.sh, which detects a csc (or a VBCSCompiler shared
+# server) that shows no I/O/artifact/request progress - CPU spinning for
+# CSC_WATCHDOG_SPIN_TIMEOUT (default 30 min) or idle for CSC_WATCHDOG_IDLE_TIMEOUT
+# (default 5 min) - snapshots /proc evidence to $SCR/logs/csc-watchdog/ and
+# SIGKILLs the compiler's process tree, then retries the whole build once (after a
+# server kill the retry runs with UseSharedCompilation=false). Set CSC_WATCHDOG=0
+# to disable, or CSC_WATCHDOG_SPIN_TIMEOUT / CSC_WATCHDOG_IDLE_TIMEOUT /
+# CSC_WATCHDOG_RETRIES to tune it.
 # Keep the managed side serialized (the native build is driven by ninja/clang and keeps $JOBS).
 export DOTNET_PROCESSOR_COUNT=1
 

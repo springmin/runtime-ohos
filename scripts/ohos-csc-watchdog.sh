@@ -2,16 +2,22 @@
 # ============================================================================
 # ohos-csc-watchdog.sh
 #
-# Runs a build command under a no-progress watchdog for the managed C# compiler
-# (Roslyn `csc`). On this OHOS host csc occasionally livelocks in two shapes,
-# both with frozen I/O counters and no output artifact for many minutes:
+# Runs a build command under a no-progress watchdog for the managed C# compilers
+# (Roslyn `csc` and its shared-compilation server `VBCSCompiler`). On this OHOS
+# host csc occasionally livelocks in two shapes, both with frozen I/O counters
+# and no output artifact for many minutes:
 #
 #   1. the concurrent-compilation spin: one thread burns CPU (~1 core user+sys)
 #      while the rest park on futexes (reproduced/localised by
 #      scripts/ohos-csc-spin-repro.sh);
 #   2. the rarer idle deadlock: every thread parks on futexes, 0 CPU, seen with
 #      the installer.tasks csc inside a real build even with
-#      DOTNET_PROCESSOR_COUNT=1 (MSB6006 rc 137 after a manual kill).
+#      DOTNET_PROCESSOR_COUNT=1 (MSB6006 rc 137 after a manual kill);
+#   3. the same shapes inside the shared-compilation server: with
+#      `UseSharedCompilation` (the MSBuild default) the compile runs in
+#      VBCSCompiler over a named pipe and no csc process exists at all, so the
+#      per-compile watch alone is blind (reproduced 2026-10-03: a server
+#      spinning at ~1 core with frozen io while the waiting build hung).
 #
 # Design:
 #   * The wrapped command is started as its own process-group leader
@@ -21,18 +27,39 @@
 #     PID, or (fallback) its parent chain reaches that PID.
 #   * A compiler is "csc" when its comm is `csc` or its cmdline names
 #     `csc.dll` / a `bincore/csc` apphost (covers `dotnet exec csc.dll`).
+#   * A `VBCSCompiler` server (comm `VBCSCompiler`, or `dotnet` running
+#     `VBCSCompiler.dll`) is claimed like a compiler: its PGID equals the
+#     wrapped command's PID, or its parent chain reaches it. Servers are
+#     reparented to init when their launcher exits but keep the PGID/session,
+#     so the claim survives for the whole build.
 #   * Progress for a compiler = a change in /proc/<pid>/io (rchar/wchar/syscr/
 #     syscw) or in the `/out:` artifact (size/mtime, resolved from the cmdline
 #     or its `@response-file`). CPU time alone is NOT progress: a spinning hung
 #     compiler accumulates CPU forever, exactly like the repro's signature.
+#   * Progress for a server additionally includes the connected-request set
+#     from /proc/net/unix (the accepted pipe socket is in state 3 for the whole
+#     request and disappears when it completes). The idle branch only kills a
+#     server while at least one request is connected, so the server's normal
+#     between-request keep-alive idle is never a false kill. After a server kill
+#     the retry gets UseSharedCompilation=false in its environment (MSBuild
+#     reads the env as a property; an explicit /p: wins), so a server that
+#     wedges reproducibly cannot wedge the retry, which falls back to the
+#     per-compile csc path covered above.
 #   * No progress for CSC_WATCHDOG_IDLE_TIMEOUT seconds with <= idle CPU and no
 #     D/Z state -> idle deadlock; no progress for CSC_WATCHDOG_SPIN_TIMEOUT
-#     seconds while >= spin CPU -> spin livelock. Only then is the process tree
-#     snapshotted to the evidence dir and SIGKILLed.
+#     seconds while >= spin CPU -> spin livelock. The CPU rate is measured over
+#     the last sample interval, so a process that stops burning CPU (futex
+#     park, SIGSTOP, deadlock after a burst) becomes "idle" at the next poll
+#     instead of keeping its past CPU in the average. Only then is the process
+#     tree snapshotted to the evidence dir and SIGKILLed.
 #   * Once a compiler was killed, the build attempt is expected to fail; the
 #     whole command is retried once (CSC_WATCHDOG_RETRIES) and a second stall is
 #     a hard error pointing at the evidence. A failure without any kill is
 #     propagated immediately (never masked by a retry).
+#   * VBCSCompiler is discovered with `pgrep -s <session> -x VBCSCompiler` (and
+#     `dotnet` running VBCSCompiler.dll), then claimed with the same owns()
+#     check as csc, so a server shared with another agent is left untouched and
+#     a server started by this command is killed/recovered.
 #
 # Calibration (2026-10-03, this host): a healthy real csc compile keeps its
 # /proc io counters nearly frozen after reading its inputs (Roslyn maps
@@ -41,6 +68,15 @@
 # no-io/no-artifact window. The 1800s spin budget is therefore ~30x that
 # observation, while the reproduced wedges lasted from 20 minutes to 8 hours.
 # The idle deadlock (0 CPU + frozen io) is safe to catch much earlier (300s).
+#
+# Server calibration (2026-10-03, this host): a healthy shared compile held
+# exactly one connected pipe request for its whole duration, with /proc io
+# changes every ~2-4s and ~3 cores of CPU; the connection disappeared as soon
+# as the request completed, and the idle server only creeped a few io bytes
+# every ~10-20s. A server-side spin wedge was reproduced with the connection
+# held, ~1 core burned and io frozen for 15+ minutes; SIGSTOPping the server
+# (CPU/io frozen, the client blocked on the request) reproduced the idle shape
+# even though this kernel reports the stopped process as state S.
 #
 # Usage:
 #   scripts/ohos-csc-watchdog.sh [options] -- <command> [args...]
@@ -92,10 +128,13 @@ usage() {
     cat <<'EOF'
 usage: ohos-csc-watchdog.sh [options] -- <command> [args...]
 
-Watches the managed C# compilers (csc) started by <command>: when one shows no
-I/O/artifact progress for a configured duration (CPU spinning or fully idle),
-snapshots /proc evidence, SIGKILLs its process tree and retries the whole
-command once.
+Watches the managed C# compilers started by <command> -- the per-compile `csc`
+processes and the Roslyn shared-compilation server `VBCSCompiler` (comm or
+cmdline): when one shows no I/O/artifact/request progress for a configured
+duration (CPU spinning or fully idle), snapshots /proc evidence, SIGKILLs its
+process tree and retries the whole command once. After a VBCSCompiler kill the
+retry also gets UseSharedCompilation=false in its environment, so it cannot
+reuse a server that just wedged.
 
   --spin-timeout S    no-progress seconds with CPU spinning (default 1800; 0=off)
   --idle-timeout S    no-progress seconds with ~no CPU       (default 300; 0=off)
@@ -248,6 +287,60 @@ is_csc_fast() { # <pid> -> 0 when it is a Roslyn compiler process (forkless)
     return 1
 }
 
+is_vbcs_fast() { # <pid> -> 0 when it is a Roslyn shared-compilation server
+    local pid=$1 comm tok
+    IFS= read -r comm < "/proc/$pid/comm" 2>/dev/null || return 1
+    [ "$comm" = "VBCSCompiler" ] && return 0
+    [ "$comm" = "dotnet" ] || return 1
+    while IFS= read -r -d '' tok; do
+        case "$tok" in
+            *VBCSCompiler.dll*|*bincore/VBCSCompiler*) return 0 ;;
+        esac
+    done < "/proc/$pid/cmdline" 2>/dev/null
+    return 1
+}
+
+# ---- VBCSCompiler request state ---------------------------------------------
+# The server's request context is a named pipe (a unix socket on Linux). A
+# request in flight keeps the accepted socket in /proc/net/unix state 3; the
+# socket is gone once the request completes. The state is cached per poll round
+# so every watched process is compared against one table snapshot.
+declare -A UNIX_STATE
+refresh_unix_sockets() {
+    local inode state
+    UNIX_STATE=()
+    while read -r inode state; do
+        [ -n "$inode" ] && UNIX_STATE[$inode]="$state"
+    done < <(awk 'NR > 1 && NF >= 7 { print $7, $6 }' /proc/net/unix 2>/dev/null)
+}
+
+vbcs_conn_sig() { # <pid> -> inodes of connected (state 3) sockets, space separated
+    local pid=$1 fd t ino out=""
+    for fd in $(ls "/proc/$pid/fd" 2>/dev/null); do
+        t="$(readlink "/proc/$pid/fd/$fd" 2>/dev/null)" || continue
+        case "$t" in
+            socket:\[*\]) ino="${t#socket:[}"; ino="${ino%]}" ;;
+            *) continue ;;
+        esac
+        [ "${UNIX_STATE[$ino]:-}" = "3" ] && out="$out $ino"
+    done
+    printf '%s' "$out"
+}
+
+vbcs_pipe_path() { # <pid> -> path of the server's pipe socket, when visible
+    local pid=$1 fd t ino path
+    for fd in $(ls "/proc/$pid/fd" 2>/dev/null); do
+        t="$(readlink "/proc/$pid/fd/$fd" 2>/dev/null)" || continue
+        case "$t" in
+            socket:\[*\]) ino="${t#socket:[}"; ino="${ino%]}" ;;
+            *) continue ;;
+        esac
+        path="$(awk -v i="$ino" '$7 == i && NF >= 8 { print $8; exit }' /proc/net/unix 2>/dev/null)"
+        [ -n "$path" ] && { printf '%s' "$path"; return 0; }
+    done
+    return 1
+}
+
 ancestor_of_wrap() { # <pid> (forkless ppid walk)
     local p=$1 i=0 pp st rest
     while [ "$p" != 0 ] && [ "$p" != 1 ] && [ "$i" -lt 12 ]; do
@@ -300,6 +393,7 @@ snapshot_proc() { # <pid> <dir>
     {
         echo "time: $(date '+%Y-%m-%dT%H:%M:%S%z')"
         echo "pid: $pid"
+        echo "kind: ${KIND[$pid]:-csc}"
         echo "cmdline: $(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)"
         echo "out: ${OUT_PATH[$pid]:-<none>} (sig ${OUT_SIG[$pid]:-<none>})"
         echo "state: $(proc_state "$pid" 2>/dev/null)"
@@ -307,6 +401,10 @@ snapshot_proc() { # <pid> <dir>
         echo "io: $(proc_io "$pid" 2>/dev/null)"
         echo "wchan: $(cat "/proc/$pid/wchan" 2>/dev/null)"
         echo "rsp: ${RSP_PATH[$pid]:-<none>}"
+        if [ "${KIND[$pid]:-csc}" = vbcs ]; then
+            echo "pipe: ${PIPE_PATH[$pid]:-<none>}"
+            echo "connected_requests:${CONN_SIG[$pid]:-<none>}"
+        fi
     } > "$dir/event.txt" 2>&1
     # procfs reads can stall on a wedged process; bound every one of them.
     for f in status stat io wchan smaps_rollup; do
@@ -324,6 +422,19 @@ snapshot_proc() { # <pid> <dir>
         done
     } > "$dir/threads.txt" 2>&1
     ls -l "/proc/$pid/fd" > "$dir/fd.txt" 2>&1 || true
+    if [ "${KIND[$pid]:-csc}" = vbcs ]; then
+        { # the server's socket fds and their /proc/net/unix state/path
+            local fd t ino
+            for fd in $(ls "/proc/$pid/fd" 2>/dev/null); do
+                t="$(readlink "/proc/$pid/fd/$fd" 2>/dev/null)" || continue
+                case "$t" in
+                    socket:\[*\]) ino="${t#socket:[}"; ino="${ino%]}" ;;
+                    *) continue ;;
+                esac
+                awk -v fd="$fd" -v i="$ino" '$7 == i { print "fd=" fd " inode=" i " state=" $6 " path=" $8; found=1 } END { if (!found) print "fd=" fd " inode=" i " state=? path=?" }' /proc/net/unix 2>/dev/null
+            done
+        } > "$dir/vbcs-sockets.txt" 2>&1 || true
+    fi
     if [ -n "${RSP_PATH[$pid]:-}" ] && [ -f "${RSP_PATH[$pid]}" ]; then
         cat "${RSP_PATH[$pid]}" > "$dir/csc.rsp" 2>/dev/null || true
     fi
@@ -336,6 +447,7 @@ snapshot_proc() { # <pid> <dir>
 kill_stalled() { # <pid> <kind> <rate> <dt>
     local pid=$1 kind=$2 rate=$3 dt=$4 dir children c
     KILLED=1
+    [ "${KIND[$pid]:-csc}" = vbcs ] && VBCS_KILLED=1
     KILL_TS="$(date +%s)"
     dir="$LOG_DIR/event-a${ATTEMPT}-$(date +%Y%m%d-%H%M%S)-pid$pid"
     mkdir -p "$dir" || { warn "cannot create evidence dir $dir"; dir="$LOG_DIR"; }
@@ -346,7 +458,7 @@ kill_stalled() { # <pid> <kind> <rate> <dt>
     {
         echo "decision: $kind stall"
         echo "no-progress seconds: $dt"
-        echo "cpu rate %% of one core over window: $rate"
+        echo "cpu rate %% of one core (last sample): $rate"
         echo "spin_timeout=$SPIN_TIMEOUT idle_timeout=$IDLE_TIMEOUT poll=$POLL"
         echo "attempt=$ATTEMPT/$((RETRIES + 1))"
     } >> "$dir/event.txt"
@@ -365,12 +477,14 @@ kill_stalled() { # <pid> <kind> <rate> <dt>
 }
 
 # ---- sample state -----------------------------------------------------------
-declare -A SEEN IO_PREV CPU_BASE PROGRESS OUT_PATH OUT_SIG RSP_PATH KILLED_PID
+declare -A SEEN IO_PREV CPU_PREV TS_PREV PROGRESS OUT_PATH OUT_SIG RSP_PATH \
+           KILLED_PID KIND CONN_SIG PIPE_PATH
 KILLED=0
+VBCS_KILLED=0
 KILL_TS=""
 
-sample_pid() { # <pid> <now>
-    local pid=$1 now=$2 io out state f cpu dt rate
+sample_pid() { # <pid> <now> [kind]  (kind: csc | vbcs)
+    local pid=$1 now=$2 kind="${3:-csc}" io out conn state f cpu dt rate itv
     io="$(proc_io "$pid" 2>/dev/null)" || return 0
     state="$(proc_state "$pid" 2>/dev/null)" || return 0
     f="$(stat_fields "$pid" 2>/dev/null)" || return 0
@@ -381,8 +495,10 @@ sample_pid() { # <pid> <now>
 
     if [ -z "${SEEN[$pid]:-}" ]; then
         SEEN[$pid]=1
+        KIND[$pid]="$kind"
         IO_PREV[$pid]="$io"
-        CPU_BASE[$pid]="$cpu"
+        CPU_PREV[$pid]="$cpu"
+        TS_PREV[$pid]="$now"
         PROGRESS[$pid]="$now"
         local cmdline tok
         cmdline="$(tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null)"
@@ -392,28 +508,49 @@ sample_pid() { # <pid> <now>
         done
         OUT_PATH[$pid]="$(resolve_out "$pid")"
         OUT_SIG[$pid]="$(out_sig "${OUT_PATH[$pid]}")"
-        log "watching pid=$pid comm=$(cat "/proc/$pid/comm" 2>/dev/null) out=${OUT_PATH[$pid]:-<unknown>}"
+        if [ "$kind" = vbcs ]; then
+            PIPE_PATH[$pid]="$(vbcs_pipe_path "$pid" 2>/dev/null || true)"
+            CONN_SIG[$pid]="$(vbcs_conn_sig "$pid" 2>/dev/null || true)"
+            log "watching pid=$pid comm=$(cat "/proc/$pid/comm" 2>/dev/null) kind=vbcs pipe=${PIPE_PATH[$pid]:-<unknown>} requests=${CONN_SIG[$pid]:-none}"
+        else
+            log "watching pid=$pid comm=$(cat "/proc/$pid/comm" 2>/dev/null) out=${OUT_PATH[$pid]:-<unknown>}"
+        fi
         return 0
     fi
 
+    # CPU rate over the last sample interval: a process that stopped burning CPU
+    # (deadlock, SIGSTOP, futex park) must classify as idle immediately, not
+    # keep looking like "spinning" through the average since its last progress.
+    itv=$(( now - ${TS_PREV[$pid]:-$now} ))
+    [ "$itv" -le 0 ] && itv=1
+    rate=$(( (cpu - ${CPU_PREV[$pid]:-$cpu}) * 100 / (itv * HZ) ))
+    [ "$rate" -lt 0 ] && rate=0
+    CPU_PREV[$pid]="$cpu"
+    TS_PREV[$pid]="$now"
+
     out="$(out_sig "${OUT_PATH[$pid]:-}")"
-    if [ "$io" != "${IO_PREV[$pid]}" ] || [ "$out" != "${OUT_SIG[$pid]}" ]; then
+    conn=""
+    [ "${KIND[$pid]:-csc}" = vbcs ] && conn="$(vbcs_conn_sig "$pid" 2>/dev/null || true)"
+    if [ "$io" != "${IO_PREV[$pid]}" ] || [ "$out" != "${OUT_SIG[$pid]}" ] \
+       || [ "$conn" != "${CONN_SIG[$pid]:-}" ]; then
         IO_PREV[$pid]="$io"
         OUT_SIG[$pid]="$out"
-        CPU_BASE[$pid]="$cpu"
+        CONN_SIG[$pid]="$conn"
         PROGRESS[$pid]="$now"
         return 0
     fi
 
     dt=$(( now - ${PROGRESS[$pid]:-$now} ))
     [ "$dt" -le 0 ] && return 0
-    rate=$(( (cpu - ${CPU_BASE[$pid]:-$cpu}) * 100 / (dt * HZ) ))
-    [ "$rate" -lt 0 ] && rate=0
 
     if [ "$IDLE_TIMEOUT" -gt 0 ] && [ "$dt" -ge "$IDLE_TIMEOUT" ] && [ "$rate" -le "$IDLE_CPU_PCT" ] \
        && [ "$state" != "D" ] && [ "$state" != "Z" ] && [ "$state" != "X" ]; then
-        KILLED_PID[$pid]=1
-        kill_stalled "$pid" idle "$rate" "$dt"
+        # A shared server between requests is idle by design; only a request
+        # that stays connected while io and CPU are frozen is a deadlock.
+        if [ "$kind" != vbcs ] || [ -n "${CONN_SIG[$pid]:-}" ]; then
+            KILLED_PID[$pid]=1
+            kill_stalled "$pid" idle "$rate" "$dt"
+        fi
     elif [ "$SPIN_TIMEOUT" -gt 0 ] && [ "$dt" -ge "$SPIN_TIMEOUT" ] && [ "$rate" -ge "$SPIN_CPU_PCT" ]; then
         KILLED_PID[$pid]=1
         kill_stalled "$pid" spin "$rate" "$dt"
@@ -423,20 +560,28 @@ sample_pid() { # <pid> <now>
 monitor_round() {
     local now sid pid
     now="$(date +%s)"
+    # One /proc/net/unix snapshot per round serves every server's request set.
+    refresh_unix_sockets
     # Known compilers are sampled directly (they may be reparented but keep the
     # session). New ones are discovered with pgrep over our own session -- never
     # by reading foreign /proc entries, which can block on this kernel.
     for pid in "${!SEEN[@]}"; do
         [ "${SEEN[$pid]:-}" = 1 ] || continue
-        sample_pid "$pid" "$now"
+        sample_pid "$pid" "$now" "${KIND[$pid]:-csc}"
     done
     sid="$(read_session "$WRAP_PID" 2>/dev/null || true)"
     [ -n "$sid" ] || return 0
-    for pid in $(pgrep -s "$sid" -x csc 2>/dev/null) $(pgrep -s "$sid" -x dotnet 2>/dev/null); do
+    for pid in $(pgrep -s "$sid" -x csc 2>/dev/null) \
+               $(pgrep -s "$sid" -x dotnet 2>/dev/null) \
+               $(pgrep -s "$sid" -x VBCSCompiler 2>/dev/null); do
         [ "${SEEN[$pid]:-}" = 1 ] && continue
-        is_csc_fast "$pid" || continue
-        owns "$pid" || continue
-        sample_pid "$pid" "$now"
+        if is_vbcs_fast "$pid"; then
+            owns "$pid" || continue
+            sample_pid "$pid" "$now" vbcs
+        elif is_csc_fast "$pid"; then
+            owns "$pid" || continue
+            sample_pid "$pid" "$now" csc
+        fi
     done
 }
 
@@ -502,6 +647,14 @@ while :; do
     if [ "$KILLED" = 1 ] && [ "$ATTEMPT" -le "$RETRIES" ]; then
         KILLED=0
         ATTEMPT=$((ATTEMPT + 1))
+        if [ "${VBCS_KILLED:-0}" = 1 ]; then
+            # Never let the retry reuse the server that just wedged: MSBuild reads
+            # UseSharedCompilation from the environment as a property, so the
+            # retry compiles per invocation (covered by the csc watch above).
+            # An explicit /p:UseSharedCompilation=... still wins over the env.
+            export UseSharedCompilation=false
+            log "VBCSCompiler was killed; retry gets UseSharedCompilation=false"
+        fi
         log "sleeping ${RETRY_DELAY}s before retry"
         sleep "$RETRY_DELAY"
         continue
