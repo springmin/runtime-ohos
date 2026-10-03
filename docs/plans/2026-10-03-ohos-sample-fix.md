@@ -3,9 +3,9 @@
 > 件 = ohos-workload `7de4b7d` + `bd28e58` + `913df4d` + `2516857`（app.js 形状修正）、maui-ohos
 > `1926cf68b6`；pin 未动（CI 仍 `07423dfe93`）。设备 HAD-W32（hdc 127.0.0.1:35111）AOT 实机；
 > 证据 scratch `/data/storage/el2/base/tmp/opencode/sample-fix/`（`device/final`、`device/razor2`、
-> `logs/`）。套件（本波三 pin）：`checks=570 total=572 floor=552 assert=True`；含 L-LEGACY 等
-> 并发 pin 的最新声明基线为 577/557（其 WIP 在本树运行红，与本波无关）。`selftest-tasks 9/0`、
-> `selftest-packs OK`；JIT publish `dotnet.zip` 257→260 项。
+> `logs/`）。套件（含 L6/L-LEGACY 等并发 pin 的最新基线）：`checks=575 total=577 floor=557
+> assert=True`（本波中间态 570/572 floor 552 亦绿；sample-fix pin 在两次运行均 assert=True）。
+> `selftest-tasks 9/0`、`selftest-packs OK`；JIT publish `dotnet.zip` 257→260 项。
 
 ## 1. `blzProbe` 样例未定义（FIX-JSCALL §6 遗留）
 - 根因：`BlazorCounter.razor` 以 `DotNetObjectReference` 调 `blzProbe` 复现 renderer attach 的
@@ -54,9 +54,9 @@
 ## 4. 门禁 / 提交
 - commits：ohos-workload `7de4b7d`（#2）、`bd28e58`（#1）、`913df4d`（#3）、`2516857`（#1
   形状修正）；maui-ohos `1926cf68b6`（slice 只读根成功语义）；本篇 runtime-ohos。
-- gates：交互套件本波 `570/572 floor 552`（+3 sample-fix pin，只增；当前树 577/557 由 L-LEGACY
-  等并发声明）；`selftest-tasks 9/0`、`selftest-packs OK`；JIT/AOT publish IL2026/IL3050/IL3051 =
-  0/0/0。
+- gates：交互套件最新基线 `575/577 floor 557`（L6 + L-LEGACY 等并发 pin 就位后复跑；本波
+  sample-fix pin 全绿，只增）；`selftest-tasks 9/0`、`selftest-packs OK`；JIT/AOT publish
+  IL2026/IL3050/IL3051 = 0/0/0。
 
 ## 5. 缺口/不确定
 - demo 的第三 web 控件为 swap 语义（C 与 Blazor 互斥占位）；同页四 web 控件仍需 3 槽。
