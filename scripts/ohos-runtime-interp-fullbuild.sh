@@ -152,10 +152,21 @@ PYEOF
 export DOTNET_NOLOGO=1
 export MSBUILDDISABLENODEREUSE=1
 export DOTNET_CLI_USE_MSBUILD_SERVER=0
-# rc.2's csc deadlocks/livelocks running the repo task projects' source generators in
-# parallel on this OHOS host (observed: 8 h CPU spin on one project; removing any single
-# generator or passing /parallel- compiles in seconds). Run the managed side with one
-# processor; the native build is driven by ninja/clang and keeps $JOBS.
+# csc wedges on this OHOS host in two shapes:
+#   1) the concurrent-compilation spin: a hung csc burns one core (user+sys), its threads park
+#      on futexes, I/O freezes and no output is written (observed 8 h once). Reproduced
+#      2026-10-03 under concurrent csc load with scripts/ohos-csc-spin-repro.sh: it needs
+#      Roslyn's parallel build (0 hangs with /parallel- and with DOTNET_PROCESSOR_COUNT=1;
+#      PC=2 still hangs), is not tied to rc.2 (rc.1/rc.2 runtimes x rc.1/rc.2 toolsets all
+#      hang) and no single generator/analyzer is the trigger (hangs with /skipanalyzers+,
+#      without StyleCop, without all diagnostic analyzers, without all generators, with
+#      Server GC off and with TieredCompilation=0).
+#   2) a rarer idle deadlock (2026-10-03, this host, WITH the workaround below): the
+#      installer.tasks csc sat with 0 CPU, frozen I/O and the main thread on futex until it
+#      was killed (build MSB6006 rc 137). The workaround reduces the spin but does not
+#      eliminate every csc wedge; rerun the build, and consider an external watchdog that
+#      kills a managed compiler whose I/O and CPU are frozen for several minutes.
+# Keep the managed side serialized (the native build is driven by ninja/clang and keeps $JOBS).
 export DOTNET_PROCESSOR_COUNT=1
 
 cd "$REPO"
