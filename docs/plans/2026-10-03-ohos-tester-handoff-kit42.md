@@ -10,9 +10,9 @@
 > **结构性修复 `c1c85422715`（`FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分对象库）已入 runtime 源**——静态 `.a`
 > 保留 dlopen shim、共享 `.so` 仍静态链 OpenSSL，sdk 构建在布局与 nupkg 两处校验 shim，**后续 runtime pack
 > 无需再 `-r2` 重打包**。
-> **预签未刷新（明确）**：本波未重签预签件；dtk 上的 `preSigned-haps.tar.gz` 仍是 **kit #41 件**
+> **预签已刷新（#42）**：dtk 上的 `preSigned-haps.tar.gz` 已重签为 **kit #42 件**（376,887,481 B / `8f64fd5a…`，asset 607199769；旧 #41 件已替换）
 > （376,684,381 / `2075650a…`，asset 606183753；sidecar `4198a3ec…`/606192909，指向 #41 内容）——**#42 内容
-> 请用 kit tar，或回传 UDID 代签 #42 预签件**。
+> 请用 kit tar，或回传 UDID 代签后续预签件**。
 > **在途/外部（明确）**：AGC App Linking 登记 + 真机 https 投递；镜像扩展分支 `m-web-mirror d47f1fcb3b`
 > 尚未并入 `feature/openharmony`；rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1` 绕过未定位；stock JIT 长跑/
 > 后台唤醒未覆盖——相关项登记「未测（在途）」不判失败。
@@ -56,9 +56,9 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
     --aot-haps ./aot-haps-v3.tar.gz --interp-pack ./ohos-interpreter-pack-rc2b.tar.gz --capture 60
 ```
 
-## 0b. 预签直装（#34 起加发资产；**本波未刷新——仍 #41 件**）
+## 0b. 预签直装（#34 起加发资产；**已刷新至 #42**）
 
-`device-test-kit` release 的并列预签资产 **`preSigned-haps.tar.gz`** 当前仍是 **kit #41 件**（2026-10-03 刷新；
+`device-test-kit` release 的并列预签资产 **`preSigned-haps.tar.gz`** 当前为 **kit #42 件**（2026-10-03 重签；
 asset **606183753**，**376,684,381 B / `2075650a…`**；sidecar 88 B / `4198a3ec…`，asset **606192909**；解包树
 `9923ad22…`；**内容 = kit #41 的 7 hap**）。按 tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`
 预签，`sha256sum -c SHA256SUMS` 后 `hdc install -r` **直装**；非 tester UDID 设备报 `9568344`。**#42 内容请用
