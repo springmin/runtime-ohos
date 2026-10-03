@@ -41,5 +41,5 @@
 
 - 验证面：单设备（2in1 / API 26）· debug 签名域；release 域、手机域、跨重启、坚盾模式未测。
 - 多覆盖层并发槽上限 **N=2**；第 3 个控件走 LRU 抢占/恢复（非真并发，恢复为重放）。
-- VBCSCompiler/csc 并行活锁：watchdog（`scripts/ohos-csc-watchdog.sh`）+ 根因定位**进行中**；`DOTNET_PROCESSOR_COUNT=1` 仍为绕过。
+- VBCSCompiler/csc 并行活锁：watchdog（`scripts/ohos-csc-watchdog.sh`，VBCS server 覆盖 `cac0e0b2b08`）+ 根因定位**进行中**；空闲 keep-alive 不误杀已验证；**SIGSTOP 注入窗未捕获**（2026-10-04 补测：降载窗口 12/12 落回 csc——重跑：scratch `csc-watchdog-vbcs/` 下 `VBCS_E2E_ONLY=3 python3 vbcs-e2e.py`，或 `sh inject-until-pass.sh`）；`DOTNET_PROCESSOR_COUNT=1` 仍为绕过。
 - SOAK2（三路径 45 min/路径、独占窗口）**进行中**（AOT 段 0 崩、扰动通过；结论未出，不作发布背书）。
