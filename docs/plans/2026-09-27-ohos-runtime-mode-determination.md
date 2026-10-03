@@ -2,7 +2,7 @@
 
 > **2026-10-03 更新（DECIDE-BASELINE，当前）**：**三路径设备基线落定**（AOT/JIT/interp 各 3 轮 + 31 min 长跑 + 前后台 ×10；数字见下表，完整文 `2026-10-03-ohos-three-path-baseline.md`，证据 scratch `decide-baseline/`）。三路径首帧同档（冷启 payload→canvas ≈3.2 s；r3 热缓存 ≈0.5 s），帧节奏 ~17.6 fps 同档；**AOT 内存最低**（~255–287 MB，31 min 平），JIT/interp ~330 MB 且长跑回落；三路径长跑 0 崩溃/0 重启。
 > **JITFORT 发现（WX-PROBE / WX-TOKENS / WX-HOST-PRCTL）**：①解锁面 = 宿主 `prctl(0x6a6974, 0, 0)`（NDK `sys/prctl.h` 无 `PR_SET_JITFORT` 定义，隐藏接口；`arg3=1` 为 fortify/加固；解锁后 `/proc/self/xpm_region` 由 `0-0` 变 4 GB）；②**非调用者隔离**：任意加载自签原生代码的 app 都能翻转该进程状态；③**跨 app 生效**：解锁后后续 app 进程启动即 `1=OK 2=OK`（A/B 对照：`(0,1)` fortify → 下一 app `probe 1=22` + CoreLib `0x800701E7` 失败）；④**官方路径 = 受限 ACL**：`ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`（API14+，PC/2in1/Tablet；系统 JS 引擎用 `ALLOW_USE_JITFORT_INTERFACE`，API16+），经 AGC「项目设置 → ACL 权限」申请（实名+审核，单次 ≤30 条，可先建试用调试 Profile 上机、不可上架；预置 os_integration 也不解锁）；**坚盾守护模式全局禁 JIT（已授权亦然）** → 分发必须 AOT 兜底。
-> **推荐默认**：**AOT 为分发默认**（同帧率、内存最低、无动态码/隐藏接口依赖，坚盾/无 ACL/手机域可用）；**JIT = 性能升级形态**（仅 debug/内测签名域由宿主 JITFORT 默认开；release/生产域须 ACL 或厂商豁免；逃生口 `DOTNET_OHOS_NO_JITFORT=1`、无 ICU 镜像自动 `InvariantGlobalization`）；**interp = 实验形态**（独立 pack 资产，不随主包分发）。分级 = 设备（2in1/平板可 ACL-JIT；手机只发 AOT）× 签名域（debug=JIT 可；release=ACL 或 AOT）。
+> **推荐默认**：**AOT 为分发默认**（同帧率、内存最低、无动态码/隐藏接口依赖，坚盾/无 ACL/手机域可用）；**JIT = 性能升级形态**（仅 debug/内测签名域由宿主 JITFORT 默认开；release/生产域须 ACL 或厂商豁免；逃生口 `DOTNET_OHOS_NO_JITFORT=1`、无 ICU 镜像自动 `InvariantGlobalization`）；**interp = 实验形态**（独立 pack 资产，不随主包分发）。分级 = 设备（2in1/平板可 ACL-JIT；手机只发 AOT）× 签名域（debug=JIT 可；release=ACL 或 AOT）。**（已落地：AOT-DEFAULT，出包默认 aot + 真机复核，见 §4 执行项闭合）**
 
 > **2026-10-03 更新（kit #42，上一版）**：kit #42 = #41 + **JIT 解锁 + 解释器 rc2b 首帧 + FIX-SLICERACE（8/8）+ L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/镜像扩展**（①**JIT 解锁**（WX-HOST-PRCTL：宿主 `prctl(0x6a6974)` JITFORT 默认开 + 无 ICU 镜像自动 `InvariantGlobalization`）→ **JIT 首帧**（`canvas presented` 4–8 + UI 截图；探针 `1=OK 2=OK`；逃生口 `DOTNET_OHOS_NO_JITFORT=1`/`DOTNET_OHOS_ICU`）；②**解释器 rc2b**（新资产 `ohos-interpreter-pack-rc2b.tar.gz` 2,410,595/`5974430509…`，asset 606999003；含 WX-PATCH2）→ **解释器首帧**（`canvas presented 2090x1324`；INTERP-NULL 根因 = 旧测试件 rc.1 托管 CoreLib × rc.2 原生 QCall ABI 错配，非 pack 缺陷）；③**FIX-SLICERACE**（切片 handler 并发设置竞争：可重入串行化 + `_ready` 门闩）→ **JIT 8/8 设备轮 PASS**、套件 **578/580 floor 560**；④L6（Screenshot JPEG/Title 心跳；壳 abc **356,468/`dd04dad1…`**）、LEGACY Toolbar 闭合、SAMPLE-FIX（`blzProbe`=`dotnet-ref ok`、Blazor `#app` 恢复挂载、`dotnet.zip` 258 项）、WX-PATCH2 双映射预检+写屏障提交检查、P2c `skills[].uris`、镜像扩展（`m-web-mirror d47f1fcb3b`）；宿主全量重建 **297,888（`08abe185…`，导出 151/151、UND 240）**；**预签未刷新（仍 #41 件，指向 #41 内容）**；FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount/FIX-JSCALL/MULTI-OVERLAY-FULL/DEVCOMPAT 全量保留；发布实测 tar **376,256,128 B / `ea4e3b58…`**、树 **`13f3a086…`**、sidecar **`878d05a1…`**；数字以 release「## Integrity（kit #42）」与随包校验为准；判定点 = `docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`（#41 = 上一版，见其交接文）。
 > **2026-10-03 更新（kit #41，上一版）**：kit #41 = #40 + **MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT + INTERP-FIX（三大彻底修复）**（①**MULTI-OVERLAY-FULL**（maui `07423dfe93` + ow `0e0129e`）：双槽 ArkWeb 覆盖层池 + **owner 感知 LRU 抢占/恢复**（`IOpenHarmonyOverlaySlotOwner`）、per-slot hybrid serve/message/**invoke 通道**（slot-tagged invoke id）、**激活序 z-order**、payload-in-libs appDir 探测——同页两 Hybrid 各自 invoke/消息闭环，>2 控件按 LRU 抢占退化、activate 恢复重放 load；②**DEVCOMPAT-DEFAULT**（ow `12be59c`）：payload 逐文件码签重写**默认化**（无扩展名→`.so`、恰 4096 B→+4 B）——enforcing 7.0.0.111+ **开箱可装**；kit 现 15 `.so` / 257 zip 条目；③**INTERP-FIX**（ow `c9916cd`）：宿主 **8 MB app 线程栈** + `interp=3` 关 GC 写屏障拷贝；**rc.2 重建解释器 pack** 独立资产 `ohos-interpreter-pack-rc2.tar.gz`（2,409,070 B / `34709a94…`，asset 605924427）；④**预签刷新至 #41**（tester UDID；376,684,381 / `2075650a…`，asset 606183753）；FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount/FIX-JSCALL 全量保留；壳 abc **356,140（`2a90f0d7…`）**/headless 24,324、宿主 **293,792（`8d67def3…`）**、导出 **150**、套件 **563/floor 543**；发布实测 tar **376,036,502 B / `bed460ae…`**、树 **`7ce1946e…`**、sidecar **`2a95e764…`**；数字以 release「## Integrity（kit #41）」与随包校验为准；判定点 = `docs/plans/2026-10-03-ohos-tester-handoff-kit41.md`（#40 = 上一版，见其交接文）。
@@ -190,3 +190,22 @@ AOT/解释器轮附被替换 .so 的 sha256。数字以 release「## Integrity�
 6. 坚盾守护模式 JIT 全局禁用（已授权亦然）→ 运行时须回落 AOT；文案不得承诺 JIT 可用。
 7. 合规材料（jit-acl-prerec）：场景 = MAUI/.NET 自带 CoreCLR VM（CEF/Electron 先例）、代码随包签名、非热更新、W^X 说明；避免依赖未公开 prctl。
 8. 内测分发用 MS-MODE/`make-mode-kit.sh` 逐模式出包；AOT 兜底包常备。
+
+### §4 执行项闭合（AOT-DEFAULT，2026-10-03）
+
+- ✅ **出包开关落地**：`ohos-workload/scripts/make-device-test-kit.sh --runtime-mode aot|jit|interp`（**默认 aot**；
+  `DEVICE_TEST_KIT_RUNTIME_MODE` 同义）；jit 保留（默认 kit 目录/out 加 `-jit` 后缀）；interp 拒入主包并指向
+  `scripts/make-mode-kit.sh --mode interp --interp-pack <dir>` 独立 pack。AOT 变体 = 5 MAUI hap 用
+  `publish-aot.sh` 配方（`PublishAot`/`PublishAotUsingRuntimePack`/`NativeLib=Shared` + `OpenHarmonyUIPage` +
+  `InvariantGlobalization`；DEVCOMPAT 默认与静态 web 资产 staging 保留），kit 根 `runtime-mode.txt` + 每 hap
+  `libs/arm64-v8a/runtime-mode.txt` 标注；`--dry-run` 打印四种发布命令；`check_mode_hap` 逐 hap 断言 marker +
+  AOT 应用库。ohos-workload 侧 `selftest-make-device-test-kit.sh` **37 项**绿。
+- ✅ **verify-kit/期望值同步**：模式感知（aot ≥3 `.so` + `lib<stem>.so` 必需 + `dotnet.zip` 9 项 + 无
+  `libcoreclr.so` + kit/hap 模式交叉校验 + payload marker 按形态判定；jit 历史 15/258 不变）；S16 AOT 夹具 + 5 个
+  负例；`selftest-verify-kit` **129 项**全绿。新 hap 指纹见 `2026-10-03-ohos-three-path-baseline.md` §5。
+- ✅ **AOT 默认 kit 变体（旁路 tar）**：`device-test-kit-aot.tar.gz` **47,344,695 B / `13eb41f2…`**（树
+  `ed5d951f…`、SHA256SUMS 16 项、verify-kit KIT OK 0 FAIL/0 WARN）；正式 7-hap kit #43（含 Blazor 组件）
+  随下一批量出，本轮变体旁路 + 说明。
+- ✅ **真机复核**：AOT 变体件重签装机 → `aot=1` + 首帧；与 JIT（kit #42 件）对照 = 同首帧 3534 ms / 同 fps 17.7 /
+  0 崩溃，AOT VmRSS −74.8 MB（15 s）~−84.1 MB（42 s）；表与证据行见上述 §5。
+- ⏳ **JIT 变体 tar 未出**：`--runtime-mode jit` 已过 dry-run + selftest（发布配方/JIT marker/命名），按需可出。

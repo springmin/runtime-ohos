@@ -17,6 +17,13 @@
 > 尚未并入 `feature/openharmony`；rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1` 绕过未定位；stock JIT 长跑/
 > 后台唤醒未覆盖——相关项登记「未测（在途）」不判失败。
 
+> **2026-10-03 更新（AOT-DEFAULT）**：**出包/分发默认改为 AOT**（`make-device-test-kit.sh --runtime-mode aot`，
+> 默认；kit 根 `runtime-mode.txt=aot` + 每 hap marker；AOT 变体指纹与真机 AOT vs JIT 对照见
+> `docs/plans/2026-10-03-ohos-three-path-baseline.md` §5）。**JIT 仅 debug/内测签名域免 ACL；release/生产域需
+> AGC ACL（`ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`，2in1/平板）或厂商豁免；手机只发 AOT**。
+> interp 仍不随主包（独立 pack）。kit #42 本身仍为 JIT 件（该包内 `runtime-mode.txt` 未带）；AOT 默认首个变体
+> 为旁路 tar，正式 7-hap 版随下一 kit。
+
 > 结论先行：kit #42 = **kit #41 + 三路径首帧 + 一大批收口**：①**JIT 解锁**（WX-HOST-PRCTL）：宿主在两条启动路径
 > 共用处、hostfxr 初始化前调 `prctl(0x6a6974)`（`PR_SET_JITFORT`，默认开；NDK 无定义用字面量；失败不致命、保持
 > xwe=0 路径并记录 `OHOS_DOTNET jitfort: rc= errno= state=`；逃生口 `DOTNET_OHOS_NO_JITFORT=1`；`runtime-mode=aot`

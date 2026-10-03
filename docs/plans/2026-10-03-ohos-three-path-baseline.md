@@ -42,3 +42,42 @@
 
 - **AOT = 默认分发形态**（同帧率、内存最低 ~−75 MB、无隐藏接口/动态码依赖）；**JIT = 性能形态，以合规 ACL/内测域为界**；**interp = 实验形态**（可运行、稳定，不随主包分发）。
 - 不确定：单设备（2in1、debug 签名域）单 harness；r3 为热缓存（0.5 s），冷启对比用 r1/r2；并发任务/共享桌面可能影响帧窗；未测 release 域、跨重启、坚盾模式与手机域。
+
+## 5. AOT-DEFAULT 落地复核（2026-10-03，kit 变体旁路）
+
+> 执行：`ohos-workload/scripts/make-device-test-kit.sh` 增加 `--runtime-mode aot|jit|interp`（**默认 aot**；jit
+> 保留为 `-jit` 变体；interp 拒入主包并指向独立 pack）；AOT 变体 = 5 MAUI hap 用 `publish-aot.sh` 配方
+> （`PublishAot/PublishAotUsingRuntimePack/NativeLib=Shared` + `OpenHarmonyUIPage` + `InvariantGlobalization`；
+> DEVCOMPAT 默认与静态 web 资产 staging 不变），kit 根 `runtime-mode.txt=aot` + 每 hap
+> `libs/arm64-v8a/runtime-mode.txt=aot`；`--dry-run` 输出四种发布命令。verify-kit 模式感知
+> （aot：≥3 `.so`/`lib<stem>.so`/9 zip/无 `libcoreclr.so`，kit/hap 模式交叉校验），selftest S16（129 项）
+> 与 make-device-test-kit selftest（37 项）全绿。
+
+**AOT 默认 kit 变体**（旁路 tar，scratch `aot-default/`；正式 7-hap kit #43 随下一批量）：
+
+| 产物 | 大小 | sha256（前缀） |
+|---|---|---|
+| `device-test-kit-aot.tar.gz` | 47,344,695 B | **`13eb41f2…`**（树 **`ed5d951f…`**；SHA256SUMS **16 项**） |
+| `hello-maui-app.hap`（AOT） | 22,308,744 B | `377a1249…` |
+| `hello-maui-app-unsigned.hap`（AOT） | 22,006,406 B | `99283bd7…` |
+| `hello-maui-app-permissions.hap`（AOT） | 22,308,754 B | `de2d006d…` |
+| `hello-maui-app-api20.hap`（AOT） | 22,308,741 B | `2b17bc58…` |
+| `hello-maui-app-api20-permissions.hap`（AOT） | 22,308,744 B | `5f03466c…` |
+
+- 包内 `verify-kit.sh`：**KIT OK / 0 FAIL / 0 WARN**（每 hap `runtime-mode=aot`、3 `.so`、
+  `libhello-maui-app.so` 19,204,880 B、`dotnet.zip` 9 项、payload-in-libs 13/9、宿主 297,888/UND 240、abc 356,468）。
+- AOT 签名件（本机 tester UDID，rc.2 preview.28 `sign-hap.sh` 自签）：**22,308,650 B / `85702d7a…`**；JIT 对照 = kit #42 主件重签
+  **134,191,593 B / `81e3c7fc…`**（同 app 源线；非同提交重出）。
+
+**真机对照表**（同一设备 HAD-W32，2026-10-03 20:20–20:22，同一 harness：装→启→首帧→+42 s 窗口）：
+
+| 形态 | start→首帧 ms | canvas 行 | fps40 | frames40 | VmRSS kB（15 s→42 s） | Threads | 新崩溃 |
+|---|---|---|---|---|---|---|---|
+| **AOT**（变体件） | **3534** | 765 | **17.7** | 708 | **246,148 → 254,896** | 69→68 | 0 |
+| JIT（kit #42 件） | 3534 | 767 | 17.7 | 708 | 320,984 → 338,996 | 73→72 | 0 |
+
+- AOT 行日志：`jitfort: skipped runtime-mode=aot` + `start_app aot=1 … libhello-maui-app.so` +
+  `canvas presented (2090x1324)`；JIT 行：`jitfort: rc=0 errno=0 state=off` + `canvas presented (2090x1324)`。
+- AOT 相对 JIT 内存 **−74.8 MB（15 s）/ −84.1 MB（42 s）**，帧节奏与首帧同档；两轮均 0 崩溃。
+- 不确定：单轮/单设备、热缓存启动；JIT 对照件为 kit #42 内容（非 AOT 同批重出）；未含 Blazor 组件 hap
+  （模式无关；随正式 #43 全量）。JIT 变体仅过 dry-run + selftest，本轮未出 JIT kit tar。
