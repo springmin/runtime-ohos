@@ -1,6 +1,23 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-03 update (kit #41 — current):** kit #41 = #40 + MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT +
+> **2026-10-03 update (kit #42 — current):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
+frame, FIX-SLICERACE (8/8) and L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/mirror work. JIT unlock (WX-HOST-PRCTL):
+the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the
+image has no system ICU — JIT now reaches its first frame on device (`canvas presented` 4–8; probe
+`1=OK 2=OK`; escapes `DOTNET_OHOS_NO_JITFORT=1` / `DOTNET_OHOS_ICU`). The interpreter pack is refreshed to
+rc2b (`ohos-interpreter-pack-rc2b.tar.gz`, 2,410,595 / `5974430509…`, asset 606999003, includes WX-PATCH2)
+and also reaches its first frame (`canvas presented 2090x1324`; the INTERP-NULL was an rc.1 managed CoreLib
+x rc.2 native QCall ABI mismatch in a stale test hap, not a pack defect). FIX-SLICERACE serializes the
+handler wiring race (reentrant connect + ready latch) — 8/8 JIT device rounds pass. Plus L6 (screenshot
+JPEG / title heartbeat; shell abc 356,468 / `dd04dad1…`), the LEGACY toolbar close-out, SAMPLE-FIX
+(`blzProbe` = `dotnet-ref ok`, the Blazor `#app` restored, `dotnet.zip` 258), WX-PATCH2 and the P2c
+`skills[].uris` declaration. Host fully rebuilt: 297,888 / `08abe185…`, exports 151/151, UND 240. The
+pre-signed assets are NOT refreshed (still the #41 items pointing at #41 content). Shell abc 356,468,
+headless 24,324, suite 578/580 floor 560. Release: tar 376,256,128 B / `ea4e3b58…`, tree `13f3a086…`,
+sidecar `878d05a1…`; numbers follow the release notes `## Integrity (kit #42)`; handoff:
+`docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`.
+>
+> **2026-10-03 update (kit #41 — previous):** kit #41 = #40 + MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT +
 INTERP-FIX. MULTI-OVERLAY-FULL (maui 07423dfe93 + ow 0e0129e): a two-slot ArkWeb overlay pool with
 owner-aware LRU preemption/restore (`IOpenHarmonyOverlaySlotOwner`), per-slot hybrid serve/message/invoke
 channels (slot-tagged invoke ids), activation-order z-order; two Hybrids on one page each round-trip
@@ -149,7 +166,16 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-03 update (kit #41 — current):** the kit lands the three thorough fixes: MULTI-OVERLAY-FULL (a
+> **2026-10-03 update (kit #42 — current):** the kit unlocks JIT (the host enables `prctl(0x6a6974)` JITFORT by
+> default and falls back to invariant globalization when the image lacks system ICU — JIT now reaches its first
+> frame on device), refreshes the interpreter pack to rc2b (`ohos-interpreter-pack-rc2b.tar.gz`, 2,410,595 /
+> `5974430509…`, which also reaches its first frame) and fixes the MAUI handler-wiring race (FIX-SLICERACE:
+> reentrant connect + ready latch; 8/8 JIT rounds pass). Plus L6 (screenshot JPEG/title heartbeat), the LEGACY
+> toolbar close-out, SAMPLE-FIX and WX-PATCH2. Suite **578/580 floor 560**, exports **151/151**, shell abc
+> 356,468 / headless 24,324, host `08abe185`. Tar **376,256,128** / `ea4e3b58…`, tree `13f3a086…`. Numbers
+> follow the release notes `## Integrity (kit #42)`; handoff: `docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`.
+>
+> **2026-10-03 update (kit #41 — previous):** the kit lands the three thorough fixes: MULTI-OVERLAY-FULL (a
 > two-slot ArkWeb overlay pool with owner-aware LRU preemption/restore and per-slot hybrid invoke/message
 > channels), DEVCOMPAT-DEFAULT (the per-file code-sign rewrite is on by default, so enforcing 7.0.0.111+
 > installs out of the box: no-extension -> `.so`, 4096 B -> +4 B) and INTERP-FIX (8 MB app thread stack +

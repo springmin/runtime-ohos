@@ -1,6 +1,23 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
-> **2026-10-03 update (kit #41 — current):** kit #41 = #40 + MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT +
+> **2026-10-03 update (kit #42 — current):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
+frame, FIX-SLICERACE (8/8) and L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/mirror work. JIT unlock (WX-HOST-PRCTL):
+the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the
+image has no system ICU — JIT now reaches its first frame on device (`canvas presented` 4–8; probe
+`1=OK 2=OK`; escapes `DOTNET_OHOS_NO_JITFORT=1` / `DOTNET_OHOS_ICU`). The interpreter pack is refreshed to
+rc2b (`ohos-interpreter-pack-rc2b.tar.gz`, 2,410,595 / `5974430509…`, asset 606999003, includes WX-PATCH2)
+and also reaches its first frame (`canvas presented 2090x1324`; the INTERP-NULL was an rc.1 managed CoreLib
+x rc.2 native QCall ABI mismatch in a stale test hap, not a pack defect). FIX-SLICERACE serializes the
+handler wiring race (reentrant connect + ready latch) — 8/8 JIT device rounds pass. Plus L6 (screenshot
+JPEG / title heartbeat; shell abc 356,468 / `dd04dad1…`), the LEGACY toolbar close-out, SAMPLE-FIX
+(`blzProbe` = `dotnet-ref ok`, the Blazor `#app` restored, `dotnet.zip` 258), WX-PATCH2 and the P2c
+`skills[].uris` declaration. Host fully rebuilt: 297,888 / `08abe185…`, exports 151/151, UND 240. The
+pre-signed assets are NOT refreshed (still the #41 items pointing at #41 content). Shell abc 356,468,
+headless 24,324, suite 578/580 floor 560. Release: tar 376,256,128 B / `ea4e3b58…`, tree `13f3a086…`,
+sidecar `878d05a1…`; numbers follow the release notes `## Integrity (kit #42)`; handoff:
+`docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`.
+>
+> **2026-10-03 update (kit #41 — previous):** kit #41 = #40 + MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT +
 INTERP-FIX. MULTI-OVERLAY-FULL (maui 07423dfe93 + ow 0e0129e): a two-slot ArkWeb overlay pool with
 owner-aware LRU preemption/restore (`IOpenHarmonyOverlaySlotOwner`), per-slot hybrid serve/message/invoke
 channels (slot-tagged invoke ids), activation-order z-order; two Hybrids on one page each round-trip
@@ -148,7 +165,10 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-10-03 (kit #41 — current): **MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT + INTERP-FIX**: a two-slot ArkWeb overlay pool with owner-aware LRU preemption/restore and per-slot hybrid invoke/message channels (two Hybrids on one page each round-trip; a third control preempts by LRU; activate replays the load); the per-file code-sign rewrite is on by default (enforcing 7.0.0.111+ installs out of the box; 15 `.so` / 257 zip entries); and the host uses an 8 MB app thread stack plus a disabled GC write-barrier copy under `interp=3` (the rc.2 interpreter pack is `ohos-interpreter-pack-rc2.tar.gz`, 2,409,070 B / `34709a94…`). The pre-signed assets are refreshed to #41 (tester UDID). Suite **563/floor 543**, exports **150/150**, shell abc 356,140 (`2a90f0d7…`) / headless 24,324, host `8d67def3`; tar **376,036,502** / `bed460ae…`, tree `7ce1946e…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #41)`; handoff:
+Updated 2026-10-03 (kit #42 — current): **JIT unlock + rc2b interpreter + FIX-SLICERACE**: the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the image lacks system ICU, so JIT now reaches its first frame on device (probe `1=OK 2=OK`, `canvas presented`, UI screenshots). The interpreter pack is refreshed to `ohos-interpreter-pack-rc2b.tar.gz` (2,410,595 / `5974430509…`, asset 606999003) and also reaches its first frame. FIX-SLICERACE serializes the handler wiring race (8/8 JIT rounds pass). Plus L6 (screenshot JPEG/title heartbeat; abc 356,468 / `dd04dad1…`), the LEGACY toolbar close-out, SAMPLE-FIX (`blzProbe`, demo `#app`), WX-PATCH2 and the P2c `skills[].uris` declaration. The pre-signed assets are NOT refreshed (still #41 items). Suite **578/580 floor 560**, exports **151/151**, shell abc 356,468 / headless 24,324, host `08abe185`; tar **376,256,128** / `ea4e3b58…`, tree `13f3a086…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #42)`; handoff:
+> `docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`.
+>
+> Updated 2026-10-03 (kit #41 — previous): **MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT + INTERP-FIX**: a two-slot ArkWeb overlay pool with owner-aware LRU preemption/restore and per-slot hybrid invoke/message channels (two Hybrids on one page each round-trip; a third control preempts by LRU; activate replays the load); the per-file code-sign rewrite is on by default (enforcing 7.0.0.111+ installs out of the box; 15 `.so` / 257 zip entries); and the host uses an 8 MB app thread stack plus a disabled GC write-barrier copy under `interp=3` (the rc.2 interpreter pack is `ohos-interpreter-pack-rc2.tar.gz`, 2,409,070 B / `34709a94…`). The pre-signed assets are refreshed to #41 (tester UDID). Suite **563/floor 543**, exports **150/150**, shell abc 356,140 (`2a90f0d7…`) / headless 24,324, host `8d67def3`; tar **376,036,502** / `bed460ae…`, tree `7ce1946e…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #41)`; handoff:
 > `docs/plans/2026-10-03-ohos-tester-handoff-kit41.md`.
 >
 > Updated 2026-10-02 (kit #40 — previous): **FIX-JSCALL**: the BlazorWebView IPC outbound half is now AOT-rooted (the `JSCall` enums and `NavigationOptions` are carried in the slice's source-gen context, so the WebView package's reflection resolver finds their converters) — the razor counter round-trips **0 -> 1 -> 2** on device (screenshots r0/r1/r2; `missing native code`=0). FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount are kept. Suite **555/floor 535**, exports **150/150**, shell abc 342,160 (`ffda66da…`) / headless 24,324, host `384e552a`; tar **375,836,470** / `31ab8732…`, tree `e950de54…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #40)`; handoff:
