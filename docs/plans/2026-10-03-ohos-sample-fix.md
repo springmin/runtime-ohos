@@ -57,6 +57,8 @@
 - gates：交互套件最新基线 `575/577 floor 557`（L6 + L-LEGACY 等并发 pin 就位后复跑；本波
   sample-fix pin 全绿，只增）；`selftest-tasks 9/0`、`selftest-packs OK`；JIT/AOT publish
   IL2026/IL3050/IL3051 = 0/0/0。
+- 推送：写作时 github.com 直连不可达（maui-ohos fetch 135 s 超时），全部提交留在本地；按
+  「禁强推」纪律未做任何 force 操作，恢复网络后由协调方推送。
 
 ## 5. 缺口/不确定
 - demo 的第三 web 控件为 swap 语义（C 与 Blazor 互斥占位）；同页四 web 控件仍需 3 槽。
