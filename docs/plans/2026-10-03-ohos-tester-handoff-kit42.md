@@ -11,7 +11,7 @@
 > 保留 dlopen shim、共享 `.so` 仍静态链 OpenSSL，sdk 构建在布局与 nupkg 两处校验 shim，**后续 runtime pack
 > 无需再 `-r2` 重打包**。
 > **预签已刷新（#42）**：dtk 上的 `preSigned-haps.tar.gz` 已重签为 **kit #42 件**（376,887,481 B / `8f64fd5a…`，asset 607199769；旧 #41 件已替换）
-> （376,684,381 / `2075650a…`，asset 606183753；sidecar `4198a3ec…`/606192909，指向 #41 内容）——**#42 内容
+> （376,887,481 / `8f64fd5a…`，asset 607199769；sidecar `4e158bfb…`/607262997，指向 #42 内容）——**#42 内容
 > 请用 kit tar，或回传 UDID 代签后续预签件**。
 > **在途/外部（明确）**：AGC App Linking 登记 + 真机 https 投递；镜像扩展分支 `m-web-mirror d47f1fcb3b`
 > 尚未并入 `feature/openharmony`；rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1` 绕过未定位；stock JIT 长跑/
@@ -59,8 +59,8 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 ## 0b. 预签直装（#34 起加发资产；**已刷新至 #42**）
 
 `device-test-kit` release 的并列预签资产 **`preSigned-haps.tar.gz`** 当前为 **kit #42 件**（2026-10-03 重签；
-asset **606183753**，**376,684,381 B / `2075650a…`**；sidecar 88 B / `4198a3ec…`，asset **606192909**；解包树
-`9923ad22…`；**内容 = kit #41 的 7 hap**）。按 tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`
+asset **607199769**，**376,887,481 B / `8f64fd5a…`**；sidecar 88 B / `4e158bfb…`，asset **607262997**；解包树
+`3b76a237…`；**内容 = kit #42 的 7 hap**）。按 tester UDID `60CF7B27C58898C4CFE966087EFAACD9365B783F7328B2DBB8252919AE1F8A19`
 预签，`sha256sum -c SHA256SUMS` 后 `hdc install -r` **直装**；非 tester UDID 设备报 `9568344`。**#42 内容请用
 `device-test-kit.tar.gz`，或回传 UDID 代签 #42 预签件**；预签包是并列附加件，完整一轮仍用 kit tar。
 
