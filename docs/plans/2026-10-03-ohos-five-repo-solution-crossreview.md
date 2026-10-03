@@ -85,8 +85,8 @@
 1. **同题异解是"分层"而非"分裂"**：runtime 管语义（身份/RID/库回退）、sdk 管工具链与安装器、
    workload 管打包与解析、maui 管产品行为——**跨层重复实现仅两处**（B 的服务器关/修、A 的 tmp 库/环境），
    且两者都已被**实测收敛**为"一主一兜底"。
-2. **需收敛/固化的点**：
-   - B：把 Roslyn 服务器开关（`UseSharedCompilation=false`）与 MSBuild 补丁**同档管理**（同一入口清单），避免"全新 checkout 开箱挂"（已在 `lib-dotnet-env` 修正 ✓）。
-   - H：镜像回退与 sidecar 判据统一为**一条约定**（gh-proxy 前缀 + by-id + `.sha256`），写进安装器/CI/kit 三处 README（部分已存在 ✓）。
-   - I：镜像工作流覆盖 `workload-*` 发布（当前缺口，lag 事件的根因）。
+2. **需收敛/固化的点（2026-10-03 全部收敛 ✓）**：
+   - B：Roslyn 服务器开关与 MSBuild 补丁**同档管理**——**已核实闭环 ✓**：主线 `pack-sdk.sh` 的补丁**覆盖 MSBuild + Roslyn 全部目标**（`NamedPipeUtil` ×2 + `csc/vbc/VBCSCompiler/Microsoft.Build.Tasks.CodeAnalysis` ✓）、工具文件在位 ✓、含陈旧检测 ✓；脚本侧由 `lib-dotnet-env`（含 `UseSharedCompilation=false`）覆盖 ✓——两入口各自成文于其头部注释 ✓。
+   - H：下载/校验约定统一——**已收敛 ✓**：sdk `documentation/ohos-install/README.md` 刷新至 rc.2 并新增"**下载提速 / 核验约定**"块（gh-proxy 前缀 + API/`gh release download` 核验 + CDN/proxy 缓存注意 ✓，`d5456a0111`）；workload/runtime 侧已有同款提示并互链 ✓。
+   - I：镜像工作流覆盖 `workload-*`——**kit 已实现 ✓**（`m-web-mirror` 合并 `caf4a0236e`：`workload-*` release 触发 + nightly 全量 + SHA256SUMS 两行重写 ✓✓）。
 3. **不建议**把五仓方案强行统一为一种（会丢层次收益）；以**"主路径 + 兜底 + 锚"**三段式作为移植方法论沉淀。
