@@ -25,7 +25,7 @@
 
 ## 3. worktree / prune
 
-- `git worktree list` 五仓注册 **2 / 16 / 19 / 4 / 2** 个；逐个核验工作目录存在且 `.git` 有效 → **0 个失效**；`git worktree prune -n -v`（五仓）均无输出、rc=0 → **本轮无 prune 动作**（MISC-42 已清过；脏 worktree 按当时分类保留）。
+- `git worktree list` 五仓注册 **2 / 17 / 20 / 4 / 2** 个；逐个核验工作目录存在且 `.git` 有效 → **0 个失效**；`git worktree prune -n -v`（五仓）均无输出、rc=0 → **本轮无 prune 动作**（MISC-42 已清过；脏 worktree 按当时分类保留）。
 
 ## 4. 提交与不确定
 
