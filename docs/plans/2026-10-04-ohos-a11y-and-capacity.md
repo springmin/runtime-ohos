@@ -74,10 +74,11 @@
   - 无 web 控件（no-web 变体：web zone 不挂载，`rootWebArea=0`）：同 bounds 可达，对话框同读数。
   - 证据：`/data/storage/el2/base/tmp/opencode/fix-a11ybtn/device/{home-web,home-web-a11y,noweb-start,noweb-a11y}.{json,jpeg}`。
 - **套件/导出/提交**：交互套件 FIX-A11YBUTTON 源钉随 `c31d077`（INTERP-DRAW2）并入（合流 591/593
-  floor 573）；`verify-kit.sh` ui abc 期望 369472；宿主导出 151/151 不变；pin 未动；壳提交
-  ohos-workload `e1d096a`（已推送 `origin/master`）。
+  floor 573）；`verify-kit.sh` ui abc 期望 369472；宿主导出 151/151 不变；pin 随收口推进（`181a907`
+  → maui `6652017ca5`，CI 5/5 转绿）；壳提交 ohos-workload `e1d096a`（已推送 `origin/master`）。
 - **不确定项**：本轮设备报 HAD-W32 / OpenHarmony-7.0.0.109（DEV-A11Y 轮记录 HAD-W24 / 7.0.0.111），
   按实际记录；`nodeCount=1` 与 DEV-A11Y 相同，仍待真读屏机复核；`selftest-tester-run.sh` 唯一失败项是
   「repo working tree unchanged」——运行中另有代理提交（c31d077）导致的工作树快照漂移，非本修复回归；
-  CI `interaction-regression` 在 `c31d077` 与本提交均红（`DrawCostTick/DrawKindText/DrawKindContainer`
-  CS0117：DRAWCOST 源钉依赖其本地 slice、未随 pin 前进），属 INTERP-DRAW2 的 pin 批次，与本壳修复无关。
+  CI `interaction-regression` 在 `c31d077`/`e1d096a` 时红（`DrawCostTick/DrawKindText/DrawKindContainer`
+  CS0117：DRAWCOST 源钉依赖其本地 slice、未随 pin 前进），属 INTERP-DRAW2 的 pin 批次；收口 `181a907`
+  （maui `6652017ca5`）后 5/5 转绿（见 `2026-10-04-ohos-interp-draw.md` §收口），与本壳修复无关。

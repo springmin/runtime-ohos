@@ -37,8 +37,26 @@
 
 ## 5. 套件 / 导出 / 提交
 - 套件：interaction `[suite] checks=591 total=593 floor=573 assert=True`（+3：DrawCostTick kind、面外 cull、平移救回），perf 帧与 a11y `within=True`；pixel `PIXEL ASSERTIONS PASSED`（43 PASS）。
-- 导出：native/host 零改动 ⇒ 导出 151 不动；未改任何 pin（切片 tip 前进到 `6652017ca5`，workflow pin 仍 `189b87ca8a`，待父会话合并）。
+- 导出：native/host 零改动 ⇒ 导出 151 不动；workflow pin 收口见 §收口（`181a907` → `6652017ca5`）。
 - 提交：maui `6652017ca5`、ow `c31d077`（均 fast-forward、普通推送，未强推）。
 
 ## 6. 不确定 / 后续
 - 单设备共享 2in1、每格 1 轮（interp 6 个 5 s 稳态窗）；面外剔除只做 surface 级，ScrollView 子树仍随 `shifted` 走（clip 级剔除可再降 draw，但当前已触 60 Hz 上限）；未复测手机域/release/AOT。
+
+### 收口（MAUI-CONSOLIDATE-DRAW，2026-10-05）
+- origin/线性：maui `feature/openharmony` tip = `6652017ca5`（父 `189b87ca8a`）；ohos-workload
+  `master` tip = `e1d096a`（父 `c31d077`）；两仓 tip 与 origin 一致且线性。
+- 合并树（`6652017ca5` + `e1d096a`）门禁复核：切片 trim/AOT 0 error / 0 IL（强制重建）；交互
+  `[suite] checks=591 total=593 floor=573 assert=True`、591 printed `[verify]`（declared==printed）、
+  perf 全 `within=True`、无 Unhandled；pixel `PIXEL ASSERTIONS PASSED`（43 PASS 行 / 0 FAIL）；导出
+  151/151（`--cross-check`）；四包 preview.22/23/24/28 abc 一致（ui 369,472/`a0dbad04…`、headless
+  24,324/`798b2477…`，provenance `446f9215…`、Index.ets 325,846/`7d971a5e…`；.28 与 22–24 逐字节同）；
+  `selftest-build-arkts-shell 185/0`、`repo-hygiene 25/0`。
+- pin：ohos-workload `181a907` 把三 workflow（interaction/pixel/host-export）的默认与
+  `MAUI_OHOS_REF` fallback 推进到 `6652017ca5`（注释同步 591/593 floor 573、151/151）；快进推送、未强推。
+- CI 5/5 @ `181a907`（push 事件）：interaction `37238272980`（`[suite] 591/593 floor 573`、切片
+  0 IL、591 [verify] 行）——**由红转绿**（`c31d077`/`e1d096a` 时 CS0117：DRAWCOST 源钉早于 pin）；
+  pixel `37238272965` / host-export `37238272955`（151/151）/ ridgraph `37238272910` /
+  markdownlint `37238272899`。
+- 不确定项：本机 suite 全量重建需绕开 MSBuild 多项目节点沙箱限制（以预构建 hosting/graphics +
+  `dotnet` DLL 直接运行完成复跑）；四包 `--check-pack-abc` 覆盖 22/23/24，.28 以逐字节比对复核。
