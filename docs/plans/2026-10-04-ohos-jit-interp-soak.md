@@ -1,5 +1,9 @@
 # SOAK-JI：JIT/interp 45 min 浸泡、抢占原文复取、a11y nodeCount 核查（2026-10-04/05）
 
+> **2026-10-05 更新**：§4 抢占原文与 §5 a11y `nodeCount=1` 两条残余已由 FIX-PREEMPT-RAW +
+> FIX-A11YFLYOUT 闭环（见 `2026-10-05-ohos-a11yflyout-preempt-export.md`；nodeCount=70，三行
+> 原文经 `[maui-capacity]` 直写 hilog 取到）。
+
 > 设备 HAD-W32（OpenHarmony-7.0.0.111 / API 26 / 2in1），hdc `127.0.0.1:35111`；独占窗（`.device-lock` mkdir+owner，
 > 收尾 rmdir）2026-10-05 02:50–06:06；P=`com.example.hellomauiapp`。件：JIT=`jit45/signed.hap`（runtime-mode=jit、
 > 宿主 `7b1694d9`、libcoreclr `5791c298`、libclrjit `3dd94d15`）；interp=`interp45/signed.hap`（rc2b+INTERP-RENDER
