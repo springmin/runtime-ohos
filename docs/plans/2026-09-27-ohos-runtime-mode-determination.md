@@ -1,6 +1,7 @@
 # 运行时模式判定卡：JIT / AOT / 解释器 / 渲染（2026-09-27）
 
-> **2026-10-03 更新（DECIDE-BASELINE，当前）**：**三路径设备基线落定**（AOT/JIT/interp 各 3 轮 + 31 min 长跑 + 前后台 ×10；数字见下表，完整文 `2026-10-03-ohos-three-path-baseline.md`，证据 scratch `decide-baseline/`）。三路径首帧同档（冷启 payload→canvas ≈3.2 s；r3 热缓存 ≈0.5 s），帧节奏 ~17.6 fps 同档；**AOT 内存最低**（~255–287 MB，31 min 平），JIT/interp ~330 MB 且长跑回落；三路径长跑 0 崩溃/0 重启。
+> **2026-10-04 更新（kit #44，当前）**：kit #44 = **#43（默认 AOT + FRAMEPACING）+ 动态槽（SLOTS-DYNAMIC）**——覆盖层池 MAX/HOT 默认 4/2、按需创建/释放即拆、容量事件降级、壳 ForEach + defer 队列；**3 控件并发出画/交互**；壳 abc 368,812（`1076a700…`）/24,324、宿主 297,888（`7b1694d9…`）、导出 151/151、套件 584/586 floor 566；预签刷新至 #44（67,627,789 / `75a40110…`，asset 608782132）；发布实测 tar 67,680,863 / `b777d8d8…`、树 `db2604d5…`、sidecar `85d62a6e…`、bundle 73,052,763 / `3b3008a4…`（sdk 锚 `2abf4fcaa3`）；数字以 release「## Integrity（kit #44）」为准；判定点 = `docs/plans/2026-10-04-ohos-tester-handoff-kit44.md`。
+> **2026-10-03 更新（DECIDE-BASELINE 决策）**：**三路径设备基线落定**（AOT/JIT/interp 各 3 轮 + 31 min 长跑 + 前后台 ×10；数字见下表，完整文 `2026-10-03-ohos-three-path-baseline.md`，证据 scratch `decide-baseline/`）。三路径首帧同档（冷启 payload→canvas ≈3.2 s；r3 热缓存 ≈0.5 s），帧节奏 ~17.6 fps 同档；**AOT 内存最低**（~255–287 MB，31 min 平），JIT/interp ~330 MB 且长跑回落；三路径长跑 0 崩溃/0 重启。
 > **JITFORT 发现（WX-PROBE / WX-TOKENS / WX-HOST-PRCTL）**：①解锁面 = 宿主 `prctl(0x6a6974, 0, 0)`（NDK `sys/prctl.h` 无 `PR_SET_JITFORT` 定义，隐藏接口；`arg3=1` 为 fortify/加固；解锁后 `/proc/self/xpm_region` 由 `0-0` 变 4 GB）；②**非调用者隔离**：任意加载自签原生代码的 app 都能翻转该进程状态；③**跨 app 生效**：解锁后后续 app 进程启动即 `1=OK 2=OK`（A/B 对照：`(0,1)` fortify → 下一 app `probe 1=22` + CoreLib `0x800701E7` 失败）；④**官方路径 = 受限 ACL**：`ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`（API14+，PC/2in1/Tablet；系统 JS 引擎用 `ALLOW_USE_JITFORT_INTERFACE`，API16+），经 AGC「项目设置 → ACL 权限」申请（实名+审核，单次 ≤30 条，可先建试用调试 Profile 上机、不可上架；预置 os_integration 也不解锁）；**坚盾守护模式全局禁 JIT（已授权亦然）** → 分发必须 AOT 兜底。
 > **推荐默认**：**AOT 为分发默认**（同帧率、内存最低、无动态码/隐藏接口依赖，坚盾/无 ACL/手机域可用）；**JIT = 性能升级形态**（仅 debug/内测签名域由宿主 JITFORT 默认开；release/生产域须 ACL 或厂商豁免；逃生口 `DOTNET_OHOS_NO_JITFORT=1`、无 ICU 镜像自动 `InvariantGlobalization`）；**interp = 实验形态**（独立 pack 资产，不随主包分发）。分级 = 设备（2in1/平板可 ACL-JIT；手机只发 AOT）× 签名域（debug=JIT 可；release=ACL 或 AOT）。**（已落地：AOT-DEFAULT，出包默认 aot + 真机复核，见 §4 执行项闭合）**
 
@@ -43,6 +44,8 @@
 | 资产 | asset id | 大小 (B) | sha256（前缀） | 取件注意 |
 |---|---|---|---|---|
 | `device-test-kit.tar.gz`（kit #32，2026-09-28 发布） | 392356147 | **207,114,608** | **`8f690949…`**（sidecar `344760e7…`；树 `645879bc…`；`SHA256SUMS` 16 项 / 1,410 B / `2d3f2fad…`） | 6 个 hap（5 个 MAUI JIT（#32 新壳 abc 289992）+ 1 个未签名 Blazor `hello-blazorwasm-host-unsigned.hap`、#32 = **26,803,570 B / `5011cf73…`（0 权限）**、bundle `com.example.opendotnet`；`libs/arm64-v8a/runtime-mode.txt=jit`；zip 279 = 24 + 254 payload + marker、`libs` 270）＋文档＋verify-kit；#29 196,990,205 / `e895cc0a…`、#28 196,220,486 / `091dcc56…` 为历史对照 |
+| `device-test-kit.tar.gz`（kit #44，2026-10-04 发布） | 608775822 | **67,680,863** | **`b777d8d8…`**（sidecar 608776466 / `85d62a6e…`；树 `db2604d5…`；`SHA256SUMS` 18 项 / 1,600 B / `41c1f3c3…`） | 7 hap（5 MAUI 全 AOT：`runtime-mode.txt=aot`、3 `.so`（app.so 19,208,976 + host 297,888 + `libc++_shared.so` 1,267,392）、无 libcoreclr/libhostfxr/libclrjit；abc **368,812（`1076a700…`）**/24,324（SLOTS-DYNAMIC 壳）、宿主 297,888（`7b1694d9…`）、导出 **151**；payload `dotnet.zip` 200,144 B / 9 项） |
+| `device-test-kit.tar.gz`（kit #43，2026-10-04 发布） | 608594629 | **67,638,015** | **`57c7bf44…`**（sidecar 608608236 / `bd1f8e33…`；树 `0c41f071…`；`SHA256SUMS` 18 项 / 1,600 B） | 7 hap（5 MAUI 全 AOT、`runtime-mode.txt=aot`；abc **356,468/24,324**、宿主 297,888（`7b1694d9…`）、导出 **151**；FRAMEPACING 宿主） |
 | `device-test-kit.tar.gz`（kit #42，2026-10-03 发布） | 607136666 | **376,256,128** | **`ea4e3b58…`**（sidecar 607139045 / `878d05a1…`；树 `13f3a086…`；`SHA256SUMS` 17 项 / 1,517 B / `9ce72b56…`） | 7 hap（承 #41；AOT 段用本轮 AOT 资产（rc.2 pack `-r2`，撤 rc.1 钉；见 handoff §3）；abc **356,468/24,324**（L6 壳）、宿主 297,888（`08abe185…`）、导出 **151**；15 `.so` / 258 zip） |
 | `device-test-kit.tar.gz`（kit #41，2026-10-03 发布） | 606151881 | **376,036,502** | **`bed460ae…`**（sidecar 606161455 / `2a95e764…`；树 `7ce1946e…`；`SHA256SUMS` 17 项 / 1,517 B / `421a819c…`） | 7 hap（承 #40；AOT 段用本轮 AOT 资产（rc.2 pack `-r2`，撤 rc.1 钉；见 handoff §3）；abc **356,140/24,324**（MULTI-OVERLAY-FULL 壳）、宿主 293,792（`8d67def3…`）、导出 **150**；15 `.so` / 257 zip） |
 | `device-test-kit.tar.gz`（kit #40，2026-10-02 发布） | 605346629 | **375,836,470** | **`31ab8732…`**（sidecar 605372761 / `9b051247…`；树 `e950de54…`；`SHA256SUMS` 17 项 / 1,517 B / `7667b6bd…`） | 7 hap（承 #39；AOT 段用本轮 AOT 资产（rc.2 pack `-r2`，撤 rc.1 钉；见 handoff §3）；abc **342,160/24,324**（未变）、宿主 293,792（`384e552a…`）（未变）、导出 **150**；FIX-JSCALL 切片） |
@@ -114,7 +117,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 - Run C 变体是本地重打包（**未重签**）；设备拒绝未签包时按 `自签说明.md` 重签后，用 `--interp-hap <重签 hap>` 重跑（其余 Run 不受影响）。
 - `--capture` 的秒数对每个 Run 生效（默认 30，四态整轮建议 60）；矩阵轮不执行 `--probes`/`--extra-probes`（会提示）。
 
-### 2.1 JIT（kit #42 stock（承 #33–#41；**JITFORT 解锁**）；#32/#30 快照同流程）
+### 2.1 JIT（kit #44 stock 为 AOT 默认；JIT 走 `--runtime-mode jit` 自建或 ACL/豁免 —— JITFORT 承 #42；#32/#30 快照同流程）
 ```sh
 sh tester-run.sh --kit-dir ./device-test-kit --install --start --capture 60 --out tester-report
 hdc shell "echo 1 > /data/storage/el2/base/haps/entry/files/xwe.txt"   # A/B：仅当 probe 1≠OK/SEGV 才写

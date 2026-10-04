@@ -1,6 +1,21 @@
 # OpenHarmony device validation checklist (2026-09-18)
 
-> **2026-10-03 update (kit #42 — current):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
+> **2026-10-04 update (kit #44 — current):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
+> overlay slots (SLOTS-DYNAMIC; ohos-workload `88e5aec` + MAUI slice `3feb347414`): the pool honours configurable
+> MAX/HOT limits (default 4/2), creates slots on demand (`slot ensure`) and destroys released dynamic slots
+> immediately (`slot destroy`; the hot pair [0,1] stays resident), downgrades/preempts by owner-LRU on capacity
+> events, replays deferred shell commands per slot (queue <=32) and uses ForEach slots + `SetShellCapacity` —
+> three concurrent web controls stay interactive on device (slot recycle/rebuild, Blazor hot swap). The kit ships
+> AOT by default (five NativeAOT MAUI haps, `runtime-mode.txt=aot`, no JIT runtime libraries; JIT remains
+> available via `--runtime-mode jit` and needs the AGC ACL/waiver outside the debug domain) and carries
+> FRAMEPACING (host present telemetry; 17.7 fps was the shell status-poll artifact, real 60.00 fps). The pre-signed
+> assets are refreshed to #44 (7 haps, 67,627,789 / `75a40110…`, asset 608782132). Shell abc 368,812 /
+> `1076a700…`, headless 24,324, host 297,888 / `7b1694d9…`, exports 151/151, suite 584/586 floor 566. Release: tar
+> 67,680,863 / `b777d8d8…`, tree `db2604d5…`, sidecar `85d62a6e…`, bundle 73,052,763 / `3b3008a4…` (sdk anchor
+> `2abf4fcaa3`). Numbers follow the release notes `## Integrity (kit #44)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit44.md`.
+>
+> **2026-10-03 update (kit #42 — older):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
 frame, FIX-SLICERACE (8/8) and L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/mirror work. JIT unlock (WX-HOST-PRCTL):
 the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the
 image has no system ICU — JIT now reaches its first frame on device (`canvas presented` 4–8; probe
@@ -165,7 +180,10 @@ points (CoreSpeechKit TTS / HUKS-first SecureStorage / tester-run v11 matrix + a
 lists / images / deep links): `2026-09-28-ohos-tester-handoff-kit29.md`; the kit #30 incremental
 points (runtime-mode packaging switch / tester-run v12 / MAPFIX harmony re-cut): `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor component points (6th unsigned hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `BLZ_BOOT`/`BLZ_RENDERED`, manual first screen //counter/screenshot): `2026-09-29-ohos-tester-handoff-kit31.md`.
 
-Updated 2026-10-03 (kit #42 — current): **JIT unlock + rc2b interpreter + FIX-SLICERACE**: the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the image lacks system ICU, so JIT now reaches its first frame on device (probe `1=OK 2=OK`, `canvas presented`, UI screenshots). The interpreter pack is refreshed to `ohos-interpreter-pack-rc2b.tar.gz` (2,410,595 / `5974430509…`, asset 606999003) and also reaches its first frame. FIX-SLICERACE serializes the handler wiring race (8/8 JIT rounds pass). Plus L6 (screenshot JPEG/title heartbeat; abc 356,468 / `dd04dad1…`), the LEGACY toolbar close-out, SAMPLE-FIX (`blzProbe`, demo `#app`), WX-PATCH2 and the P2c `skills[].uris` declaration. The pre-signed assets are NOT refreshed (still #41 items). Suite **578/580 floor 560**, exports **151/151**, shell abc 356,468 / headless 24,324, host `08abe185`; tar **376,256,128** / `ea4e3b58…`, tree `13f3a086…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #42)`; handoff:
+Updated 2026-10-04 (kit #44 — current): **dynamic overlay slots + AOT by default**: the overlay pool honours MAX/HOT (default 4/2), creates slots on demand and destroys released dynamic slots immediately, replays deferred commands per slot and keeps the hot pair — three concurrent web controls stay interactive on device (slot recycle/rebuild, Blazor hot swap); the kit ships five NativeAOT MAUI haps by default (`runtime-mode.txt=aot`, no JIT runtime libraries) and carries FRAMEPACING (host present telemetry; 17.7 fps was the shell status-poll artifact, real 60.00 fps). The pre-signed assets are refreshed to #44 (7 haps, 67,627,789 / `75a40110…`, asset 608782132). Suite **584/586 floor 566**, exports **151/151**, shell abc 368,812 / `1076a700…`, headless 24,324, host 297,888 / `7b1694d9…`; tar **67,680,863** / `b777d8d8…`, tree `db2604d5…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #44)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit44.md`.
+>
+> Updated 2026-10-03 (kit #42 — older): **JIT unlock + rc2b interpreter + FIX-SLICERACE**: the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the image lacks system ICU, so JIT now reaches its first frame on device (probe `1=OK 2=OK`, `canvas presented`, UI screenshots). The interpreter pack is refreshed to `ohos-interpreter-pack-rc2b.tar.gz` (2,410,595 / `5974430509…`, asset 606999003) and also reaches its first frame. FIX-SLICERACE serializes the handler wiring race (8/8 JIT rounds pass). Plus L6 (screenshot JPEG/title heartbeat; abc 356,468 / `dd04dad1…`), the LEGACY toolbar close-out, SAMPLE-FIX (`blzProbe`, demo `#app`), WX-PATCH2 and the P2c `skills[].uris` declaration. The pre-signed assets are NOT refreshed (still #41 items). Suite **578/580 floor 560**, exports **151/151**, shell abc 356,468 / headless 24,324, host `08abe185`; tar **376,256,128** / `ea4e3b58…`, tree `13f3a086…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #42)`; handoff:
 > `docs/plans/2026-10-03-ohos-tester-handoff-kit42.md`.
 >
 > Updated 2026-10-03 (kit #41 — previous): **MULTI-OVERLAY-FULL + DEVCOMPAT-DEFAULT + INTERP-FIX**: a two-slot ArkWeb overlay pool with owner-aware LRU preemption/restore and per-slot hybrid invoke/message channels (two Hybrids on one page each round-trip; a third control preempts by LRU; activate replays the load); the per-file code-sign rewrite is on by default (enforcing 7.0.0.111+ installs out of the box; 15 `.so` / 257 zip entries); and the host uses an 8 MB app thread stack plus a disabled GC write-barrier copy under `interp=3` (the rc.2 interpreter pack is `ohos-interpreter-pack-rc2.tar.gz`, 2,409,070 B / `34709a94…`). The pre-signed assets are refreshed to #41 (tester UDID). Suite **563/floor 543**, exports **150/150**, shell abc 356,140 (`2a90f0d7…`) / headless 24,324, host `8d67def3`; tar **376,036,502** / `bed460ae…`, tree `7ce1946e…`, dtk **392356147** / latest **392077166**; numbers follow the release notes `## Integrity (kit #41)`; handoff:

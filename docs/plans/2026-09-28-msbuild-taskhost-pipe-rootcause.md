@@ -38,7 +38,7 @@
 [36367938255](https://github.com/springmin/sdk-ohos/actions/runs/36367938255)）：
 
 1. **MSBuild 管道补丁**（`b52765daab`）：`eng/ohos-install/build/msbuild-pipe-patch/`
-   （Cecil, `Microsoft.Build.Framework` 的 `NamedPipeUtil.GetPlatformSpecificPipeName`）+ 
+   （Cecil, `Microsoft.Build.Framework` 的 `NamedPipeUtil.GetPlatformSpecificPipeName`）+
    `patch-msbuild-pipe.py`（布局与 tarball 双覆盖、跳过 `ref/`、流式重写）+ stage4 钩子；
    补丁在 **签名前** 应用，`rc=0 已补 / 2 无类型 / 3 无方法 / 4 无需替换`。
 2. **Roslyn 编译器服务器补丁**（`1cbc1b8a6a`）：同一条 IL 替换

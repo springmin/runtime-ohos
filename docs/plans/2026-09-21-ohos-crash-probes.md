@@ -1,6 +1,21 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-03 update (kit #42 — current):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
+> **2026-10-04 update (kit #44 — current):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
+> overlay slots (SLOTS-DYNAMIC; ohos-workload `88e5aec` + MAUI slice `3feb347414`): the pool honours configurable
+> MAX/HOT limits (default 4/2), creates slots on demand (`slot ensure`) and destroys released dynamic slots
+> immediately (`slot destroy`; the hot pair [0,1] stays resident), downgrades/preempts by owner-LRU on capacity
+> events, replays deferred shell commands per slot (queue <=32) and uses ForEach slots + `SetShellCapacity` —
+> three concurrent web controls stay interactive on device (slot recycle/rebuild, Blazor hot swap). The kit ships
+> AOT by default (five NativeAOT MAUI haps, `runtime-mode.txt=aot`, no JIT runtime libraries; JIT remains
+> available via `--runtime-mode jit` and needs the AGC ACL/waiver outside the debug domain) and carries
+> FRAMEPACING (host present telemetry; 17.7 fps was the shell status-poll artifact, real 60.00 fps). The pre-signed
+> assets are refreshed to #44 (7 haps, 67,627,789 / `75a40110…`, asset 608782132). Shell abc 368,812 /
+> `1076a700…`, headless 24,324, host 297,888 / `7b1694d9…`, exports 151/151, suite 584/586 floor 566. Release: tar
+> 67,680,863 / `b777d8d8…`, tree `db2604d5…`, sidecar `85d62a6e…`, bundle 73,052,763 / `3b3008a4…` (sdk anchor
+> `2abf4fcaa3`). Numbers follow the release notes `## Integrity (kit #44)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit44.md`.
+>
+> **2026-10-03 update (kit #42 — older):** kit #42 = #41 + the JIT unlock, the rc2b interpreter first
 frame, FIX-SLICERACE (8/8) and L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/mirror work. JIT unlock (WX-HOST-PRCTL):
 the host enables `prctl(0x6a6974)` JITFORT by default and falls back to invariant globalization when the
 image has no system ICU — JIT now reaches its first frame on device (`canvas presented` 4–8; probe
@@ -166,7 +181,22 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-03 update (kit #42 — current):** the kit unlocks JIT (the host enables `prctl(0x6a6974)` JITFORT by
+> **2026-10-04 update (kit #44 — current):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
+> overlay slots (SLOTS-DYNAMIC; ohos-workload `88e5aec` + MAUI slice `3feb347414`): the pool honours configurable
+> MAX/HOT limits (default 4/2), creates slots on demand (`slot ensure`) and destroys released dynamic slots
+> immediately (`slot destroy`; the hot pair [0,1] stays resident), downgrades/preempts by owner-LRU on capacity
+> events, replays deferred shell commands per slot (queue <=32) and uses ForEach slots + `SetShellCapacity` —
+> three concurrent web controls stay interactive on device (slot recycle/rebuild, Blazor hot swap). The kit ships
+> AOT by default (five NativeAOT MAUI haps, `runtime-mode.txt=aot`, no JIT runtime libraries; JIT remains
+> available via `--runtime-mode jit` and needs the AGC ACL/waiver outside the debug domain) and carries
+> FRAMEPACING (host present telemetry; 17.7 fps was the shell status-poll artifact, real 60.00 fps). The pre-signed
+> assets are refreshed to #44 (7 haps, 67,627,789 / `75a40110…`, asset 608782132). Shell abc 368,812 /
+> `1076a700…`, headless 24,324, host 297,888 / `7b1694d9…`, exports 151/151, suite 584/586 floor 566. Release: tar
+> 67,680,863 / `b777d8d8…`, tree `db2604d5…`, sidecar `85d62a6e…`, bundle 73,052,763 / `3b3008a4…` (sdk anchor
+> `2abf4fcaa3`). Numbers follow the release notes `## Integrity (kit #44)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit44.md`.
+>
+> **2026-10-03 update (kit #42 — older):** the kit unlocks JIT (the host enables `prctl(0x6a6974)` JITFORT by
 > default and falls back to invariant globalization when the image lacks system ICU — JIT now reaches its first
 > frame on device), refreshes the interpreter pack to rc2b (`ohos-interpreter-pack-rc2b.tar.gz`, 2,410,595 /
 > `5974430509…`, which also reaches its first frame) and fixes the MAUI handler-wiring race (FIX-SLICERACE:
