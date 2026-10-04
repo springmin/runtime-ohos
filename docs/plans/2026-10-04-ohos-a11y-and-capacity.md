@@ -52,6 +52,30 @@
 - **测试方复跑指引（需读屏环境）**：本沙箱无读屏客户端（AMS `accessible=0`/client=0）——朗读/焦点顺序/动作类**不可测**；
   请带 **ScreenReader 环境**（真读屏机或读屏客户端）复跑 **T2 读屏开启态 / L1 Label 朗读 / N1 List / F2 滚动焦点保持 /
   E1 role** 等「无法测/部分」项，并按各卡回传截图 + hilog + `--a11y-probe` 两文件。
-- **A11Y 按钮可达性**：本沙箱下渲染于窗口中心且被 ArkWeb 覆盖层遮住——**现状 = 临时经 suspend（抽屉）或 hide（切 tab）可达**；
-  **FIX-A11YBTN 未落地**（落地后改判「已修」）。
+- **A11Y 按钮可达性**：**已修（FIX-A11YBUTTON，2026-10-05）**——按钮改左下角 Edges 绝对定位 +
+  zIndex 覆盖层之上；有/无 web 控件两态真机可达（见 §4）。原「渲染于窗口中心且被覆盖层遮住、
+  需 suspend/hide」的现状失效。
 - 待办：低噪声窗取 `preempt/restore/replay` 原文；`nodeCount` 低值复核。
+
+## 4) FIX-A11YBUTTON：壳自检按钮左下角 + 覆盖层之上（2026-10-05）
+
+- **定位（复核 DEV-A11Y）**：按钮在 Stack 里用 `.align(Alignment.BottomStart)`——ArkUI 中该属性只对齐
+  组件自身内容，Stack 子组件位置由容器 `alignContent` 决定，故实际落在窗口正中（旧 dump
+  `[1522,987][1606,1033]`，窗口 `[515,281][2605,1675]`）；且 Web 覆盖层激活后持正 `zIndex`
+  （`@State webZOrder`），按钮 zIndex=0 被盖（绘制 + 命中测试），需 suspend/hide 才可达。
+- **修复（ohos-workload 壳；四包 22/23/24/28 + provenance 同步）**：按钮改 Edges 绝对定位
+  `.position({bottom: 4+overlayBottomInset(), left: 4+avoidLeft})`（保 44x24 小尺寸、避让区感知），
+  `.zIndex(webZOrderSeq+1)`；`webZOrderSeq` 改 `@State`（web 激活即刷新）。宿主/托管无改动。
+- **壳 abc**：369,472 B / `a0dbad04…`（Index.ets 325,846 B / `7d971a5e…`；headless 24,324 B 不变），
+  provenance `446f9215…`，源哈希 `483af84a…`。
+- **真机两态**（HAD-W32 / OpenHarmony-7.0.0.109；重签 hap `da48f5c1…`，no-web 变体 `dea55136…`）：
+  - 有 web 控件（Home，`rootWebArea=2`）：按钮 `[523,1622][607,1668]`（窗口相对左下 8/7 px，可达）；
+    `uitest` 点按出对话框 `accessibilityStatus: 1 (attached - expected)` / `nodeCount=1`。
+  - 无 web 控件（no-web 变体：web zone 不挂载，`rootWebArea=0`）：同 bounds 可达，对话框同读数。
+  - 证据：`/data/storage/el2/base/tmp/opencode/fix-a11ybtn/device/{home-web,home-web-a11y,noweb-start,noweb-a11y}.{json,jpeg}`。
+- **套件/导出/提交**：交互套件 FIX-A11YBUTTON 源钉随 `c31d077`（INTERP-DRAW2）并入（合流 591/593
+  floor 573）；`verify-kit.sh` ui abc 期望 369472；宿主导出 151/151 不变；pin 未动；壳提交
+  ohos-workload `e1d096a`（已推送 `origin/master`）。
+- **不确定项**：本轮设备报 HAD-W32 / OpenHarmony-7.0.0.109（DEV-A11Y 轮记录 HAD-W24 / 7.0.0.111），
+  按实际记录；`nodeCount=1` 与 DEV-A11Y 相同，仍待真读屏机复核；`selftest-tester-run.sh` 唯一失败项是
+  「repo working tree unchanged」——运行中另有代理提交（c31d077）导致的工作树快照漂移，非本修复回归。
