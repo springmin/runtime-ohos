@@ -27,6 +27,9 @@
 - **释放路径（关键发现）**：kit 样例 Remove web C 仅 label 翻转为 `removed (slot destroy)`：16M hilog + 220 s
   连续流 **0 条 `web slot destroy`**、C 覆盖层仍出画/可交互、re-add 无第二条 create → `extraHost.Children.Clear()`
   不触发 MAUI handler 断开（移除子项不自动 `DisconnectHandler`），**「释放即拆」在 kit 样例上不可复现**。
+- **收口（MAUI-CONSOLIDATE-FINAL2）**：FIX-AUTODISCONNECT（maui `189b87ca8a` + ow `64ee9c4`）后，kit 样例
+  （无显式 `DisconnectHandler`）真机 Remove web C → `web slot destroy: 2`（12:40:50）、覆盖层消失；
+  re-add → `web slot create: 2`（12:41:00）并恢复交互（c1–c5 截图/JSON）；上述缺口闭合，套件 587/589 floor 569。
 - **第 4 槽 + destroy 点验（本地 probe：第 4 控件 D + remove 显式 `DisconnectHandler`；worktree 隔离构建；
   abc=kit `1076a700`）**：unsigned 22,162,078 → 重签 22,464,241 / `ce21422e…`；hilog **`web slot create: 3`** +
   `web page (slot 3)`、四个 rootWebArea（C 左 / D 右 [1560,1206][2573,1486]）、D 页

@@ -42,3 +42,28 @@
 
 - 提交：runtime-ohos 本报告；maui-ohos 切片 `7c731a7ca3`（门控+相位缝+失效版本）；ohos-workload `8ed35f4`（相位探针+stats+README）。均未强推、**未改任何 pin**（切片 tip 前进，workflow pin 仍 `3feb347414`，待父会话合并）；host/native 零改动 ⇒ 导出 151 不动。
 - 不确定：单设备/共享 2in1（他会话并发重启同 bundle，多轮被截断；opt 稳态窗 3–5 个）；draw 18.6 ms 未按节点类型细分；未做脏区/裁剪；手机域/release/AOT 回归未测；JIT 后段 48 fps 系争用噪声。
+
+### 收口（MAUI-CONSOLIDATE-FINAL2，2026-10-04）
+- origin/线性：maui `feature/openharmony` tip = `189b87ca8a`（父 `7c731a7ca3` INTERP-RENDER ←
+  `3feb347414` SLOTS-DYNAMIC）；ohos-workload `master` tip = `b6ad0b0`（pin；父 `64ee9c4` ← `8ed35f4`
+  ← `86b0e89`）。FIX-AUTODISCONNECT = maui `189b87ca8a`（子树 watcher + detached/re-add 生命周期，
+  7 文件 +396/−18）+ ow `64ee9c4`（套件 +3 pin、打包文档）；FIX 提交晚于 40 min 轮询窗（12:46，
+  窗内其验证已绿 587/589），按落地件纳入。
+- 合并树（`189b87ca8a` × `64ee9c4`）门禁复核：切片 trim/AOT 0 error / 0 IL；交互
+  `[suite] checks=587 total=589 floor=569 assert=True`、587 printed `[verify]`（declared==printed）、
+  perf 全 `within=True`；pixel `PIXEL ASSERTIONS PASSED`；导出 151/151（`--cross-check`）；四包
+  preview.22/23/24/28 逐字节一致（ui 368,812/`1076a700…`、headless 24,324/`798b2477…`）；
+  repo gates 20/25/73/9/25（11:46 干跑；infra 与 pin 无关）与最终树 markdownlint 0 issues；
+  本机 selftest-tasks 复跑因机器负载（loadavg ~27）停在 S2 后中止，交由 CI 覆盖。
+- 自动释放真机（HAD-W24，12:40–12:41）：kit 样例无显式 `DisconnectHandler` —— Remove web C →
+  `web slot destroy: 2`（12:40:50）、覆盖层消失；re-add → `web slot create: 2`（12:41:00）并恢复交互
+  （c1–c5 截图/JSON）；套件同构 drill（detach/rebuild + 迟到 `MapHybridAssets` 忽略 + handler 保持
+  连接）。
+- pin：ow `b6ad0b0`（在 `64ee9c4` 之上）把三 workflow（interaction/pixel/host-export）的默认与
+  `MAUI_OHOS_REF` fallback 推进到 `189b87ca8a`（注释 587/589 floor 569、151/151，dual-mode 注明）；
+  快进推送、未强推。
+- CI 5/5 @ `b6ad0b0`：interaction `37179088257`（日志 pin `189b87ca8a`、`[suite] 587/589 floor
+  569`）/ pixel `37179088247` / host-export `37179088318`（`OK: all 151`）/ ridgraph `37179088251` /
+  markdownlint `37179088241`。
+- KIT44 自验其余发现（不改）：AOT 7 hap 首帧/Blazor A/B PASS；api20/permissions 变体不可装（设备/
+  签名域）；AOT soak 35 min 无崩溃，1 次无声 pid 丢失未归因；第 5 控件超容量未测。
