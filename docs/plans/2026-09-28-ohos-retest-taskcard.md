@@ -23,6 +23,9 @@
 > **预签已刷新至 #45**（7 hap；67,624,950 / `e1ce8ab6…`，asset 609411819）；非 tester UDID 设备请回传 UDID 代签。
 >
 > **运行时口径（kit #43 起）**：**默认 AOT**；JIT 需 ACL/豁免（release/生产域 AGC ACL 或厂商豁免；debug/内测签名域免；亦可用 `--runtime-mode jit` 自建）；interp 为实验路径（独立 pack，不随主包）。
+> **发布域（2026-10-04 实测）**：**发布形态请用 AOT**（release×AOT 正常出画）；**release×JIT 自签件 ~44 ms 崩**（`coreclr_initialize`，
+> `SIGSEGV(SEGV_ACCERR)`）——需**华为发布 Profile + ACL/JIT 豁免**后复验；**覆盖装先卸载**（release↔debug `9568286`）、**过期 p7b=`9568329`**；
+> **rc.2 监测**：官方 rc.2 **未发布（WAIT）**，ohos-workload `rc2-watch`（`1d39eb7`）触发后按清单换 pin。
 
 ## 1. 取件清单（release `springmin/sdk-ohos` tag `device-test-kit`）
 
@@ -51,7 +54,7 @@
    label `A/B/C raw`）；hilog `web cmd: slot`→`web slot create: 2`→`web page (slot 2)`，容量 `web capacity: 4`；
    第 3 槽与「移除/重挂」同一轮合并测试。→ 回传 3 控件截图 + hilog。
 2. **INTERP-RENDER（#45 主判点 1）**：解释器轮（rc2b pack + rc.2 kit hap + `interp.txt=3`）出画稳定后统计：期望
-   **30 fps（20.7→30）**、meas≈0 ms/帧、主线程 CPU 65.5–70.5%（−13pt）、无 `SIGSEGV(NULL)`；JIT/AOT 轮 60 fps 不变；
+   **≥30 fps（20.7→30；交付方复测 38–44）**、meas≈0 ms/帧、主线程 CPU 65.5–70.5%（−13pt）、无 `SIGSEGV(NULL)`；JIT/AOT 轮 60 fps 不变；
    交互（双击 Count 0→1）正常。→ 回传帧统计/终端输出（`FPH` 行）+ 截图 + hilog（无入口按「未测」登记）。
 3. **AOT 默认（承 #44 主判点）**：默认包冷启 → 期望 kit 根/逐 hap `runtime-mode.txt=aot`、无 libcoreclr/libclrjit、
    **首帧 + 交互回归**（`aot=1`、`canvas presented`）→ 回传截图 + hilog + `verify-kit` 输出。
@@ -85,7 +88,9 @@
 17. **一键四 Run**：`sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz --aot-haps ./aot-haps-v3-rc2.tar.gz --interp-pack ./ohos-interpreter-pack-rc2b.tar.gz --capture 60`
     → 期望四 Run 不中断、`mode-matrix/summary.txt` 键齐全 → 回传 `mode-matrix/` 全目录 + 四个 `tester-report-*.tar.gz`。
 18. **无障碍（含 N4）**：加 `--a11y-probe` → `a11y/selfcheck.txt`（status=1 + 正整数节点数）+ `a11y/hilog-a11y.txt`
-    → 回传 `a11y/` 两文件 + `summary a11y_*` + 录屏。
+    → 回传 `a11y/` 两文件 + `summary a11y_*` + 录屏。**测试方请带读屏（ScreenReader）环境**：交付方本沙箱无读屏客户端
+    （AMS `accessible=0`/client=0），T2 读屏开启态/L1/N1/F2 等朗读、焦点顺序与动作类项不可测；A11Y 按钮可达性 =
+    **临时经 suspend/hide 可达**（FIX-A11YBTN 未落地；`2026-10-04-ohos-a11y-and-capacity.md`）。
 19. **WebView 六项 + B1 razor（承 #32）**；**harmony 变体（AGC 就绪时）**：按卡逐条 / 同指纹重签 → 回传截图 + hilog +
     Map/LiveView/TTS/HUKS 证据。
 
@@ -95,8 +100,9 @@
 |---|---|---|
 | **自动释放（#45 主判点 0）** | Remove C → `web slot destroy: 2` + 覆盖层消失；re-add → `web slot create: 2` + 交互恢复 | #45 落地 |
 | **动态槽 3 控件并发（承 #44 主判点 1）** | 3 控件各自出画 + 交互回显（A/B/C）；`web slot create: 2` / `web capacity: 4` | 承 #44 保持 |
-| **INTERP-RENDER（#45 主判点 2）** | interp 30 fps（20.7→30）+ meas≈0 + CPU −13pt；JIT/AOT 60 fps 不变；交互 Count 0→1 | #45 落地 |
-| **AOT 默认（承 #44 主判点 3）** | `runtime-mode.txt=aot` + 3 `.so`/无 libcoreclr/libclrjit + 首帧/交互回归 | 承 #44 保持 |
+| **INTERP-RENDER（#45 主判点 2）** | interp ≥30 fps（20.7→30；复测 38–44）+ meas≈0 + CPU −13pt；JIT/AOT 60 fps 不变；交互 Count 0→1 | #45 落地 |
+| **AOT 默认（承 #44 主判点 3）** | `runtime-mode.txt=aot` + 3 `.so`/无 libcoreclr/libclrjit + 首帧/交互回归（复测 1.69/1.64 s） | 承 #44 保持 |
+| **发布域（2026-10-04 实测，交测口径）** | 发布形态 = **AOT**（release×AOT 正常）；release×JIT 自签 ~44 ms 崩 → 需华为发布 Profile + ACL/JIT 豁免；覆盖装先卸载（9568286）、过期 p7b=9568329 | 交测口径 |
 | **FRAMEPACING（承 #44/#43）** | 真实呈现 60.00 fps（17.7 = 壳状态轮询伪影） | 承 #43 保持 |
 | **门禁（#45）** | `[suite] checks=587 total=589 floor=569 assert=True`；导出 151/151 | #45 基座 |
 | **JIT 解锁（承 #42）** | 自建 jit 或 ACL 域：`jitfort rc=0` + 探针 `1=OK 2=OK` + 首帧 | 承 #42 保持 |
@@ -126,22 +132,31 @@
   时重领槽 + 重放 load/注册；晚到属性/挂载 pass 被忽略；LRU 抢占/恢复不变。热对 [0,1] 的移除只 hide、槽位保留。
 - **动态槽口径（承 #44）**：MAX/HOT 默认 4/2（env 不可按应用注入；clamp 2..8 / 2..max）；热对 [0,1] 常驻、空闲 >2 不养
   ArkWeb 引擎/文档（重建只付一次组件+加载）；容量下调按 suspend 抢占超容量 claim（旧 2 槽壳安全降级）；`web slot destroy`
-  原文可能秒级轮转丢失——以截图 + 重建交互闭环为准；第 5 槽未真机点验（headless 限值 drill 覆盖 2/4 夹取）。
+  原文可能秒级轮转丢失——以截图 + 重建交互闭环为准；第 5 槽超容量 **已真机点验**（主动抢占→slot 0、Activate→恢复重放、
+  活覆盖层 ≤4；`2026-10-04-ohos-a11y-and-capacity.md` §2；headless 限值 drill 覆盖 2/4 夹取）。
 - **INTERP-RENDER 口径（#45）**：解释器固有放大（draw 18.6 + present 3.2 > 16.7 ms vsync）是主因；本波去掉的是**静态帧
   全树 Measure/Arrange（13.0 ms/帧）**，非脏区/裁剪；30 fps 为当前上限。判定以 `FPH` 稳态窗 + 交互回归为准；JIT/AOT
   60 fps 不应回归。
 - **AOT 默认口径（#43 起）**：5 MAUI hap 全 NativeAOT（`runtime-mode.txt=aot`、3 `.so`、无 libcoreclr/libhostfxr/libclrjit）；
   JIT 保形态（`--runtime-mode jit` 自建；debug 域 JITFORT 默认；release 域需 AGC ACL
   `ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`（2in1/平板）或厂商豁免——手机只发 AOT）；interp 实验（独立 pack）。
+- **发布域口径（2026-10-04 实测）**：**发布形态请用 AOT**（release×AOT 正常）；**release×JIT 自签件 ~44 ms 崩**
+  （`coreclr_initialize`，`SIGSEGV(SEGV_ACCERR)`）→ 需**华为发布 Profile + ACL/JIT 豁免**后复验，不能由自签外推；
+  **覆盖装先卸载**（release↔debug `9568286`）、**过期 p7b=`9568329`**（`2026-10-04-ohos-release-domain-and-pidloss.md`）。
+- **启动/帧率基线（#45 切片复测，2026-10-04）**：三路径 cold/warm 首帧（`t0→首帧`）**1.56–1.69 s**（JIT 1.68/1.68、
+  interp 1.62/1.56、AOT 1.69/1.64；差异 <200 ms）；interp 稳态 **38–44 fps**（安静桌面；≥30 判过）、JIT/AOT **60 fps**
+  （`2026-10-04-ohos-jit-interp-recheck.md`）。
 - **解释器口径**：用 **rc2b pack** + **rc.2 kit hap**（重签）；勿用 rc.1 托管 CoreLib 的旧测试件（QCall ABI 错配会
   `SIGSEGV(NULL)@coreclr_initialize`，属测试件问题、非 pack 缺陷）。`interp.txt=1|2` 混合模式保留默认（不注入 barrier skip）。
 - **AOT pack 结构修复**：`FEATURE_DISTRO_AGNOSTIC_SSL_STATIC` 拆分（静态 `.a` 保留 dlopen shim、共享 `.so` 仍静态链 OpenSSL；
   sdk 构建在布局与 nupkg 两处校验）——**当前资产 = `-struct1`**（asset 607541145；`-r2`/原包仅历史），后续 runtime pack 无需再重打。
 - **在途/外部项（明确）**：①AGC App Linking 登记 + 真机 https 投递（`skills[].uris` 本机产物已可验）；②镜像扩展分支
   `m-web-mirror d47f1fcb3b` 尚未并入 `feature/openharmony`；③rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1` 绕过（未定位）；
-  ④stock JIT 长跑/后台唤醒未覆盖；⑤第 5 槽未真机点验。相关项登记「未测（在途）」不判失败。
-- **rc.2 相关**：MAUI `11.0.0-rc.2.26478.12` 若仍未上 nuget.org，交付方 restore 走 dnceng `dotnet11` feed；rc.1 回滚线保留；
-  应用侧构建请同步 rc.2 线（`docs/plans/2026-09-30-rc2-mainline-adoption.md` §4/§5）。
+  ④stock JIT 长跑/后台唤醒未覆盖（JIT 现非默认）；⑤第 5 槽超容量已真机点验（见上）。其余相关项登记「未测（在途）」不判失败。
+- **rc.2 相关（2026-10-04 复核：WAIT）**：官方 rc.2 **未发布**（nuget.org 最新仍 `11.0.0-rc.1.26451.6`）；ohos-workload 已加监测
+  `rc2-watch`（`1d39eb7`；`scripts/rc2-official-watch.sh` + `.github/workflows/rc2-watch.yml`，周一 03:17 UTC + dispatch；
+  状态 `docs/rc2-official-watch.md`）；触发（exit 10）后按 `docs/plans/2026-09-30-rc2-mainline-adoption.md` §8 换 pin、删
+  dnceng feed step；触发前 restore 仍走 dnceng `dotnet11` feed；rc.1 回滚线保留；应用侧构建请同步 rc.2 线（同文 §4/§5）。
 - **hilog 缓冲（探针误报防护）**：512K 环在噪声大时只保留 ≈4–5 s（`--blazor-probe` 曾丢 `BLZ_BOOT` 报 `boot=no`）；临时
   `hilog -G 16M -t app,core` 重跑（**跑完还原 512K**）。另注意**状态文件伪影**：`dotnet-status.txt`/壳轮询可能输出上一轮
   残留行——**以本轮时序内状态为准**。

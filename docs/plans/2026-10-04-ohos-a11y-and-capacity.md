@@ -40,7 +40,8 @@
 （`slot=1`）+ 页面恢复、B 被抢占消失**（c5 截图/JSON）→ 移除 D `web slot destroy: 3` → 重挂 `web slot create: 3`
 （c7/c8）。全程活覆盖层 ≤4（dump `rootWebArea=4`）、`web capacity: 4`；复跑（`cap-round2`）同序复现
 （assets slots 0,1,2,3,**0**,**1**）。
-**局限**：`hybrid overlay preempted/restored/replay` 原文未进 hilog——壳仅 12×3s 轮询 `dotnet-status.txt`
+**判定：通过**（#44/#45 在途项「第 5 槽未真机点验」闭环：主动抢占→slot 0、Activate→恢复重放、活覆盖层 ≤4；
+复跑同序）。**局限**：`hybrid overlay preempted/restored/replay` 原文未进 hilog——壳仅 12×3s 轮询 `dotnet-status.txt`
 且 CEF stderr 冲刷 60 行尾窗；以 `hybrid assets slot=` + 覆盖层出现/消失 + invoke 回显闭环为判据，
 登记待低噪声窗复取原文（不判失败）。
 
@@ -48,4 +49,9 @@
 
 - 证据：`/data/storage/el2/base/tmp/opencode/a11y45/{a11y-final,a11y-round2,cap-round,cap-round2,probe5,kit-signed}`；
   probe5 自建件 `70035b39…`（unsigned）/ `6e7c15fc…`（signed），重签 kit hap `3cf2576b…`。
-- 待办：真读屏机复跑 B1–T3 的「无法测/部分」项；低噪声窗取 preempt/restore 原文；`nodeCount` 低值复核。
+- **测试方复跑指引（需读屏环境）**：本沙箱无读屏客户端（AMS `accessible=0`/client=0）——朗读/焦点顺序/动作类**不可测**；
+  请带 **ScreenReader 环境**（真读屏机或读屏客户端）复跑 **T2 读屏开启态 / L1 Label 朗读 / N1 List / F2 滚动焦点保持 /
+  E1 role** 等「无法测/部分」项，并按各卡回传截图 + hilog + `--a11y-probe` 两文件。
+- **A11Y 按钮可达性**：本沙箱下渲染于窗口中心且被 ArkWeb 覆盖层遮住——**现状 = 临时经 suspend（抽屉）或 hide（切 tab）可达**；
+  **FIX-A11YBTN 未落地**（落地后改判「已修」）。
+- 待办：低噪声窗取 `preempt/restore/replay` 原文；`nodeCount` 低值复核。

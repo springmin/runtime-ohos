@@ -74,6 +74,11 @@
 
 触发：MAUI `11.0.0-rc.2.26478.12`（dnceng `dotnet11` daily）对应的**官方 rc.2 包上 nuget.org**。
 
+> **现状（2026-10-04 复核）：官方 rc.2 未发布 → WAIT（watcher exit 0）**。ohos-workload 已加监测（RC2-WATCH，`1d39eb7`）：
+> `scripts/rc2-official-watch.sh`（只读轮询：0=未出现继续等 / 10=出现 / 1=所有源取不到）+ `scripts/selftest-rc2-official-watch.sh`（离线夹具）+
+> `.github/workflows/rc2-watch.yml`（每周一 03:17 UTC + 手动 dispatch）；版本基线与现状见其 `docs/rc2-official-watch.md`
+> （nuget.org 最新 `11.0.0-rc.1.26451.6`、GitHub `11.0.100-rc.1.26458.5`，均未到 rc.2）。触发（exit 10）后按本节 1–5 换 pin。
+
 1. **换 pin**：`ohos-workload` 三个 workflow 的 `MAUI_OHOS_REF`（`interaction-regression.yml` / `pixel-regression.yml` / `host-export-contract.yml`，当前 `ebffdd787c`）→ 指向包版本已换到 nuget.org 正式 rc.2 的 maui-ohos 提交（切片 csproj 的 `Microsoft.Maui.*` 版本随之更新）。
 2. **移除 feed step**：删 `004b7f8` 在 `interaction-regression.yml` / `pixel-regression.yml` restore 前加的 dnceng `dotnet11` feed（`dotnet nuget add source …` 一步及注释）；`blazor-recipe.yml` 的 dnceng 依赖一并复核。
 3. **门禁**：交互 ≥513/floor 493、像素 `PIXEL ASSERTIONS PASSED`、导出 145/145、ridgraph 20/20 全绿（ohos-workload CI 5/5）；本地同树复跑一遍（同 §3 口径）。

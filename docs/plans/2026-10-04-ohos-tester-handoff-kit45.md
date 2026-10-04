@@ -17,7 +17,7 @@
 > UDID 报 `9568344`）。
 > **在途/外部（明确）**：AGC App Linking 登记 + 真机 https 投递；镜像扩展分支 `m-web-mirror d47f1fcb3b`
 > 尚未并入 `feature/openharmony`；rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1` 绕过未定位；stock JIT 长跑/
-> 后台唤醒未覆盖（JIT 现非默认）；第 5 槽超容量 LRU 未真机点验——相关项登记「未测（在途）」不判失败。
+> 后台唤醒未覆盖（JIT 现非默认）；第 5 槽超容量 LRU **已真机点验**（主动抢占→slot 0、Activate→恢复重放、活覆盖层 ≤4）——其余在途项登记「未测（在途）」不判失败。
 
 > **2026-10-04 更新（FIX-AUTODISCONNECT + INTERP-RENDER；#45 增量，本包）**：
 > **FIX-AUTODISCONNECT**（maui 切片 `189b87ca8a` + ohos-workload `64ee9c4`）：页面 / ContentView / Layout 处理链监听
@@ -67,13 +67,20 @@ asset **609416429**；解包树 `399ef471…`；**内容 = kit #45 的 7 hap** +
 | # | 变化 | 测试方看到什么 | 判定点 |
 |---|---|---|---|
 | 1.1 | **FIX-AUTODISCONNECT（主判点）** | 移除一个 web 控件（WebView/HybridWebView/BlazorWebView）后：覆盖层随槽释放消失（动态槽 `web slot destroy`；热对 [0,1] 保留组件），**再挂回自动重领槽并恢复交互**（`web slot create` + load/注册重放）；handler 保持连接、晚到注册被忽略 | Remove → `web slot destroy: <k>` + 覆盖层消失；re-add → `web slot create: <k>` + 交互回显；截图 + hilog |
-| 1.2 | **INTERP-RENDER（渲染门控）** | 布局只在真实失效信号时重跑：**interp 20.7→30 fps（22.0→30.1）**、meas 13.0→0.0 ms/帧、主线程 CPU **−13pt（79.6–81.8→65.5–70.5%）**；JIT/AOT 60 fps、draw/pres 不变；交互不变（Count 0→1） | 解释器轮：`FPH` 稳态 fps ≥30、meas≈0；JIT/AOT 轮 60 fps 不回归；截图/探针（可选 `/data/.../interp-render/` 同法） |
+| 1.2 | **INTERP-RENDER（渲染门控）** | 布局只在真实失效信号时重跑：**interp 20.7→30 fps（22.0→30.1；复测 38–44）**、meas 13.0→0.0 ms/帧、主线程 CPU **−13pt（79.6–81.8→65.5–70.5%）**；JIT/AOT 60 fps、draw/pres 不变；交互不变（Count 0→1） | 解释器轮：`FPH` 稳态 fps ≥30、meas≈0；JIT/AOT 轮 60 fps 不回归；截图/探针（可选 `/data/.../interp-render/` 同法） |
 | 1.3 | **承 #44：动态槽 3 控件 + 释放/重建** | MAX/HOT 默认 4/2（env 可配，clamp 2..8 / 2..max）；按需创建、释放即拆、容量事件降级、延迟命令回放；**3 控件并发出画/交互**（A/B/C invoke/raw 回显）；第 3 槽回收/重建闭环 | 3 控件各自出画 + 交互；`web cmd: slot`→`web slot create: 2`→`web capacity: 4`；与 1.1 同轮可合测 |
 | 1.4 | **承 #44：默认 AOT + FRAMEPACING（承 #43）** | 7 hap 全 AOT 线：5 MAUI hap 均 NativeAOT（`runtime-mode.txt=aot`、3 `.so`、无 JIT 运行时）、首帧/交互回归；`--runtime-mode jit` 自建仍可跑 JIT（release 域需 ACL/豁免）。FRAMEPACING：宿主 5 s present 聚合，真实 **60.00 fps**（旧 17.7 = 壳状态轮询伪影）；宿主逐字节同 #43/#44（297,888 / `7b1694d9…`） | AOT 首帧 + 交互；`runtime-mode.txt=aot`/无 libcoreclr/libclrjit；60 fps 口径 |
 | 1.5 | **承 #42：JIT 解锁 / 解释器 rc2b / FIX-SLICERACE / L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/镜像** | 同 #44 交接 §1.3（JITFORT、rc2b pack、8/8 race、JPEG/心跳、Toolbar、`blzProbe`/`#app`、双映射、`skills[].uris`） | 同 `2026-10-04-ohos-tester-handoff-kit44.md` §2；AOT kit 上继续适用 |
 | 1.6 | **门禁/指纹/7 hap/预签** | 交互套件 **587/589 floor 569**（FIX-AUTODISCONNECT +3 pin；INTERP-RENDER 无新 pin）、像素 `PIXEL ASSERTIONS PASSED`（0 `Known`）、宿主导出契约 **151/151**、host UND 241/DT_NEEDED 5/denylist 0；壳 abc **368,812（`1076a700…`）**/headless 24,324（`798b2477…`）、host **297,888（`7b1694d9…`）**；**7 hap**：5 MAUI 全 AOT + Blazor 默认/`-nocsp`；**预签刷新至 #45**（67,624,950/`e1ce8ab6…`，asset 609411819） | 包内 `sh verify-kit.sh` → **0 FAIL / 0 WARN**；套件自报行 `[suite] checks=587 total=589 floor=569 assert=True`；`runtime-mode.txt=aot` |
 | 1.7 | **门禁构建（本波记录）** | kit 构建首跑 16 s 失败（CS0234 Microsoft.OpenHarmony.Maui：slice csproj HintPath 指向 src/Microsoft.OpenHarmony.Hosting|Maui.Graphics 的 Release DLL，新 worktree 未产出）——补跑两个 Release 构建（hosting 73,728/7a5d595f、graphics 16,384/59f43c0e）后 rc=0（7 hap，~8.6 分钟）；bundle repack 首跑 prepare-packs 的 Ref 构建挂在 NuGet restore（无超时网络等待）——按 kit-build-env 文档加 `RestoreConfigFile=/data/storage/el2/base/tmp/opencode/fixtest/empty-nuget.config` 后 4.8 s 完成（已固化进本波 bundle-repack45.sh）；make-device-test-kit selftest 首跑 37/1 为已知环境伪影，默认 dotnet 复跑 37/0 | 构建日志 `reg-kit45/build-*.log`（交付方侧） |
-| 1.8 | **在途/外部项（明确）** | ①AGC App Linking 登记 + 真机 https 投递；②镜像分支 `m-web-mirror d47f1fcb3b` 未并入；③rc.2 csc 并行活锁（`DOTNET_PROCESSOR_COUNT=1` 绕过）；④stock JIT 长跑/后台唤醒未覆盖；⑤第 5 槽超容量 LRU 未真机点验 | 登记「未测（在途）」，**不判失败** |
+| 1.8 | **在途/外部项（明确）** | ①AGC App Linking 登记 + 真机 https 投递；②镜像分支 `m-web-mirror d47f1fcb3b` 未并入；③rc.2 csc 并行活锁（`DOTNET_PROCESSOR_COUNT=1` 绕过）；④stock JIT 长跑/后台唤醒未覆盖；⑤第 5 槽超容量 LRU 已真机点验（a11y 轮，`2026-10-04-ohos-a11y-and-capacity.md` §2） | ①–④ 登记「未测（在途）」，⑤ 已闭环；**不判失败** |
+
+> **2026-10-04 复测回填（交付方口径，交测前以此为准）**：
+> ① **发布形态请用 AOT**——自签 release×AOT 正常出画；**release×JIT 在 `coreclr_initialize` 后 ~44 ms 崩**（`SIGSEGV(SEGV_ACCERR)`，PROT_NONE 保留区），**发布域 JIT 需华为发布证书/Profile + ACL/JIT 豁免后复验**（不能由自签 release 外推）；**覆盖装需先卸载**（release↔debug `9568286`）、**过期 p7b = `9568329`**（依据 `2026-10-04-ohos-release-domain-and-pidloss.md`）。
+> ② **启动/帧率复测（#45 切片同源重出）**：三路径 cold/warm 首帧 **1.56–1.69 s**（JIT 1.68/1.68、interp 1.62/1.56、AOT 1.69/1.64）；interp 稳态 **38–44 fps**（安静桌面；≥30 判过）、JIT/AOT **60 fps**（依据 `2026-10-04-ohos-jit-interp-recheck.md`）。
+> ③ **第 5 控件超容量已真机点验**：加第 5 控件 → 主动抢占（E 领 slot 0、A suspend 消失）→ Activate A → A 领 slot 1 + 恢复重放（B 被抢占），全程活覆盖层 ≤4（依据 `2026-10-04-ohos-a11y-and-capacity.md` §2）。
+> ④ **a11y**：本沙箱**无读屏客户端**（AMS `accessible=0`/client=0）→ 朗读/焦点顺序/动作类**不可测**（未过 0）；测试方请带 **ScreenReader 环境**复跑 T2/L1/N1/F2 等；**A11Y 按钮临时经 suspend/hide 可达**（FIX-A11YBTN 未落地）。
+> ⑤ **rc.2 监测**：官方 rc.2 **未发布（WAIT，2026-10-04 复核）**；ohos-workload 已加 `rc2-watch`（`1d39eb7`）；触发后按 `2026-09-30-rc2-mainline-adoption.md` §8 换 pin。
 
 > 尺寸预算：以 release 资产表为准（#44 = 67,680,863 B；#45 = 67,695,181 B，delta = MAUI 5 hap 以新切片重建
 > 的字节差；AOT 线无 libcoreclr，整包远小于 #42 的 376 MB）。
@@ -84,7 +91,7 @@ asset **609416429**；解包树 `399ef471…`；**内容 = kit #45 的 7 hap** +
 |---|---|---|---|
 | **自动释放（主判点 1，FIX-AUTODISCONNECT）** | 装默认 kit 主 hap（AOT）→ 加满 3 个 Web 控件 → **移除第 3 个** → 再**加回** | 移除即释放：动态槽销毁（hilog `web slot destroy: <k>`）、覆盖层消失、热对 [0,1] 不受影响；再加回：`web slot create: <k>` 重建并恢复交互（raw/invoke 回显） | 移除前后 + 重挂后截图（c1–c5 同构）+ hilog 原文 |
 | **动态槽 3 控件并发（主判点 2，承 #44）** | 同页加满 3 个 Web 控件 | 3 控件各自出画并可交互（A、B、C 各自 invoke/raw 回显 label）；第 3 槽按需创建（`web cmd: slot`→`web slot create: 2`、容量 `web capacity: 4`） | 截图（3 控件同页）+ hilog |
-| **INTERP-RENDER（渲染门控，主判点 3）** | 解释器轮（rc2b pack + rc.2 kit hap + `interp.txt=3`）出画稳定后统计 | **interp 稳态 30 fps（20.7→30）**、meas≈0 ms/帧、主线程 CPU 65.5–70.5%（−13pt）；JIT/AOT 轮 **60 fps 不变**；交互 Count 0→1 | `FPH`/帧统计 + 截图 + hilog（无对应入口登记「未测」） |
+| **INTERP-RENDER（渲染门控，主判点 3）** | 解释器轮（rc2b pack + rc.2 kit hap + `interp.txt=3`）出画稳定后统计 | **interp 稳态 ≥30 fps（20.7→30；交付方复测 38–44）**、meas≈0 ms/帧、主线程 CPU 65.5–70.5%（−13pt）；JIT/AOT 轮 **60 fps 不变**；交互 Count 0→1 | `FPH`/帧统计 + 截图 + hilog（无对应入口登记「未测」） |
 | **AOT 默认（主判点 4，承 #44）** | 装默认 kit 主 hap（无需 ACL）→ 冷启 | `runtime-mode.txt=aot` + hap marker；`libs/arm64-v8a` 仅 3 `.so`、无 `libcoreclr`/`libclrjit`；**首帧 + 交互回归** | 截图 + `verify-kit` 深度断言 + hilog |
 | **FRAMEPACING（承 #43）** | 宿主 present telemetry（5 s 桶）出画稳定后统计 | 真实呈现 **60.00 fps**（旧 17.7 系壳状态轮询伪影） | 帧统计/终端输出 |
 | **套件基座** | 有源码测试者跑 `test/maui-platform-verify` | `[suite] checks=587 total=589 floor=569 assert=True`；导出 151/151 | 终端输出 |
@@ -111,7 +118,9 @@ asset **609416429**；解包树 `399ef471…`；**内容 = kit #45 的 7 hap** +
 4. **应用侧构建**：请同步 rc.2 线发布（不混装）；设备/本机 `OS Platform: Linux`（CoreLib `417ab220532` 起）；
    enforcing 镜像直接装默认 kit 件（DEVCOMPAT-DEFAULT）；AOT 为默认（`-p:OpenHarmonyRuntimeMode=aot`）。
 5. **dnceng daily**：MAUI `11.0.0-rc.2.26478.12` 若仍未上 nuget.org，交付方 restore 走 dnceng `dotnet11` feed；
-   官方 rc.2 上架后换 pin、删 feed step（承 #34 注记）。
+   **官方 rc.2 未发布（WAIT，2026-10-04 复核）**：ohos-workload 已加 `rc2-watch`（`1d39eb7`；`scripts/rc2-official-watch.sh` +
+   `.github/workflows/rc2-watch.yml`，周一 03:17 UTC + dispatch；状态 `docs/rc2-official-watch.md`）；触发后按
+   `2026-09-30-rc2-mainline-adoption.md` §8 换 pin、删 feed step（承 #34 注记）。
 6. **五仓 tip（本波）**：runtime = 本仓 `feature/openharmony` docs（本文随附；kit #45 manifest 刷新
    **`7b0c76a5fd6`**，父 `b486c6561e8` = #44）；maui = **`189b87ca8a`**（AUTODISCONNECT 切片；父 `7c731a7ca3`
    = INTERP-RENDER ← `3feb347414` = SLOTS-DYNAMIC）；ohos-workload master **`b6ad0b0`**（pin；父 `64ee9c4`
@@ -189,16 +198,22 @@ asset **609416429**；解包树 `399ef471…`；**内容 = kit #45 的 7 hap** +
 - **本轮自动释放（FIX-AUTODISCONNECT）的 tester 机复核仍待做**：交付方在本机闭环（kit 样例 Remove→destroy→re-add→
   create→交互，探针件另证第 4 槽）；不同窗口形态与共享桌面环境请按 §2 同法复测；无入口按「未测」登记，不判失败。
   **未知项**：`web slot destroy` 原文在 hilog 512K 环下秒级轮转可能缺失（本波已用流式采集取到原文；仍建议以截图 +
-  重建闭环为准）；第 5 槽超容量 LRU 未真机点验（headless 限值 drill 覆盖 2/4 夹取）。
-- **INTERP-RENDER 边界**：30 fps 是解释器固有放大下的当前上限（draw 18.6 + present 3.2 > 16.7 ms vsync），未做脏区/
-  裁剪；单设备/共享 2in1 采数（OPT 稳态窗 3–5 个）；JIT 后段 48 fps 系争用噪声；手机域/release/AOT 组合未逐一复测。
+  重建闭环为准）；第 5 槽超容量 LRU **已真机点验**（主动抢占→slot 0、Activate→恢复重放、活覆盖层 ≤4；headless 限值 drill 覆盖 2/4 夹取）。
+- **INTERP-RENDER 边界**：30.1 fps 系共享桌面争用态；复测（安静桌面）interp 稳态 **38–44 fps**（draw 14.3/pres 1.4，
+  `2026-10-04-ohos-jit-interp-recheck.md`），未做脏区/裁剪；单设备/共享 2in1 采数（OPT 稳态窗 3–5 个）；JIT 后段 48 fps
+  系争用噪声；手机域/release/AOT 组合未逐一复测。
   渲染门控正确性以套件 pin（TitleBar 行、`Layout.Add` 版本信号）+ 真机交互回归把关。
 - **在途/外部项（明确）**：①AGC App Linking 登记 + 真机 https 投递（P2c 本机产物已可验；自签包仍走显式 want）；
   ②镜像分支 `m-web-mirror d47f1fcb3b` 未并入 `feature/openharmony`；③rc.2 csc 并行活锁以 `DOTNET_PROCESSOR_COUNT=1`
   绕过未定位；④stock JIT 长跑/后台唤醒未覆盖（JIT 现非默认形态）；⑤解释器混合模式（`interp.txt=1|2`）保留默认。
 - **AOT 默认边界**：JIT/解释器均需动态码；release/生产域请走 AOT 或申请 ACL
   （`ohos.permission.kernel.ALLOW_WRITABLE_CODE_MEMORY`，2in1/平板）；手机只发 AOT。`-p:OpenHarmonyRuntimeMode=jit`
-  自建 jit 变体仍可复现 #42 三路径判定。
+  自建 jit 变体仍可复现 #42 三路径判定。**发布域实测（2026-10-04）**：自签 release×AOT 正常；release×JIT `coreclr_initialize`
+  后 ~44 ms 崩（需华为发布 Profile + ACL/JIT 豁免后复验）；覆盖装先卸载（`9568286`）、过期 p7b=`9568329`
+  （`2026-10-04-ohos-release-domain-and-pidloss.md`）。
+- **a11y 边界（2026-10-04 设备轮）**：本沙箱无读屏客户端（AMS `accessible=0`/client=0）→ T2 读屏开启态/L1 Label 朗读/
+  N1 List/F2 滚动焦点保持等「朗读/焦点顺序/动作」类不可测；**测试方需带 ScreenReader 环境复跑**；A11Y 按钮
+  **临时经 suspend（抽屉）/hide（切 tab）可达**（FIX-A11YBTN 未落地；`2026-10-04-ohos-a11y-and-capacity.md` §1/§3）。
 - **动态槽边界**：热对 [0,1] 常驻；空闲 >2 不养 ArkWeb 引擎/文档（重建只付一次组件+加载，权衡写在类头，无定时器）；
   容量下调按 suspend 抢占超容量 claim（旧 2 槽壳安全降级）；env 不可按应用注入。
 - **解释器口径**：rc2b pack 只配 rc.2 kit hap + #42+ 宿主；旧 rc.1 托管 CoreLib 测试件会 QCall ABI NULL 崩（测试件问题）。
