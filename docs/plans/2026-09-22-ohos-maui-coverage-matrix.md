@@ -89,6 +89,19 @@
 
 真机口径同 §6：以上为代码路径 + 离设备套件证据，"已实现" ≠ "已验证"。真机仍需确认：系统 App Linking/`want` 的实际投递（`onNewWant` 是否按预期触发、uri/parameters 形状）、以及 `module.json` 的 `abilities[].skills[].uris` 清单声明（本轮只做 app.json 白名单 + 托管校验，清单侧声明为设备后续项）。
 
+### 1f. 三路径 / 动态槽 / JIT ACL（2026-10-04 回填，kit #44 口径）
+
+| 项 | 状态 | 锚点 |
+|---|---|---|
+| AOT（**推荐默认**，承 #43） | 5 MAUI hap 全 NativeAOT、`runtime-mode.txt=aot`、无 JIT 运行时；`--runtime-mode jit` 可自建；release/生产域需 AGC ACL/豁免 | `2026-10-04-ohos-tester-handoff-kit44.md`、覆盖矩阵头 |
+| JIT | JITFORT（宿主 `prctl(0x6a6974)` 默认开 + 无 ICU 镜像自动 `InvariantGlobalization`）→ **首帧**；FIX-SLICERACE 8/8；调试域可用 | `2026-10-03-ohos-jitfort-enable.md`、`2026-10-03-ohos-handler-race.md` |
+| 解释器（interp） | rc2b pack（2,410,595 / `5974430509…`）→ **首帧**（smaps 无 `libclrjit.so` 为判据）；INTERP-NULL = rc.1 托管 × rc.2 原生 QCall ABI 错配 | `2026-10-03-ohos-interp-null.md`、`2026-10-03-ohos-interp-frame.md` |
+| 三路径设备基线/浸泡 | DECIDE-BASELINE 各 3 轮（启动时延/fps/RSS）；SOAK 受并发干扰（非产品判定）；**SOAK2 各 45 min = 0 崩溃/0 冻结/0 重装** | `2026-10-03-ohos-three-path-baseline.md`、`…-soak.md`、`…-soak-2.md` |
+| JIT ACL 申请 | MAP_JIT 探针与 token 8/9 结论、受限权限语义、AGC 材料包（正文/技术附件/App Linking/提交顺序）；字段以控制台为准 | `2026-10-03-ohos-jit-acl-prerec.md`、`2026-10-03-ohos-agc-acl-application-pack.md`（+附件） |
+| 动态槽（SLOTS-DYNAMIC） | 覆盖层池 MAX/HOT 4/2、按需 ensure/destroy、容量 LRU、壳 ForEach + defer 队列；**3 控件并发出画/交互** | `2026-10-02-ohos-multi-overlay.md`、`2026-10-04-ohos-tester-handoff-kit44.md` |
+
+真机口径同 §6：以上为设备实测（kit #44 件）与材料级证据；ACL/AGC 字段与审核口径以控制台为准。
+
 ## 2. 部分实现（Partial，附证据）
 
 2026-09-22 更新：下表带 ✅ 的行已在本轮转为 IMPLEMENTED（已实现；提交锚点行内 + §1b），原缺口证据保留作审计轨迹；其余行仍为缺口。
@@ -142,6 +155,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 5. 套件与 CI 基线
 
+- **当前（kit #44，2026-10-04）：584/586、floor 566**（#43 = 578/580 floor 560；#42 = 578/580；#41 = 563/543；#39 = 554/534；#34 = 513/493；以下为历史值）。
 - `test/maui-platform-verify` 期望 **391** 条 `[verify]`、门限 **floor 371**（MS-MODE 的 4 条 runtime-mode 检查
   加在 P2c-DEEPLINK 的 10 条深链/激活检查之上，后者加在 P2b-IMG 的 4 条之上；套件自报 `[suite]` 行，preflight 与 CI 同源解析；
   历史值（写作时点）：**284** 条（271 交互 + 4 fuzz + 1 帧性能 + 8 无障碍性能）、CI 下限 **264**（284-20）；
@@ -178,7 +192,7 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 
 ## 6. 真机状态（caveat）
 
-- 上述所有内容均为**离设备**验证；套件（现 391 条 / floor 371，见 §5）与像素套件只在无设备环境运行。
+- 上述所有内容均为**离设备**验证；套件（kit #44 现 **584/586 floor 566**，见 §5/§1f）与像素套件只在无设备环境运行。
 - 启动崩溃已定位并修复：**入口 record**（kit #10，`useNormalizedOHMUrl=false` + bundle 前缀 record；
   测试方真机复测确认入口可解析）与 **abc 字节码版本**（kit #11，`compatibleSdkVersion 18` → `13.0.1.0`；
   此前 `24.0.0.0` 超出设备 ark runtime）。**kit #44 为当前发布**（动态槽（SLOTS-DYNAMIC：MAX/HOT 默认 4/2、按需创建、容量 LRU、释放销毁、壳 ForEach + defer 队列；**3 控件并发出画/交互**）+ 默认 AOT（承 #43：5 MAUI hap 全 NativeAOT、`runtime-mode.txt=aot`、无 JIT 运行时）+ FRAMEPACING（17.7→60.00 fps）；壳 abc **368,812（`1076a700…`）**/24,324、宿主 **297,888（`7b1694d9…`）**、导出 151、套件 **584/586 floor 566**；**预签已刷新（#44 件：67,627,789 / `75a40110…`，asset 608782132）**；发布实测 tar **67,680,863 B / `b777d8d8…`**、树 **`db2604d5…`**、sidecar **`85d62a6e…`**、bundle **73,052,763 / `3b3008a4…`**（sdk 锚 **`2abf4fcaa3`**；发布已完成，以 release「## Integrity（kit #44）」与随包校验为准））；**上一版 = kit #43**（默认 AOT + FRAMEPACING；套件 578/580 floor 560、导出 151、abc 356,468/24,324、宿主 297,888（`7b1694d9…`）；发布实测 tar **67,638,015 B / `57c7bf44…`**、树 **`0c41f071…`**、sidecar **`bd1f8e33…`**、bundle **73,037,790 / `929b7263…`**（sdk 锚 **`1c4f21ce13`**；预签 67,585,222 / `08412475…`））；**更早 = kit #42**（JIT 解锁（JITFORT + ICU invariant → JIT 首帧）+ 解释器 rc2b 首帧 + FIX-SLICERACE（8/8）+ L6/LEGACY/SAMPLE-FIX/WX-PATCH2/P2c/镜像扩展；FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount/FIX-JSCALL/MULTI-OVERLAY-FULL/DEVCOMPAT 保留；套件 578/580 floor 560、导出 151、abc 356,468/24,324、宿主 297,888（`08abe185…`）；**预签未刷新（仍 #41 件）**；发布实测 tar **376,256,128 B / `ea4e3b58…`**、树 **`13f3a086…`**、sidecar **`878d05a1…`**、bundle **73,047,352 / `570c0821…`**（sdk 锚 **`35101fe1f5`**；发布已完成，以 release「## Integrity（kit #42）」与随包校验为准））；**更早 = kit #41**（MULTI-OVERLAY-FULL（双槽 LRU 覆盖层池 + per-slot hybrid invoke/消息 + 动态 z-order）+ DEVCOMPAT-DEFAULT（payload 码签重写默认化，enforcing 镜像开箱可装）+ INTERP-FIX（8 MB app 栈 + `interp=3` 关写屏障；rc2 interp pack `ohos-interpreter-pack-rc2.tar.gz`）；**预签刷新至 #41**；FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount/FIX-JSCALL 保留；套件 563/floor 543、导出 150、abc 356,140/24,324、宿主 293,792（`8d67def3…`）；发布实测 tar **376,036,502 B / `bed460ae…`**、树 **`7ce1946e…`**、sidecar **`2a95e764…`**、bundle **73,040,293 / `c98375a5…`**（sdk 锚 **`2222ba959f`**；发布已完成，以 release「## Integrity（kit #41）」与随包校验为准））；**上一版 = kit #40**（FIX-JSCALL（`JSCall` 枚举/NavigationOptions AOT 扎根 → razor 计数往返 0→1→2 真机）；FIX-HOME/ITOUCH/DISMISS/WVP/BACKSIZE/BWVMount 保留；套件 555/floor 535、导出 150、abc 342,160/24,324（未变）、宿主 293,792（`384e552a…`）（未变）；发布实测 tar **375,836,470 B / `31ab8732…`**、树 **`e950de54…`**、sidecar **`9b051247…`**、bundle **77,750,495 / `434d2b6f…`**（sdk 锚 **`77ffe1dad6`**；发布已完成，以 release「## Integrity（kit #40）」与随包校验为准））；**上一版 = kit #39**（FIX-BACKSIZE（Back 关抽屉 + `BlazorWebView.GetDesiredSize`；导出 150）+ FIX-BWVMount（NativeAOT `.razor` 挂载出画）；FIX-HOME/ITOUCH/DISMISS/WVP 保留）；套件 554/floor 534、导出 150、abc 342,160/24,324、宿主 293,792（`384e552a…`）；发布实测 tar **375,765,521 B / `e95eed49…`**、树 **`932e7955…`**、sidecar **`e5fc82de…`**、bundle **77,760,996 / `84d57989…`**（sdk 锚 **`2f1ace0a58`**；发布已完成，以 release「## Integrity（kit #39）」与随包校验为准））；**上一版 = kit #38**（FIX-DISMISS（抽屉外点关闭）+ FIX-WVP（Hybrid overlay px→vp / hybrid origin / z-order / 抽屉与切页 suspend）；套件 550/floor 530、导出 149；发布实测 tar 375,641,619 / `ced5583f…`；**更早 = kit #37**（FIX-HOME（NavigationPage arrange 下钻 → Home 整页出画）+ FIX-ITOUCH（注入/触摸 element 坐标，页内点击命中）；套件 544/floor 524、导出 149、abc 339,964/24,324、宿主 293,792（`4e9f3c3e…`）；发布实测 tar **375,652,577 B / `3a7259d6…`**、树 **`ab517b57…`**、sidecar **`7db60a77…`**、bundle **77,754,907 / `8abba9b1…`**（sdk 锚 **`d05247b90b`**；发布已完成，以 release「## Integrity（kit #37）」与随包校验为准））；**更早 = kit #36**（payload 原地直载（AOT 路径真机 BLZ）+ host 预注册缓冲 + 像素 Known 清零 + a11y 修复 + rc.2 AOT pack `-r2`；套件 540/floor 520、导出 149、abc 339,964/24,324、宿主 293,792；发布实测 tar **375,627,841 B / `9eb9cecf…`**、树 **`9764827c…`**、sidecar **`4d7062c3…`**、bundle **77,749,969 / `aeb6888a…`**（sdk 锚 **`b59c3d02e3`**；发布已完成，以 release「## Integrity（kit #36）」与随包校验为准））；**更早 = kit #35**（W9/W10 并入主线：B2 真机 BLZ 打通 + T20 媒体传输层 + T14/T21/T8 余项 + AOT 入口修复；套件 540/floor 520、导出 149、abc 339,164/23,516、宿主 293,792；发布实测 tar **375,629,423 B / `419d42e2…`**、树 **`d3b1b317…`**、sidecar **`d7e79d39…`**、bundle **77,754,383 / `acd26821…`**（sdk 锚 **`02a31ef348`**；发布已完成，以 release「## Integrity（kit #35）」与随包校验为准）；**更早 = kit #34**（rc.2 基线 + MAUI W6/W7/W8；套件 513/floor 493、导出 145；+ AOT v3）；**更早 = kit #33**（Blazor 回归修复/双 hap A/B + TabbedPage/A11Y + W5 470/450 + AOT v2）；**更早 = kit #32**（WebView 六项接线 + B1 razor 独立资产 + SEC 收口，abc 289992/交互 398/378/tester-run v14；#31 = Blazor WASM/ArkWeb 组件批 = 第 6 个 hap **`hello-blazorwasm-host-unsigned.hap`**（26,794,931 B / `36010a9c…`，未签名，bundle `com.example.opendotnet`，需自签）+ tester-run v13（`--blazor-probe`：`BLZ_BOOT`/`BLZ_RENDERED`）；#30 批 = runtime-mode 打包开关（`libs/<abi>/runtime-mode.txt`；宿主 file>manifest>default）+ tester-run v12 + MAPFIX harmony 重切（MapOverlay 真编译）；含自 #17 起全部安全/性能/启动修复，并回灌设备里程碑修复：宿主按需 dlsym、`resources.index`、ZIP/mkdir、DevEco 工程布局；R2 批 = Map 覆盖层 + LiveView 探测 + `start_app` AOT 桥 + 解释器开关，R3 批 = CoreSpeechKit TTS + HUKS-first SecureStorage + 自绘深度五连（文本编辑/动画/列表/图片/深链）；kit #31 实测 tar 207,023,588/`f4325d2f…`、树 `52e77ee8…`、sidecar `7d0cba77…`、`SHA256SUMS` 16 项 / 1,410 B（#30 = 196,992,264/`a781c25b…` 仅作对照；#29 196,990,205/`e895cc0a…`））；
@@ -199,8 +213,8 @@ IMPLEMENTED（离设备）。`AppActions` 已有如实降级的实现（本 SDK 
 |---|---|---|---|
 | 1 | 真机启动崩溃定位决策表（入口 record / abc 版本 / P1–P4 + 最小证据） | 需要设备 | 四个历史根因已修复；2026-09-24 里程碑已达成（kit #18 + 本地修复）；**stock kit #30/#31 实测无启动崩溃**（2026-09-28，见 §6）；后续 kit 仍按判定点复测（里程碑 §6） |
 | 2 | 把切片作为 MAUI 平台矩阵的一部分交付（ship-the-slice 打包） | L；离线 + 上游 | 未开始 |
-| 3 | 真机验证扫尾（387 条套件 + 像素 + 真机行为） | 仅设备 | **2026-09-28 #30/#31 已真机实测**：Blazor WASM 组件 ✅（真机）、MAUI 主体渲染 = 阻塞已知→修复中（TabbedPage）、AOT = 预编译可跑（本地重编待工具链）；其余套件项（P2c 深链 want/App Linking 投递与清单声明、WebView 等）仍待后续 kit |
-| 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」 |
+| 3 | 真机验证扫尾（387 条套件 + 像素 + 真机行为） | 仅设备 | **2026-09-28 #30/#31 已真机实测**：Blazor WASM 组件 ✅（真机）、MAUI 主体渲染 = 阻塞已知→修复中（TabbedPage）、AOT = 预编译可跑（本地重编待工具链）；其余套件项（P2c 深链 want/App Linking 投递与清单声明、WebView 等）仍待后续 kit；**kit #41–#44 真机已覆盖**：MULTI-OVERLAY-FULL/动态槽 3 控件并发、FIX-SLICERACE 8/8、三路径首帧与 SOAK2（0 崩溃）、FRAMEPACING 60 fps（见 §1f） |
+| 4 | CoreCLR 解释器路线（R2-INTERP 构建/发布完成 → 设备侧 `DOTNET_InterpMode=3` 冒烟） | 需真实 OHOS 交叉 ICU/OpenSSL 资产；设备侧需 `-clrinterpreter` 重建的 coreclr | **构建侧已全量打通**（2026-09-26）：feature-enabled `libcoreclr.so` 5,163,096 B + `libclrinterpreter.so` 268,320 B；`ohos-interpreter-pack.tar.gz`（2,419,988 B / `a10699b3…`）已发布到 `device-test-kit`；宿主 `<files>/interp.txt` → `DOTNET_InterpMode`（`interp=3 source=file`）；设备侧判定点见 `2026-09-24-ohos-runtime-strategy.md` §2「设备侧验证」；**设备侧已达成（kit #42 rc2b 首帧 + SOAK2 45 min 0 崩溃，见 §1f）** |
 
 已落地（原 #3、#5–#9）：`Permissions.RequestAsync`、Connectivity、系统剪贴板、
 Email / Sms / PhoneDialer、Screenshot + Geocoding、Announce / Shell 扩展、
