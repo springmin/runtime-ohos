@@ -78,4 +78,6 @@
   ohos-workload `e1d096a`（已推送 `origin/master`）。
 - **不确定项**：本轮设备报 HAD-W32 / OpenHarmony-7.0.0.109（DEV-A11Y 轮记录 HAD-W24 / 7.0.0.111），
   按实际记录；`nodeCount=1` 与 DEV-A11Y 相同，仍待真读屏机复核；`selftest-tester-run.sh` 唯一失败项是
-  「repo working tree unchanged」——运行中另有代理提交（c31d077）导致的工作树快照漂移，非本修复回归。
+  「repo working tree unchanged」——运行中另有代理提交（c31d077）导致的工作树快照漂移，非本修复回归；
+  CI `interaction-regression` 在 `c31d077` 与本提交均红（`DrawCostTick/DrawKindText/DrawKindContainer`
+  CS0117：DRAWCOST 源钉依赖其本地 slice、未随 pin 前进），属 INTERP-DRAW2 的 pin 批次，与本壳修复无关。
