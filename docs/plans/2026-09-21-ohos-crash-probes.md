@@ -1,6 +1,21 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-04 update (kit #44 — current):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
+> **2026-10-04 update (kit #45 — current):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
+> plus AUTODISCONNECT and INTERP-RENDER: a removed web control releases its overlay slot (a dynamic slot is
+> destroyed in the shell, `web slot destroy`; the hot pair keeps its component) and a re-added control re-claims
+> a slot and replays its load/registration (`web slot create`) while the handler stays connected; on device the
+> kit sample (no explicit DisconnectHandler) logs `web slot destroy: 2` at 12:40:50 and `web slot create: 2` at
+> 12:41:00 with interaction restored (c1-c5). The render layout gate skips the per-frame full Measure/Arrange when
+> no real invalidation signal fired: interpreter 20.7 -> 30 fps (22.0 -> 30.1), meas 13.0 -> 0.0 ms/frame, main
+> thread CPU 79.6-81.8% -> 65.5-70.5% (-13pt); JIT/AOT stay at 60 fps and draw/pres are unchanged. The suite is
+> 587/589 floor 569 (AUTODISCONNECT +3 pins). The pre-signed assets are refreshed to #45
+> (67,624,950 / `e1ce8ab6…`, asset 609411819). Shell abc 368,812 / `1076a700…`, headless 24,324,
+> host 297,888 / `7b1694d9…`, exports 151/151. Release: tar 67,695,181 / `ca48a93c…`, tree `ae0f7fce…`,
+> sidecar `9741aced…`, bundle 73,058,366 / `a8334c4c…` (sdk anchor `c7ac81ccdf`). Numbers follow the release
+> notes `## Integrity (kit #45)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit45.md`.
+>
+> **2026-10-04 update (kit #44 — previous):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
 > overlay slots (SLOTS-DYNAMIC; ohos-workload `88e5aec` + MAUI slice `3feb347414`): the pool honours configurable
 > MAX/HOT limits (default 4/2), creates slots on demand (`slot ensure`) and destroys released dynamic slots
 > immediately (`slot destroy`; the hot pair [0,1] stays resident), downgrades/preempts by owner-LRU on capacity
@@ -181,7 +196,22 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-04 update (kit #44 — current):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
+> **2026-10-04 update (kit #45 — current):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
+> plus AUTODISCONNECT and INTERP-RENDER: a removed web control releases its overlay slot (a dynamic slot is
+> destroyed in the shell, `web slot destroy`; the hot pair keeps its component) and a re-added control re-claims
+> a slot and replays its load/registration (`web slot create`) while the handler stays connected; on device the
+> kit sample (no explicit DisconnectHandler) logs `web slot destroy: 2` at 12:40:50 and `web slot create: 2` at
+> 12:41:00 with interaction restored (c1-c5). The render layout gate skips the per-frame full Measure/Arrange when
+> no real invalidation signal fired: interpreter 20.7 -> 30 fps (22.0 -> 30.1), meas 13.0 -> 0.0 ms/frame, main
+> thread CPU 79.6-81.8% -> 65.5-70.5% (-13pt); JIT/AOT stay at 60 fps and draw/pres are unchanged. The suite is
+> 587/589 floor 569 (AUTODISCONNECT +3 pins). The pre-signed assets are refreshed to #45
+> (67,624,950 / `e1ce8ab6…`, asset 609411819). Shell abc 368,812 / `1076a700…`, headless 24,324,
+> host 297,888 / `7b1694d9…`, exports 151/151. Release: tar 67,695,181 / `ca48a93c…`, tree `ae0f7fce…`,
+> sidecar `9741aced…`, bundle 73,058,366 / `a8334c4c…` (sdk anchor `c7ac81ccdf`). Numbers follow the release
+> notes `## Integrity (kit #45)`; handoff:
+> `docs/plans/2026-10-04-ohos-tester-handoff-kit45.md`.
+>
+> **2026-10-04 update (kit #44 — previous):** kit #44 = kit #43 (AOT by default + FRAMEPACING) plus the dynamic
 > overlay slots (SLOTS-DYNAMIC; ohos-workload `88e5aec` + MAUI slice `3feb347414`): the pool honours configurable
 > MAX/HOT limits (default 4/2), creates slots on demand (`slot ensure`) and destroys released dynamic slots
 > immediately (`slot destroy`; the hot pair [0,1] stays resident), downgrades/preempts by owner-LRU on capacity
