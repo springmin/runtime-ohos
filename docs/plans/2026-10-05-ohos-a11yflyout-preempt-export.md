@@ -33,3 +33,23 @@
   `master`）、runtime-ohos 本文件 + 索引 + SOAK-JI 指针（`commit-paths.sh`，普通推送）。
 - 不确定：设备型号/OS 按本轮记录；定向导出只覆盖 12×3 s 轮询窗内到达的行（低噪声复放按窗内
   节奏）；`nodeCount` 为沙箱自检读数（无读屏客户端），真读屏机复核不变。
+
+### 收口（MAUI-CONSOLIDATE-A11YFLYOUT，2026-10-05）
+- origin/线性：maui `feature/openharmony` tip = `d5384d6cc3`（父 `6652017ca5`）；ohos-workload
+  `master` tip = `f538c84`（父 `181a907`）；两仓 tip 与 origin 一致（`ls-remote`），线性。
+- 合并树（`d5384d6cc3` + `f538c84`）门禁复核：切片 trim/AOT `-t:Rebuild` 0 error / 0 IL
+  （73 个非 IL 告警）；交互 `[suite] checks=593 total=595 floor=575 assert=True`、593 printed
+  `[verify]`（declared==printed）、frame + a11y perf 全 `within=True`、无 Unhandled
+  （a11y-flyout detail nodes=3 / panel nodes=5 均 assert=True）；pixel `PIXEL ASSERTIONS PASSED`
+  （42 PASS / 0 FAIL）；导出 151/151（`--cross-check`）；四包 preview.22/23/24/28 abc 一致
+  （ui 370,240 / `4b439e83…`、headless 24,324 / `798b2477…`，provenance `bb5a1758…`），
+  `--check-pack-abc` 覆盖 22/23/24、.28 逐字节同；`selftest-build-arkts-shell 185/0`、
+  `selftest-repo-hygiene 25/0`。
+- pin：ohos-workload `3de9a95` 把三 workflow（interaction/pixel/host-export）的默认与
+  `MAUI_OHOS_REF` fallback 推进到 `d5384d6cc3`（注释同步 593/595 floor 575、151/151、
+  FIX-A11YFLYOUT/FIX-PREEMPT-RAW）；普通（快进）推送、未强推。
+- CI 5/5 @ `3de9a95`（push）：interaction `37243299311` / pixel `37243299320` /
+  host-export `37243299309` / ridgraph `37243299327` / markdownlint `37243299305`。
+- 不确定项：本机 suite 全量重建首轮 csc SIGSEGV 139（宿主机内存压力，`--no-restore` 重试通过）；
+  pixel 首轮 `dotnet run` 命中 MSB1025 已知宿主怪癖，按 preflight 回退（`--no-restore -m:1` +
+  直跑 dll）通过；`--check-pack-abc` 仅覆盖 22/23/24（脚本硬编码），.28 以逐字节比对复核。
