@@ -1,5 +1,24 @@
 # 上游 rebase 预演：pr/* 与 rehearse2/*（2026-09-28）
 
+## 2026-10-04 复演刷新（RC2-UPSTREAM，重试轮）
+
+> 三仓 `git fetch upstream main`（网络重试）后，按 09-28 只读法重跑 merge-tree + scratch-worktree rebase。
+> 当日两遍收口：首遍 tip `4f5c27fbf3b`（+147 commit / 1105 文件），终遍 tip `cfe8a6c4600`；下列数值为终遍，
+> 收口后 21:5x 再次 fetch 复查，三仓 tip 均未再动。
+>
+> - **上游 tip**：runtime `cfe8a6c4600`（2026-10-04，"Fix build break with latest MSVC" #135176；较本页 09-28 基线
+>   `caf6b2a2243` **+148 commit / 1107 文件**）、sdk `590b0970fe`（2026-10-03）、aspnetcore `dc8b384c43`（2026-10-03）。
+> - **runtime**：merge-tree **39/39 CLEAN**；rebase **20/21 CLEAN**（19 支 `-U0` patch-id **SAME** ＋ `platform-numa` **EMPTY**；
+>   唯一冲突 `tls-flag-cleanup`＝既定丢弃）。**0 支需重做；各支落地顺序与下页 §逐支预测一致**；infra 重演产物 tip `e4c51c6f3c6`。
+> - **sdk**：`pr/ohos-sdk-rids`（3 提交）/ `pr/ohos-sdk-sandbox`（5 提交）均 merge-tree clean → rebase clean・SAME
+>   （预演 tip `bd1beba3b3` / `70321883d8`）。
+> - **aspnetcore**：`pr/ohos-aspnet-rids`（1 提交）merge-tree clean → rebase clean・SAME（预演 tip `ecdd478930`）。
+> - `rehearse2/*` 18 ref merge-tree **18/18 CLEAN**（仍为 09-23 产物，**不要直接当 PR head**）。
+> - **证据**：scratch `/data/storage/el2/base/tmp/opencode/up-rehearse-1004b/`（`mergetree.tsv`、`rebase-results.tsv`、
+>   `results-final.tsv`、`sdk/`、`aspnet/`、`logs/`；首遍 `up-rehearse-1004/` 保留）。原分支/远端零改动、未推送；
+>   三仓 worktree 与 `up-rehearse-1004b/*` 临时分支已清。
+> - **未发任何评论**（对外动作照旧先报备）。
+
 - **上游 tip**：`caf6b2a2243`（2026-09-28，"…Fix DI generic constraint tests…" #134760）；较 09-23 演练基线 `5b82fc4ae86b` **+75 commit / 501 文件**。
 - **方法（只读）**：`git merge-tree --write-tree --name-only upstream/main <ref>` 预测 39 个 ref；再在 scratch 临时 worktree 的 `up-rehearse/*` 临时分支上 `git rebase --onto`（infra 先重锚到新 tip，flat 支剥离旧 infra 前缀 `cece42439a1`）。原分支/远端零改动、未推送；worktree 与临时分支已删除。
 - **结论**：merge-tree **39/39 CLEAN**；rebase **20/21 CLEAN**（19 支改动 `-U0` patch-id **SAME** ＋ 1 支 **EMPTY**＝去重证明），唯一冲突 = `tls-flag-cleanup`（既定丢弃）。**0 支需重做**。
