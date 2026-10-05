@@ -33,6 +33,11 @@
 - AGC（App Linking 登记+https 投递、JIT ACL 提交、rc.2 正式 pin；现走 dnceng daily）。
 - 上游（键契约 E6、Blazor WASM 发布链 E7、VisualDiagnosticsOverlay tap E8、Hot Reload E4、arm32 E5、
   真多窗 E3、ship-the-slice）；样例级（真触摸屏手势、异 bundle 壳复用 jscrash）。
+- **上游 PR/分支“刷新”不是待办**：分支按纪律不可强推，只读预演已于 10-04 对当时最新 `upstream/main`
+  （runtime `cfe8a6c4600`）复跑（39/39 merge-tree clean、20/21 rebase clean、0 支需重做）；该预演为
+  **周期维护**（随 rc2-watch 周程/上游前进时重跑并更新 `2026-09-28-ohos-upstream-rebase-rehearsal.md`），
+  PR 描述等上游写操作按既定约定不做。
+- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #48（#43→#48 均为同一功能面 + 性能/工具增量）。
 
 ## 5. 平台限制清单
 
@@ -45,8 +50,9 @@
 ## 6. 工具件 / 建议
 
 - **A11Y-CLIENT：已交付**（ow `ee8b865` + `2026-10-05-ohos-a11y-client.md`；hap `f3fbfad6…`，selftest 14/14）。
-- **DEVICE-ROUND：在跑**（脚本+doc 未提交；dry1/dry2 核验 tree `0f266636…` ok，run1 装启/首帧/Blazor A/B ok，
-  run2 进行中：装启/首帧 ok、slots 中——本报告 commit 时未回填）。
-- **建议：本地可执行功能项 = 0，功能面无下一步**；唯一本地尾巴 = L2（csc 活锁）；外部/平台按 §4/§5 推进，不判失败。
+- **DEVICE-ROUND：已交付**（ow `6b6aed1` + `2026-10-05-ohos-device-round-script.md`；selftest 44/44、run2 rc=0、
+  归档 `f23f0b9d…`）。
+- **建议：本地可执行功能项 = 0，功能面无下一步**；唯一本地工程尾巴 = L2（csc/VBCS 活锁；已由 watchdog
+  自愈覆盖，定位留档）；外部/平台按 §4/§5 推进，不判失败。
 
 > kit #48 发布回填（2026-10-05）：S 多窗（MULTIWINDOW-S）已随 kit #48 交付（真机 3120×1955；M/L 未实现）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2（主判点 1–5）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md`。

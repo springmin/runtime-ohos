@@ -22,6 +22,8 @@
 
 - `#132953`（infra）：重审通过 + rerun 绿后**先合并**；未合并前给 N 组开 PR 会把 12 个 infra 提交算进 diff。
 - **上游 tip / 演练**：`upstream/main = caf6b2a2243`（09-28）；演练见 `2026-09-28-ohos-upstream-rebase-rehearsal.md`（merge-tree 39/39 CLEAN；rebase 20/21 CLEAN，19 支语义 SAME；0 支需重做）。
+- **周期维护（非待办）**：上游前进时按上条**只读**重跑预演并更新 rehearsal 文档（可随 rc2-watch 周程）；
+  预演不动上游、不重写已推分支（不可强推）；PR 描述等上游写操作按 §「评论需许可」执行。
 - 确定顺序与每支前置（演练后）：
   ① infra（前置=#132953 合并 + `eng/common` 同步）→
   ② N1 clrfeatures / N2 pal / N3 zstd / N4 libs-native / N5 apphost / N14 tryrun（前置=①）→
