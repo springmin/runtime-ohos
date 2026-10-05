@@ -11,7 +11,7 @@
 ## 2. 合并树门禁
 
 - 切片：standalone Release + trim/AOT analyzer **0 error / 0 IL**（73 非 IL 警告）。
-- 套件：`[suite] checks=599 total=601 floor=581 assert=True`（declared==printed；grep 599==checks，perf/a11y `within=True`，0 Unhandled；+N 对账 = 597/599 基线 + 本修 +1 = 599/601/581）。
+- 套件：`[suite] checks=599 total=601 floor=581 assert=True`（declared==printed；grep 599==checks，perf/a11y `within=True`，0 Unhandled；+N 对账：WASM-MIME 起于 593/595 → +2=595/597 → AOT-STARTUP +1=596/598 → MULTIWINDOW-S +2=598/600 → 本修 +1=599/601）。
 - 像素：headless-render Release `PIXEL ASSERTIONS PASSED`。
 - 导出：`OK: all 151 expected exports`（managed 152 declarations/145 EntryPoint；宿主 151 全 plain symbol）。
 - 四包+provenance：preview.22/23/24/28 ui abc 375,268 B / `9cd2b4c3…`、headless 24,324 / `798b2477…`；`--check-sources`/`--check-pack-abc` 绿。
