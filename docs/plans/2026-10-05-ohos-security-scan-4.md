@@ -65,3 +65,5 @@ dotnet bin/Debug/net11.0/verify.dll | grep -E 'a11y-password|draw cull edge|\[su
 ```
 
 **未覆盖/不确定：** 本轮未上机——修复与断言为离线复现（含红/绿负控）；读屏服务实际可达性取决于用户启用（修复直接消除暴露面，不依赖可达性判定）；SEC4-SLOT1/2 需真机 churn 复演（WebView 区未改）；N=8 >4 挂载失败为设备/平台事实（MAX 维持 4）；CG2-R2R 的 release sha 未在本机重算（文档值与 `SHA256SUMS`/API digest 双向核对，见 CG2-R2R 文）。
+
+> MW4 收口回填（2026-10-05）：本报告的 maui 切片（密码脱敏 `5f3efd55e5`）+2 断言已随 MULTIWINDOW-M 波次计入套件 **607/609 floor 589**（ow `be70a73`）；三 workflow pin `b093e33825` + 合并树门禁 + CI 5/5（ow `e0803be`）见 `2026-10-05-ohos-mw4-consolidate.md`。

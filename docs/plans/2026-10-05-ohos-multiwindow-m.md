@@ -27,3 +27,5 @@
 - `ApplicationHandler.OpenWindow` 仍未映射（诚实单窗）；overlay 槽池、避让区、软键盘、CEF/ArkWeb 按窗分区；`multiton` 第二 UIAbility 窗与 `ohos_host_open_window/close_window` 平台桥未做。子窗容量/软键盘/焦点与主窗 z-order 需 L 判定卡。
 
 > 提交：maui `b093e33825`（OpenHarmonySubWindow）、ow `be70a73`（壳+宿主+harness+样例+四包 abc）+ `16df9a3`（子窗页注释修正，abc 字节不变）、本文（runtime-ohos）。设备脚本/日志/截图留在 scratch（未入库）。
+
+> MW4 收口回填（2026-10-05）：合并树门禁（切片 0 error/0 IL、套件 607/609 floor 589、像素 PASSED、导出 153/153、四包 provenance 414,532/`e016db13…`）+ 三 workflow pin `b093e33825` + CI 5/5（ow `e0803be`）见 `2026-10-05-ohos-mw4-consolidate.md`。
