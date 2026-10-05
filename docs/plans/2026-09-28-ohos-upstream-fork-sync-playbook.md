@@ -52,3 +52,32 @@
   4. **OpenBSD 公共 API**（`public IsOpenBSD()` + `IsOpenBSDVersionAtLeast`）— **上游独有** → 自动采纳 ✓（fork 侧仅为滞后 ✗）
 
   → C3 合并该文件**无需人工解冲突**；合并后**校验**：别名/`IsLinux()` 仍在 ✓、OpenBSD 为上游形 ✓。
+
+## 5. 漂移表与周期复演（2026-10-05）
+
+周期只读复演：三仓 `git fetch upstream main`（重试）；runtime 39 ref merge-tree ＋ 21 支 rebase；sdk 2 支、aspnetcore 1 支；原分支/远端零改动、未推送。
+
+| 上游 | 10-04 基准 | 10-05 tip | 漂移 |
+|---|---|---|---|
+| dotnet/runtime | `cfe8a6c4600`（10-04） | **`8e6821d2d912`**（10-05，"Fix allocation-by-class profiler cache ownership" #134390） | +15 commit / 258 文件 |
+| dotnet/sdk | `590b0970fe66`（10-03） | `590b0970fe66`（未动） | 0 |
+| dotnet/aspnetcore | `dc8b384c43`（10-03） | **`7eef82517d72`**（10-05，#69634） | +4 commit / 18 文件 |
+
+| 仓 | merge-tree | rebase dry-run | 与 10-04 对比 |
+|---|---|---|---|
+| runtime | 33/39 CLEAN；6 CONFLICT（`libs-tfm`/`console`/`shims-tfm-cleanup` 的 `pr/*` 与 `rehearse2/*`） | 17/21 CLEAN（16 支 SAME＋`platform-numa` EMPTY；`console` 自身提交 CLEAN、受阻于 libs-tfm）；3 CONFLICT＝`libs-tfm`、`shims-tfm-cleanup`（新增，§6）、`tls-flag-cleanup`（既定丢弃） | 10-04 = 39/39＋20/21；**新增 2 支冲突，落地需按 §6 解一次（内容无需重写）** |
+| sdk | 2/2 CLEAN | 2/2 CLEAN・SAME（rids 3 提交／sandbox 5 提交；预演 tip `11df3fa955`/`048d1c8250`） | 同 10-04（上游未动） |
+| aspnetcore | 1/1 CLEAN | 1/1 CLEAN・SAME（预演 tip `fe879f3a18`） | 同 10-04 |
+
+- **状态：非全绿** —— 上游 `#134813`（`fa693c42fb6`）与 fork OH TFM 块在 `src/libraries/Directory.Build.props` 同一插入点相邻新增；**与 §1 步 4 的"零冲突"预期不同，需见 §6**。
+- runtime 复演产物：infra 重锚 tip `fe80d24e72`；其余 16 支 `-U0` patch-id SAME、`platform-numa` EMPTY（同 10-04）。
+- 证据：`/data/storage/el2/base/tmp/opencode/ur1005/`（`mergetree.tsv`、`rebase-results.tsv`、`rebase-sdk.tsv`、`rebase-asp.tsv`、`mergetree-conflicts.tsv`、`*.log`）；scratch worktree 已清、未创建临时 ref。
+- 口径备注：复演期间本地 `pr/*` 已被并发 branch-hygiene 清理，本表用同 SHA 的 `origin/pr/*`（21 支，与 10-04 表逐支一致）。
+
+## 6. 新冲突记录：`src/libraries/Directory.Build.props`（2026-10-05）
+
+- **文件**：`src/libraries/Directory.Build.props`（唯一冲突文件；add/add 邻近插入）。
+- **双方**：上游 WASI `PropertyGroup`＋`Import`（`TestWasmReadyToRun`/`TargetOS==wasi`，`fa693c42fb6`） vs fork OH `PropertyGroup`（`TargetsOpenHarmony` 的 `LibrariesOpenHarmonySfxTfm`/`ShimsTfm`，`2bab0935bf6`）；插入点同为 `<Import Project="..\..\Directory.Build.props" />` 之后、`UseBootstrap` 组之前。
+- **解决草图**（不改上游、不丢 fork；两块条件互斥，先后均可）：两个块都保留，其余上下文不变。
+- **影响**：`pr/ohos-libs-tfm`（1 提交）、`pr/ohos-shims-tfm-cleanup`（2 提交，首个与 libs-tfm 重复 → 按 §2 ⑧ 去重）、`pr/ohos-console`（自身只改 `System.Console.csproj`：解掉 libs-tfm 后应自动 clean）。
+- **落地**：按 §2 顺序 ⑥/⑧ 各解一次（一次性）；`rehearse2/*` 同名 ref 不直接当 PR head；`tls-flag-cleanup` 维持丢弃。
