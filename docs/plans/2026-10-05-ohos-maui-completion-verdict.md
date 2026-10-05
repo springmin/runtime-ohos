@@ -37,7 +37,7 @@
   （runtime `cfe8a6c4600`）复跑（39/39 merge-tree clean、20/21 rebase clean、0 支需重做）；该预演为
   **周期维护**（随 rc2-watch 周程/上游前进时重跑并更新 `2026-09-28-ohos-upstream-rebase-rehearsal.md`），
   PR 描述等上游写操作按既定约定不做。
-- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #48（#43→#48 均为同一功能面 + 性能/工具增量）。
+- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #49（#43→#49 均为同一功能面 + 性能/工具增量）。
 
 ## 5. 平台限制清单
 
@@ -55,4 +55,6 @@
 - **建议：本地可执行功能项 = 0，功能面无下一步**；唯一本地工程尾巴 = L2（csc/VBCS 活锁；已由 watchdog
   自愈覆盖，定位留档）；外部/平台按 §4/§5 推进，不判失败。
 
+> kit #49 发布回填（2026-10-05）：M 多窗（MULTIWINDOW-M：应用内子窗 create/move/resize/close + 主窗协同；真机 `app://subwindow/demo` id=344 720×480→420,360→900×600→close）+ SEC-SCAN-4（a11y 密码脱敏）已随 kit #49 交付；tester 复测 = `2026-10-05-ohos-tester-handoff-kit49.md` §2（主判点 1–2）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md` E2（S+M 已落地，L 余）。
+>
 > kit #48 发布回填（2026-10-05）：S 多窗（MULTIWINDOW-S）已随 kit #48 交付（真机 3120×1955；M/L 未实现）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2（主判点 1–5）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md`。

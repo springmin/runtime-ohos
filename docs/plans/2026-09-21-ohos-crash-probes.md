@@ -1,6 +1,26 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-05 update (kit #48 — current):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
+> **2026-10-05 update (kit #49 — current):** kit #49 = kit #48 (CG2-R2R + AOT-STARTUP + FPS48 + MULTIWINDOW-S +
+> FIXRR, carrying #47 FIX-A11YFLYOUT + FIX-PREEMPT-RAW and #46/#45) plus the in-app subwindow work (MULTIWINDOW-M:
+> the shell `Window.createSubWindowWithOptions` subwindow controller with commands 0 create/1 move/2 resize/3 show/
+> 4 hide (honest Failed 801, no public hide API)/5 close and events 0 created … 10 resumed; `pages/SubWindow.ets`
+> is a shell-drawn named route `ohos_dotnet_subwindow` with a `WindowProperties.name` move guard; main-window
+> HIDDEN/SHOWN forwards suspended/resumed and suppresses commands while suspended; the host adds
+> `registerSubWindowSink`/`notifySubWindowEvent` NAPI and `ohos_host_sub_window_command` (op 99 probe)/
+> `ohos_host_sub_window_event_listener` exports 151 -> **153**; the slice `OpenHarmonySubWindow` carries the
+> command/event state machine, AOT-safe, off-device degradation; device `app://subwindow/demo` create id=344
+> (120,160 720x480) -> move 420,360 -> resize 900x600 -> close, touch #57, drag #51 -> 269,259, main window
+> 60 fps, no new fault; honest boundary: single surface/renderer, the subwindow content is shell-drawn ArkUI,
+> per-window renderer/surface is L) and the a11y password masking (SEC-SCAN-4: `OpenHarmonyAccessibility`
+> publishes equal-length dots for `IEntry{IsPassword}`/platform `IsPassword`, two new suite pins, offline
+> red/green negative control, not device-verified; six more findings stay report-level). Pre-signed assets are
+> refreshed to #49 (67,807,185 / `56aaf08f…`, asset 612929512; sidecar 88 B / `4ba00cf8…`, asset 612930421).
+> Shell abc 414,532 / `e016db13…`, headless 24,324, host 301,984 / `cf4cc706…`, exports 153/153, suite 607/609
+> floor 589. Release: tar 67,888,851 / `477974bb…`, tree `8d03cb4c…`, sidecar `3803b3db…`, bundle 73,085,186 /
+> `7d06e781…` (sdk anchor `7abaf8132f`). Numbers follow the release notes `## Integrity (kit #49)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit49.md`.
+>
+> **2026-10-05 update (kit #48 — previous):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
 > JIT R2R startup work (CG2-R2R: the rc.2 Crossgen2 pack `crossgen2-packs-11.0.0-rc.2`, 43,792,647 / `6bb8a375…`,
 > is consumed as a folder feed; `-p:PublishReadyToRun=true` takes the JIT cold start from 1031 to 710 ms (-31%,
 > n=3; in-proc present 575 -> 307) while the interpreter stays R2R-free via `DOTNET_ReadyToRun=0` under
@@ -234,7 +254,27 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-05 update (kit #48 — current):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
+> **2026-10-05 update (kit #49 — current):** kit #49 = kit #48 (CG2-R2R + AOT-STARTUP + FPS48 + MULTIWINDOW-S +
+> FIXRR, carrying #47 FIX-A11YFLYOUT + FIX-PREEMPT-RAW and #46/#45) plus the in-app subwindow work (MULTIWINDOW-M:
+> the shell `Window.createSubWindowWithOptions` subwindow controller with commands 0 create/1 move/2 resize/3 show/
+> 4 hide (honest Failed 801, no public hide API)/5 close and events 0 created … 10 resumed; `pages/SubWindow.ets`
+> is a shell-drawn named route `ohos_dotnet_subwindow` with a `WindowProperties.name` move guard; main-window
+> HIDDEN/SHOWN forwards suspended/resumed and suppresses commands while suspended; the host adds
+> `registerSubWindowSink`/`notifySubWindowEvent` NAPI and `ohos_host_sub_window_command` (op 99 probe)/
+> `ohos_host_sub_window_event_listener` exports 151 -> **153**; the slice `OpenHarmonySubWindow` carries the
+> command/event state machine, AOT-safe, off-device degradation; device `app://subwindow/demo` create id=344
+> (120,160 720x480) -> move 420,360 -> resize 900x600 -> close, touch #57, drag #51 -> 269,259, main window
+> 60 fps, no new fault; honest boundary: single surface/renderer, the subwindow content is shell-drawn ArkUI,
+> per-window renderer/surface is L) and the a11y password masking (SEC-SCAN-4: `OpenHarmonyAccessibility`
+> publishes equal-length dots for `IEntry{IsPassword}`/platform `IsPassword`, two new suite pins, offline
+> red/green negative control, not device-verified; six more findings stay report-level). Pre-signed assets are
+> refreshed to #49 (67,807,185 / `56aaf08f…`, asset 612929512; sidecar 88 B / `4ba00cf8…`, asset 612930421).
+> Shell abc 414,532 / `e016db13…`, headless 24,324, host 301,984 / `cf4cc706…`, exports 153/153, suite 607/609
+> floor 589. Release: tar 67,888,851 / `477974bb…`, tree `8d03cb4c…`, sidecar `3803b3db…`, bundle 73,085,186 /
+> `7d06e781…` (sdk anchor `7abaf8132f`). Numbers follow the release notes `## Integrity (kit #49)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit49.md`.
+>
+> **2026-10-05 update (kit #48 — previous):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
 > JIT R2R startup work (CG2-R2R: the rc.2 Crossgen2 pack `crossgen2-packs-11.0.0-rc.2`, 43,792,647 / `6bb8a375…`,
 > is consumed as a folder feed; `-p:PublishReadyToRun=true` takes the JIT cold start from 1031 to 710 ms (-31%,
 > n=3; in-proc present 575 -> 307) while the interpreter stays R2R-free via `DOTNET_ReadyToRun=0` under
