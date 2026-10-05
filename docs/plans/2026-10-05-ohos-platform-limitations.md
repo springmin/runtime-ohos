@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | C1 | 本机镜像无 MediaKit：`canIUse` Core 为真但运行时无 `createAVPlayer` 命名空间 | `2026-09-30-ohos-w9d-media-deeplink.md` §1（`media-kit=missing`、sink 降级 `-1`）· `2026-09-30-ohos-kit35-local-verification.md`（`[media-probe] load status=Unavailable`） | MediaElement 播放未验（E9） | **需外部**：桥已实现 + 诚实降级（`IsSupported=false` 不抛）；需 Kit 完整镜像 / HMS 设备复验 |
 | C2 | 本机镜像无系统 ICU（`libicuuc` 缺失）：JIT/解释器托管启动即 FailFast | `2026-10-03-ohos-jitfort-enable.md` §ICU · `2026-10-03-ohos-jitwave-consolidation.md`（缺失即 invariant） | 全球化 locale 行为退化为 invariant 语义 | **已缓解**：宿主探测缺失即自动 `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`；`DOTNET_OHOS_ICU` 可覆盖 |
-| C3 | `.wasm` 需显式 `application/wasm`；否则 Blazor `instantiateStreaming` 退化为 ArrayBuffer 加载 | `2026-09-28-blazor-wasm-arkweb-hosting-demo.md`（`mimeTypeOf` 映射；curl 实测含 br/gzip 协商）· `2026-09-29-ohos-arkweb-capability-matrix.md` #2 | 首载性能/内存退化（功能可用） | **已缓解**：壳 `onInterceptRequest` 按扩展名直供，发布件已含 |
+| C3 | `.wasm` 需显式 `application/wasm`；否则 Blazor `instantiateStreaming` 退化为 ArrayBuffer 加载 | `2026-09-28-blazor-wasm-arkweb-hosting-demo.md`（`mimeTypeOf` 映射；curl 实测含 br/gzip 协商）· `2026-09-29-ohos-arkweb-capability-matrix.md` #2 · **真机 A/B** `2026-10-05-ohos-mime-max-device.md` §1 | 首载性能/内存退化（功能可用） | **已缓解（正向真机）**：壳 `onInterceptRequest` 按扩展名直供；宿主新增 `wasm mime:`/`wasm fallback:` 探针（`pack-host.sh --bad-mime` 负控），真机取到 `-> application/wasm` + BLZ_BOOT/RENDERED、fallback=0；负控转发未闭环（见该文 §4） |
 | C4 | 单 ArkWeb 控件 / 固定槽池容量局限（历史 N=2 时第 3 控件 LRU 抢占后空白） | `2026-10-02-ohos-multi-overlay.md` · `2026-10-04-ohos-tester-handoff-kit44.md` §1.1 | 多 WebView/混合控件页的出画与交互 | **已缓解**：动态槽 MAX/HOT 默认 4/2、按需 ensure/destroy、释放即拆；3 控件并发 + 第 5 槽抢占/恢复真机闭环 |
 
 ## D. 系统 / 构建
@@ -46,9 +46,9 @@
 | # | 限制 | 实测证据（doc / script / commit） | 影响 | 现状或缓解 |
 |---|---|---|---|---|
 | E1 | 单设备（2in1）、debug 签名域为主；镜像策略差异（7.0.0.105 vs 7.0.0.111）、跨重启未覆盖 | `2026-10-03-ohos-three-path-baseline.md`（不确定节）· `2026-10-03-ohos-agc-acl-application-pack.md` §5 · runbook §4 | 结论不能外推到手机/release/其它镜像 | **需外部**：tester 机（手机）复跑；自签 release × AOT 已实测 ✅；镜像差已归因（D1） |
-| E2 | 真多窗口（自由窗 / OpenWindow 语义）未实现；WebView 弹窗 `onWindowNew` 未接 | `2026-09-28-ohos-maui-port-backlog.md` #25（`ApplicationHandler` 诚实单窗语义；E3）· `2026-09-29-ohos-arkweb-capability-matrix.md` #13 | 自由窗/多窗工作流与 OAuth 弹窗流程不可用 | **需外部/上游**：单窗 + 同窗弹窗（`multiWindowAccess(true)` 同窗载入）如实降级 |
+| E2 | 真多窗口（自由窗 / OpenWindow 语义）未实现；WebView 弹窗 `onWindowNew` 未接 | `2026-09-28-ohos-maui-port-backlog.md` #25（`ApplicationHandler` 诚实单窗语义；E3）· `2026-09-29-ohos-arkweb-capability-matrix.md` #13 · **预研** `2026-10-05-ohos-multiwindow-prestudy.md`（平台 `createSubWindow`/`supportWindowModes`/`TYPE_FLOAT` ACL × 切片单窗；方案 A0 S / A1 M / B L）| 自由窗/多窗工作流与 OAuth 弹窗流程不可用 | **需外部/上游**：单窗 + 同窗弹窗（`multiWindowAccess(true)` 同窗载入）如实降级；A0 形态适配（S）为最低风险首刀 |
 | E3 | arm32（`openharmony-arm`）无设备/工具链验证路径，已 PARKED | `2026-09-21-ohos-arm32-support-gap.md` §0–§2（本机 arm64 内核不支持 32 位 ELF） | 32 位设备无法交付 | **需外部**：只发 arm64/x64；拿到 32 位设备后按 gap 文档 §3/§4 启动 |
-| E4 | 覆盖层槽容量夹取 2..8（默认 4/2）；真机并发验证到 3 控件 + 第 5 槽抢占/恢复，N=8 未验 | `2026-10-04-ohos-tester-handoff-kit44.md` §1.1（`clamp 2..8`）· `2026-10-04-ohos-a11y-and-capacity.md` §2（活覆盖层 ≤4） | >4 槽无真机证据，退化按 owner-LRU | **已缓解**：默认 4/2 保形态；需要时按 `OHOS_OVERLAY_MAX/HOT` 扩展 tester 验证 |
+| E4 | 覆盖层槽容量夹取 2..8（默认 4/2）；真机并发验证到 3 控件 + 第 5 槽抢占/恢复，**N=8 实测不稳** | `2026-10-04-ohos-tester-handoff-kit44.md` §1.1（`clamp 2..8`）· `2026-10-04-ohos-a11y-and-capacity.md` §2（活覆盖层 ≤4）· **MAX=8 轮** `2026-10-05-ohos-mime-max-device.md` §2 | >4 槽无真机证据，退化按 owner-LRU | **上限维持 4**：壳/托管可建 8 槽并触发第 9 claim 抢占，但真机仅槽 0–3 attach/服务、槽 4–7 建而不挂（应用重启一次）→ 安全上限 = 4；先定因 >4 挂载再提升 |
 
 ## 对 tester / AGC / 上游的用法
 
