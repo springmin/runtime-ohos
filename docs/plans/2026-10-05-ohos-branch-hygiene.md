@@ -6,7 +6,7 @@
 ## 结果
 
 - 本地删除：**74**（已合并 42 + 远程有副本 32）
-- 远端删除：**3**
+- 远端删除：**4**（含补删 `fix/rc2-aotpack-openssl-shim`；`feature/ohos-cross-sdk` 远端已先不存在）
 - 保留未合并本地：**30**（backup/rehearse/wIP/开 PR 分支语义）
 - 实体 worktree 保留：`fix/ohos-rc2`（runtime-ohos-rc2）、`fix/rc2-aotpack-openssl-shim`（sdk-ohos-rc2fix）
 - 分支复核：runtime 49→22 · ow 18→5 · maui 23→8 · sdk 21→4 · aspnet 5→3（local）
@@ -24,8 +24,10 @@ archive/ohos-sandbox-fixes-2511c989 fix/aotpack-structural fix/host-pack-pins fi
 ```
 feature/ohos-cross-compile
 fix/ohos-rc2
+fix/rc2-aotpack-openssl-shim
 m-web-mirror
 
+> `feature/ohos-cross-sdk`：远端已先不存在（仅删本地副本）。
 ```
 
 ## 保留的未合并本地分支
