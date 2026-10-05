@@ -31,3 +31,10 @@
 - 子窗数量上限、子窗↔主窗 z-order/焦点/软键盘、`setSupportedWindowModes` 在手机/部分镜像返回 `801` 均未真机验证（需 2in1 + 手机两态判定卡）。
 - overlay 槽池进程级单池：多窗共享会跨窗抢占；多窗下 CEF/ArkWeb overlay 的输入命中与 z-order 需重验。
 - 单设备（HAD-W32 2in1 / debug 域）结论不能外推手机/release；a11y/像素/输入回归需新增多窗判定点。
+
+## 5) A0 形态适配实现（MULTIWINDOW-S，2026-10-05）
+- 切片（maui `ed02203bfd`，已推 `feature/openharmony`）：`OpenHarmonyMauiAppHost.CanArrangeSurface`（Created/Changed 且尺寸>0；Destroyed/0x0 保留末帧）+ Changed 分支 re-arrange/render/`WriteStatus "[maui] window size WxH"`；无新宿主导出；standalone Release + trim/AOT analyzer **0 error / 0 IL**。
+- 壳（ow `c5df1de`，已推 `master`）：`module.json.template` 四包（22/23/24/28）声明 `supportWindowModes:["fullscreen","split","floating"]`；`Index.ets` 订阅主窗 `windowSizeChange`/`freeWindowModeChange`（日志 `[maui] window size change: WxH free=…`，并 `reportWindowAvoidArea` 重读避免区），disposer 解注册。abc **375,268 B / `9cd2b4c3…`**（headless 24,324），provenance 四包同步；`--check-sources`/`--check-pack-abc` 绿。
+- 套件 +2（只增）：surface arrange gate（Created/Changed 真、Destroyed/0x0 假）+ Changed replay 后窗口帧跟随、Destroyed 保留 → `checks=597 total=599 floor=579`（declared==printed，perf/a11y within=True，0 Unhandled）。
+- 真机（HAD-W32 / OpenHarmony 7.0.0.111 / 2in1；签名有效基座 + 本侧 payload/abc 重打包）：窗口最大化 2090x1394 → 3120x1955；`surface: state=Changed 3120x1885` → `canvas presented (3120x1885)`（重排重绘）→ 壳 `window size change: 3120x1955 free=true` + 切片 `[maui] window size 3120x1885`；A11Y 自检 `accessibilityStatus: 1 / nodeCount 70`、无新 fault。回归交互通过。
+- 不足 / 后续：`freeWindowModeChange` 与 split 真形态、手机域未测（S 项按设计仅形态响应）；M（应用内子窗）/L（真 OpenWindow 多窗）按预研排期。

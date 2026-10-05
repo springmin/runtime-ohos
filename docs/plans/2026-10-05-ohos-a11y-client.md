@@ -44,5 +44,6 @@
 
 ## 5) 不确定 / 边界
 - 设开启是否走 `retrieve` 能力门控、读屏焦点顺序与事件过滤，需真启用后复测。
+- OPT4 启用旁路探索（2026-10-05，五路全闭，复核 installed=3 / `enabledExtensions=0`）：① Settings 直达失败（`com.huawei.hmos.settings` 8 个 ability 无辅助功能页；「辅助功能」仅视觉/听觉，无「已安装的服务」）；② `aa start` 设置页参数/URI/action 两式仅开主页面或 10103101，直启 `A11yExtAbility` 返回 success 且 `…:accessibility` 进程起、但 AMS `client num=0`（扩展未连接）；③ `settings`/`accessibility` CLI 不存在、`param ls` 对 shell 仅 3 行头（无 access 键）、`bm` 无 ability enable（扩展 bundle 级 `enabled=True/type=4`）；④ AMS dump 仅 `-u/-c/-w` 只读、无 `sa` CLI（SA id=101 无写路径）；⑤ 无 developer ability、无 shell 写 SettingsData 路径、开关不影响 AMS 启用。tester 路径不变：stock 构建 `accessibility enable -a A11yExtAbility -b com.example.a11yclient -c rg`，或「已安装的服务」页 / 系统签名应用调 `@ohos.accessibility.config.enableAbility`。
 - 远程 DOM 文本不进影子树（宿主自绘边界）——WebView 仅宿主节点/几何。
 - 应用 `filesDir` 沙箱 shell 不可读，dump 以 hilog 行为准；文件需启用后经 app 侧导出。
