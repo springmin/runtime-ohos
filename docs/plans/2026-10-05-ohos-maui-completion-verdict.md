@@ -58,3 +58,13 @@
 > kit #49 发布回填（2026-10-05）：M 多窗（MULTIWINDOW-M：应用内子窗 create/move/resize/close + 主窗协同；真机 `app://subwindow/demo` id=344 720×480→420,360→900×600→close）+ SEC-SCAN-4（a11y 密码脱敏）已随 kit #49 交付；tester 复测 = `2026-10-05-ohos-tester-handoff-kit49.md` §2（主判点 1–2）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md` E2（S+M 已落地，L 余）。
 >
 > kit #48 发布回填（2026-10-05）：S 多窗（MULTIWINDOW-S）已随 kit #48 交付（真机 3120×1955；M/L 未实现）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2（主判点 1–5）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md`。
+
+## 10-05/06 补强（kit #49 背书）
+
+- **SOAK49**（`2026-10-06-ohos-kit49-soak.md`，`f672529f573`）：AOT 40 min 浸泡 0 崩 / 0 pid_lost / 0 重启 +
+  子窗 churn **21/21** + 主窗 suspend/resume **10/10**；证据 `c9ee6efd…`。
+- **DEVICE-ROUND-49**（`2026-10-05-ohos-device-round-49.md`，`18e0d4d4978`）：kit #49 AOT 全链通过——首帧 +
+  子窗 create/move/resize/close 四操作 + 主窗协同。
+- **tester 轮包 #49**（`2026-10-05-ohos-tester-round-kit49.md`，`6d592f6b97a`）：asset 613320136 / `155,893,607` / `6b9712ef…`。
+- **上游复演 + 分支卫生**：`6e1e6a1230b`（复演，含 10-05 首现冲突草图）/ `3ae60c27ad5`；周期维护（非待办）。
+- 判定不变：本机可执行项 = 0，余项纯外部（§4/§5）。
