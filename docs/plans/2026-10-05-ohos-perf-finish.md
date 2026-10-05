@@ -23,7 +23,7 @@
 | AnonPage other（JIT code/GC/运行时） | 14,817 | 54,637 | 60,442 | **+39,820** |
 | native heap | 34,073 | 40,965 | 42,204 | +6,892 |
 | `.so`（引擎+ARKUI） | 44,738 | 41,816 | 40,146 | −2,922 |
-| arkweb-pa + ark ts + 其它 | 25,882 | 26,983 | 26,556 | +2,475 |
+| arkweb-pa + ark ts + 其它 | 27,323 | 28,843 | 28,488 | +1,520 |
 
 - 引擎 PSS：AOT `libhello-maui-app` 8,392；JIT `libcoreclr` 2,660+`libclrjit` 2,240；interp `libcoreclr` 2,832+`libclrinterpreter` 228。+83 MB = dll file-backed 映射 +38 MB（页缓存背书可回收）+ JIT code/GC/运行时 anon +40 MB + native heap +7 MB；45 min 浸泡 JIT RSS 342→243 MB，30 s 是峰值。无安全旋钮可收（GC 硬限 OOM 风险、关 tiering 反噬），AOT 默认继续最低。
 
