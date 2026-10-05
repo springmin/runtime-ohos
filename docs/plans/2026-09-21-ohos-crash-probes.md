@@ -1,6 +1,23 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-04 update (kit #45 — current):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
+> **2026-10-05 update (kit #47 — current):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
+> FlyoutPage accessibility fix (FIX-A11YFLYOUT: `PushChildren` now publishes `FlyoutPage.Detail` always and
+> `FlyoutPage.Flyout` only when presented — the rc.1 FlyoutPage is not an `IContentView`, so the old
+> presented-content branch never matched and only the root was published; `--a11y-probe` nodeCount goes
+> 1 -> 70 on device) and the preemption raw-text export (FIX-PREEMPT-RAW: the shell scans the new segment of
+> `dotnet-status.txt` on each poll and writes every `overlay preempted/restored/replay` line to hilog with a
+> `[maui-capacity]` prefix; the device replay captured five raw lines: `preempted: slot 0`,
+> `preempted: slot 1`, `restored: slot 1`, `replay: slot 1`). It carries #46 (INTERP-DRAW2: off-surface culling
+> lifts interp draw 14.4 -> 9.4 ms/frame and 33.9 -> 60.1 fps with no JIT regression; FIX-A11YBUTTON: the
+> self-check button is pinned to the bottom-left above the overlays, reachable in both states) and #45
+> (AUTODISCONNECT, INTERP-RENDER, dynamic slots, AOT by default, FRAMEPACING) with #42 and all earlier fixes.
+> Pre-signed assets are refreshed to #47 (67,639,132 / `f58c4906…`, asset 610975429). Shell abc 370,240 /
+> `4b439e83…`, headless 24,324, host 297,888 / `7b1694d9…`, exports 151/151, suite 593/595 floor 575. Release:
+> tar 67,706,719 / `3d6bb58b…`, tree `0f266636…`, sidecar `4adb0b60…`, bundle 73,059,625 / `27c54c62…`
+> (sdk anchor `266b196106`). Numbers follow the release notes `## Integrity (kit #47)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit47.md`.
+>
+> **2026-10-04 update (kit #45 — previous):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
 > plus AUTODISCONNECT and INTERP-RENDER: a removed web control releases its overlay slot (a dynamic slot is
 > destroyed in the shell, `web slot destroy`; the hot pair keeps its component) and a re-added control re-claims
 > a slot and replays its load/registration (`web slot create`) while the handler stays connected; on device the
@@ -196,7 +213,24 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-04 update (kit #45 — current):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
+> **2026-10-05 update (kit #47 — current):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
+> FlyoutPage accessibility fix (FIX-A11YFLYOUT: `PushChildren` now publishes `FlyoutPage.Detail` always and
+> `FlyoutPage.Flyout` only when presented — the rc.1 FlyoutPage is not an `IContentView`, so the old
+> presented-content branch never matched and only the root was published; `--a11y-probe` nodeCount goes
+> 1 -> 70 on device) and the preemption raw-text export (FIX-PREEMPT-RAW: the shell scans the new segment of
+> `dotnet-status.txt` on each poll and writes every `overlay preempted/restored/replay` line to hilog with a
+> `[maui-capacity]` prefix; the device replay captured five raw lines: `preempted: slot 0`,
+> `preempted: slot 1`, `restored: slot 1`, `replay: slot 1`). It carries #46 (INTERP-DRAW2: off-surface culling
+> lifts interp draw 14.4 -> 9.4 ms/frame and 33.9 -> 60.1 fps with no JIT regression; FIX-A11YBUTTON: the
+> self-check button is pinned to the bottom-left above the overlays, reachable in both states) and #45
+> (AUTODISCONNECT, INTERP-RENDER, dynamic slots, AOT by default, FRAMEPACING) with #42 and all earlier fixes.
+> Pre-signed assets are refreshed to #47 (67,639,132 / `f58c4906…`, asset 610975429). Shell abc 370,240 /
+> `4b439e83…`, headless 24,324, host 297,888 / `7b1694d9…`, exports 151/151, suite 593/595 floor 575. Release:
+> tar 67,706,719 / `3d6bb58b…`, tree `0f266636…`, sidecar `4adb0b60…`, bundle 73,059,625 / `27c54c62…`
+> (sdk anchor `266b196106`). Numbers follow the release notes `## Integrity (kit #47)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit47.md`.
+>
+> **2026-10-04 update (kit #45 — previous):** kit #45 = kit #44 (dynamic overlay slots + AOT by default + FRAMEPACING)
 > plus AUTODISCONNECT and INTERP-RENDER: a removed web control releases its overlay slot (a dynamic slot is
 > destroyed in the shell, `web slot destroy`; the hot pair keeps its component) and a re-added control re-claims
 > a slot and replays its load/registration (`web slot create`) while the handler stays connected; on device the
