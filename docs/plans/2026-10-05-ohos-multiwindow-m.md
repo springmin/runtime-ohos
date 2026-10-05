@@ -12,7 +12,7 @@
 ## 断言与套件（只增）
 
 - 套件 +6：命令集与 JSON、生命周期/几何状态机、触摸事件、畸形/未知事件鲁棒、离设备退化、壳/宿主/切片源码 + 四包 identity → **`checks=607 total=609 floor=589`**、0 Unhandled、perf/a11y within=True。
-- 切片 0 IL：standalone `IsAotCompatible+EnableTrimAnalyzer+EnableAotAnalyzer -warnaserror:IL2026,IL3050` → Build succeeded / 无 IL 警告。
+- 切片 0 IL：standalone `IsAotCompatible+EnableTrimAnalyzer+EnableAotAnalyzer -warnaserror:IL2026,IL3050` → Build succeeded / 无 IL 警告；样例 AOT publish（kit 配方 `CompressSymbols=false`）rc=0 且 **0 × IL2026/3050/3051**。
 
 ## 真机证据（签名基座 + 本侧 abc/payload 重打包；scratch `multiwin-m/`）
 
@@ -26,4 +26,4 @@
 - **per-window renderer/surface/输入/a11y**：现单 `OpenHarmonyWindowSurface`/`Renderer`；子窗要渲染 MAUI 内容需 host/surface/renderer 按 window id 分片（L 第一前置）。
 - `ApplicationHandler.OpenWindow` 仍未映射（诚实单窗）；overlay 槽池、避让区、软键盘、CEF/ArkWeb 按窗分区；`multiton` 第二 UIAbility 窗与 `ohos_host_open_window/close_window` 平台桥未做。子窗容量/软键盘/焦点与主窗 z-order 需 L 判定卡。
 
-> 提交：maui `b093e33825`（OpenHarmonySubWindow）、ow `be70a73`（壳+宿主+harness+样例+四包 abc）、本文（runtime-ohos）。设备脚本/日志/截图留在 scratch（未入库）。
+> 提交：maui `b093e33825`（OpenHarmonySubWindow）、ow `be70a73`（壳+宿主+harness+样例+四包 abc）+ `16df9a3`（子窗页注释修正，abc 字节不变）、本文（runtime-ohos）。设备脚本/日志/截图留在 scratch（未入库）。
