@@ -27,3 +27,5 @@
 
 - 单设备共享桌面；AMS→Main 抖动大 ⇒ “1.0–1.1 s 档”不作单次判据，用 Main→首帧同位比较。
 - R2R 件的 +11 MB 文件体积仍在（AMS→Main 或有 ~0.1 s 级差，未分离）；对照宿主相对 shipping 仅缺一行，无隐式规则 runtime 未覆盖。
+
+> kit #48 发布回填（2026-10-05）：本项随 kit #48 交付（套件 599/601 floor 581、ow verifier 重锚 `c42cfa43`；发布实测 tar 67,735,148 / `5c22704f…`）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2 主判点 5；平台边界见 `2026-10-05-ohos-platform-limitations.md`。

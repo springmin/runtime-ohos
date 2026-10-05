@@ -1,6 +1,6 @@
 # OpenHarmony 平台限制清单（PLATFORM-LIMITS，建议 1 落档，2026-10-05）
 
-> 口径：kit #47（2026-10-05）发布件 + 2026-08→10 真机证据（HAD-W32 / HAD-W24：OpenHarmony 7.0.0.105–7.0.0.111 / API 26 / 2in1）。
+> 口径：kit #48（2026-10-05）发布件 + 2026-08→10 真机证据（HAD-W32 / HAD-W24：OpenHarmony 7.0.0.105–7.0.0.111 / API 26 / 2in1）；启动/帧率边界与数字见 kit #48 perf 文（`2026-10-05-ohos-cg2-r2r.md` / `…aot-startup.md` / `…fps48.md` / `…fixrr-consolidate.md`）与 `2026-10-05-ohos-tester-handoff-kit48.md` §2。
 > 图例：现状 = **已缓解（随包）** · **需外部**（tester/AGC/上游） · **接受**（设计如此）。证据指针 = `docs/plans/*` · `scripts/*` · scratch（`/data/storage/el2/base/tmp/opencode/*`，未入库）· 五仓提交。
 > 用法：本文是判定时的「预期边界」——命中 A–E 的现象先对照本表再判缺陷；tester/AGC/上游要点见末段。
 
@@ -19,7 +19,7 @@
 
 | # | 限制 | 实测证据（doc / script / commit） | 影响 | 现状或缓解 |
 |---|---|---|---|---|
-| B1 | 本影像对第三方 debug hap 关闭扩展服务启用（三路全闭）：无 `accessibility` CLI；PC 设置无「已安装的服务」入口；`accessibility.config.enableAbility` 为 `@systemapi` + `WRITE_ACCESSIBILITY_CONFIG` + 系统签名 | `2026-10-05-ohos-a11y-client.md` §2（AMS `accessible=0`/`client num=0`；settings 无入口；hap `83,279 / f3fbfad6…`、ow `ee8b865`） | 本机镜像无法启用读屏扩展跑影子树；AAMS 可见 `installed=3 / enabled=0` | **需外部**：客户端已交付 + tester 启用/采集步骤（同文 §4）；需 stock OH / 读屏机 / 系统签名复跑（kit #47 自检 nodeCount 1→70 已证发布链） |
+| B1 | 本影像对第三方 debug hap 关闭扩展服务启用（三路全闭）：无 `accessibility` CLI；PC 设置无「已安装的服务」入口；`accessibility.config.enableAbility` 为 `@systemapi` + `WRITE_ACCESSIBILITY_CONFIG` + 系统签名 | `2026-10-05-ohos-a11y-client.md` §2（AMS `accessible=0`/`client num=0`；settings 无入口；hap `83,279 / f3fbfad6…`、ow `ee8b865`） | 本机镜像无法启用读屏扩展跑影子树；AAMS 可见 `installed=3 / enabled=0` | **需外部**：客户端已交付 + tester 启用/采集步骤（同文 §4）；需 stock OH / 读屏机 / 系统签名复跑（kit #47/#48 自检 nodeCount 1→70 已证发布链） |
 
 ## C. 媒体 / Web
 
@@ -46,10 +46,10 @@
 | # | 限制 | 实测证据（doc / script / commit） | 影响 | 现状或缓解 |
 |---|---|---|---|---|
 | E1 | 单设备（2in1）、debug 签名域为主；镜像策略差异（7.0.0.105 vs 7.0.0.111）、跨重启未覆盖 | `2026-10-03-ohos-three-path-baseline.md`（不确定节）· `2026-10-03-ohos-agc-acl-application-pack.md` §5 · runbook §4 | 结论不能外推到手机/release/其它镜像 | **需外部**：tester 机（手机）复跑；自签 release × AOT 已实测 ✅；镜像差已归因（D1） |
-| E2 | 真多窗口（自由窗 / OpenWindow 语义）未实现；WebView 弹窗 `onWindowNew` 未接 | `2026-09-28-ohos-maui-port-backlog.md` #25（`ApplicationHandler` 诚实单窗语义；E3）· `2026-09-29-ohos-arkweb-capability-matrix.md` #13 · **预研** `2026-10-05-ohos-multiwindow-prestudy.md`（平台 `createSubWindow`/`supportWindowModes`/`TYPE_FLOAT` ACL × 切片单窗；方案 A0 S / A1 M / B L）| 自由窗/多窗工作流与 OAuth 弹窗流程不可用 | **需外部/上游**：单窗 + 同窗弹窗（`multiWindowAccess(true)` 同窗载入）如实降级；A0 形态适配（S）为最低风险首刀 |
+| E2 | 真多窗口（自由窗 / OpenWindow 语义）未实现；WebView 弹窗 `onWindowNew` 未接；S 形态（窗口模式声明 + 尺寸跟随）已交付 | `2026-09-28-ohos-maui-port-backlog.md` #25（`ApplicationHandler` 诚实单窗语义；E3）· `2026-09-29-ohos-arkweb-capability-matrix.md` #13 · **预研** `2026-10-05-ohos-multiwindow-prestudy.md`（方案 A0 S / A1 M / B L；§5 = A0 落地：maui `ed02203bfd` + ow `c5df1de`；真机 2in1 3120×1955）| 自由窗/多窗工作流与 OAuth 弹窗流程不可用；M/L 无入口 | **部分落地（S）**：kit #48 MULTIWINDOW-S（`supportWindowModes` + `CanArrangeSurface`；split/floating 真形态与手机域未测）；M（应用内子窗）/L（真 OpenWindow）**需外部/上游**；单窗 + 同窗弹窗（`multiWindowAccess(true)` 同窗载入）如实降级 |
 | E3 | arm32（`openharmony-arm`）无设备/工具链验证路径，已 PARKED | `2026-09-21-ohos-arm32-support-gap.md` §0–§2（本机 arm64 内核不支持 32 位 ELF） | 32 位设备无法交付 | **需外部**：只发 arm64/x64；拿到 32 位设备后按 gap 文档 §3/§4 启动 |
 | E4 | 覆盖层槽容量夹取 2..8（默认 4/2）；真机并发验证到 3 控件 + 第 5 槽抢占/恢复，**N=8 实测不稳** | `2026-10-04-ohos-tester-handoff-kit44.md` §1.1（`clamp 2..8`）· `2026-10-04-ohos-a11y-and-capacity.md` §2（活覆盖层 ≤4）· **MAX=8 轮** `2026-10-05-ohos-mime-max-device.md` §2 | >4 槽无真机证据，退化按 owner-LRU | **上限维持 4**：壳/托管可建 8 槽并触发第 9 claim 抢占，但真机仅槽 0–3 attach/服务、槽 4–7 建而不挂（应用重启一次）→ 安全上限 = 4；先定因 >4 挂载再提升 |
 
 ## 对 tester / AGC / 上游的用法
 
-**tester**：把本文当「预期边界」——命中 A–E 的现象先对照本表再判缺陷（a11y `enabled=0`=B1、MediaElement `Unavailable`=C1、enforcing 镜像 `9568393`=D1、锁屏 `10106102`=D6）；判定点与回传仍以 `2026-10-05-ohos-tester-handoff-kit47.md` / `2026-09-28-ohos-retest-taskcard.md` 为准，B1 启用/采集步骤见 a11y-client §4。**AGC**：A4/A5/A6 是上架前置——`ALLOW_WRITABLE_CODE_MEMORY` 材料包已备（ACL 包正文/技术附件/App Linking），获批前发布件保持 AOT、坚盾态按 A6 验收；D1 是设备兼容重写而非绕过审核（签名链不变）。**上游**：A2/A3 建议明示 JIT 权限契约（memfd/文件 RX 全拒、隐藏 prctl 非调用者隔离）；D2/D3 建议接受 TMPDIR 感知 + UDS 长度回退、Roslyn 服务器 OHOS 看门狗/诊断；E2/E3 见各自 backlog 文档。
+**tester**：把本文当「预期边界」——命中 A–E 的现象先对照本表再判缺陷（a11y `enabled=0`=B1、MediaElement `Unavailable`=C1、enforcing 镜像 `9568393`=D1、锁屏 `10106102`=D6）；判定点与回传仍以 `2026-10-05-ohos-tester-handoff-kit48.md` / `2026-09-28-ohos-retest-taskcard.md` 为准，B1 启用/采集步骤见 a11y-client §4。**AGC**：A4/A5/A6 是上架前置——`ALLOW_WRITABLE_CODE_MEMORY` 材料包已备（ACL 包正文/技术附件/App Linking），获批前发布件保持 AOT、坚盾态按 A6 验收；D1 是设备兼容重写而非绕过审核（签名链不变）。**上游**：A2/A3 建议明示 JIT 权限契约（memfd/文件 RX 全拒、隐藏 prctl 非调用者隔离）；D2/D3 建议接受 TMPDIR 感知 + UDS 长度回退、Roslyn 服务器 OHOS 看门狗/诊断；E2/E3 见各自 backlog 文档。

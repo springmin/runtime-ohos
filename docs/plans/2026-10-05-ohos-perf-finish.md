@@ -43,3 +43,5 @@
 - 提交：ohos-workload `test/hello-maui-app/{StartupProbe.cs,Program.cs,App.cs,csproj}`（`e613a18` 已推，opt-in 默认零成本；AOT publish IL2026/3050/3051=0）；runtime-ohos 本文件。未强推。
 - 证据 `perf-finish-evidence.tar.gz`：脚本、6 份 startup.json、3 份 mem class.json、3 份 fps10 summary/stream、R2R NU1100 原文。
 - 不确定：单设备/共享桌面（第三方对旧 bundle 的安装会杀进程，测量改用独立 bundle `com.example.perf2` + 测量壳 abc，壳差异仅状态轮询）；FPH 首窗含启动不计；48 fps 主节奏与显示/动画定时器未二分；R2R 与解释器混合模式收益未实测。
+
+> kit #48 发布回填（2026-10-05）：本项为 kit #48 前序（启动分解/内存/功耗）；后续专项 = CG2-R2R（JIT 1031→710 ms）、AOT-STARTUP（796→534 ms）、FPS48（46.2→60.0）、FIXRR（interp R2R=0），tester 复测见 `2026-10-05-ohos-tester-handoff-kit48.md` §2。

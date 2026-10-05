@@ -43,3 +43,5 @@
   `372c35e`（selftest 185→188）+ `92ea222`（interaction 595→596/floor 578）；`commit-paths.sh` 已推 master，导出 151 不变。
 - 见证：abc **371,860 B（`88f7c64b…`）**/headless 24,324 不变；宿主重建 297,888 B（`7a4984bd…`）；scratch `out/*.hap`（6 件）、三路径 stream、`logs/fault-jitopt-r2.txt`（死锁栈）；本文件 runtime-ohos `8e28a741274`。切片 0 IL。
 - 不确定：单设备共享桌面（`com.example.perf2` 曾污染 JIT 首轮，已锁定+重测）；AOT 基线/优化非同轮交替（±20 ms 级漂移）；未认领覆盖层零成本仅由首用日志与冒烟覆盖，未做长时 soak。
+
+> kit #48 发布回填（2026-10-05）：本项随 kit #48 交付（壳 abc 375,268 / `9cd2b4c3…`、宿主 297,888 / `319db8e5…`、发布实测 tar 67,735,148 / `5c22704f…`）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2 主判点 2；平台边界见 `2026-10-05-ohos-platform-limitations.md`。

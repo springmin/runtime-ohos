@@ -1,8 +1,9 @@
 # 本机设备回路测试 runbook（OpenHarmony 桌面 + hdc 无线调试）(2026-09-29)
-> **2026-10-05 注（kit #47 口径，承 #46/#45）**：本 runbook 的设备/命令模板继续有效；a11y 轮新增
-> `--a11y-probe` **nodeCount 1→70**（FlyoutPage 分支）与 `[maui-capacity]` 抢占原文导出判读（见
-> `docs/plans/2026-10-05-ohos-a11yflyout-preempt-export.md`）；A11Y 按钮改左下角 + 覆盖层之上（两态可达）；INTERP-DRAW2
-> 后 interp 稳态 60 fps。验证运行请以 kit #47 件与 release「## Integrity（kit #47）」为准。
+> **2026-10-05 注（kit #48 口径，承 #47/#46/#45）**：本 runbook 的设备/命令模板继续有效；本波新增 R2R/JIT
+> 启动（文件夹 feed + `PublishReadyToRun=true` → 1031→710 ms，interp R2R=0）、AOT 首帧省时
+> （796→534 ms，覆盖层首用挂载 + surface 重放跳过）、帧率投票 60（干扰态 46.2→60.0 fps）与多窗 S
+> （supportWindowModes + CanArrangeSurface；2in1 3120×1955）；承 #47 的 a11y nodeCount 1→70 与
+> `[maui-capacity]` 抢占原文。验证运行请以 kit #48 件与 release「## Integrity（kit #48）」为准。
 > 本机桌面 HAD-W32 / OpenHarmony-7.0.0.109 / API 26；hdc `127.0.0.1:35111`；UDID `1BCE13C8…AEA0`。流程：装→起→
 > 日志/截图/layout/渲染树。关联 `2026-09-29-ohos-aot-v2-rebuild.md`；证据 scratch `/data/storage/el2/base/tmp/opencode/dev-maui/`。
 ## 1. 变量与 hdc 连接（掉线恢复）
@@ -76,8 +77,9 @@ dotnet publish test/hello-maui-app/hello-maui-app.csproj -f net11.0-openharmony2
   本机可用 `-p:OpenHarmonyHapPayloadInLibsDeviceCompat=true`（重写分包）或 `-p:OpenHarmonyHapPayloadInLibs=false`
   重出包 / `aot-haps-v3` 复测（两种布局本机均已安装通过）；证据与对策见
   `docs/plans/2026-09-30-ohos-jit-payload-install-policy.md`。
-- **kit #47 复测入口**：`docs/plans/2026-10-05-ohos-tester-handoff-kit47.md` §2–§4（a11y Flyout 节点数 1→70 / 抢占原文 `[maui-capacity]` 见 §2）与
+- **kit #48 复测入口**：`docs/plans/2026-10-05-ohos-tester-handoff-kit48.md` §2–§4（R2R/JIT 启动 1031→710 ms / AOT 首帧 796→534 ms / 帧率投票 60 / 多窗 S 3120×1955 见 §2）与
   `docs/plans/2026-09-28-ohos-retest-taskcard.md`。
+- **kit #47 复测入口（上一版）**：`docs/plans/2026-10-05-ohos-tester-handoff-kit47.md` §2–§4（a11y Flyout 节点数 1→70 / 抢占原文 `[maui-capacity]` 见 §2）。
 - **kit #45 复测入口（上一版）**：`docs/plans/2026-10-04-ohos-tester-handoff-kit45.md` §2–§4（自动释放 Remove→destroy→re-add→交互 / INTERP-RENDER / 动态槽 3 控件/AOT 默认 见 §2）与
 - **kit #44 复测入口（上一版）**：`docs/plans/2026-10-04-ohos-tester-handoff-kit44.md` §2–§4（动态槽 3 控件/AOT 默认/FRAMEPACING 见 §2）与
   `docs/plans/2026-09-28-ohos-retest-taskcard.md`。

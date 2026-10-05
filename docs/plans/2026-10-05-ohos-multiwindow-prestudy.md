@@ -38,3 +38,5 @@
 - 套件 +2（只增）：surface arrange gate（Created/Changed 真、Destroyed/0x0 假）+ Changed replay 后窗口帧跟随、Destroyed 保留 → `checks=597 total=599 floor=579`（declared==printed，perf/a11y within=True，0 Unhandled）。
 - 真机（HAD-W32 / OpenHarmony 7.0.0.111 / 2in1；签名有效基座 + 本侧 payload/abc 重打包）：窗口最大化 2090x1394 → 3120x1955；`surface: state=Changed 3120x1885` → `canvas presented (3120x1885)`（重排重绘）→ 壳 `window size change: 3120x1955 free=true` + 切片 `[maui] window size 3120x1885`；A11Y 自检 `accessibilityStatus: 1 / nodeCount 70`、无新 fault。回归交互通过。
 - 不足 / 后续：`freeWindowModeChange` 与 split 真形态、手机域未测（S 项按设计仅形态响应）；M（应用内子窗）/L（真 OpenWindow 多窗）按预研排期。
+
+> kit #48 发布回填（2026-10-05）：S 随 kit #48 交付（壳 abc 375,268 / `9cd2b4c3…`、套件 599/601 floor 581、发布实测 tar 67,735,148 / `5c22704f…`）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2 主判点 4；平台边界见 `2026-10-05-ohos-platform-limitations.md` E2。

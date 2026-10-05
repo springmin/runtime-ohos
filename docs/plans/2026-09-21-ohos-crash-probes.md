@@ -1,6 +1,27 @@
 # OpenHarmony startup-crash probes P1/P2/P3/P4 (JsError / exit 254)
 
-> **2026-10-05 update (kit #47 — current):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
+> **2026-10-05 update (kit #48 — current):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
+> JIT R2R startup work (CG2-R2R: the rc.2 Crossgen2 pack `crossgen2-packs-11.0.0-rc.2`, 43,792,647 / `6bb8a375…`,
+> is consumed as a folder feed; `-p:PublishReadyToRun=true` takes the JIT cold start from 1031 to 710 ms (-31%,
+> n=3; in-proc present 575 -> 307) while the interpreter stays R2R-free via `DOTNET_ReadyToRun=0` under
+> `interp=3` (FIXRR, matching the runtime's implicit `fReadyToRun=false` for `InterpMode>=2`; JIT/mixed 1/2
+> unchanged)), the AOT first-frame saving (AOT-STARTUP: the hidden ArkWeb overlays mount on first use and the
+> host skips the same app-context surface replay, moving the ~240 ms CEF init out of the first-frame path: AOT
+> AMS->first frame 796 -> 534 ms (-33%), attach->surface 239 -> 13 ms; JIT/interp not regressed), the frame-rate
+> vote (FPS48: the host declares the expected 60 Hz range when registering the XComponent onFrame, so the RS
+> 60/30 arbitration disappears and the interfering steady state goes 46.2 -> 60.0 fps), and the multi-window S
+> shape (MULTIWINDOW-S: shell `supportWindowModes` fullscreen/split/floating + `windowSizeChange`/
+> `freeWindowModeChange`; slice `CanArrangeSurface` re-arranges on Created/Changed >0 and keeps the last frame
+> on Destroyed/0x0; 2in1 2090x1394 -> 3120x1955; suite +2). It carries everything from #47 (FIX-A11YFLYOUT
+> nodeCount 1 -> 70, FIX-PREEMPT-RAW `[maui-capacity]`, INTERP-DRAW2 60.1 fps, FIX-A11YBUTTON, AUTODISCONNECT,
+> INTERP-RENDER, dynamic slots MAX/HOT 4/2, AOT by default, FRAMEPACING). Pre-signed assets are refreshed to
+> #48 (67,651,331 / `2f2f4c40…`, asset 612061141; sidecar 88 B / `50a1f38e…`, asset 612062470). Shell abc
+> 375,268 / `9cd2b4c3…`, headless 24,324, host 297,888 / `319db8e5…`, exports 151/151, suite 599/601 floor
+> 581. Release: tar 67,735,148 / `5c22704f…`, tree `6b2b493c…`, sidecar `1c51cdbc…`, bundle 73,053,084 /
+> `3b62cee2…` (sdk anchor `767c03ee71`). Numbers follow the release notes `## Integrity (kit #48)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit48.md`.
+>
+> **2026-10-05 update (kit #47 — previous):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
 > FlyoutPage accessibility fix (FIX-A11YFLYOUT: `PushChildren` now publishes `FlyoutPage.Detail` always and
 > `FlyoutPage.Flyout` only when presented — the rc.1 FlyoutPage is not an `IContentView`, so the old
 > presented-content branch never matched and only the root was published; `--a11y-probe` nodeCount goes
@@ -213,7 +234,28 @@ notes `## Integrity (kit #35)` and the in-kit checks; handoff:
 > unchanged; the kit #30 judgement points are in `2026-09-28-ohos-tester-handoff-kit30.md`; the kit #31 Blazor points (6th hap `hello-blazorwasm-host-unsigned.hap`, bundle `com.example.opendotnet`, tester-run v13 `--blazor-probe` asserting `marker: BLZ_BOOT`/`BLZ_RENDERED`) are in `2026-09-29-ohos-tester-handoff-kit31.md`.
 > **Stock kit (#22 on, #31 included) still has not been on a device.**
 >
-> **2026-10-05 update (kit #47 — current):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
+> **2026-10-05 update (kit #48 — current):** kit #48 = kit #47 (FIX-A11YFLYOUT + FIX-PREEMPT-RAW) plus the
+> JIT R2R startup work (CG2-R2R: the rc.2 Crossgen2 pack `crossgen2-packs-11.0.0-rc.2`, 43,792,647 / `6bb8a375…`,
+> is consumed as a folder feed; `-p:PublishReadyToRun=true` takes the JIT cold start from 1031 to 710 ms (-31%,
+> n=3; in-proc present 575 -> 307) while the interpreter stays R2R-free via `DOTNET_ReadyToRun=0` under
+> `interp=3` (FIXRR, matching the runtime's implicit `fReadyToRun=false` for `InterpMode>=2`; JIT/mixed 1/2
+> unchanged)), the AOT first-frame saving (AOT-STARTUP: the hidden ArkWeb overlays mount on first use and the
+> host skips the same app-context surface replay, moving the ~240 ms CEF init out of the first-frame path: AOT
+> AMS->first frame 796 -> 534 ms (-33%), attach->surface 239 -> 13 ms; JIT/interp not regressed), the frame-rate
+> vote (FPS48: the host declares the expected 60 Hz range when registering the XComponent onFrame, so the RS
+> 60/30 arbitration disappears and the interfering steady state goes 46.2 -> 60.0 fps), and the multi-window S
+> shape (MULTIWINDOW-S: shell `supportWindowModes` fullscreen/split/floating + `windowSizeChange`/
+> `freeWindowModeChange`; slice `CanArrangeSurface` re-arranges on Created/Changed >0 and keeps the last frame
+> on Destroyed/0x0; 2in1 2090x1394 -> 3120x1955; suite +2). It carries everything from #47 (FIX-A11YFLYOUT
+> nodeCount 1 -> 70, FIX-PREEMPT-RAW `[maui-capacity]`, INTERP-DRAW2 60.1 fps, FIX-A11YBUTTON, AUTODISCONNECT,
+> INTERP-RENDER, dynamic slots MAX/HOT 4/2, AOT by default, FRAMEPACING). Pre-signed assets are refreshed to
+> #48 (67,651,331 / `2f2f4c40…`, asset 612061141; sidecar 88 B / `50a1f38e…`, asset 612062470). Shell abc
+> 375,268 / `9cd2b4c3…`, headless 24,324, host 297,888 / `319db8e5…`, exports 151/151, suite 599/601 floor
+> 581. Release: tar 67,735,148 / `5c22704f…`, tree `6b2b493c…`, sidecar `1c51cdbc…`, bundle 73,053,084 /
+> `3b62cee2…` (sdk anchor `767c03ee71`). Numbers follow the release notes `## Integrity (kit #48)`; handoff:
+> `docs/plans/2026-10-05-ohos-tester-handoff-kit48.md`.
+>
+> **2026-10-05 update (kit #47 — previous):** kit #47 = kit #46 (INTERP-DRAW2 + FIX-A11YBUTTON) plus the
 > FlyoutPage accessibility fix (FIX-A11YFLYOUT: `PushChildren` now publishes `FlyoutPage.Detail` always and
 > `FlyoutPage.Flyout` only when presented — the rc.1 FlyoutPage is not an `IContentView`, so the old
 > presented-content branch never matched and only the root was published; `--a11y-probe` nodeCount goes

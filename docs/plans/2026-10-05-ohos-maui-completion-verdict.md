@@ -48,3 +48,5 @@
 - **DEVICE-ROUND：在跑**（脚本+doc 未提交；dry1/dry2 核验 tree `0f266636…` ok，run1 装启/首帧/Blazor A/B ok，
   run2 进行中：装启/首帧 ok、slots 中——本报告 commit 时未回填）。
 - **建议：本地可执行功能项 = 0，功能面无下一步**；唯一本地尾巴 = L2（csc 活锁）；外部/平台按 §4/§5 推进，不判失败。
+
+> kit #48 发布回填（2026-10-05）：S 多窗（MULTIWINDOW-S）已随 kit #48 交付（真机 3120×1955；M/L 未实现）；tester 复测 = `2026-10-05-ohos-tester-handoff-kit48.md` §2（主判点 1–5）与 `2026-09-28-ohos-retest-taskcard.md`；平台边界见 `2026-10-05-ohos-platform-limitations.md`。
