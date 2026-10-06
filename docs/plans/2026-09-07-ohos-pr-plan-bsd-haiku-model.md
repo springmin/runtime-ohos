@@ -188,7 +188,9 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   reply; **status update posted 2026-10-01** (`#issuecomment-5932455043`) —
   and within hours the review request was **re-targeted to @jkoritzinsky**
   (2026-10-01 17:58:49Z; previously with @am11) — awaiting that re-review;
-  then C3.
+  **nudge posted 2026-10-06T23:46Z / 10-07 07:46 CST**
+  (`#issuecomment-6027594520`) after 5.6 quiet days (the first full PT
+  workday produced no movement); then C3.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**, awaiting
   the maintainer merge; idle 5 d; no-nag policy holds.
 - **#134670** platform identity + NUMA — **MERGED 09-26** ✓ (content reconciled
