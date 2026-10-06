@@ -26,8 +26,9 @@
 - `test/maui-platform-verify` +15 checks：`verifyCheckTotal` 645→**660**、floor 625→**640**；
   实跑 `[suite] checks=658 total=660 floor=640 assert=True`、0 Unhandled、0 assert=False（declared==printed=658；
   total/floor 为声明口径，同 M3 的 2 行余量）。
-- 单窗零回归：M2/M3 全部 check 保持；导出 156/156 不变（本波无新宿主导出/NAPI）；host registry
-  selftest 78/78；pixel 套件 PASS（沿用本波前的运行，未改宿主）。
+- 单窗零回归：M2/M3 全部 check 保持；导出面 156 不变（本波无新宿主导出/NAPI，宿主源码未动）；
+  host registry selftest 78/78（脚本 T1–T4 6/6）；pixel 套件 `PIXEL ASSERTIONS PASSED`（本波重跑）；
+  pack 自检见 `selftest-packs`（四包 abc/provenance 同步）。
 - 离线红控（还原修复→断言 False）：把 `FrameOf/StoreFrame` 改回单一全局帧 + 去掉 `Stopped()`
   幂等 guard → `m4 life suspend`、`m4 a11y partition`、`m4 a11y alert owner` 三条
   `assert=False`、run exit 134（`red2-run.log`）；随后恢复源码复跑全绿（`final2-run.log`）。
