@@ -3,6 +3,10 @@
 > 口径：用户点名**直接实施**（不受分析稿 §b“推迟”结论约束）。载体：ow `l2/arkweb-subwindow`（自 `afa6d7a`）·
 > maui `l2/arkweb-subwindow`（自 `74e0bde5b9`）· 本文档 runtime `feature/openharmony`。设备：SOAK50 释放后取锁，首轮
 > 暴露 **capacity wire 不一致**（§3a）→ 修复后**全链闭环**（§3）；kit #50 hap 已还原、锁已释放。边界：2in1 debug 域；主窗 web/overlay 全链行为零变化（主 transport 字节等价 pin + 既有全套 pin 绿）。
+>
+> **2026-10-07 收口（L2-CONSOLIDATE）：已并主线**——ow `master` ← `3c486cf`（merge `094ad51b2037`）、
+> maui `feature/openharmony` ← `2e441c35c9`（merge `086d358dc3b3`）；与 a11y 线四 pack `SubWindow.ets` 并存整合，
+> 合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 待切、#49/#50 资产未动。
 
 ## 1. 实现面（四层）
 

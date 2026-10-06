@@ -65,3 +65,9 @@
 - `Index.ets` 的 managed 子窗为单实例（`subWindow`/`subWindowCreating`，第二 surface → 801，2514–2522）；平台探针应绕开此层直接用 `createSubWindowWithOptions`。
 - 现有 `s_windowFrames`/`NodesForWindow`/`FrameWindowCount`（`OpenHarmonyAccessibility.cs:158–223`）已给 a) 一半地基；缺口 = 宿主表分区 + 动作窗化 + 子窗 ContentSlot。
 - `host-exports.txt` 现 167 行（含注释），导出基线 157/157；a) 新导出与 `check-host-exports.py --cross-check` 同步即门禁。
+
+## 实施结果（2026-10-07 收口）
+
+- **a 已实施**（`-l2-a11y-provider.md`；W0/W2 真机并存首验 + 自检通过；SEC-SCAN-6 A 修复）与 **b 已实施**（`-l2-arkweb-subwindow.md`；真机全链闭环）——两线已**并存整合并合并主线**（四 pack `SubWindow.ets` 一次整合；套件 690 floor 670、导出 **163/163**、abc 473,048）；见 `2026-10-07-ohos-l2-consolidate.md`。
+- **c 探针完成**：平台级上限 **255** 并发子窗（第 256 个 `1300002`；见 `-l2-subwindow-capacity-probe.md`）⇒ 应用级 N=1 为壳契约。
+- **d 未动用**；**KIT51 待切**；#49/#50 资产未动、未强推。

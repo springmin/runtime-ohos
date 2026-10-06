@@ -2,7 +2,7 @@
 
 ## 状态（滚动）
 
-M1 ✓（`df2a246`，门禁终 tip 全绿）· M2 ✓（`1a15f56b30` + exit `896f4e3`）· M3 ✓（ow `35df4f4` / maui `d4ff7d445e`；套件 643/645 floor 625）· M4 ✓（**两波收口**：05/02/03/04 + pinch 按窗，验证轮 M4×7（JIT/AOT 完整 publish、churn ×20、40min 长稳）+ 套件 660/662 floor 642；子窗 a11y provider/子窗 ArkWeb/平台级上限按时间盒降级并文档化，见 `-l-m4.md`；ow `9738d7e`+`06859d4` / maui `c2a59fbf27`）· SEC-5a ✓ / 5b ✓ / 5c ✓ · **L 收口 ✓（并 master：ow `52af282` / maui `74e0bde5b9`；见 `-l-consolidate.md`；kit #50 待切）**。
+M1 ✓（`df2a246`，门禁终 tip 全绿）· M2 ✓（`1a15f56b30` + exit `896f4e3`）· M3 ✓（ow `35df4f4` / maui `d4ff7d445e`；套件 643/645 floor 625）· M4 ✓（**两波收口**：05/02/03/04 + pinch 按窗，验证轮 M4×7（JIT/AOT 完整 publish、churn ×20、40min 长稳）+ 套件 660/662 floor 642；子窗 a11y provider/子窗 ArkWeb/平台级上限按时间盒降级并文档化，见 `-l-m4.md`；ow `9738d7e`+`06859d4` / maui `c2a59fbf27`）· SEC-5a ✓ / 5b ✓ / 5c ✓ · **L 收口 ✓（并 master：ow `52af282` / maui `74e0bde5b9`；见 `-l-consolidate.md`；kit #50 待切）** · **L2（子窗 a11y provider + 子窗 ArkWeb 第二宿主）已合并（见 `-l2-consolidate.md`；KIT51 待切）**。
 
 > 数字随动（一次性注记）：套件 607/609 floor 589（#49）→ **629/631 floor 611（M2-exit）→ 643/645 floor 625（M3）**；导出 153（#49/M1）→ **154（M2-exit）→ 156（M3）**；abc **`e016db13…`/414,532（#49）→ `cee64297…`/417,416（nextkit）→ `38bdf7de…`/426,304（M3）**；SEC-5a 修复后注册表单测 61→**66** checks。
 

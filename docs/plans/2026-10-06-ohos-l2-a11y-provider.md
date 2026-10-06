@@ -4,6 +4,10 @@
 > 00:26 起 owner=`l2-arkweb-subwindow`，此前 soak50），W0 并存首验与 W2 真机自检未跑、留卡。
 > 分支：maui `l2/a11y-provider`（`31e7635a89`，从 `74e0bde5b9`）· ow `l2/a11y-provider`
 > （`05a8115`+`8fa34ca`，从 `afa6d7a`）；未并 master、未强推、未动 #49/#50 资产。
+>
+> **2026-10-07 收口（L2-CONSOLIDATE）：已并主线**——ow `master` ← `f5a892a`（merge `c562a32da382`）、
+> maui `feature/openharmony` ← `ba7581022c`（merge `9faacf3ca35b`）；与子窗 ArkWeb 线四 pack `SubWindow.ets`
+> 并存整合，合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 待切、#49/#50 资产未动。
 
 ## window 化边界（实现面）
 
