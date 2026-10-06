@@ -1,23 +1,23 @@
 # 真·多窗口 L 验收矩阵（M1–M4 进入/退出、新增用例、放行，2026-10-06）
 
-> 口径：验收对象 = `2026-10-06-ohos-multiwindow-l-plan.md`（M1–M4）；基线 = kit #49（interaction 607/609 floor 589、pixel 43 PASS、导出 153/153、宿主 301,984 / `cf4cc706…`）。真机轮按 `device-round.sh` 锁协议（`.device-lock` + owner），证据归档 scratch `mw-l/<M>-*`、不落库；套件 pin 按既有约定每 M 合并树抬升一次（floor=total−20，declared==printed）。
+> 口径：验收对象 = `2026-10-06-ohos-multiwindow-l-plan.md`（M1–M4）；基线 = kit #49（interaction 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））、pixel 43 PASS、导出 153/153、宿主 301,984 / `cf4cc706…`）。真机轮按 `device-round.sh` 锁协议（`.device-lock` + owner），证据归档 scratch `mw-l/<M>-*`、不落库；套件 pin 按既有约定每 M 合并树抬升一次（floor=total−20，declared==printed）。
 > 复用方法：DEVICE-ROUND-49、SOAK48/49（AOT 40 min + churn ×20 + suspend/resume ×10）；文档风格承 `2026-09-18-ohos-device-validation-checklist.md`。
 
 ## 1) 分层矩阵
 
 | 层 | 范围 | 验收面 | 关键证据 | 状态 |
 |---|---|---|---|---|
-| M1 | 宿主多 surface 注册表（window-id → surface/尺寸/state） | 单测 / 导出 / 单窗兼容 | `selftest-host-registry` 61 checks（内部 floor 40）+ rawfile-path 43/43 + 导出 153/153 + `build-host.sh` 三门禁 + 双 XComponent 真机探针 | 已达成分支 `l/m1-window-registry`（`8ce4f58`+`82ef4e7`），待并 |
-| M2 | maui 切片 per-window surface/renderer/输入状态 | 单元 / 切片构建 / 单窗零回归 | headless 双窗 22 checks（scratch）+ 切片 0 err/0 IL + suite 607/609 floor 589 + pixel PASS | 切片已落 `l/m2-per-window-renderer`；退出未达：用例未 pin、AOT publish 阻塞、M2-ow 未做 |
-| M3 | 壳子窗挂 XComponent + 输入路由 | 真机 create / 焦点 / 触摸 / 关闭 | 第二 MAUI 视觉树首帧 + window-id 输入落点 + churn ×20 残留 0 + 主窗 #49 判定卡不变 | 未开始（3–5 人日） |
-| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 未开始（8–15） |
+| M1 | 宿主多 surface 注册表（window-id → surface/尺寸/state） | 单测 / 导出 / 单窗兼容 | `selftest-host-registry` 66 checks（SEC-5a 后；内部 floor 40）+ rawfile-path 43/43 + 导出 153/153 + `build-host.sh` 三门禁 + 双 XComponent 真机探针 | 已达成分支 `l/m1-window-registry`（`8ce4f58`+`82ef4e7`+SEC-5a `df2a246`），待并 |
+| M2 | maui 切片 per-window surface/renderer/输入状态 | 单元 / 切片构建 / 单窗零回归 | headless 双窗 22 checks（scratch）+ 切片 0 err/0 IL + suite 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））+ pixel PASS | 切片已落 `l/m2-per-window-renderer`（`1a15f56b30`）；M2-exit 已收口：22 checks pin + ow 带窗桥（导出 154/154）+ AOT 解阻 |
+| M3 | 壳子窗挂 XComponent + 输入路由 | 真机 create / 焦点 / 触摸 / 关闭 | 第二 MAUI 视觉树首帧 + window-id 输入落点 + churn ×20 残留 0 + 主窗 #49 判定卡不变 | 已完成（ow `35df4f4` / maui `d4ff7d445e`；真机 5 例 + churn ×20；套件 643/645 floor 625） |
+| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 进行中：只读预研已落（`-l-m4-prestudy.md`，再估 13–20 人日）、待立项 |
 
 ## 2) 每层进入/退出标准（门禁映射）
 
 | M | 进入标准 | 退出标准（全绿才允许滚动） |
 |---|---|---|
 | M1 | 计划冻结、从 ow `master` 切分支 | 注册表用例 ≥floor；导出面 153 不变（无新 managed DllImport）；`build-host.sh`（DT_NEEDED/UND/导出）三门禁过；单窗 surface/touch/frame 日志逐项同 #49；第二组件只进注册表、不污染主窗 |
-| M2 | M1 并入 ow `master`（复跑 preflight） | headless 双窗状态不交叉且 **22 checks pin 入 `maui-platform-verify`**；interaction 607/609 floor 589 与 pixel 43 PASS 零回归；M2-ow 桥事件带 window-id + `host-exports.txt`/`check-host-exports.py SOURCES`/selftest 同步；AOT 切片 0 warning/0 IL（解除 publish 环境阻塞） |
+| M2 | M1 并入 ow `master`（复跑 preflight） | headless 双窗状态不交叉且 **22 checks pin 入 `maui-platform-verify`**；interaction 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））与 pixel 43 PASS 零回归；M2-ow 桥事件带 window-id + `host-exports.txt`/`check-host-exports.py SOURCES`/selftest 同步；AOT 切片 0 warning/0 IL（解除 publish 环境阻塞） |
 | M3 | M2 退出全绿（含带窗桥事件） | `OpenWindow`→子窗第二视觉树可交互；触摸/鼠标/键盘按窗归属、主窗输入不受影响；关窗回收（注册表无残留）；主窗 #48/#49 判定卡通过；churn ×20 0 fault |
 | M4 | M3 并入 + 双窗基本闭环 | 双窗全交互 + IME/a11y/overlay/suspend 判定卡全过；性能不回退（阈值见 §3，M3 后冻结）；单窗全回归绿；混合 JIT/AOT 各过轮；E1（2in1 debug 域）边界标注 |
 
@@ -25,11 +25,11 @@
 
 | # | 目标 | 方法 | 证据要求 |
 |---|---|---|---|
-| M1-01 | 注册表单元：双 surface、重复 id/组件、容量、乱序、per-owner 清理 | `selftest-host-registry.sh`（61 checks、内部 floor 40、接入 preflight） | 0 fail 输出 + preflight step 行 + 源码接线 pin |
+| M1-01 | 注册表单元：双 surface、重复 id/组件、容量、乱序、per-owner 清理 | `selftest-host-registry.sh`（66 checks、SEC-5a 后、内部 floor 40、接入 preflight） | 0 fail 输出 + preflight step 行 + 源码接线 pin |
 | M1-02 | 单窗零变化：首窗与 #49 同一日志面 | kit #49 流程对拍（surface/touch/frame/导出） | 对照表 + hilog 归档；差异仅允许新增注册行 |
 | M1-03 | 第二 XComponent 只登记：双 surface 路由、注销回 1 | 真机双 XComponent 探针（M1 已跑） | `registered windows=2`、`unregister -> 1`、主窗 `canvas presented avg 16–17ms` |
 | M2-01 | headless 双面：两窗 Render/Resize/Destroy/重建不交叉 | M2 scratch 22 checks（`OpenWindow` 降级→pending→绑定→独立出画→单窗 resize/touch 不串→关窗存活→同 id 重建）**pin 入套件** | `[suite] checks=… total=… floor=… assert=True`（declared==printed）+ 0 Unhandled |
-| M2-02 | 单窗零回归 | 合并树跑 interaction + pixel + `check-host-exports` | 607/609 floor 589 保持、43 PASS、导出 declared==managed |
+| M2-02 | 单窗零回归 | 合并树跑 interaction + pixel + `check-host-exports` | 607/609 floor 589 保持（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））、43 PASS、导出 declared==managed |
 | M2-03 | 切片 AOT 干净 | Release + trim/AOT analyzer 打包（刷新 workload .28 后重跑） | 0 warning/0 IL + `runtime-mode.txt=aot` + probe 行 |
 | M3-01 | OpenWindow→第二 MAUI 视觉树 | `device-round.sh --mode aot` + `app://subwindow/open` 判定卡 | 子窗首帧截图 + 每窗 surface/renderer window-id 日志 |
 | M3-02 | 输入路由正确性 | 两窗各打触摸网格/滑动/滚轮/键盘、交叉验证 | window-id 标签日志 + 命中截图；跨窗事件=0 |

@@ -27,7 +27,7 @@
 ## 测试证据（headless；日志 scratch `mw-l/m2-*`）
 
 - 切片构建：standalone `IsAotCompatible+EnableTrimAnalyzer+EnableAotAnalyzer -warnaserror:IL2026,IL3050` → **0 error / 0 IL2026/3050**，74 warning 全为基线既知白名单（CS0618/CS8604/CA2255）；`m2-build-slice.log`。
-- 交互套件 `test/maui-platform-verify`（编译本切片源码）：**`[suite] checks=607 total=609 floor=589 assert=True`、0 Unhandled**；`m2-run-interaction3.log`（首轮 `m2-run-interaction2.log` 同绿）。
+- 交互套件 `test/maui-platform-verify`（编译本切片源码）：**`[suite] checks=607 total=609 floor=589 assert=True`、0 Unhandled**（门禁随动：M2-exit 起 629/631 floor 611 → M3 起 643/645 floor 625）；`m2-run-interaction3.log`（首轮 `m2-run-interaction2.log` 同绿）。
 - 像素套件 `test/headless-render`：**`PIXEL ASSERTIONS PASSED`**；`m2-run-pixel.log`。
 - 新增 headless 双窗 harness（scratch `m2-headless/`，编译切片 + 22 checks，全 true）：单面 `OpenWindow` 降级 → 第二 surface `pending` → `OpenWindow` 绑定（`OpenedWindow`、独立 640×480）→ 双窗各自 canvas 出画（互不串标签）→ 第二窗 resize 800×600 不影响主窗 1080×1920 → `RouteTouch` 只击中第二窗按钮 → 关窗只删其会话、主窗存活 → 同 id 重建可再次 `OpenedWindow`；`m2-run-headless3.log`。
 - AOT publish：**环境阻塞**（非切片问题，见余项）；`m2-aot/publish-aot.log`。

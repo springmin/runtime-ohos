@@ -1,5 +1,11 @@
 # 真·多窗口 L 里程碑计划（A′/B：同宿主模块 per-window 状态，2026-10-06）
 
+## 状态（滚动）
+
+M1 ✓（`df2a246`，门禁终 tip 全绿）· M2 ✓（`1a15f56b30` + exit `896f4e3`）· M3 ✓（ow `35df4f4` / maui `d4ff7d445e`；套件 643/645 floor 625）· M4 进行中（预研 → 立项）· SEC-5a ✓ / 5b 进行中。
+
+> 数字随动（一次性注记）：套件 607/609 floor 589（#49）→ **629/631 floor 611（M2-exit）→ 643/645 floor 625（M3）**；导出 153（#49/M1）→ **154（M2-exit）→ 156（M3）**；abc **`e016db13…`/414,532（#49）→ `cee64297…`/417,416（nextkit）→ `38bdf7de…`/426,304（M3）**；SEC-5a 修复后注册表单测 61→**66** checks。
+
 > 依据：`2026-10-06-ohos-multiwindow-l-feasibility.md`（P1/P2 真机探针 + 只读盘点）。路线 = 同一宿主模块多 XComponent + 每窗 surface/renderer/输入（window-id 化）；第二 `startApp` 与跨窗纹理共享不做。
 > 口径：单人粗估人日（含自测/真机轮/文档，不含上游评审）；每个 M 从 `master` 切独立分支，验证通过后单独合并；完成定义 = 该 M 的退出标准全绿，不把未验证项滚入下一个 M。
 > 不在计划内：`TYPE_FLOAT` 系统级浮窗（三方不可达）、跨窗 surface/纹理共享（C 路线，预研已否）、手机/release 域结论外推（E1，M4 收口）。
@@ -20,7 +26,7 @@
 
 - **范围**：`Init` 按 XComponent 登记（读 `OH_NATIVE_XCOMPONENT_OBJ`，`GetXComponentId` 取组件 id）；window-id → {component, surface, 尺寸, state, surface/touch/frame 计数}；surface 生命周期按 component 路由；主窗（首个登记 = `main`）继续走 `g_surface_*`/`bridge_surface` 原路径（零行为变化）；新增 `registerXComponent(id?)`/`unregisterXComponent(id?)`。
 - **文件级改动**（ow）：新增 `src/OpenHarmonyHost/host_window_registry.{h,c}`（纯 C 注册表，无 NAPI/OH 头）与 `host_window_registry_test.c`；改 `host_napi.cpp`（Init 即登记、回调路由、NAPI 导出 `unregisterXComponent`）；`CMakeLists.txt`、`scripts/build-host.sh` 编入新源；新增 `scripts/selftest-host-registry.sh` 并接入 `preflight.sh`。**不改**：`openharmony_host.c/.h`、`host-exports.txt`（M1 无新 managed DllImport，153/153 不变）。
-- **测试**：`selftest-host-registry`（61 checks：双 surface 注册/注销、重复 id/组件、容量、surface 生命周期/乱序、per-owner 清理）；`rawfile-path` 43/43；`check-host-exports` 静态 + managed 153/153；真机探针（mw-l P1 子窗 XComponent：第二条 window 登记 + 双 surface 日志，主窗绘制零回归）。
+- **测试**：`selftest-host-registry`（66 checks，SEC-5a 后：双 surface 注册/注销、重复 id/组件、容量、surface 生命周期/乱序、per-owner 清理）；`rawfile-path` 43/43；`check-host-exports` 静态 + managed 153/153；真机探针（mw-l P1 子窗 XComponent：第二条 window 登记 + 双 surface 日志，主窗绘制零回归）。
 - **退出标准**：单窗路径逐日志与 kit #49 一致（surface/触摸/帧/导出面）；第二 XComponent 事件只进注册表、不污染主窗；上列测试全绿；`build-host.sh` 三门禁（DT_NEEDED/UND/导出）通过。
 - **风险/缓解**：同 env 多次 `Init` 的时序（探针已证每组件一次）→ 按组件指针去重；`GetXComponentId` 偶发失败 → 登记期取值，失败退 `surface-N`/`#n`；老壳无参 `registerXComponent()` → 首个 `main`，其后自动 id。
 
@@ -56,6 +62,6 @@
 
 ## 本文件时点状态（2026-10-06）
 
-- M1 已实现并推送 ow 分支 `l/m1-window-registry`（`8ce4f58` + `82ef4e7`）：注册表 61 checks、rawfile 43/43、导出 153/153；真机 HAD-W32 探针（mw-l 子窗 XComponent + 主窗）——`window 'ohos_dotnet_sub_surface' registered ... windows=2`、surface `0→2` 路由、`unregisterXComponent ... -> 1`、关-开重注册通过、主窗 `canvas presented (2090x1324) avg=16–17ms` 零回归（证据 scratch `mw-l/m1-*`，未入库）。
-- M2–M4 未开始，人日为待验证估计。
+- M1 已实现并推送 ow 分支 `l/m1-window-registry`（`8ce4f58` + `82ef4e7`；SEC-5a 修复 `df2a246`）：注册表 66 checks（SEC-5a 后）、rawfile 43/43、导出 153/153；真机 HAD-W32 探针（mw-l 子窗 XComponent + 主窗）——`window 'ohos_dotnet_sub_surface' registered ... windows=2`、surface `0→2` 路由、`unregisterXComponent ... -> 1`、关-开重注册通过、主窗 `canvas presented (2090x1324) avg=16–17ms` 零回归（证据 scratch `mw-l/m1-*`，未入库）。
+- M2/M3 已完成（记录见 `-l-m2.md`、`-l-m2-exit.md`、`-l-m3.md`；套件 629/631 floor 611 → 643/645 floor 625）、M4 进行中（预研见 `-l-m4-prestudy.md`）；人日为待验证估计（M4 再估 13–20 人日）。
 - 回退：M1 分支独立，若产品决定不做 L，主机零行为变化即无需回退（注册表不被单窗壳引用）。
