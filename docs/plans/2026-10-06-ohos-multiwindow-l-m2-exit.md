@@ -20,7 +20,7 @@
 ## ③ AOT publish 解阻（workload preview.28）
 
 - 根因两步：① `~/.dotnet` 的 .24 manifest 把 ref pack 钉在 `1.0.0-preview.24`（无 `IOpenHarmonyOverlaySlotOwner`）；② `.feed` 的 .28 ref nupkg 是旧构建（hosting DLL 无该接口）。绕法 = `pack-local-workload.sh` 从工作树 `packs/` 重打 .28 feed + `dotnet workload install --skip-manifest-update`（manifest 已同步 .28，旧 manifest 备份 scratch），并按本机 rc.2 纪律 `DOTNET_PROCESSOR_COUNT=1`（csc livelock）+ scratch hooks（Exec/hap 本地替换，`m2exit-aot/aot-local-hooks.targets`）。
-- 结果（`m2exit-aot/publish-aot.log`；ow 树 `df2a246`+工作树、maui `1a15f56b30`）：EXIT=0、0 error、IL2026/IL3050/IL3051=0；`runtime-mode.txt=aot` 且 probe 行 `runtime mode 'aot' written to libs/arm64-v8a/runtime-mode.txt`；hap 31,137,191 B、publish `libhello-maui-app.so` 19,405,584 B / `c471ee11…`。余下 warning 全为基线类（CS0618/NETSDK1188/CA2255/CS8604 + 第三方 IL3053/IL3000/IL2104）。
+- 结果（`m2exit-aot/publish-aot.log`；ow 树 `df2a246`+工作树、maui `1a15f56b30`）：EXIT=0、0 error、IL2026/IL3050/IL3051=0；`runtime-mode.txt=aot` 且 probe 行 `runtime mode 'aot' written to libs/arm64-v8a/runtime-mode.txt`；hap 31,137,191 B、publish `libhello-maui-app.so` 19,405,584 B / `c471ee11…`。余下 warning 全为基线类（切片既有 CS0618/CA2255/CS8604/CS8766/CS8613 + SDK NETSDK1188/1249 + 第三方 IL3053/IL3000/IL2104，类别与 `m2-build-slice.log` 一致）。
 
 ## pin 切换步骤（L 收口时）
 
