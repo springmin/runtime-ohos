@@ -26,8 +26,8 @@
   真 WebView 子窗领**子池**槽（主池 `s_used` 快照不变）/子窗事件只达子窗/主 tagged 事件不达子窗/关窗释放+新
   `slot destroy`（`Skip(base)` 防旧命令假绿）/四 pack 壳·宿主·切片 pins/四 pack `SubWindow.ets` 字节一致。
 - **红控**：临时去掉 `HandlerMatches` 主窗窗过滤 → `primary event isolated assert=False`、run 退出 1（`run-suite-red2.log`）。
-- **门禁**：ridgraph 20 / packs 25 / hap-targets 80 / host-registry 6 / bridge 12 / hygiene 25 全 0 failed；像素
-  **PIXEL ASSERTIONS PASSED**；`selftest-tasks` 在并发构建下两次卡于 S2 之后（环境，非本波改动）。
+- **门禁（逐项）**：ridgraph 20 / packs 25 / hap-targets 80 / tasks 9 / host-registry 6 / bridge 12 / hygiene 25
+  全 0 failed；像素 **PIXEL ASSERTIONS PASSED**；整脚本一次在并发构建下卡于 tasks → 重跑 9/0（环境）。
 - **宿主/壳**：`build-host.sh` 157/157、UND 249、DT_NEEDED 白名单不变（签名件复用主树 330,656/`89438ade…`）；
   `CompileArkTS Finished`；ui abc **469,652 B / `d61ae0d2…`**、headless **24,324 B / `798b2477…`** 不变，四 pack 同字节。
 
