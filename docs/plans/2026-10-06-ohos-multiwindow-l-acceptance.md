@@ -1,6 +1,6 @@
 # 真·多窗口 L 验收矩阵（M1–M4 进入/退出、新增用例、放行，2026-10-06）
 
-> 口径：验收对象 = `2026-10-06-ohos-multiwindow-l-plan.md`（M1–M4）；基线 = kit #49（interaction 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））、pixel 43 PASS、导出 153/153、宿主 301,984 / `cf4cc706…`）。真机轮按 `device-round.sh` 锁协议（`.device-lock` + owner），证据归档 scratch `mw-l/<M>-*`、不落库；套件 pin 按既有约定每 M 合并树抬升一次（floor=total−20，declared==printed）。
+> 口径：验收对象 = `2026-10-06-ohos-multiwindow-l-plan.md`（M1–M4）；基线 = kit #49（interaction 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3）→ 660/662 floor 642（M4））、pixel 43 PASS、导出 153/153、宿主 301,984 / `cf4cc706…`）。真机轮按 `device-round.sh` 锁协议（`.device-lock` + owner），证据归档 scratch `mw-l/<M>-*`、不落库；套件 pin 按既有约定每 M 合并树抬升一次（floor=total−20，declared==printed）。
 > 复用方法：DEVICE-ROUND-49、SOAK48/49（AOT 40 min + churn ×20 + suspend/resume ×10）；文档风格承 `2026-09-18-ohos-device-validation-checklist.md`。
 
 ## 1) 分层矩阵
@@ -10,7 +10,7 @@
 | M1 | 宿主多 surface 注册表（window-id → surface/尺寸/state） | 单测 / 导出 / 单窗兼容 | `selftest-host-registry` 66 checks（SEC-5a 后；内部 floor 40）+ rawfile-path 43/43 + 导出 153/153 + `build-host.sh` 三门禁 + 双 XComponent 真机探针 | 已达成分支 `l/m1-window-registry`（`8ce4f58`+`82ef4e7`+SEC-5a `df2a246`），待并 |
 | M2 | maui 切片 per-window surface/renderer/输入状态 | 单元 / 切片构建 / 单窗零回归 | headless 双窗 22 checks（scratch）+ 切片 0 err/0 IL + suite 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））+ pixel PASS | 切片已落 `l/m2-per-window-renderer`（`1a15f56b30`）；M2-exit 已收口：22 checks pin + ow 带窗桥（导出 154/154）+ AOT 解阻 |
 | M3 | 壳子窗挂 XComponent + 输入路由 | 真机 create / 焦点 / 触摸 / 关闭 | 第二 MAUI 视觉树首帧 + window-id 输入落点 + churn ×20 残留 0 + 主窗 #49 判定卡不变 | 已完成（ow `35df4f4` / maui `d4ff7d445e`；真机 5 例 + churn ×20；套件 643/645 floor 625） |
-| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 进行中：只读预研（`-l-m4-prestudy.md`）+ **第一波完成 M4-05/02/03/04 核心**（`-l-m4.md`；套件 658/660 floor 640、红控 3 条 assert=False、切片 AOT 0 IL；真机 Active/Inactive/Suspended/Resumed/Closed belt）；01/06/07 与 a11y provider/ArkWeb/pinch 下波 |
+| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 已完成（两波：`-l-m4-prestudy.md` + `-l-m4.md`；M4-05/02/03/04 核心 + pinch 按窗；M4×7 真机轮 + 40 min 长稳 + JIT/AOT 完整 publish；套件 660/662 floor 642（红控 2 条 assert=False）；**降级并文档化**：子窗 a11y provider、子窗 ArkWeb 第二宿主、平台级多子窗上限（应用级 N=1 真机复核）；ow `9738d7e`+`06859d4` / maui `c2a59fbf27`） |
 
 ## 2) 每层进入/退出标准（门禁映射）
 
