@@ -2,6 +2,7 @@
 
 > 口径：M3 退出门禁 = 壳 `OpenWindow`→子窗第二视觉树可交互、触摸按窗归属、主窗 60fps 零回归、关窗回收、重开同 id。
 > 载体：ow `l/m3-shell-xcomponent`（基于 `l/m2-exit` @ `896f4e3`）· maui `l/m3-per-window-content`（基于 `l/m2-per-window-renderer` @ `1a15f56b30`）；不并 master、未切 kit、#49 资产未动。
+> 提交：ow `9694d38`(壳 abc/模板)+`c0814d6`(宿主)+`6fbfd52`(套件/样例)+`35df4f4`(CI pin) · maui `d4ff7d445e` · 本文档。均普通推送、未强推。
 > 真机：HAD-W32 / OpenHarmony 7.0.0.111（UDID `1BCE13C8…`）；证据 scratch `mw-l/m3-*`（截图 + raw hilog），不入库。设备锁按 `.device-lock` protocol 持有，轮末恢复 kit #49 hap 后释放。
 
 ## 壳（ow）
