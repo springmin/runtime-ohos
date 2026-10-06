@@ -1,5 +1,11 @@
 # 本机设备回路测试 runbook（OpenHarmony 桌面 + hdc 无线调试）(2026-09-29)
-> **2026-10-05 注（kit #49 口径，承 #48/#47/#46/#45）**：本 runbook 的设备/命令模板继续有效；本波新增应用内子窗
+> **2026-10-06 注（kit #50 口径，承 #49/#48/#47/#46/#45）**：本 runbook 的设备/命令模板继续有效；本波新增**真多窗
+> MULTIWINDOW-L**（M1–M4：宿主每窗 surface 注册表 + 切片 per-window renderer + 子窗挂 XComponent（第二 MAUI
+> 视觉树）+ 每窗焦点/生命周期/a11y 分区/pinch；真机 `app://subwindow/open` 双窗 60/60 fps、40 min 长稳、churn ×20）
+> 与 **polish-49**（建窗 E=0、close WARN 平台内部、Home 焦点丢失链 suspend）；降级声明 = 子窗 a11y provider /
+> 子窗 ArkWeb 第二宿主 / 平台级多子窗上限（应用级 N=1）/ 子窗 IME 人工卡 / SEC-5c B–F。验证运行请以 kit #50 件与
+> release「## Integrity（kit #50）」为准。
+> **2026-10-05 注（kit #49 口径，上一版，承 #48/#47/#46/#45）**：本 runbook 的设备/命令模板继续有效；本波新增应用内子窗
 > （MULTIWINDOW-M：壳 `createSubWindowWithOptions` 子窗 create/move/resize/close + 主窗 HIDDEN/SHOWN 协同；
 > 真机 `app://subwindow/demo` id=344 720×480→420,360→900×600→close；touch #57 / drag #51→269,259）与 a11y
 > 密码脱敏（SEC-SCAN-4：影子树等长圆点）；承 #48 的 R2R/JIT 启动（1031→710 ms，interp R2R=0）、AOT 首帧

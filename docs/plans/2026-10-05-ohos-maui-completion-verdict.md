@@ -68,3 +68,12 @@
 - **tester 轮包 #49**（`2026-10-05-ohos-tester-round-kit49.md`，`6d592f6b97a`）：asset 613320136 / `155,893,607` / `6b9712ef…`。
 - **上游复演 + 分支卫生**：`6e1e6a1230b`（复演，含 10-05 首现冲突草图）/ `3ae60c27ad5`；周期维护（非待办）。
 - 判定不变：本机可执行项 = 0，余项纯外部（§4/§5）。
+
+## kit #50 终态（MULTIWINDOW-L，2026-10-06）
+
+- **功能面增量**：**真多窗 MULTIWINDOW-L 全套（M1–M4 + SEC-SCAN-5a/5b/5c）** 随 kit #50 交付——宿主每窗 XComponent surface 注册表（registry 84/84、bridge 26/26）、per-window `OpenHarmonyWindowSurface`/`Renderer` + 带窗事件路由（`RouteSurface/RouteTouch/RouteFrame`）、子窗挂 XComponent 得 **第二 MAUI 视觉树**（真机 `sub-1` 720×480 `first frame=True`）、每窗焦点/IME/生命周期（`IWindow.Activated/Deactivated/Stopped/Resumed` 状态机）、a11y 分区（主 provider 零变化、子窗影子帧本地）、per-window pinch（导出 **157/157**）；**polish-49**（建窗 E=0、close WARN 平台内部、Home 焦点丢失链 suspend）。真机 HAD-W32/W24：双窗稳态 **60/60 fps**、40 min 长稳（RSS 净 −34 MB、pid 恒定）、churn ×20 无残留、JIT 与 AOT 各过轮。
+- **数字**：tar **68,264,136 / `d70dc786…`**、树 `b4b5055c…`、sidecar `2ffb3b6a…`、`SHA256SUMS` 18 项 / 1,600 B / `98fd0dd2…`；bundle **73,119,180 / `6a83c0f3…`**（sdk 锚 **`a3417a5489`**）；壳 abc **436,808（`289a5e5d…`）**/24,324、宿主 **330,656（`fdeb94eb…`）**、套件 **661/663 floor 643**、导出 157/157；预签 **68,157,557 / `028d29f4…`**（asset 615517779/615518466）；CI 5/5 @ `afa6d7a`（interaction 37460790068 / pixel 37460790072 / host-export 37460790087 / ridgraph 37460790138 / markdownlint 37460790028）+ sdk run `37465689708`；maui `74e0bde5b9`、ow `afa6d7a4`。
+- **降级声明（必有）**：子窗 a11y provider、子窗 ArkWeb 第二宿主、平台级多子窗上限（应用级 N=1）、**子窗 IME 实敲人工卡**、SEC-5c B–F 报告项；明细见 `2026-10-06-ohos-multiwindow-l-m4.md`（末节人工卡）、`2026-10-06-ohos-security-scan-5c.md`、平台限制 E5。
+- **数字口径注（不确定项）**：kit 内 5 MAUI AOT 用 `~/.dotnet.rc2-fix`（SDK `26451.112` = 声明基线）打包；构建机默认 `~/.dotnet`（`26451.109`）的 ILCompiler 为 `11.0.0-rc.1.26451.109` 有偏离（两安装的 preview.28 pack 已逐字节同步）。
+- **剩余外部**：tester 轮（#50 判定点回传；读屏环境与 IME 人工卡）、AGC（App Linking/JIT ACL/rc.2 正式 pin）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、`m-web-mirror` 并入；本地工程尾巴仅 csc/VBCS 活锁（非功能面）。**判定不变**：本机可执行功能项 = 0，多窗（S+M+L）全部落地，余项纯外部/已文档化降级。
+
