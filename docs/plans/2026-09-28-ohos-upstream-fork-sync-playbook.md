@@ -29,7 +29,7 @@
   ② N1 clrfeatures / N2 pal / N3 zstd / N4 libs-native / N5 apphost / N14 tryrun（前置=①）→
   ③ N7 pal-process / N8 ifaddrs / N9 wx-default / N10 crossgen-corelib（前置=①）→
   ④ N11 aot-unix / N12 aot-singleentry（前置=①）→ ⑤ N13 packs（前置=①＋④）→ ⑥ N15 libs-tfm（前置=①）→
-  ⑦ N16 console（前置=⑥，堆叠）→ ⑧ C2 shims-tfm-cleanup（前置=①＋#132866；若⑥先落需 rebase 到⑥后并去掉与 N15 重复的首提交）/ C3 illink-ntlm（前置=#132866 答复）。
+  ⑦ N16 console（前置=⑥，堆叠）→ ⑧ C2 shims-tfm-cleanup（前置=①＋#132866；若⑥先落需 rebase 到⑥后并去掉与 N15 近乎重复的首提交；`shims/Directory.Build.props` 1 行条件差异见 §6）/ C3 illink-ntlm（前置=#132866 答复）。
 - 已决例外：`pr/ohos-platform-numa` 丢弃（＝已合并 #134670，patch-id 相同）；`pr/ohos-tls-flag-cleanup` 丢弃（已被 infra `8ef4e925163` 吸收）；`pr/ohos-sandbox-fixes` = #132827 本体（open，不阻塞 N 组）。
 - `#132953` 合并后把各 `pr/*` rebase 到 post-infra main 再逐支开 PR；`rehearse2/*` 是 09-23 演练产物（滞后 75 提交），**不要直接当 PR head**。
 - `eng/common` 同步依赖 arcade#17608（已合并）；infra 落地后先同步 `eng/common`，再落 N 组。
@@ -69,15 +69,17 @@
 | sdk | 2/2 CLEAN | 2/2 CLEAN・SAME（rids 3 提交／sandbox 5 提交；预演 tip `11df3fa955`/`048d1c8250`） | 同 10-04（上游未动） |
 | aspnetcore | 1/1 CLEAN | 1/1 CLEAN・SAME（预演 tip `fe879f3a18`） | 同 10-04 |
 
-- **状态：非全绿** —— 上游 `#134813`（`fa693c42fb6`）与 fork OH TFM 块在 `src/libraries/Directory.Build.props` 同一插入点相邻新增；**与 §1 步 4 的"零冲突"预期不同，需见 §6**。
+- **状态：非全绿** —— 上游 `#134813`（`fa693c42fb6`）与 fork OH TFM 块在 `src/libraries/Directory.Build.props` 同一插入点相邻新增（**已预解**：§6 解决经 2026-10-05 本机复演验证，6 ref 应用后全 CLEAN）；**与 §1 步 4 的"零冲突"预期不同，需见 §6**。
 - runtime 复演产物：infra 重锚 tip `fe80d24e72`；其余 16 支 `-U0` patch-id SAME、`platform-numa` EMPTY（同 10-04）。
 - 证据：`/data/storage/el2/base/tmp/opencode/ur1005/`（`mergetree.tsv`、`rebase-results.tsv`、`rebase-sdk.tsv`、`rebase-asp.tsv`、`mergetree-conflicts.tsv`、`*.log`）；scratch worktree 已清、未创建临时 ref。
 - 口径备注：复演期间本地 `pr/*` 已被并发 branch-hygiene 清理，本表用同 SHA 的 `origin/pr/*`（21 支，与 10-04 表逐支一致）。
 
-## 6. 新冲突记录：`src/libraries/Directory.Build.props`（2026-10-05）
+## 6. 新冲突记录：`src/libraries/Directory.Build.props`（2026-10-05；解决已验证 2026-10-05）
 
 - **文件**：`src/libraries/Directory.Build.props`（唯一冲突文件；add/add 邻近插入）。
 - **双方**：上游 WASI `PropertyGroup`＋`Import`（`TestWasmReadyToRun`/`TargetOS==wasi`，`fa693c42fb6`） vs fork OH `PropertyGroup`（`TargetsOpenHarmony` 的 `LibrariesOpenHarmonySfxTfm`/`ShimsTfm`，`2bab0935bf6`）；插入点同为 `<Import Project="..\..\Directory.Build.props" />` 之后、`UseBootstrap` 组之前。
-- **解决草图**（不改上游、不丢 fork；两块条件互斥，先后均可）：两个块都保留，其余上下文不变。
-- **影响**：`pr/ohos-libs-tfm`（1 提交）、`pr/ohos-shims-tfm-cleanup`（2 提交，首个与 libs-tfm 重复 → 按 §2 ⑧ 去重）、`pr/ohos-console`（自身只改 `System.Console.csproj`：解掉 libs-tfm 后应自动 clean）。
-- **落地**：按 §2 顺序 ⑥/⑧ 各解一次（一次性）；`rehearse2/*` 同名 ref 不直接当 PR head；`tls-flag-cleanup` 维持丢弃。
+- **解决（=草图，已验证）**：两块都保留——上游 WASI 块在前，fork OH 块紧跟其后、空行分隔，其余上下文不变。条件真互斥：`TargetsOpenHarmony` ⇔ `PortableOS==openharmony`（`eng/RuntimeIdentifier.props:57`），而 `PortableOS=$(TargetOS)` 直接派生（同文件 L9-15），wasi 构建下为 false；且两块属性名不相交（`AfterMicrosoftNETSdkTargets` vs `LibrariesOpenHarmonySfxTfm`），即便同时命中也无冲突。解后 XML 合法（ElementTree parse 通过）。
+- **复演（本机只读，2026-10-05，upstream/main `8e6821d2d912`）**：scratch worktree＋临时分支 `rehearse-fix/*`（用后即删；`pr/*`、`rehearse2/*` 零改动、未推送）。命令：`git rebase --onto <post-infra tip> <base>`，冲突时唯一文件 `src/libraries/Directory.Build.props` → union 解（ours＝WASI 块、theirs＝OH 块，保留两者）→ `git add` → `GIT_EDITOR=true git rebase --continue`。结果：`libs-tfm` / `console` / `shims-tfm-cleanup` / `rehearse2/libs-tfm` / `rehearse2/console` / `rehearse2/shims-tfm-cleanup` **6 ref 全 CLEAN**；`-U0 patch-id` 全 SAME（fork 内容零改写；range-diff 仅 WASI 块上下文位移，`console` 自身提交 `=`）；merge-tree 冲突 blob 按同一 union 解出的文件与 rebase 结果逐字节相同（EQUIV ×6）；解后 tip 对 upstream/main merge-tree CLEAN。
+- **残余（去重路径，§2 ⑧）**：shims 首提交与 libs-tfm 首提交并非完全 patch 相同——`src/libraries/shims/Directory.Build.props` 条件写法差 1 行（shims c1 `'$(TargetOS)' == 'openharmony'` vs libs-tfm `'$(TargetsOpenHarmony)' == 'true'`）。⑥先落后 ⑧ 去重（丢首提交）会在该文件冲突一次；解：取 c2 的注释与 `$(LibrariesOpenHarmonySfxTfm)` 值、条件保留已落的 `TargetsOpenHarmony` 形态（两者等价，见上）。该去重路径复演 CLEAN，主 props 与完整重放逐字节一致。
+- **影响/落地**：`pr/ohos-libs-tfm`（1 提交）、`pr/ohos-shims-tfm-cleanup`（2 提交，首个近乎重复）、`pr/ohos-console`（自身只改 `System.Console.csproj`：解掉 libs-tfm 后自动 clean）；按 §2 顺序 ⑥/⑧ 各解一次（一次性）；`rehearse2/*` 同法可解但不直接当 PR head；`tls-flag-cleanup` 维持丢弃。
+- **证据**：`/data/storage/el2/base/tmp/opencode/ur1005/rehearse-fix/`（`rehearse-fix.tsv`、`rehearse-fix.log`、`merge-equiv.tsv`、`conditions.txt`、`resolution.diff`、`resolved-Directory.Build.props`、`mergeconf-*.txt`）；worktree 与临时分支已清、未推送。
