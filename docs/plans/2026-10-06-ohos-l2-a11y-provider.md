@@ -52,7 +52,32 @@
 
 ## 余项 / 边界
 
-- W2 未跑（上卡）；`Announce` 仍走主 provider（进程 API，无窗归属）；子窗 provider 关窗不 detach（与主
+- W2 已跑（见下节）；`Announce` 仍走主 provider（进程 API，无窗归属）；子窗 provider 关窗不 detach（与主
   provider 同生命周期，SEC-5C-F 有界）；ArkWeb 子窗宿主（option b）由并发会话另轨，本分支不含。
 - 并发纪律：本波与 `l2/arkweb-subwindow` 共用 checkout，实施与验证均在独立 git worktree 完成，两分支各自
-  只含本波路径（ow `05a8115`/`8fa34ca`、maui `31e7635a89`）。
+  只含本波路径（ow `05a8115`/`8fa34ca`/`b6c0ce9`、maui `31e7635a89`/`ba7581022c`）。
+
+## W0/W2 真机结果（2026-10-07 01:07–01:23；OH 7.0.0.111 / 2in1；锁自持后执行，轮末释放）
+
+- **装置**：W1+W2 件 = 壳 abc 439,144 B（`2fb265ed…`，含 ContentSlot/attach/自检）、宿主 342,944 B（163
+  导出，签名）、maui 切片含 first-publish 门禁与计数日志；AOT hap **22,611,005 B / `32171dbf…`**，本机
+  UDID `1BCE13C8…` 自签，`hdc install -r` 成功。证据 scratch `l2-a11y-device/`（hilog-stream/buffer、
+  `w0-coexist.png`、`main-layout-selfcheck.json`、`restored-kit49.png`、`summary-w0w2.txt`）。
+- **W0 并存首验 = 通过**：子窗 `OHOS_MAUI_SUB: subwindow a11y provider status=1 instance=sub-1`（ArkUI 接受
+  第二 provider，`RegisterCallbackWithInstance` 生效）；同一时刻主窗自检弹窗
+  `accessibilityStatus: 1 (attached – expected)` / `accessibilityNodeCount: 72`（主 provider 不回退）；
+  截图同帧可见子窗（managed surface、`MAUI child window`/`child entry: seed`）与主窗自检弹窗；WMS 主窗
+  2558 + 子窗 2560（`subwindow created {"id":2560,…,"surfaceId":"sub-1"}`）。
+- **W2 自检 = 通过**：子窗 `subwindow a11y selfcheck status=1 nodes=10 instance=sub-1` —— 实机走
+  `host.accessibilityStatusFor` + `host.accessibilityNodeCountFor`（新 NAPI 导出），per-instance 表 10 节点
+  即 managed `*_for` 发布成功的直接证据；主窗 72 节点/status=1 零回归；pid 47518、Threads 63、VmRSS
+  270,856 kB。
+- **W2 动作（click/scroll/text 带窗）**：本镜像无读屏/第三方 a11y 服务（`AccessibleManagerService
+  accessible: 0`，无 CLI enable 路径）→ provider action 回调在设备上不可触发；按窗动作分发由离线套件 7
+  checks + 红控 4 条 assert=False 覆盖，实机保留 provider 挂接与节点计数证据。managed 单次状态行
+  （listener registered / published N nodes）在 60fps 状态通道中被覆盖（本轮已加 first-publish 门禁与计数
+  日志，下轮可复采）；读屏 e2e 维持平台限制 B1 → 外部复跑。
+- **收尾**：kit #49 unsigned 重签（本机 UDID）安装并启动（pid 58199、主窗 2564、`restored-kit49.png`）；
+  hilog 16M→512K 四类还原；`.device-lock` owner=rmdir 释放（01:23:55）；#49/#50 资产未动。
+- **余项**：动作真机 e2e 待 a11y 服务可用环境；close 后 deeplink reopen 本轮未再起窗（非本波回归面，M4 已
+  验 close/reopen 同 id；W0/W2 首轮证据完整）。
