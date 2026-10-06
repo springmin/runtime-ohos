@@ -42,5 +42,5 @@
 
 ## 提交与不确定
 
-- 提交：本文件 → runtime-ohos `feature/openharmony`（`commit-paths.sh`；被拒 fetch+rebase）；修复 → ow `l/m1-window-registry` `df2a246`。分支 check 数已 66，L 计划/验收文中的「66 checks」待回填。
+- 提交：本文件 → runtime-ohos `feature/openharmony`（`commit-paths.sh`；被拒 fetch+rebase）；修复 → ow `l/m1-window-registry` `df2a246`。分支 check 数已 66（L 计划/验收文已回填）。
 - 不确定：单窗 #49 日志对拍与双 XComponent 真机轮未在本轮重跑（离线扫描）；L2 待 M2 消费面出现后定夺；L3 需 M3 壳接线时按建议落地并加 churn 回归。
