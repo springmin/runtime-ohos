@@ -56,3 +56,12 @@ git -C sdk-ohos switch feature/openharmony && git -C sdk-ohos branch -D feat/aot
 # 不删：worktree 5 支（runtime fix/ohos-rc2、maui l/m4、ow l/m4、sdk fix/rc2、aspnet fix/ohos-rc2）+ 未落 2 支（w2b-int、w2b-t3t5）+ 主线基线 9 支
 # 远端：禁止 push --delete；pr/ohos-*、rehearse2/* 语义保留
 ```
+
+## 执行记录（2026-10-07，经用户批准）
+
+- 范围：仅 **maui-ohos / ohos-workload** 本地可删分支；**runtime / sdk / aspnetcore 全部分支保留**；**远端一律未动**（禁 push --delete）。
+- 已删（本地 **14**）：maui 6 = backup/r1-kit-ext2-tip · backup/r1-preclean-45b44cd4 · l/m2-per-window-renderer · l/m3-per-window-content · t10-integration · w9-merge-ebffdd（独有 2 提交经 patch-id 复核由 origin/w9b-t14-t21 + origin/w9d-test 覆盖）；ow 8 = backup/r1-kit-ext2-tip · backup/r1-preclean-8f3ae54 · backup/r1-preclean-45c1fb0 · feat/payload-zip-optin · l/m1-window-registry · l/m2-exit · l/m3-shell-xcomponent · next-kit/polish-49。
+- 删前复核：每支按分析稿方法（祖先/patch-id/SHA 等价）二次核验；maui `w9-merge` 额外用远端两分支 patch-id 复核后删除。
+- 保留（maui）：w2b-int · w2b-t3t5（未落内容）· l/m4-per-window-focus（worktree）· main/feature/openharmony（主线基线）· l2 工作分支与 worktree。
+- 保留（ow）：master · l/m4-focus-ime（worktree）· l2/a11y-provider / l2/arkweb-subwindow（及 worktree）。
+- 未动仓分支计数：runtime 23 local / 45 remote · sdk 4 / 9 · aspnetcore 3 / 3。
