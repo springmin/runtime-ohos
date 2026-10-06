@@ -10,7 +10,7 @@
 | M1 | 宿主多 surface 注册表（window-id → surface/尺寸/state） | 单测 / 导出 / 单窗兼容 | `selftest-host-registry` 66 checks（SEC-5a 后；内部 floor 40）+ rawfile-path 43/43 + 导出 153/153 + `build-host.sh` 三门禁 + 双 XComponent 真机探针 | 已达成分支 `l/m1-window-registry`（`8ce4f58`+`82ef4e7`+SEC-5a `df2a246`），待并 |
 | M2 | maui 切片 per-window surface/renderer/输入状态 | 单元 / 切片构建 / 单窗零回归 | headless 双窗 22 checks（scratch）+ 切片 0 err/0 IL + suite 607/609 floor 589（L 分支随动：629/631 floor 611（M2-exit）→ 643/645 floor 625（M3））+ pixel PASS | 切片已落 `l/m2-per-window-renderer`（`1a15f56b30`）；M2-exit 已收口：22 checks pin + ow 带窗桥（导出 154/154）+ AOT 解阻 |
 | M3 | 壳子窗挂 XComponent + 输入路由 | 真机 create / 焦点 / 触摸 / 关闭 | 第二 MAUI 视觉树首帧 + window-id 输入落点 + churn ×20 残留 0 + 主窗 #49 判定卡不变 | 已完成（ow `35df4f4` / maui `d4ff7d445e`；真机 5 例 + churn ×20；套件 643/645 floor 625） |
-| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 进行中：只读预研已落（`-l-m4-prestudy.md`，再估 13–20 人日）、待立项 |
+| M4 | 焦点/生命周期/IME/a11y/overlay 分区 + 全量验证轮 | 集成（多窗并行 / IME / a11y / overlay / suspend-resume / 混合 JIT-AOT） | 双窗判定卡全过 + 40 min 长稳 + 性能对照（单窗基线 vs 双窗） | 进行中：只读预研（`-l-m4-prestudy.md`）+ **第一波完成 M4-05/02/03/04 核心**（`-l-m4.md`；套件 658/660 floor 640、红控 3 条 assert=False、切片 AOT 0 IL；真机 Active/Inactive/Suspended/Resumed/Closed belt）；01/06/07 与 a11y provider/ArkWeb/pinch 下波 |
 
 ## 2) 每层进入/退出标准（门禁映射）
 
