@@ -77,6 +77,9 @@
 
 ### M4 child web 按窗槽池 + 长稳/性能 + 收口 —— 5–8 人日
 
+> **结果（2026-10-07）**：已落地并并入主线（ow/maui `l3/m4-childweb`；离线套件 **731/734 floor 714**、真机 N=2 双窗 web +
+> 40min 长稳全绿；详见 `2026-10-07-ohos-l3-m4.md`；收口见 `2026-10-07-ohos-l3-consolidate-final.md`）。
+
 - 范围：child ArkWeb sink 按 surfaceId 注册/分发（现单 sink 后注册覆盖）、容量按窗、defer 队列按窗；
   hybrid/blazor 维持拒绝；双窗 overlay z-order/隐藏；40min 双窗长稳 + 帧率/内存对照；
   packs/abc/provenance 重建 + L3 consolidate 文档。
@@ -99,9 +102,9 @@
 
 ## 4. 与 kit 节奏
 
-- L2 = kit #51（已切）。**下一 kit 即 L3 载体**：M1 本轮落分支不入 kit；M2–M3 验证后由
-  consolidate 波次合并 `master`/`feature/openharmony`，再按既有节奏切 kit（#52），
-  重建 packs/abc/provenance 并以 `verify-kit` 锚定；#51 资产不动。
+- L2 = kit #51（已切）。**下一 kit 即 L3 载体**：M1–M4 已由 consolidate 波次并入
+  `master`/`feature/openharmony`（见 `2026-10-07-ohos-l3-consolidate-final.md`；四包 ui abc 534,192 +
+  host 367,520 + provenance 一致），切 kit（#52）按既有节奏重建并以 `verify-kit` 锚定；#51 资产不动。
 
 ## 5. M1 结果（2026-10-07，分支 `l3/multi-subwindow`，待并）
 
@@ -119,3 +122,8 @@
   M2–M4 暂停；a11y/child web 任一超时间盒 → 该项独立降级（主窗路径零变化），其余照常。
 
 > **L3-M1 收口（2026-10-07）**：三支（`l3/a11y-cleanup` + `l3/web-assets` + `l3/multi-subwindow`）已**一次并存合并主线**（ow `master` `5488b41`+`cf2c9d2`+`3a16d3c`、maui `feature/openharmony` `d1d485bb67`）；合并树 abc **512,304/`eae87765…`**、套件 **701/704 floor 684**、导出 **164/164**；真机 N=2 抽验通过（`windows=2`/输入分窗/定向关/重开/主窗零回归，HAD-W32）；**#52 待切**；见 `2026-10-07-ohos-l3-consolidate.md`。M2–M4 未开工。
+>
+> **L3 收官（2026-10-07）**：M2–M4 链路已并入主线（ow `71c7fb6` / maui `277967cc56`）；合并树四包一致
+> （ui abc **534,192/`e6516424…`** + host **367,520/`ad7ab986…`** + provenance）、套件 **731/734 floor 714**、
+> 导出 **164/164**、preflight 全绿；真机轻量 N=2 复核通过（引用 M4 40min 数据）；三 workflow pin `277967cc56`、
+> CI 5/5；**#52 待切**；见 `2026-10-07-ohos-l3-consolidate-final.md`。
