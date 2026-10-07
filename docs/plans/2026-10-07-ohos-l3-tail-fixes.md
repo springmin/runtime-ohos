@@ -1,7 +1,7 @@
 # L3-TAIL-FIXES：a11y 分区清理 + 子窗 hybrid/Blazor 资产桥（2026-10-07）
 
 > 口径：两线均从 ow `master` `696ebc0` / maui `feature/openharmony` `bb6b06990d` 切出；**未并 master、未强推、#49/#50/#51 资产不动**。
-> 分支：ow `l3/a11y-cleanup` @ `19e8cb7`、`l3/web-assets` @ `fc186bf`；maui `l3/a11y-cleanup` @ `70b279548a`、`l3/web-assets` @ `4b9598d9f3`。
+> 分支：ow `l3/a11y-cleanup` @ `19e8cb7`、`l3/web-assets` @ `fc186bf`；maui `l3/a11y-cleanup` @ `70b279548a`、`l3/web-assets` @ `4b9598d9f3`（均本地分支；推送时远端不可达，无强推）。
 
 ## ① a11y 分区清理（ow + maui，小）——SEC6-C 余留闭环
 
