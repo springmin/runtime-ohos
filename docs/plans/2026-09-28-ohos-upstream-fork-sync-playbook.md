@@ -63,6 +63,8 @@
 | dotnet/sdk | `590b0970fe66`（10-03） | `590b0970fe66`（未动） | 0 |
 | dotnet/aspnetcore | `dc8b384c43`（10-03） | **`7eef82517d72`**（10-05，#69634） | +4 commit / 18 文件 |
 
+- **2026-10-07 只读复核（`git ls-remote`，未 fetch、零 ref 改动）**：runtime `f963e45bdd70`（10-05 `8e6821d2d912`）、sdk `fbf921a87f1f`（10-05 `590b0970fe66`）、aspnetcore `16e71d2fdda9`（10-05 `7eef82517d72`）——三仓均有漂移，**待周期复演**（§5 周程只读重跑）。
+
 | 仓 | merge-tree | rebase dry-run | 与 10-04 对比 |
 |---|---|---|---|
 | runtime | 33/39 CLEAN；6 CONFLICT（`libs-tfm`/`console`/`shims-tfm-cleanup` 的 `pr/*` 与 `rehearse2/*`） | 17/21 CLEAN（16 支 SAME＋`platform-numa` EMPTY；`console` 自身提交 CLEAN、受阻于 libs-tfm）；3 CONFLICT＝`libs-tfm`、`shims-tfm-cleanup`（新增，§6）、`tls-flag-cleanup`（既定丢弃） | 10-04 = 39/39＋20/21；**新增 2 支冲突，落地需按 §6 解一次（内容无需重写）** |
