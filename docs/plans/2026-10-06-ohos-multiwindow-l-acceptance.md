@@ -69,3 +69,4 @@
 > 与计划的差异（验收口径）：M2 实际以 scratch 22 checks 交付、DI 工厂化与 M2-ow 带窗桥事件缓做——本矩阵把“pin 入套件 + M2-ow”钉进 M2 退出，不滚入 M3；M1 已在分支上先于矩阵达成。
 > 提交：本文件（runtime-ohos `feature/openharmony`；`commit-paths.sh` 限路径、普通推送、被拒 fetch+rebase）；README 索引稍后批量补。不确定项：M2–M4 人日与帧率/内存阈值待 M3 首测校准；Home 键 suspend 依赖 #50 的 focus-loss 链（ow `b5928d1`）出包；AOT publish 阻塞需 workload .28。
 > **L2 收口（2026-10-07）**：M4 降级三项中的 a) 子窗 a11y provider、b) 子窗 ArkWeb 第二宿主已实施并合并主线，c) 平台上限探针完成（255；第 256 个 `1300002`）；见 `-l2-consolidate.md`；**KIT51 已切（2026-10-07，见 `2026-10-07-ohos-tester-handoff-kit51.md`）**。
+> **L3 收口（2026-10-07）**：L3 三支（a11y 分区清理 + 子窗 hybrid/Blazor 资产桥 + M1 N=2 会话表）已并存并入主线（ow `5488b41`+`cf2c9d2`+`3a16d3c`+`a551013`、maui `d1d485bb67`；见 `-l3-consolidate.md`）；合并树套件 701/704 floor 684、导出 164/164、四包 abc 512,304 一致；HAD-W32 真机 N=2 抽验通过（windows=2、输入分窗、定向关、重开、主窗 60.0 fps 零回归）；**#52 待切**（L3 载体），L3-M2–M4 未开工。
