@@ -2,7 +2,7 @@
 
 > 口径：两线**并存整合**——ow `master` ← `l2/a11y-provider` @ `f5a892a` + `l2/arkweb-subwindow` @ `3c486cf`
 > （merge `c562a32d`、`094ad51b`）；maui `feature/openharmony` ← 同两线 @ `ba7581022c`、`2e441c35c9`
-> （merge `9faacf3ca3`、`086d358dc3`）；均 merge commit、普通推送、未强推。**不切 kit（KIT51 待切）、#49/#50 未动**。
+> （merge `9faacf3ca3`、`086d358dc3`）；均 merge commit、普通推送、未强推。**不切 kit（当时 KIT51 待切；2026-10-07 已切，见 `2026-10-07-ohos-tester-handoff-kit51.md`）、#49/#50 未动**。
 
 ## 1) 合并（四 pack `SubWindow.ets` 一次并存整合）
 
@@ -35,4 +35,4 @@
 
 ## 6) 状态
 
-- **L2（a+b）合并完成；KIT51 待切**；#49/#50 资产未动、未强推；SEC-6 A/B/C 全闭；余项 = 子窗 hybrid/blazor 资产桥 + B6 导航否决（下波）、a11y 读屏 e2e 平台限制（B1）。
+- **L2（a+b）合并完成；KIT51 已切**（2026-10-07，见 `2026-10-07-ohos-tester-handoff-kit51.md`）；#49/#50 资产未动、未强推；SEC-6 A/B/C 全闭；余项 = 子窗 hybrid/blazor 资产桥 + B6 导航否决（下波）、a11y 读屏 e2e 平台限制（B1）。

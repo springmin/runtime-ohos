@@ -37,7 +37,7 @@
   （runtime `cfe8a6c4600`）复跑（39/39 merge-tree clean、20/21 rebase clean、0 支需重做）；该预演为
   **周期维护**（随 rc2-watch 周程/上游前进时重跑并更新 `2026-09-28-ohos-upstream-rebase-rehearsal.md`），
   PR 描述等上游写操作按既定约定不做。
-- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #49（#43→#49 均为同一功能面 + 性能/工具增量）。
+- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #51（#43→#51 均为同一功能面 + 性能/工具增量）。
 
 ## 5. 平台限制清单
 
@@ -76,4 +76,11 @@
 - **降级声明（必有）**：子窗 a11y provider、子窗 ArkWeb 第二宿主、平台级多子窗上限（应用级 N=1）、**子窗 IME 实敲人工卡**、SEC-5c B–F 报告项；明细见 `2026-10-06-ohos-multiwindow-l-m4.md`（末节人工卡）、`2026-10-06-ohos-security-scan-5c.md`、平台限制 E5。
 - **数字口径注（不确定项）**：kit 内 5 MAUI AOT 用 `~/.dotnet.rc2-fix`（SDK `26451.112` = 声明基线）打包；构建机默认 `~/.dotnet`（`26451.109`）的 ILCompiler 为 `11.0.0-rc.1.26451.109` 有偏离（两安装的 preview.28 pack 已逐字节同步）。
 - **剩余外部**：tester 轮（#50 判定点回传；读屏环境与 IME 人工卡）、AGC（App Linking/JIT ACL/rc.2 正式 pin）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、`m-web-mirror` 并入；本地工程尾巴仅 csc/VBCS 活锁（非功能面）。**判定不变**：本机可执行功能项 = 0，多窗（S+M+L）全部落地，余项纯外部/已文档化降级。
+
+## kit #51 终态（L2，2026-10-07）
+
+- **功能面增量**：**MULTIWINDOW-L2 并存整合** 随 kit #51 交付——**a 子窗 a11y provider**（`host_a11y_table.c/h` 节点表按 provider instance 分区，legacy 主分区逐字保留；`RegisterCallbackWithInstance` 全链 + 带窗动作 `set_window_action_listener`；壳 NodeContent/ContentSlot 双点 attach；导出 157→**163**；真机 HAD-W32（OH 7.0.0.111）**W0 并存 PASS**（子 `status=1 instance=sub-1`、主 status=1/72 节点不回退）与 **W2 自检 PASS**（子 10 节点、主 72 零回归））；**b 子窗 ArkWeb 第二宿主**（child web/eval sink + `OpenHarmonyChildWeb` 按窗槽池 Max=2/64 条预就绪队列；**capacity wire 修复** + 回归 pin；真机全链闭环 `CHILD WEB TAP`、双窗 **60.0/60.0 fps**、主窗零回归）；**SEC-SCAN-6 A/B/C 全闭**（A 分区仅 `begin_for` 分配、B 主窗 id 子通道拒绝、C 关窗 **`ReleaseWindow` hooks** 清 child Capacity/Pending + a11y frame/first-publish，+2 checks、红控 3×assert=False）；**L2CAP 平台容量探针**——平台并发子窗上限 **255**（第 256 个 `1300002`、3 轮一致、destroy 255/255、0 残留、可恢复）⇒ **应用级 N=1 为壳契约而非平台限制**（产品化另立项、本波不动壳）。
+- **数字**：tar **68,550,333 / `e5f6541c…`**、树 `a06d3897…`、sidecar `5c471871…`、`SHA256SUMS` 18 项 / 1,600 B / `5f8c1512…`；bundle **73,147,751 / `f4b4fe8d…`**（sdk 锚 **`a00e810c92`**）；壳 abc **473,048（`298622c0…`）**/24,324、宿主 **347,040（`36acfc1d…`，导出 163/163、UND 250）**、套件 **688/690 floor 670**、预签 **68,447,288 / `e9fb1e90…`**（asset 617093322/617094016）；CI 5/5 @ `696ebc0`（interaction 37548888210 / pixel 37548888313 / host-export 37548888169 / ridgraph 37548888051 / markdownlint 37548888104）+ sdk run `37553127808`；maui `bb6b06990d`、ow `696ebc0b`。
+- **降级声明（必有）**：子窗 a11y **动作 e2e 平台限制**（读屏服务不可得；W0/W2 并存与节点计数已过）· **子窗 ArkWeb hybrid/blazor 资产桥显式拒绝**（下波壳侧 `onInterceptRequest` serving + 按窗注册回放）· 子窗 B6 导航否决未接 · **子窗 IME 实敲人工卡** · 子窗池满（>2 控件）不挂载 + 就绪队列溢出丢 1 行日志 · ArkWeb `loadData` 裸 `#` 截断（平台共性）· SEC-6 余留原生 a11y 分区常驻（有界）· 应用级 N=1 壳契约；明细见 `2026-10-07-ohos-l2-consolidate.md`、`2026-10-06-ohos-l2-a11y-provider.md`、`2026-10-06-ohos-l2-arkweb-subwindow.md`、`2026-10-06-ohos-l2-subwindow-capacity-probe.md`、平台限制 E5/C5。
+- **剩余外部**：tester 轮（#51 判定点回传；读屏环境与 IME 人工卡）、AGC（App Linking/JIT ACL/rc.2 正式 pin）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、`m-web-mirror` 并入；本地工程尾巴仅 csc/VBCS 活锁（非功能面）。**判定不变**：本机可执行功能项 = 0，多窗（S+M+L+L2）全部落地，余项纯外部/已文档化降级；当前发布 = kit #51（交接 = `2026-10-07-ohos-tester-handoff-kit51.md`）。
 

@@ -70,4 +70,4 @@
 
 - **a 已实施**（`-l2-a11y-provider.md`；W0/W2 真机并存首验 + 自检通过；SEC-SCAN-6 A 修复）与 **b 已实施**（`-l2-arkweb-subwindow.md`；真机全链闭环）——两线已**并存整合并合并主线**（四 pack `SubWindow.ets` 一次整合；套件 690 floor 670、导出 **163/163**、abc 473,048）；见 `2026-10-07-ohos-l2-consolidate.md`。
 - **c 探针完成**：平台级上限 **255** 并发子窗（第 256 个 `1300002`；见 `-l2-subwindow-capacity-probe.md`）⇒ 应用级 N=1 为壳契约。
-- **d 未动用**；**KIT51 待切**；#49/#50 资产未动、未强推。
+- **d 未动用**；**KIT51 已切（2026-10-07，见 `2026-10-07-ohos-tester-handoff-kit51.md`）**；#49/#50 资产未动、未强推。

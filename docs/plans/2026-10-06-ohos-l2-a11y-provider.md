@@ -7,7 +7,7 @@
 >
 > **2026-10-07 收口（L2-CONSOLIDATE）：已并主线**——ow `master` ← `f5a892a`（merge `c562a32da382`）、
 > maui `feature/openharmony` ← `ba7581022c`（merge `9faacf3ca35b`）；与子窗 ArkWeb 线四 pack `SubWindow.ets`
-> 并存整合，合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 待切、#49/#50 资产未动。
+> 并存整合，合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 已切（见 `2026-10-07-ohos-tester-handoff-kit51.md`）、#49/#50 资产未动。
 
 ## window 化边界（实现面）
 

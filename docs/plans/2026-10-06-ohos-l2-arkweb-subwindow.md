@@ -6,7 +6,7 @@
 >
 > **2026-10-07 收口（L2-CONSOLIDATE）：已并主线**——ow `master` ← `3c486cf`（merge `094ad51b2037`）、
 > maui `feature/openharmony` ← `2e441c35c9`（merge `086d358dc3b3`）；与 a11y 线四 pack `SubWindow.ets` 并存整合，
-> 合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 待切、#49/#50 资产未动。
+> 合并树 abc 473,048、导出 163/163；见 `2026-10-07-ohos-l2-consolidate.md`。KIT51 已切（见 `2026-10-07-ohos-tester-handoff-kit51.md`）、#49/#50 资产未动。
 
 ## 1. 实现面（四层）
 
