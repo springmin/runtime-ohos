@@ -104,6 +104,8 @@
   去掉定向关 → `reopen targeted close`+`slice source` False）后还原复绿；`selftest-verify-kit` 129/0。
 - 分支/提交：ow `l3/multi-subwindow` = `8cd9f1c`（shell+sample）+ `320a862`（4 pack abc）+ `60c5724`（套件）
   + `ec0a6e4`（verify-kit 重锚）· maui `l3/multi-subwindow` = `fd7451adbf`；均普通推送、未并 master、未强推。
+- 环境注记：并行会话使优先的 `csc` 出现 >15min 病态慢编译（纯 CPU、非代码问题）；最终复跑以
+  `-p:RunAnalyzers=false` 重建（IL/行为不变），preflight **5/5 全绿**（interaction `698/floor 681`、pixel PASS）。
 - 真机：本环境无 hdc/设备不可达（锁空闲但无目标）→ N=2 真机抽验（windows=2/输入分窗/
   定向关/重开/主窗零回归）顺延至设备可用轮；不阻塞离线交付。
 - 降级线：M1 若真机 create 第二子窗异常 → 保留 N=1（801 诚实拒绝，壳单实例行为），
