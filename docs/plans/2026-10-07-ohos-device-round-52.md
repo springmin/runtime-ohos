@@ -37,7 +37,7 @@
 
 - 7 hap 抽装 7/7（23:24–23:28）：5 MAUI OK + canvas markers 13/7/7/6/6；Blazor default/nocsp OK + `BLZ_BOOT`+`BLZ_RENDERED`；末步回装 kit #52 AOT 主 hap。
 - 预签（未装）见 §1；释放锁后设备还原 = L3 JIT 主 hap `ac1005acbc…` + kit #50 Blazor nocsp `ff7a0d0c…`（post-restore：hilog 512K、WMS=0、AWAKE）。
-- 证据 tar：`reg-kit52/soak52/soak52-evidence.tar.gz`（**61,631,779 B / `c7ff6f50…`**，153 件；含干净轮归档/soak samples+meta、注入与按窗负载、N=2 全链+IME 复跑、churn/Home/fps、抽装、预签、脚本与 SUMMARY）。
+- 证据 tar：`reg-kit52/soak52/soak52-evidence.tar.gz`（**61,631,773 B / `a26f4a41…`**，153 件；含干净轮归档/soak samples+meta、注入与按窗负载、N=2 全链+IME 复跑、churn/Home/fps、抽装、预签、脚本与 SUMMARY）。
 - 提交：本文件 + README 索引（commit-paths.sh 限定路径）；直推 runtime-ohos 被网络路径拒绝，按 Git Data API 旁路（不 force）。
 
 ## 7. 边界 / 降级注
