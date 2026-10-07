@@ -15,7 +15,7 @@
 
 | # | 事项 | 依据 | 建议 |
 |---|---|---|---|
-| A1 | **拆分 `#132827`**：非 shared-mutex 部分（`NamedMutex.Unix.cs` + `MutexTests.cs`）单独成 PR；`SharedMemoryManager` 部分挂起 | jkotas 09-25："The changes in this PR that are **not related to shared mutexes are fine — happy to merge them if they are separated**." | **优先做** ✓：拿到一半价值 + 正面回应维护者 + 拆掉 blocked 对整体的封锁 ✓ |
+| A1 | **拆分 `#132827`** ✅ **已完成（10-07）** | jkotas 09-25："The changes in this PR that are **not related to shared mutexes are fine — happy to merge them if they are separated**." | **已开 PR：dotnet/runtime#135321**（"Skip robust mutexes on OpenHarmony" ✗；**仅 `NamedMutex.Unix.cs`，1 文件 +3/−1** ✓，基于全新 main `b08c345c912` ✓）。拆分时修正：`MutexTests.cs` 的 hunk 实为 **shared-memory 目录**（`GlobalSharedMemoryDirectory` ✗）→ **留在 #132827**（与 TMPDIR 改动同族 ✓）；#132827 现在只含 SharedMemoryManager + 测试，保持挂起 ✓。**待办**：在 #132827 留告知评论（草稿已备 ✗，**待许可** ⚠️） |
 | A2 | `#132953` 的复看推进：若 10-09/10-10 仍静默 → **请第二 reviewer** | jkoritzinsky 疑似忙于 B1（避免再 ping 他同一时段） | 备选：@jkotas（已批准）或 BuildArea 其他维护者 ⏳ |
 | A3 | `#132827` 合并冲突 | akoeplinger 09-24 提示；head `4c3b303419`（09-26 04:10 推送）已修，**本地 merge-tree 与 upstream/main CLEAN** ✓ | 已闭环 ✓，无需动作 |
 
