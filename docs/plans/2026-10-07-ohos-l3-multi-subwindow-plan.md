@@ -48,6 +48,9 @@
 
 ### M2 每窗身份握手 + 生命周期 N=2 闭环 —— 3–5 人日
 
+> **结果（2026-10-07）**：已落地分支 ow/maui `l3/m2-identity`（离线套件 716/719、真机 N=2 全绿；含宿主 op 上限
+> 修复）；详见 `2026-10-07-ohos-l3-m2.md`。M3–M4 未开工。
+
 - 范围：子页身份由「名字前缀 + getLastWindow」升级为**确定性握手**（每窗 LocalStorage 可靠时优先，
   否则 per-child AppStorage 序号/claim 队列），并发 create 不串绑；`SUB_EVENT_*` 全量带 surfaceId；
   主窗隐藏 → 两子窗各停一次；聚焦切换 A→B 只动对应窗；WM 关闭按钮/悬停回收；churn ×20。
