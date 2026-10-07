@@ -15,7 +15,7 @@
 
 | # | 事项 | 依据 | 建议 |
 |---|---|---|---|
-| A1 | **拆分 `#132827`** ✅ **已完成（10-07）** | jkotas 09-25："The changes in this PR that are **not related to shared mutexes are fine — happy to merge them if they are separated**." | **已开 PR：dotnet/runtime#135321**（"Skip robust mutexes on OpenHarmony" ✗；**仅 `NamedMutex.Unix.cs`，1 文件 +3/−1** ✓，基于全新 main `b08c345c912` ✓）。拆分时修正：`MutexTests.cs` 的 hunk 实为 **shared-memory 目录**（`GlobalSharedMemoryDirectory` ✗）→ **留在 #132827**（与 TMPDIR 改动同族 ✓）；#132827 现在只含 SharedMemoryManager + 测试，保持挂起 ✓。**告知评论已发 ✓**（`#issuecomment-6029025699`，10-07）——**A1 完整闭环 ✓** |
+| A1 | **拆分 `#132827`** ✅ **已完成（10-07）** | jkotas 09-25："The changes in this PR that are **not related to shared mutexes are fine — happy to merge them if they are separated**." | **已开 PR：dotnet/runtime#135321**（"Skip robust mutexes on OpenHarmony" ✗；**仅 `NamedMutex.Unix.cs`，1 文件 +3/−1** ✓，基于全新 main `b08c345c912` ✓）。拆分时修正：`MutexTests.cs` 的 hunk 实为 **shared-memory 目录**（`GlobalSharedMemoryDirectory` ✗）→ **留在 #132827**（与 TMPDIR 改动同族 ✓）；#132827 现在只含 SharedMemoryManager + 测试，保持挂起 ✓。**告知评论已发 ✓**（`#issuecomment-6029025699`，10-07）——**A1 完整闭环 ✓**。**后续**：jkotas **02:01 批准（创建后 23 分钟 ✗✓）**；其两条格式建议（合并注释 / 删冗余 ✗）**已应用并推** ✓（`82cec4f4ce1`，净 diff **2 行** ✗）→ 推送按仓库策略**重置批准** ✗（现 REVIEW_REQUIRED + CI 重跑 ⏳）——等其复批/合并 ✓ |
 | A2 | `#132953` 的复看推进：若 10-09/10-10 仍静默 → **请第二 reviewer** | jkoritzinsky 疑似忙于 B1（避免再 ping 他同一时段） | 备选：@jkotas（已批准）或 BuildArea 其他维护者 ⏳ |
 | A3 | `#132827` 合并冲突 | akoeplinger 09-24 提示；head `4c3b303419`（09-26 04:10 推送）已修，**本地 merge-tree 与 upstream/main CLEAN** ✓ | 已闭环 ✓，无需动作 |
 
