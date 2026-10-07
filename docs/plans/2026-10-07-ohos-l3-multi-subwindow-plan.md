@@ -61,6 +61,10 @@
 
 ### M3 每窗 IME/a11y/overlay/Back —— 5–8 人日
 
+> **结果（2026-10-07）**：已落地分支 ow/maui `l3/m3-services`（离线套件 723/726 floor 706、真机 N=2 采到
+> IME 切换/a11y status=1×2；Back/overlay 受 UI 注入限制记人工卡）；详见 `2026-10-07-ohos-l3-m3.md`。
+> M4 未开工。
+
 - 范围：IME 按窗（op 6 + AppStorage 请求已带 surfaceId，补两窗互斥/关闭清理）；a11y 第二
   per-instance provider 并发（节点表按 instance/window 分区、action 归属、发布互不覆盖）；
   overlay/alert 按窗归属（A 的 alert 不 gate B）；每窗 Back；safe-area 每窗。
