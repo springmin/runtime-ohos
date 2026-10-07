@@ -174,7 +174,7 @@ single-concern PRs dominate; infra and CI wiring are separate.
 
 ---
 
-## 2. Current OHOS upstream state (updated 2026-10-01)
+## 2. Current OHOS upstream state (updated 2026-10-08)
 
 Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
 
@@ -191,8 +191,14 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   **nudge posted 2026-10-06T23:46Z / 10-07 07:46 CST**
   (`#issuecomment-6027594520`) after 5.6 quiet days (the first full PT
   workday produced no movement); then C3.
-- **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**, awaiting
-  the maintainer merge; idle 5 d; no-nag policy holds.
+- **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**; later
+  labeled `blocked` (jkotas: waiting on jkoritzinsky's shared-memory design
+  changes; the non-shared-mutex parts are fine **if separated**). **Split
+  action (10-07)**: the named-mutex part landed as **#135321** — approved in
+  23 minutes and **MERGED `2026-10-07T20:14:53Z`** ✓✓ (created→merged ≈18.6 h,
+  net diff 2 lines); what remains here (SharedMemoryManager + tests) stays
+  parked until the design work lands. Notify comment:
+  `#issuecomment-6029025699`; the fast-lane datapoint is in the timing eval.
 - **#134670** platform identity + NUMA — **MERGED 09-26** ✓ (content reconciled
   against the fork; fork-sync playbook §4).
 - **#132866** tracking issue — no maintainer reply since our 09-14 plan update
