@@ -43,6 +43,9 @@
   同判据另有 `round3/`、`round4/`）。子窗 web 全链齐：`capacity ×4 / attached ×4 / page ×4 / load ×4 / cmd(hybrid/blazor/frame/slot) / defer(frame/load/data) / serve hybrid ×3+×3 / serve blazor ×3 / release ×1`。
 - 边界/余项：子窗 B6 导航否决未接（外部导航直载）；多子窗同槽 hybrid invoke fail-closed（产品级 N=1）；与并行 `l3-multi-subwindow` 的壳改动需一次并存合并重建；
   子窗 a11y 动作 e2e 仍平台限。
+- **样例就绪（2026-10-08，B6-HYBRID-SAMPLE）**：② 的"真机样例缺"已闭环——产品化为 ow `test/hello-maui-hybrid`（分支 `sample/hybrid-subwindow` @ `09d244b`，自 `ca94b55`；
+  `openweb`/`openblazor`/B6 deny·ok·veto 全自动探针 + JIT/AOT publish 脚本；`test/hello-maui-app` 默认行为不变）；JIT 真机复证与余项见
+  `2026-10-08-ohos-hybrid-sample.md`。
 
 ## 提交 / 文档
 
