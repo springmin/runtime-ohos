@@ -40,6 +40,6 @@ sh scripts/device-round.sh --kit assets/device-test-kit.tar.gz --suite --out ./r
 
 - 源件：kit/预签/解释器/AOT/Crossgen2 逐件 sha256 与 release sidecar 一致；#48–#52 聚合包保留未动；打包/发布后 31/31、解包复跑
   31/31、外层 sidecar OK、by-id 回读一致；dtk release body 追加 1 行（148→149，仅追加，前缀逐字节一致）。
-- 本页提交：runtime-ohos `feature/openharmony`（docs-only；`commit-paths.sh` 限路径；Git Data API 旁路）；本页为初版记录，README 索引未改动。
+- 本页提交：runtime-ohos `feature/openharmony`（docs-only；`commit-paths.sh` 限路径；直推 OK `5dc92e7…→6e03a6b…`，未触发旁路）；README 索引未改动。
 - 不确定项：① Crossgen2 nupkg 未内置（43,792,647 / `6bb8a375…`，folder-feed 见引用文件）；② 预签仅 tester UDID 直装；③ 包内 docs 为 kit #53 波次快照（sha 绑定 `SHA256SUMS`）；
   ④ 40min soak / 容量 255 为交付方 2in1 debug 观测（测试方抽样/carry）；⑤ a11y selfcheck 修复与 B6 否决的真机证据引用两卡归档（A11Y-SELFCHECK / B6-MODES），测试方按包内判定点复核；⑥ 子窗 hybrid/Blazor 资产桥真机未验（明示降级项）。
