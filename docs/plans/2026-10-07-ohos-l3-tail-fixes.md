@@ -38,7 +38,7 @@
   （页内 + 状态标签截图），managed `[maui] hybrid invoke (child window 0 slot 1): Echo`（窗 0）与 `(child window 1 slot 1): Echo`（窗 1，N=2 窗口位路由）、
   `child hybrid 1/2 raw: child-hybrid-raw-1..3`（`__hwvSendMessage` -> RawMessageReceived）；子 Blazor 回读
   `{"app":"BlazorWebView component…count: 0","dispatch":"function","blazor":"object"}` + `child blazor N: mounted (…)` 标签截图；0 fault/crash。
-  边界：页面 parse 期首个 raw 无回执（壳按当前文档 URL 生成信封），加载后（2/4/6 s）发送均达（204 + RawMessageReceived）。
+  边界：页面 parse 期首个 raw 无回执（壳按当前文档 URL 生成信封），加载后（2/4/6 s）发送均达（204 + RawMessageReceived）；09:33 复核轮在空闲锁下复现同组判据（slot=0/1、CH1-echo、raw-1..3、child window 1 路由）。
 - 边界/余项：子窗 B6 导航否决未接（外部导航直载）；多子窗同槽 hybrid invoke fail-closed（产品级 N=1）；与并行 `l3-multi-subwindow` 的壳改动需一次并存合并重建；
   子窗 a11y 动作 e2e 仍平台限。
 
