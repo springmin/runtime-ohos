@@ -26,13 +26,13 @@
 | 17 | §7 #1 启动崩溃 / #4 解释器 | 已闭合 | 09-24 里程碑 + kit #30/#31；rc2b 首帧 + SOAK2（§1f） |
 | 18 | §7 #2 ship-the-slice | 部分（上游） | `ohos-slice-1.0.1` 源包 + `UseOpenHarmony` 可发现性；上游平台矩阵未并入 |
 | 19 | #45–#53/POST-L3 多窗 + SEC7-A | 已实现（降级见下） | L3 各文；`OpenHarmonyWebViewHandler.cs:895`；`OpenHarmonyMauiAppHost.cs:56`；`SUB_WINDOW_MAX`（Index.ets:773） |
-| 20 | PREPROBE-SWEEP（export=False 收尾） | 未并主线（分支就绪） | maui `f8ef3c89b4`（4 文件）；根因 `2026-10-08-ohos-a11y-export-rootcause.md` |
+| 20 | PREPROBE-SWEEP（export=False 收尾） | **已并主线**（2026-10-08；见 `-preprobe-merge.md`） | maui `619c40a483`（merge `f8ef3c89b4`，4 文件）；根因 `2026-10-08-ohos-a11y-export-rootcause.md`；切片源码 pin 入套件（738/741 floor 721） |
 
 ## 2. 分类：可本地实现 vs 平台阻塞
 
 **可本地实现（文件面 + 粗估）**
 
-- L1 预探针收尾：并入 `f8ef3c89b4`（`OpenHarmony{Accessibility,Screenshot,ShellExtras,WindowHandler}.cs` 4 文件）+ ow 套件"切片无简单 `NativeLibrary`"源码 pin（S；分支已绿，无依赖）。修 kit#53 件真实设备降级：截图能力位、窗口 chrome/flyout 文本、announce 文本。
+- L1 预探针收尾：**已完成**（2026-10-08 并入主线 `619c40a483` + 套件源码 pin，见 `-preprobe-merge.md`）——`f8ef3c89b4`（`OpenHarmony{Accessibility,Screenshot,ShellExtras,WindowHandler}.cs` 4 文件）+ ow 套件"切片无简单 `NativeLibrary`"源码 pin（+1，738/741 floor 721；S；无依赖）。修 kit#53 件真实设备降级：截图能力位、窗口 chrome/flyout 文本、announce 文本。
 - L2 WebAuthenticator 真流程：`OpenHarmonyWebAuthenticator.cs`（订阅 `OpenHarmonyBridge.Activation`，浏览器 hand-off 复用 Launcher，回调清洗→`WebAuthenticatorResult`）+ `OpenHarmonyGenerateModuleJson.cs` 增 callback-scheme 注入 + 套件 pin（M；activation/manifest 两半通道均已存在）。
 - L3 `loadData` 裸 `#` 缓解（C5）：壳 `webSlotPayload`→`loadData`（Index.ets:3865/4166、SubWindow.ets:1009）；候选 = 编码或 `onInterceptRequest` 直供（S–M；需设备 A/B）。
 - L4 SEC7-F ask 限速（SubWindow.ets；S）· L5 SEC-5c E/F（pinch 有限性 / 子窗 a11y 帧边界；S）。
@@ -59,7 +59,7 @@
 
 ## 4. 结论
 
-- 值得做且可做：**有** —— #1（分支就绪）、#2（矩阵唯一真实功能缺口；activation 事件与 manifest 注入点都在）、#3（平台共性缓解）；#4–#6 为小加固/文档，测试侧见 §3。
+- 值得做且可做：**有** —— #1（2026-10-08 已并主线 + pin，见 `-preprobe-merge.md`）、#2（矩阵唯一真实功能缺口；activation 事件与 manifest 注入点都在）、#3（平台共性缓解）；#4–#6 为小加固/文档，测试侧见 §3。
 - 移植完成度 **≈98%**：20 项复核 14 已实现/闭合 · 4 部分 · 1 平台 · 1 待并；唯一可本地补的功能缺口 = WebAuthenticator 真流程；其余为平台阻塞/上游/测试侧。与 FINAL-VERDICT"本机可执行=0"的差异 = 该终审未含 sweep 分支与 callback-scheme 细分。
 
 > 提交：本文件 + `README.md` 索引 → runtime `feature/openharmony`（`commit-paths.sh` 限路径；直推，被拒 fetch/rebase + 旁路钉 `140.82.112.3`，不 force）。不确定项：无设备（#2/#3 待 tester）；w2b-int/w2b-t3t5 保留分支抽查为已被主线 T3/T4/T5/T10 覆盖（ZIndex/Clip/InputTransparent/Anchor 见 `OpenHarmonyWindowRenderer.cs:619-840`），建议留守待下次卫生复核。
