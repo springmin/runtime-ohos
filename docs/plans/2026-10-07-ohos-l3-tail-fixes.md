@@ -39,6 +39,8 @@
   `child hybrid 1/2 raw: child-hybrid-raw-1..3`（`__hwvSendMessage` -> RawMessageReceived）；子 Blazor 回读
   `{"app":"BlazorWebView component…count: 0","dispatch":"function","blazor":"object"}` + `child blazor N: mounted (…)` 标签截图；0 fault/crash。
   边界：页面 parse 期首个 raw 无回执（壳按当前文档 URL 生成信封），加载后（2/4/6 s）发送均达（204 + RawMessageReceived）；09:33 复核轮在空闲锁下复现同组判据（slot=0/1、CH1-echo、raw-1..3、child window 1 路由）。
+- 证据留档（scratch，不落库）：`/data/storage/el2/base/tmp/opencode/hybrid-dev/round5/`（hybrid hap 签名/安装成功、`live.raw`/`mirror.raw`、`01-child2-top.jpeg`/`02-child1-hybrid.jpeg`；
+  同判据另有 `round3/`、`round4/`）。子窗 web 全链齐：`capacity ×4 / attached ×4 / page ×4 / load ×4 / cmd(hybrid/blazor/frame/slot) / defer(frame/load/data) / serve hybrid ×3+×3 / serve blazor ×3 / release ×1`。
 - 边界/余项：子窗 B6 导航否决未接（外部导航直载）；多子窗同槽 hybrid invoke fail-closed（产品级 N=1）；与并行 `l3-multi-subwindow` 的壳改动需一次并存合并重建；
   子窗 a11y 动作 e2e 仍平台限。
 
@@ -46,6 +48,6 @@
 
 - ow `l3/a11y-cleanup` `76f4eb5`+`19e8cb7`；ow `l3/web-assets` `fc186bf`；maui `l3/a11y-cleanup` `70b279548a`、`l3/web-assets` `4b9598d9f3`（普通提交，无强推）。
 - 本页 → runtime `feature/openharmony`（`commit-paths.sh` 限定本文件；fetch/rebase 被拒，旁路未推）。并行 `l3-multi-subwindow` 的未提交 README/计划稿未触碰。
-- 真机轮（2026-10-08）：样例 `test/hello-maui-app/App.cs` + `test/hello-maui-app/wwwroot/child-hybrid.html`（ow 工作树，未提交；主线产品代码零改动、无缺陷）；
+- 真机轮（2026-10-08）：样例 `test/hello-maui-app/App.cs` + `test/hello-maui-app/wwwroot/child-hybrid.html`（ow 工作树，未提交；主线产品代码零改动、无缺陷，**无需改码**——未开 `l3/web-hybrid-device`）；
   本页真机节即本次 runtime 提交（`commit-paths.sh` 限定本文件）。
 - 不确定：离线红控 run 不含真机；真机轮（② 节）覆盖 JIT + N=2 同进程，AOT 路由未在本次真机轮覆盖；窗 1 hybrid 的页内 invoke 回读未单独截屏（以 managed 路由行/raw 行为证）。
