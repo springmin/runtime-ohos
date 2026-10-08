@@ -10,6 +10,7 @@ Fork-only helpers (not part of upstream dotnet/runtime). Run them from the repos
 | `ohos-runtime-clrinterpreter-overlay.sh` | Overlay an interpreter build into a runtime pack/layout so `DOTNET_InterpMode=3` can load it. |
 | `ohos-runtime-interp-fullbuild.sh` | Full feature-enabled CoreCLR + libraries build, packed as the interpreter payload. |
 | `ohos-conventions-scan.sh` | Scan the added lines of OHOS PR branches for fork-convention violations (`COMPlus_`, pragma/NoWarn, fork-local paths, tabs, TFMs, ...). |
+| `commit-paths.sh` | Path-limited commit guard for shared checkouts: stage/commit only the listed paths, abort when another agent staged work, fixed author (ported from ohos-workload). |
 
 Rescued scratch tools and the 2026-10-03 inventory live in
 [`docs/plans/2026-10-03-ohos-scratch-script-rescue.md`](../docs/plans/2026-10-03-ohos-scratch-script-rescue.md).
