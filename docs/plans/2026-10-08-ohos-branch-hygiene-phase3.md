@@ -1,6 +1,6 @@
 # OpenHarmony 分支卫生 phase-3（2026-10-08）
 
-> 范围：ow（`ohos-workload`）/ maui（`maui-ohos`）本地 l2/l3 分支 + 陈旧 worktree（`reg-kit49..52` 各仓实测）；**远端零删除**（未执行任何 fetch/push/远端删除）；KIT53 并行资产（`reg-kit53/`）与 #49–#53 资产零触碰。
+> 范围：ow（`ohos-workload`）/ maui（`maui-ohos`）本地 l2/l3 分支 + 陈旧 worktree（`reg-kit49..52` 各仓实测）；**远端零删除**（清障全程未做远端删除、未 fetch/rebase；仅本文档提交按旁路直推 FF）；KIT53 并行资产（`reg-kit53/`）与 #49–#53 资产零触碰。
 > 主线口径：ow=`master` `7259a0f` · maui=`feature/openharmony` `caa463434b`（两条工作主线）。
 > 复核方法：`git merge-base --is-ancestor <b> <主线>` 或 `git cherry <主线> <b>` 全 `-`（patch-id 内容等价 = replay 前件）；删除前逐支二次复核；worktree 先 `status --porcelain` 空，再 `git worktree remove`（无 `--force`，逐条 rc=0），随后 `git worktree prune -v`。
 
@@ -29,4 +29,5 @@
 ## 计数
 
 - 本地删除 24（ow 12 / maui 12）· worktree 删除 30（maui 11 / ow 12 / runtime 3 / sdk 4）· prune 附加 0 · 远端 0。
+- 本文档提交 `2a6d145d39e`（+ 本修正）经旁路直推 FF 至 runtime origin/feature/openharmony（未 amend/未 force）。
 - 明细日志（scratch，未入库）：`hygiene-phase3/{wt-before.txt,remove-*.log,delete-branches-*.log}`。
