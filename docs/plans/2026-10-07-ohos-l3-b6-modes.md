@@ -43,5 +43,7 @@
 
 - ow `l3/b6-nav-veto` `d25c0eb`（壳+abc+套件+样例探针+README）；maui `l3/b6-nav-veto` `b64c477f8e`；本文件 → runtime-ohos
   `feature/openharmony`（`commit-paths.sh` 限定路径）。均未并主线、未强推。
+- **并入（2026-10-08，POST-L3-CONSOLIDATE）**：本卡并入主线（ow `96267f2`、maui `caa463434b`）；合并树套件 **737/740 floor 720**
+  （`b6c` 5 条在案）、ui abc **542,936/`f18f0855…`** 四包一致、导出 164/164；见 `-l3-post-consolidate.md`。
 - 不确定：子窗 fps/status 镜像窗限制（sub-2 与 managed 行）；`//host` 设备点击被桌面控制台抢占；selfcheck nodes=0
   为已知首发布时机；单设备 2in1 debug 域结论不外推。

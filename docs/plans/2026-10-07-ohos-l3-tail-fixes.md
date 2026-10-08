@@ -50,4 +50,6 @@
 - 本页 → runtime `feature/openharmony`（`commit-paths.sh` 限定本文件；fetch/rebase 被拒，旁路未推）。并行 `l3-multi-subwindow` 的未提交 README/计划稿未触碰。
 - 真机轮（2026-10-08）：样例 `test/hello-maui-app/App.cs` + `test/hello-maui-app/wwwroot/child-hybrid.html`（ow 工作树，未提交；主线产品代码零改动、无缺陷，**无需改码**——未开 `l3/web-hybrid-device`）；
   本页真机节即本次 runtime 提交（`commit-paths.sh` 限定本文件）。
+  **清尾（POST-L3-CONSOLIDATE，2026-10-08）**：两个未提交样例已移至 scratch `/data/storage/el2/base/tmp/opencode/hybrid-dev/sample/`
+  （含 `App.cs.uncommitted.diff` 与 README）后合并；B6 分支随后在主线 `App.cs` 上加了导航探针（`c9413a2`），复原混合样例需手工取舍；见 `-l3-post-consolidate.md`。
 - 不确定：离线红控 run 不含真机；真机轮（② 节）覆盖 JIT + N=2 同进程，AOT 路由未在本次真机轮覆盖；窗 1 hybrid 的页内 invoke 回读未单独截屏（以 managed 路由行/raw 行为证）。

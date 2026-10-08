@@ -127,3 +127,9 @@
 > （ui abc **534,192/`e6516424…`** + host **367,520/`ad7ab986…`** + provenance）、套件 **731/734 floor 714**、
 > 导出 **164/164**、preflight 全绿；真机轻量 N=2 复核通过（引用 M4 40min 数据）；三 workflow pin `277967cc56`、
 > CI 5/5；**#52 待切**；见 `2026-10-07-ohos-l3-consolidate-final.md`。
+>
+> **L3 尾项收官（2026-10-08，POST-L3-CONSOLIDATE）**：KIT52 降级单中的 a11y selfcheck 首发布时机（`l3/a11y-selfcheck`）与
+> 子窗 B6 导航否决（`l3/b6-nav-veto`）两卡并入主线（ow `11972de`/`96267f2`、maui `4910d470db`/`caa463434b`；唯一冲突 = 套件
+> total 行，解析 740）；合并树重编 ui abc **542,936/`f18f0855…`** + `--install-packs`（.22/.23/.24/.28 + 本机）、verify-kit 重锚
+> 542936；门禁套件 **737/740 floor 720**、导出 **164/164**、pixel PASS、preflight OK；三 workflow pin `caa463434b`、CI 5/5；
+> **#53 切包待定**；见 `-l3-post-consolidate.md`。
