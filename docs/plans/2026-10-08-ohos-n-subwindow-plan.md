@@ -104,3 +104,7 @@
 - 未决/边界：env 对壳的可见性未单独隔离（rawfile 已覆盖该路径）；WMS 计数在本机镜像不可用，窗口数由
   hilog created/closed + 截图为证；第 3 窗拒绝的逐字日志未被 status 镜像捕获（以无第 3 会话落地为准）；
   仅 2in1 debug 域（E1）；设备在轮次释放锁后由同机并发会话接管，未再触碰。
+- 批合并注：ow `feat/overlay-capacity8`（E4，未并）与本支在 abc/套件/`verify-kit` EXPECT 同点变化
+  （E4 为 abc 548,192、套件 739/742；本支 545,728、739/742）→ 两条合并后按“**批合并一次重锚**”处理
+  （重建 abc + 一次套件计数/EXPECT 对账），勿各自重复重锚。另：`preflight --quick` 的
+  `selftest-ridgraph` T5 3 项在未改动的 `3ecec5c` worktree 上同样失败（继承的夹具/环境问题，非本支回归）。
