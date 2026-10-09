@@ -86,8 +86,11 @@
     `CHILD-WEB-4`）；定向关 sub-4 → 重开 `sub-4 gen=5`；RSS 曲线 **0/1/2/3(web)/4(web) =
     326/335/338/347/356 MB**，render 3→4→5（+4 ≈300 MB）；10 min 短稳 10 采样 app 303→245 MB（GC
     收敛、无单调增长）、线程 73–75、pid 恒定、**0 新 fault**。
-  - env-only 轮受冷启动激活重放干扰（重放先于 `max=4`，两侧惰性读定格 2）→ env 记为“投递可见 + 托管侧
-    确由 env 抬升”（4 轮 maui 依赖 env 放行 sub-3/4）；壳侧可靠抬升路径是 rawfile。
+  - env-only 轮受冷启动激活重放干扰（重放先于 `max=4`）；壳侧可靠抬升 = rawfile（4 轮中 maui 上限确由 env
+    抬升）。**phase2 复跑（重装后）**：boot 无残留、深链 1:1 送达（seq2 max/4、seq3/4 open、seq5/6 openweb、
+    seq7 close `remaining=3`、seq8+前台重试重开 `sub-4 gen=5`）、RSS 255→265→264→276→283→308 MB；原
+    “深链未达”= 取证误报（grep 漏 `activation cold seq=` + 抓取早于创建），非回归；真坑 = 主窗 suspend 时
+    create 被 `skipped: the main window is suspended` 丢弃且不重试（长间隙复现，前台重发成功）→ M2 项。
 - 默认建议：**默认维持 2**；3–4 窗应用显式 `OHOS_SUBWINDOW_MAX=4`（env）+ 壳 rawfile（或改包）；5–8 上限保留（未验）。依据：4 窗（2 web）app RSS ≈356 MB、render 5 ≈300 MB、10 min 无增长；每 web 子窗 ≈1 render + ~40–65 MB。
 - 未决/边界：env 对壳的可见性未单独隔离（rawfile 已覆盖该路径）；WMS 计数在本机镜像不可用（窗口数由 hilog created/closed + 截图为证）；第 3 窗拒绝逐字日志未被 status 镜像捕获（以无第 3 会话落地为准）；仅 2in1 debug 域（E1）；设备在我方 08:16 释放锁后由同机并发会话接管，未再触碰。
 
