@@ -13,7 +13,7 @@
   `isAppNavigation` 放行 + 响应构造，改变导航事件 URL 语义、扩大信任面；相对 A 无可观测收益。
 - 门禁：`--check-sources` 增 L3 契约（helper + 主/子两路 wiring；红控 = 去 helper / 回退裸 payload → 拒并命名）；
   套件 `l3-loaddata-encode` 四包 pin。
-- 真机 A/B（同 JIT 探针 HAP 仅换壳）：新壳（550,304）主 `p='tag#value'`/`color='rgb(51, 102, 255)'`、子
+- 真机 A/B（同 JIT 探针 HAP 仅换壳；轮 C = 状态路径补偿复测）：新壳（550,304）主 `p='tag#value'`/`color='rgb(51, 102, 255)'`、子
   `p='tag#value'`/`tap='CHILD HASH OK 1'` 完整；旧壳（E4 548,192）主 `p='NO-P'`/`color='NO-H'`、子无 eval 行，
   两窗 `web page` 原文均 `background:#101820%22%3E…`（裸 `#` 后整段片段化/编码化）。无 `#` 回归：主
   `p='plain value'`/`rgb(51, 102, 255)`、子 `CHILD-WEB-1`/`CHILD WEB TAP 1`。
