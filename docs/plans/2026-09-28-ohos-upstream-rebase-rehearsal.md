@@ -1,5 +1,58 @@
 # 上游 rebase 预演：pr/* 与 rehearse2/*（2026-09-28）
 
+## 2026-10-09 复演刷新（C3 预演，+218 提交）
+
+> **上游 tip**：runtime `14e8bce614e`（2026-10-08，"Add support for WASM in Disassembler" #135324；较本页
+> 09-28 基线 `caf6b2a2243` **+218 commit / 1630 文件**（+84148/−51643），较 10-04 复演 tip `cfe8a6c4600` +70）、
+> sdk `bdf6a59a37`（2026-10-09；较 10-04 `590b0970fe` +73）、aspnetcore `91fbd2bdcf`（2026-10-09；较 10-04
+> `dc8b384c43` +27）。
+> **方法（只读）**：改用隔离 `--shared` clone（主仓零写入；scratch 内先设 `user.name/email`——首遍因缺失被
+> 判伪 CONFLICT，已整体重跑）；merge-tree 全量 **40 ref**（22 `pr/*`＋18 `rehearse2/*`，首次纳入新支
+> `named-mutex`）；按落地顺序在临时分支上 `rebase --onto`（flat 支剥旧 infra 前缀 `cece42439a1`）＋ `-U0`
+> patch-id 对照；对两处新冲突额外做了**手动分辨率重演**（见下）。原分支/远端零改动、未推送、未发评论。
+
+### runtime（22 pr 支）
+
+- **merge-tree：34/40 CLEAN；6 CONFLICT**——全部集中在 **libs-tfm 家族**（活支：`libs-tfm`、`console`、
+  `shims-tfm-cleanup`；陈旧 rehearse2 同三支），冲突点均为 `src/libraries/Directory.Build.props`。
+- **rebase：16 支 CLEAN-SAME ＋ 1 支 EMPTY ＋ 2 支 CLEAN-DIFF ＋ 3 支 CONFLICT**：
+  - **`infra` CLEAN-SAME**（预演 tip `dce1e6a46bd`）——#132953 对本 tip 仍零冲突、逐位保持；其余 15 支
+    CLEAN-SAME（预演 tip）：`clrfeatures` `c3ed402e3d3`、`pal` `fff3793bacd`、`zstd` `69cb70992e9`、
+    `libs-native` `05d60466a2d`、`apphost` `b9982b308a7`、`tryrun` `f48bbbd2f54`、`pal-process` `059cf5aed91`、
+    `ifaddrs` `46342f6ebe0`、`wx-default` `23cbf569019`、`crossgen-corelib` `93285a8ddf2`、`aot-unix` `9564838b040`、
+    `aot-singleentry` `6fc984e2f9b`、`packs` `9aad8e71ecf`、`console` `2a9d4455cef`、`illink-ntlm` `f100da3de55`。
+  - **`libs-tfm`（N15）CONFLICT（新）⚠️**：上游 #134813（wasi R2R，`fa693c42fb6`）与 N15 在同一插入锚点
+    （`<Import Project="..\..\Directory.Build.props" />` 之后）各自新增块 → **机械冲突，两者可共存**；
+    手动重演验证：**删冲突标记、保双方即可**（解析后 tip `610cab89d51`；与原件唯一差异 = 空行归属，内容等价）。
+  - **`shims-tfm-cleanup`（C2）CONFLICT（新）⚠️**：首提交 `01667c2c6d5` ＝ N15 旧版（仅 1 行条件差异：
+    `TargetOS=='openharmony'` vs 修订后 `TargetsOpenHarmony=='true'`）→ 按既定策略**落时丢弃首提交**；
+    第二提交 `1157f1daf5c` 落在已解析 N15 上时，`shims/Directory.Build.props` 需**合并**（取新注释＋`SfxTfm`＋
+    修订条件）；手动重演验证 tip `af4cd04b5d2`（6 文件，+26/−3）。
+  - `tls-flag-cleanup` CONFLICT（`eng/native/configurecompiler.cmake`）——**既定丢弃**，同 10-04。
+  - `platform-numa` **EMPTY**（#134670 已上游）——丢弃确认。
+  - `named-mutex`（新支）：重演净 diff **为空**（#135321 已上游化）——**可直接弃用/留档**。
+  - `sandbox-fixes`：rebase 成功但内容自动去重（`NamedMutex.Unix.cs` +4/−1 → +2：条件部分已随 #135321
+    上游，仅余注释行）——**#132827 复活时以重演后形态为准**。
+- **与 10-04 对比：唯一新增 = N15/C2 两处机械冲突**（均由 #134813 引入），其余 19 支状态不变；**0 支需重做**。
+
+### sdk / aspnetcore
+
+- **sdk**：`pr/ohos-sdk-rids`、`pr/ohos-sdk-sandbox` merge-tree CLEAN → rebase **CLEAN-SAME**
+  （预演 tip `c3dbf80da7` / `b92fce334a`）。
+- **aspnetcore**：`pr/ohos-aspnet-rids` merge-tree **CONFLICT** → rebase **CONFLICT** ⚠️——上游 #69631
+  （`121024a14a`，10-07，"…explicit references and CPM"）**删除了 `eng/Dependencies.props`**，本支仍修改它
+  （modify/delete 硬冲突）。修复方向：该 4 行迁至 `Directory.Packages.props` 的 `_RuntimePackageVersion`
+  列表；其余 4 文件可自动合并。**属 aspnet 线跟进项，不在 C3 范围**。
+
+### 证据与备注
+
+- scratch：`/data/storage/el2/base/tmp/opencode/up-rehearse-1009/`（`mergetree.tsv`、`rebase-results.tsv`、
+  `sdk-results.tsv`、`sdk-rebase2.tsv`、`aspnet-results.tsv`、`aspnet-rebase2.tsv`、`logs/`）；隔离 clone
+  （`rt/`、`sdk-rt/`、`aspnet-rt/`）用后删除。
+- 方法修正：scratch clone 必须设 `user.name/email`，否则 rebase 建提交失败被误判为 CONFLICT（首遍已作废重跑）。
+- C3 含义：`infra` 及 15 支 N 支可直接按序重锚；**N15/C2 落时按上述已验证分辨率各解 1 处**（配方在案）；
+  `platform-numa`/`named-mutex`/`tls-flag-cleanup` 弃用确认；sdk 两支持续干净；aspnet 单独立项跟进。
+
 ## 2026-10-04 复演刷新（RC2-UPSTREAM，重试轮）
 
 > 三仓 `git fetch upstream main`（网络重试）后，按 09-28 只读法重跑 merge-tree + scratch-worktree rebase。
