@@ -16,7 +16,7 @@
 | # | 事项 | 依据 | 建议 |
 |---|---|---|---|
 | A1 | **拆分 `#132827`** ✅ **已完成并已合并（10-07）** | jkotas 09-25："The changes in this PR that are **not related to shared mutexes are fine — happy to merge them if they are separated**." | **dotnet/runtime#135321 已 MERGED ✓✓**（`2026-10-07T20:14:53Z` ✗；jkotas 复批后即合 ✗；**从创建到合并 ~18.6 小时** ✗✓；净 diff 2 行 ✗）。拆分时修正：`MutexTests.cs` 的 hunk 实为 **shared-memory 目录**（`GlobalSharedMemoryDirectory` ✗）→ **留在 #132827** ✓；#132827 现在只含 SharedMemoryManager + 测试，保持挂起 ✓（等 B1 设计 ✓）。告知评论 ✓（`#issuecomment-6029025699`）——**A1 完整闭环 ✓✓** |
-| A2 | `#132953` 的复看推进：若 10-09/10-10 仍静默 → **请第二 reviewer**（分析见 §5） | **与其"新设计"无内容依赖**（11 文件全为 infra/RID 图 ✗）→ 可由其他维护者独立签核 ✓ | 备选：@jkotas（已批准）或 BuildArea 其他维护者 ⏳ |
+| A2 | `#132953` 的复看推进 | **与其"新设计"无内容依赖**（11 文件全为 infra/RID 图 ✗）→ 可由其他维护者独立签核 ✓ | **已执行（10-09 06:01Z）** ✓：请 @jkotas 复核或路由（`#issuecomment-6075280388` ✗）——等回复 ⏳ |
 | A3 | `#132827` 合并冲突 | akoeplinger 09-24 提示；head `4c3b303419`（09-26 04:10 推送）已修，**本地 merge-tree 与 upstream/main CLEAN** ✓ | 已闭环 ✓，无需动作 |
 
 ## 3. 已闭环（复核确认 ✓）

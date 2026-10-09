@@ -190,7 +190,9 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   (2026-10-01 17:58:49Z; previously with @am11) — awaiting that re-review;
   **nudge posted 2026-10-06T23:46Z / 10-07 07:46 CST**
   (`#issuecomment-6027594520`) after 5.6 quiet days (the first full PT
-  workday produced no movement); then C3.
+  workday produced no movement); **A2 second-reviewer ask posted 2026-10-09
+  06:01Z** (`#issuecomment-6075280388`) — asked @jkotas to re-review or route,
+  since the PR is independent of the shared-memory design; then C3.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**; later
   labeled `blocked` (jkotas: waiting on jkoritzinsky's shared-memory design
   changes; the non-shared-mutex parts are fine **if separated**). **Split
