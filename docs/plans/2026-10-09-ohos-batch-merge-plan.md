@@ -1,4 +1,5 @@
 # BATCH-MERGE-PLAN：E4 · L3L4 · WebAuth · L5 · L7 批合并执行单（2026-10-09，只读草稿）
+> 执行结果（2026-10-09）：已按本单执行（含 webauth 与默认 8 翻转）；合并 SHA、冲突裁决、新 abc（552,876/24,324）、套件 756/759 floor 739、pin/CI 见 `2026-10-09-ohos-batch-consolidate.md`。
 > 口径（2026-10-09 实测）：ow = `ohos-workload` master `3ecec5c`（`tooling/cut-kit-2` `3773c64` 待并）· maui = `maui-ohos` feature/openharmony `619c40a483`（preprobe 已并）· runtime = 本仓 feature/openharmony `d249b42a0b9`；#49–#53 资产不动、不切 kit；本单只读。
 
 ## 1) 合并顺序（最小冲突；逐支 `--no-ff`，ow 目标 master / maui 目标 feature/openharmony）
