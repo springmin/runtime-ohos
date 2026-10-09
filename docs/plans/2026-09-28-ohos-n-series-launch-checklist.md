@@ -1,5 +1,12 @@
 # N 组 PR 批量开启清单（预生成，2026-09-28）
 
+> **现况更新（2026-10-09）**：①`#132953` **仍未合** ✗（A2-a 二次推进已发，等 jkoritzinsky/jkotas ✓）；
+> ②`upstream/main` 已前进到 `14e8bce614e`（**+218 提交** ✗）→ **前置 2 触发：必须先重演** ⚠️
+> （merge-tree 全量 + 17 支 rebase 演练，方法见 playbook §2 与本页 §2 ✓）；③`eng/common` 前提已清 ✓
+> （arcade#17608 于 09-24 合并 ✓）；④**`#135321` 已合并**（10-07 ✓）→ 去重清单中的
+> `NamedMutex.Unix.cs` **以上游为准** ✓（fork 同名 hunk 直接丢弃 ✓）；⑤C2/C3 仍等 `#132866` 答复 ✗；
+> ⑥自 2026-10-08 起**所有上游可见动作逐次报批** ✓（playbook §3 ✓）。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
