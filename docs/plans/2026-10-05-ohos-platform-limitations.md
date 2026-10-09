@@ -29,7 +29,7 @@
 | C2 | 本机镜像无系统 ICU（`libicuuc` 缺失）：JIT/解释器托管启动即 FailFast | `2026-10-03-ohos-jitfort-enable.md` §ICU · `2026-10-03-ohos-jitwave-consolidation.md`（缺失即 invariant） | 全球化 locale 行为退化为 invariant 语义 | **已缓解**：宿主探测缺失即自动 `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`；`DOTNET_OHOS_ICU` 可覆盖 |
 | C3 | `.wasm` 需显式 `application/wasm`；否则 Blazor `instantiateStreaming` 退化为 ArrayBuffer 加载 | `2026-09-28-blazor-wasm-arkweb-hosting-demo.md`（`mimeTypeOf` 映射；curl 实测含 br/gzip 协商）· `2026-09-29-ohos-arkweb-capability-matrix.md` #2 · **真机 A/B** `2026-10-05-ohos-mime-max-device.md` §1 | 首载性能/内存退化（功能可用） | **已缓解（正向真机）**：壳 `onInterceptRequest` 按扩展名直供；宿主新增 `wasm mime:`/`wasm fallback:` 探针（`pack-host.sh --bad-mime` 负控），真机取到 `-> application/wasm` + BLZ_BOOT/RENDERED、fallback=0；负控转发未闭环（见该文 §4） |
 | C4 | 单 ArkWeb 控件 / 固定槽池容量局限（历史 N=2 时第 3 控件 LRU 抢占后空白） | `2026-10-02-ohos-multi-overlay.md` · `2026-10-04-ohos-tester-handoff-kit44.md` §1.1 | 多 WebView/混合控件页的出画与交互 | **已缓解**：动态槽 MAX/HOT 默认 4/2、按需 ensure/destroy、释放即拆；3 控件并发 + 第 5 槽抢占/恢复真机闭环 |
-| C5 | ArkWeb `loadData` 实为 data: URL：正文里的裸 `#` 被截断为 fragment（body 空、`getElementById` 为 null）；主窗既有 data 路径同样如此（**平台共性**） | `2026-10-06-ohos-l2-arkweb-subwindow.md` §4（L2-b 首轮平台行为记录；未改壳语义） | 含裸 `#` 的 data 页正文不可达（子窗与主窗同） | **接受（平台共性）**：页面以 CSS 颜色函数（`rgb()`）或 `%23` 编码规避；跨 host 修复另立项 |
+| C5 | ArkWeb `loadData` 实为 data: URL：正文里的裸 `#` 被截断为 fragment（body 空、`getElementById` 为 null）；主窗既有 data 路径同样如此（**平台共性**） | `2026-10-06-ohos-l2-arkweb-subwindow.md` §4（L2-b 首轮平台行为记录；未改壳语义）；**壳侧缓解 + 真机 A/B** `2026-10-08-ohos-l3l4-harden.md` | 含裸 `#` 的 data 页正文不可达（子窗与主窗同） | **已缓解（壳侧，2026-10-08）**：主/子窗 data op 统一 `#`→`%23`（data-URL 解码回原文；新壳两窗完整、旧壳对照截断）；平台层根因 = data: URL 解析，页面侧 `rgb()`/`%23` 提示保留 |
 
 ## D. 系统 / 构建
 
