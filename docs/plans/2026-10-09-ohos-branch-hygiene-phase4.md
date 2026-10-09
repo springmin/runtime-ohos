@@ -32,5 +32,5 @@
 ## 计数
 
 - 本地删除 8（ow 5 / maui 3）· worktree 删除 17（ow 8 / maui 6 / runtime 2 / sdk 1）· prune 附加 0 · 远端 0。
-- 本文档提交按旁路直推 FF 至 runtime origin/feature/openharmony（未 amend/未 force）。
+- 本文档提交 `8579cb12201` 直推 FF OK（`71413d5→8579cb1`，本次未触发旁路；未 fetch/rebase、未 amend/未 force）；远端零删除。
 - 明细日志（scratch，未入库）：`hygiene-phase4/{remove-*.log,delete-*.log,prune.log,checkout-maui.log}`。
