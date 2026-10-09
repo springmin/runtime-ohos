@@ -9,7 +9,7 @@
 | 2 | ow E4 `30a8651` | 0 | — | 自动合并（4 包 Index.ets、verify-kit EXPECT 均无冲突） |
 | 3 | ow L3L4 `e6e4f41` | 0 | — | stack 在 E4，自动合并 |
 | 4 | webauth | 跳过 | ow/maui 均无提交：maui wt-wa 2 文件、ow 生成器+packs 均在工作区 | 按指令跳过并注明 |
-| 5 | ow L5 `95e4a68` | 1 | Program.cs:16-20 verifyCheckTotal（HEAD 744 / L5 747；注释段 +7 SEC-SCAN-5c E/F 前插） | 注释取 L5 段＋原注释；值走终值 751（744+6，见 L7） |
+| 5 | ow L5 `95e4a68` | 1 | Program.cs:16-20 verifyCheckTotal（HEAD 744 / L5 747；注释段 +7 SEC-SCAN-5c E/F 前插） | 注释取 L5 段＋原注释；值=744+6=**750**（L7 再 +1 → 终值 751） |
 | 6 | ow L7 `343fc21` | 13 | ①4×modules.ui.abc（二进制）②4×abc-provenance.json:24-42（bytes/sha256/sources）③build-arkts-shell.sh 6 块（E4 slot-capacity vs L7 subwindow-capacity gate）④selftest-build-arkts-shell.sh:454-512（E4+C5/L4 vs N 红控件）⑤verify-kit.sh 5 块（EXPECT_ABC 550304/545728）⑥selftest-verify-kit.sh 4 块（同 EXPECT）⑦Program.cs:16-20（750/742） | ①②取 ours 占位、重编后重生成；③④双向保留（三 gate＋两组红控件），调用点与共用尾部续接；⑤⑥取 ours 占位、重编后重锚（两值均非终值）；⑦终值 751 |
 | 7 | maui L5 `6f278ee99b` | 0 | — | 3 切片文件自动合并 |
 | 8 | maui L7 `8b6d4073cb` | 0 | — | OpenHarmonyMauiAppHost.cs 自动合并 |
