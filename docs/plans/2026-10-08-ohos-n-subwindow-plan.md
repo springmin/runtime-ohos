@@ -4,7 +4,8 @@
 > identity/输入/IME/a11y/overlay/child web 已按窗）+ L2CAP（平台允许 **255** 并发应用子窗，
 > 现 N=2 是产品自限）+ E4 容量开关先例（`OHOS_OVERLAY_MAX` env / `ohos-overlay-max.txt`
 > rawfile，默认 4、实测 8；结论 = 默认维持、显式开关抬升）。基线：ow `3ecec5c` ·
-> maui `619c40a483`（套件 737/740 floor 720、abc 542,936/24,324、导出 164/164、宿主 367,520）。
+> maui `619c40a483`（分支套件 738/741 floor 721；kit #53 口径 737/740、abc 542,936/24,324、
+> 导出 164/164、宿主 367,520）。
 > 成本参考：L3-M4 双窗 web 40 min soak app RSS 284–363 MB、双窗 59.9–60 fps
 > （DEVICE-ROUND-52）。**主窗零回归为硬条件**。口径：单人粗估人日（含自测/真机/文档，不含
 > 上游评审）；每 M 独立分支、不并 master、禁强推；真机按设备锁协议；#49–#53 资产不动。
@@ -48,8 +49,9 @@
 - **渲染**：每窗独立 60 fps 目标；混合负载参照 M4 双窗 59.9/60.0。多窗动画/帧统计为 M2 项。
 - **焦点/输入**：任一时刻单一 active 窗（其余 inactive）；IME 全局通道按窗互斥；点击下窗
   暴露条 → 该窗激活（提升 z）。
-- **建议阈值**（2in1 debug）：N=4 稳态 app RSS ≤ 550 MB、web 窗数 ≤ 4 时 render ≤ 4 进程；
-  短稳无单调增长、pid 恒定、0 fault。超限则默认维持 2、抬升档只作显式选择。
+- **建议阈值**（2in1 debug）：N=4 稳态 app RSS ≤ 550 MB；render 进程 = 主窗基础（样例件 3）+ 每个
+  web 子窗 1（N=4/2 web 实测 5 进程 ≈300 MB）；短稳无单调增长、pid 恒定、0 fault。超限则默认维持 2、
+  抬升档只作显式选择。
 
 ## 5. 里程碑与估算
 
@@ -76,11 +78,29 @@
 
 ## 8. M1 结果（2026-10-09）
 
-- 分支：ow `feat/n-subwindow`（从 `3ecec5c`）· maui `feat/n-subwindow`（从 `619c40a483`）；
-  均普通提交、未并 master、未强推。
-- 落地：壳四包开关（默认 2 / 上限 8 / env+rawfile）+ maui 同源 cap + 示例 `?max=N` 深链 +
-  构建资源契约 + 套件 pin + `verify-kit` 重锚；abc **545,728/`71eb1e0e…`**（+2,792）、headless
-  24,324 不变；套件 **739/742 floor 722 assert=True**（红控：容量检查硬编码 `>= 2` → `m1 shell
-  source assert=False` 并抛 M1 断言）；导出 164/164、宿主零改动。
-- 真机（HAD-W32，锁协议）：见随轮报告（默认 2 拒绝第 3 窗 / 启用 4 身份·输入·定向关·重开·
-  双 child web / RSS 曲线与短稳）。
+- 分支/提交：ow `feat/n-subwindow`（从 `3ecec5c`；`cc3ebe9` 壳+示例+资源契约、`06fddbd` 四包 abc、
+  `8d8b945` 套件、`343fc21` verify-kit）· maui `feat/n-subwindow`（从 `619c40a483`；`8b6d4073cb`
+  maui cap）；均普通提交、未并 master、未强推。
+- 离线：abc ui **545,728 / `71eb1e0e…`**（原 542,936，+2,792）、headless 24,324 不变、四包 +
+  provenance 同步；套件 **739/742 floor 722 assert=True**（新增 `m1 n-subwindow switch`；红控：
+  容量检查硬编码 `>= 2` → `m1 shell source assert=False` 并抛 M1 断言，还原复绿）；
+  `selftest-build-arkts-shell` 192/0、`selftest-verify-kit` 129/0；导出 164/164、宿主零改动。
+- 真机（HAD-W32 2in1 / API26，锁协议，JIT 件（134.7 MB）重签安装；证据 scratch `nsub/device/`）：
+  - **默认（无开关）**：2 会话（sub-1 g1 / sub-2 g2，identity 双端确认）；第 3 次 open 已投递
+    （activation seq=4）但**无第 3 会话产生**（保持 2，超限不落地，不排队）；定向关
+    `closed: surface=sub-2 remaining=1` + 重开 `sub-2 gen=3`；app RSS 314→325→332 MB。
+  - **启用 4**（rawfile=4 + `app://subwindow/max/4`）：boot 即 `[maui] subwindow capacity: 4`
+    （rawfile 路径生效）；4 会话 sub-1..sub-4 全量 created + identity 确认（gen 1–4）；输入分窗
+    active/inactive 覆盖 4 面；**双窗 child web**（sub-3/4 各自 capacity max=2 / slot create /
+    attached / 页面 `CHILD-WEB-3`、`CHILD-WEB-4`，互不串）；定向关 sub-4 → 重开 `sub-4 gen=5`；
+    RSS 曲线 **0/1/2/3(web)/4(web) = 326/335/338/347/356 MB**，render 3→4→5 进程（+4 时 ≈300 MB）；
+    10 min 短稳 10 采样 app 303→245 MB（GC 收敛、无单调增长）、线程 73–75、pid 恒定、**0 新 fault**。
+  - env-only 单独轮受冷启动激活重放干扰（重放先于 `max=4` 送达，两侧惰性读已定格 2）→ env 仅记为
+    “投递可见 + 托管侧确由 env 抬升”（4 轮中 maui 上限依赖 env 才放行 sub-3/4）；壳侧可靠抬升路径
+    是 rawfile。
+- 默认建议：**默认维持 2**；需要 3–4 的应用显式 `OHOS_SUBWINDOW_MAX=4`（env）+ 壳 rawfile（或改包）；
+  5–8 上限保留（未验）。依据：4 窗（含 2 web）app RSS ≈356 MB、render 5 ≈300 MB、10 min 无增长；
+  每 web 子窗 ≈1 render + ~40–65 MB。
+- 未决/边界：env 对壳的可见性未单独隔离（rawfile 已覆盖该路径）；WMS 计数在本机镜像不可用，窗口数由
+  hilog created/closed + 截图为证；第 3 窗拒绝的逐字日志未被 status 镜像捕获（以无第 3 会话落地为准）；
+  仅 2in1 debug 域（E1）；设备在轮次释放锁后由同机并发会话接管，未再触碰。
