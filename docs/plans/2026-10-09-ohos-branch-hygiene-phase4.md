@@ -26,7 +26,7 @@
 
 - 跳过：`nsub/ow`、`nsub/maui`（L7 在用）；`bundle-retest/ohos-workload`（脏 7，他会话）。
 - 保留（非清单）：runtime `split827/wt`（pr/ohos-named-mutex，上游 PR 本 session 不处理）· `wt-rt-subweb` · `*-rc2*` 检出；sdk 共享检出停 `feat/aotpack-rebuild`（未切换，非本阶段范围）。
-- 证据保留（scratch，均未入库、未删除）：`wt-wa/` 根 `device-round*/webauth-kit*/installed-backup`（WebAuth SECRET1/2 真机串）· `smoke-cut-kit/SMOKE-REPORT.md`+`logs/`（kit #54 演练，报告注明 kept for reuse）· `hap-final15/` 根 logs/out/raw（kit53）· `reg-kit53/` 根 gates 日志 · `l8-probe/`、`hybrid-sample/` 根证据。
+- 证据保留（scratch，均未入库、未删除）：`wt-wa/` 根 `device-round*/webauth-kit*/installed-backup`（WebAuth SECRET1/2 真机串）· `smoke-cut-kit/SMOKE-REPORT.md`+`logs/`（kit #54 演练，报告注明 kept for reuse）· `hap-final15/` 根 logs/out/raw（kit53）· `reg-kit53/` 根 gates 日志 · `l8-probe/`、`hybrid-sample/` 根证据 · `e4-fix/`、`l3l4/`、`sec5c-ef/`、`preprobe-merge/` 根构建/真机日志。
 - 非范围：CDGSS `hap-final15/wt`（另仓 clean worktree）保留未动。
 
 ## 计数
