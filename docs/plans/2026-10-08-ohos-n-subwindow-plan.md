@@ -53,6 +53,12 @@
 | M3 | 8 上限候选（内存曲线/阈值、降档策略、文档 + kit 收口） | 5–8 |
 | 合计 | | **13–21（≈3–4 周）** |
 
+> **L8-POPUP 前置（2026-10-09，已落地待并）**：`window.open` 弹窗子窗已并入本计划的**同一会话表与
+> 容量**（键 `web:N`、`kind=popup`；共享 `SUB_WINDOW_DEFAULT_MAX`/`OHOS_SUBWINDOW_MAX`/rawfile 开关，
+> 不立第二上限），不接 managed 身份握手/child web/a11y provider，不计入 managed 状态/关闭 wire；
+> 实现/测试/真机证据见 `2026-10-09-ohos-l8-popup.md`。**M2 的范围据此把「弹窗与 managed 子窗混合」
+> 纳入并发闭环**（弹窗只参与容量/前台链）；M1 未决项（env 对壳可见性、WMS 计数）不因本项改变。
+
 ## 6. 风险
 
 | 风险 | 影响 | 缓解 |
