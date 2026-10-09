@@ -16,7 +16,7 @@
 ## 3) 默认 8 翻转 + abc/EXPECT（一次重编）
 
 - 翻转：`src/Microsoft.OpenHarmony.Hosting/OpenHarmonyOverlays.cs` `DefaultMaxOverlays` 4→8；四包 `WEB_SLOT_DEFAULT_MAX` 4→8（`OHOS_OVERLAY_MAX`/`ohos-overlay-max.txt` 仍可下调；`build-arkts-shell.sh` gate 字面与套件 pin 随动）。
-- 重编一次：ui **552,876 / `94f4e1f3…`**（原 550,304）、headless **24,324 / `798b2477…`**（不变）；`--install-packs`（.22/.23/.24）＋ .28 同步；`EXPECT_ABC=552876,24324`；`selftest-verify-kit` **129/0**。
+- 重编一次：ui **552,876 / `94f4e1f3…`**（原 550,304）、headless **24,324 / `798b2477…`**（不变）；`--install-packs`（.22/.23/.24）＋ .28 同步；`EXPECT_ABC=552876,24324`；`selftest-verify-kit` **129/0**；hosting DLL `7ff748da…`（默认 8）同步 .28 Ref/Runtime 四路径 ＋ 本机 `~/.dotnet`(+rc2-fix) 8 路径。
 - 套件 pin 随动：multi-ovl 池 drill 取 0–7＋溢出（`s8` 越界、`s7` 有效边界）。
 
 ## 4) 门禁（合并树）
