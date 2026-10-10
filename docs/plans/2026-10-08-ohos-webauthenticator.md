@@ -25,6 +25,7 @@
 
 ## 5) 余项 / 不确定
 
-- 真实端点一跳未做（无公网），回跳用显式 `aa start` 模拟；**隐式 skill 投递**（真浏览器跳 `myapp://`）未测。
+- 真实端点一跳未做（无公网），回跳用显式 `aa start` 模拟；**隐式 skill 投递**（真浏览器跳 `myapp://`）未测 →
+  2026-10-10 尝试（设备重启后 hdcd 缺失，未判定；就绪工件/边界见 [`2026-10-10-ohos-webauth-implicit.md`](2026-10-10-ohos-webauth-implicit.md)）。
 - 新 abc 未重锚 kit 侧 `verify-kit --expected-abc`/`cut-kit`（542936 默认值属 kit 资产，不切 kit）；下次切 kit 需同步。
 - probe/壳修复随 ow 分支；`WebAuthProbe.cs` 仅 `-p:WebAuthProbe=true` 编译，默认样例不受影响。
