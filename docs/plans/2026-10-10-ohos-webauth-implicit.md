@@ -1,37 +1,35 @@
-# WEBAUTH-IMPLICIT：隐式 skill 投递真机验证受阻（2026-10-10）
+# WEBAUTH-IMPLICIT：隐式 skill 投递执行轮——设备恢复，但锁屏 10106102 阻断（2026-10-10）
 
-> 口径：本 session 只做 A 组（真浏览器跳 `myapp://` 的**隐式 skill 投递**）真机验证；产品代码/分支不动、
-> #49–#53 资产不动、未取设备锁（无设备操作）。设备 HAD-W32 / OpenHarmony-7.0.0.109 / API26，
-> **~09:16 重启后 hdcd 未再启动**，本轮**未取得隐式投递判据（未判定 ≠ 投递失败）**。证据与就绪工件：
-> scratch `/data/storage/el2/base/tmp/opencode/webauth-implicit/`（`implicit.html` / `serve.mjs` / `run-implicit.sh` / `NOTES.md`）。
+> 设备已恢复（hdc `127.0.0.1:36823`，daemon 正常；stock hdc 可用）。本 session 执行 A 组隐式投递两轮，
+> **均在 `aa start` 处被锁屏拦截（10106102），判据未判定（≠ 投递失败）**；需**人工解锁**后原样重跑
+> （脚本就绪、两处已修）。产品代码/#49–#53/kit 不动；fixture 已还原、锁已释放、无残留窗口。
 
-## 1) 构造（就绪未执行）
+## 1) 执行与结果（probe hap `beb55074…` 两轮均安装成功）
 
-- a) `hdc file send implicit.html /data/local/tmp/`，再 `aa start -a ohos.want.action.viewData -U file:///…`
-  隐式选浏览器；页面 = meta refresh + JS 跳 `myapp://callback?code=SECRET-IMPLICIT&state=st-implicit`。
-- b) file:// 若被浏览器限制 → `data:text/html,…` 或设备 loopback（`bun serve.mjs 8788` → `http://127.0.0.1:8788/implicit.html`；
-  本机 `/bin` 无 busybox httpd）。
-- c) 无公网，真实 302 端点一跳不可用（兜底缺席）。
-- 判据：不经 `aa start -U` 显式投递，App 经 skill 匹配收到回调（activation 日志 + `ok state=st-implicit`）；
-  负控：未注册 scheme（`myapp-nope://`）不投递。
+- 轮 1（12:43，无解锁门）：cold start 后 `pidof` 为空；hops file/http/data/neg 全 NO-PASS。
+- 轮 2（12:57，带解锁门）：门 ×8 失败 → `BLOCKED: screen locked, app cannot start`；hops 全 blocked；
+  SUMMARY `implicit_ok=N neg_ok=N pending_lines=0 dispatch_kind0=0`；随后 fixture `f75dfc91…` 还原。
+- 证据：`…/opencode/webauth-implicit/evidence/{summary.txt,hop-log.txt,live-hilog.txt,prelock.jpeg,lockfail.jpeg}`。
 
-## 2) 阻塞链（环境，非 WebAuth 产品问题）
+## 2) 根因（已知平台限制 D6，非 WebAuth 功能问题）
 
-- **hdcd 缺失**：全量回环扫描 1024–65535 仅 4709/11434/14013/48299/49374；逐个 `hdc -t` 均
-  `[Fail][E001005] Device not found or connected`；`ps` 无 hdcd（重启前最后可用 07:28，daemon=127.0.0.1:35111）。
-- **hdc 客户端被审计拦截**：原版任何命令（含 `version`）→ `Failed to connect to socket.` +
-  `[E00C002]Execution intercepted due to inaccessibility of reporting command event.`；
-  审计要求的 `/data/hdc/hdc_huks/hdc_credential.socket` 不可达（EACCES）。
-- **hdc 服务端无法启动**：`SetUdsListen:202 bind uds addr fail! ret:-13`；O_PATH 实测 `/data/hdc/hdc_debug`、
-  `/data/hdc/hdc_huks` 均为 mode 000 root:root（父 `/data/hdc` 0711）。
-- **无提权旁路**：`/bin/{aa,bm,uitest,snapshot_display,hidumper,param,hdcd}` 均 exec 拒绝且不可读；
-  `chcon`/`setfattr`/建符号链接被拒；新编译可执行文件被 label 拒绝（`hishell_hap_data_file`）。
-- 可用旁路（同批 session 产出，已验证）：patch 同长替换 hdc 的 UDS 路径 + 两个审计参数名 →
-  `hdcp4 list targets` 正常返回（`[Empty]`），但**无 daemon 可连，`shell/install` 仍不可用**。
+- `aa start` 实测：`Error Code:10106102 ... The device screen is locked during the application launch,
+  unlock screen failed. Error cause: The current mode is developer mode, and the screen cannot be
+  unlocked automatically`（hilog `C01303/aa/AATool`）。
+- 锁屏为 **springmin 密码锁**（`prelock.jpeg`：密码输入框 + 指纹提示）；滑动/Enter/空密码点击均不可解锁
+  （`probe-unlock.jpeg` 仍为锁屏）；与 `2026-10-03-ohos-screen-interference.md` §5 一致：**须人工解锁**。
 
-## 3) 边界与替代
+## 3) 顺带修正（仅脚本，非产品代码）
 
-- 本边界属**测试链路**（重启后 hdc sandbox/credential mount 缺失），不是浏览器对自定义 scheme 的策略；
-  浏览器拦截策略由 B 组（SELinux CIL 对照）另行给出，本轮无法真机观测。
-- app-link https 路径同样依赖 hdcd，无更优可测性；hdcd 恢复后按 §1 一次性重跑即可。
-- 结论：**隐式投递未判定**；显式 `aa start -U` 证据有效但不等价（见 `2026-10-08-ohos-webauthenticator.md` §4）。
+- 浏览器隐式打点须用 `-A ohos.want.action.viewData`；`-a` 是 ability 名（缺 `-b` 时 aa 打印 usage）——
+  轮 1/2 的 viewData 实际未发出，已修 `device-round.sh`。
+- 路径计划：`file:///data/local/tmp/wa-implicit.html` → loopback `http://127.0.0.1:8789/implicit.html`
+  → `data:` 三档，逐档 fresh pending；负控 `myapp-nope://`；判据 = 不经 `aa start -U myapp://`，
+  hilog 出现 `[webauth-probe] webauth: ok code=SECRET-IMPLICIT state=st-implicit`。
+
+## 4) 重跑入口（人工解锁屏后一条命令）
+
+- `sh /data/storage/el2/base/tmp/opencode/webauth-implicit/device-round.sh`
+  （自带锁/常亮/16M hilog/解锁门/还原 fixture `f75dfc91…` + 启动/释放锁；日志 `round-consoleN.log`）。
+- 若解锁后浏览器（`com.huawei.hmos.browser`）仍不把 `myapp://` 交给系统 skill 分发，则按任务预期记录
+  **浏览器拦截边界**（截图 + hilog）；app-link https 路径同样依赖解锁后的同一流程。
