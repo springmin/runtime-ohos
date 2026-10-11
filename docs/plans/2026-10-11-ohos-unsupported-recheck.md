@@ -1,15 +1,15 @@
 # 不支持项逐条复核（UNSUPPORTED-RECHECK，2026-10-11）
 
 > 口径：只读复核（文档/提交证据；不构建、不用设备、不处理上游 PR）。主线 = ow `04d1606` · maui `54631780a3`；套件 **788/791 floor 771**、abc **602,744/`d32981e6…`**/24,324、导出 **164/164**（#54 预刷；kit 未切，发布件仍 #53）。
-> 输入：`2026-10-05-ohos-platform-limitations.md`（A–E）· `2026-09-22-ohos-maui-coverage-matrix.md` · `2026-10-10-ohos-maui-remaining-audit.md` · `2026-10-03-ohos-state-of-the-port.md` · 各 handoff 降级/人工卡。分类 = **翻案** / **部分** / **仍不支持·接受（含维持）** / **测试侧** / **外部** / **并行中**。
+> 输入：`2026-10-05-ohos-platform-limitations.md`（A–E）· `2026-09-22-ohos-maui-coverage-matrix.md` · `2026-10-10-ohos-maui-remaining-audit.md` · `2026-10-03-ohos-state-of-the-port.md` · 各 handoff 降级/人工卡。分类 = **翻案** / **部分** / **仍不支持·接受（含维持）** / **测试侧** / **外部** / **并行中**（原并行中 1 项由 `2026-10-11-ohos-media-micro-boundaries.md` 落档为翻案）。
 
-## 1. 逐条现态（去重 32 条 = 翻案 13 · 部分 6 · 仍不支持/接受 7 · 测试侧 1 · 外部 4 · 并行中 1）
+## 1. 逐条现态（去重 32 条 = 翻案 14 · 部分 6 · 仍不支持/接受 7 · 测试侧 1 · 外部 4 · 并行中 0）
 
 | 条目 | 旧声明 | 现态 | 证据 / 处置 |
 |---|---|---|---|
 | `C1 播放（MediaElement）` | 需外部（镜像无 MediaKit；未验） | **翻案（CEF 承载）**：ArkWeb overlay `<video>` 真机 H.264/AAC 播完 + pause/seek/volume/mute + 槽释放 | `-mediaelement-arkweb.md`（A-M1，10-10 并线） |
 | `C1 子窗/HLS` | 子窗无媒体服务→Failed；HLS 须 MSE+hls.js | **翻案**：子窗 media 服务（复用 child web 会话/槽回收）+ 内置 hls.js 1.7.3（MSE/原生回退）；真机子窗播完 + 本地 CMAF 30.0 s 播完 | `-media-subwin-hls.md`（B-M1，2026-10-11，ow `04d1606`） |
-| `C1 弹窗媒体 / m3u8 Range` | 弹窗无媒体；rawfile·file m3u8 无 Range/改写 | **并行中**（媒体微边界任务进行中；未落档前按 B-M1 §4 边界） | B-M1 §4；待并行任务文件落档 |
+| `C1 弹窗媒体 / m3u8 Range` | 弹窗无媒体；rawfile·file m3u8 无 Range/改写 | **翻案（MEDIA-MICRO）**：弹窗 Web 手势 opt-out（仅弹窗页自身媒体，无托管映射）；`/__src__` 单区间 206/416 + 注册播放列表 sibling + `hls=1`/stamp 路由（本地分段与单文件 byte-range 真机播至 ended） | `2026-10-11-ohos-media-micro-boundaries.md`（ow `1d7ec00`） |
 | `C1 本体/DRM/MPEG-4P2/modal 像素` | 无 MediaKit；DRM 无声明；MPEG-4P2 不支持；modal overlay 像素未出画 | **仍不支持/余**：原生 Kit 路径需 HMS；EME/MPEG-4P2 无；modal 像素待复现（功能链不受影响） | Q1 探针；A-M1 §4；需 HMS 设备 |
 | `C5 裸 # 截断` | 需外部（平台共性） | **翻案**：壳侧 `#`→`%23`（主+子）并线 + 真机 A/B；平台根因 = data: URL 解析 | `-l3l4-harden.md`；套件 pin；10-11 复核维持 |
 | `B1 a11y 读屏动作` | 需外部（第三方服务无法启用） | **仍外部**：发布/自检链已证（nodeCount 1→70、W0/W2、`nodes=10` ×2）；动作 e2e 需读屏环境/tester | `-a11y-client.md`；handoff53 §2 |

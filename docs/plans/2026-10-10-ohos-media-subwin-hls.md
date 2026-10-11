@@ -32,6 +32,6 @@
 
 ## 4) 余项 / 边界
 
-- 子窗 HLS 未单独取景（与主窗同一 `media.html` 代码路径；子窗用例为 rawfile H.264/AAC）；弹窗无媒体；rawfile/file 的 m3u8 无 Range/改写（>64MB 拒与 A-M1 同）。
+- 子窗 HLS 未单独取景（与主窗同一 `media.html` 代码路径；子窗用例为 rawfile H.264/AAC）；弹窗媒体与 rawfile/file 的 m3u8 Range **MEDIA-MICRO 已补**（弹窗 Web 手势 opt-out；`/__src__` 单区间 206/416 + 播放列表 sibling + `hls=1`/stamp 路由，见 `2026-10-11-ohos-media-micro-boundaries.md`；>64MB 拒与 A-M1 同）。
 - modal/子窗 overlay 像素截图问题沿用 A-M1 余项（功能链不受影响）；探针的子窗标题通道在播放后不再送达（after-play/stop 走主窗标题，见 `MediaElementProbe.cs` 注释）。
 - 载体与 pin：ow 主线 `04d1606`（三 maui gate pin `54631780a3`）、maui `feature/openharmony` `54631780a3`；CI：interaction/pixel/host-export/ridgraph/markdownlint 5/5 绿 + harmony-flavor dispatch 绿（run 38116936529）。
