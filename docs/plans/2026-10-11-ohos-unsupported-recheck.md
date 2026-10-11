@@ -19,7 +19,7 @@
 | `E5② 多窗同槽 invoke` | fail-closed | **翻案（设计内）**：按 `(windowIndex,slot)` 路由——两窗同 slot 各回各窗；未知窗/未领槽 fail-closed | `-l3-m4.md` §1；handoff53 口径保守 |
 | `E5③ N 子窗上限` | N=2 壳契约 | **部分**：平台 255；应用默认 2、**可配 4**（`OHOS_SUBWINDOW_MAX`/rawfile；defer 重放，四窗真机） | `-n-subwindow-plan.md` §8/`-l7-m2.md`；默认不抬 |
 | `E5④ export=False` | 加载器层根因未追 | **翻案**：根因 = 简单 `NativeLibrary` 重载误用（非加载器 bug）；PREPROBE 清除已并线 | `-a11y-export-rootcause.md`/`-preprobe-merge.md` |
-| `E5④ IME/uitest/B6 //host` | 人工卡/注入限制 | **测试侧**：uitest 无子窗注入面；L7-M2 亦未捕获 op6；`//host` 受 z-order | handoff53 §2/§7；tester 真键鼠 |
+| `E5④ IME/uitest/B6 //host` | 人工卡/注入限制 | **测试侧·已复核（2026-10-11）**：IME op6 直点链真机捕获（click 子窗 Entry→`show=1`）；Back=平台路由边界（keycode 2 达子窗但 `onBackPress` 不触发、`consumed:0`）；B6 `//host` 干净点选（`about:blank#blocked`、0 ask/cmd/批准） | `2026-10-11-ohos-uitest-inject.md`；handoff53 §2/§7 |
 | `E5⑤ B6 导航否决` | #52 时未接 | **翻案**：已接；真机 deny/ok 双链 + veto | `-l3-b6-modes.md`；#53 起随包 |
 | `E5⑤ 池满/队列溢出` | >2 控件不挂载、丢 1 行日志 | **接受（设计）**：子窗 child 池每窗 2 槽；满→Failed 不抛 | B-M1 §1；`-l3-m2.md` |
 | `E5⑥/⑦ SEC-6 常驻 + SEC-5c B–F` | 常驻（有界）/报告级 | **接受**（不变） | `-security-scan-6.md`/`-security-scan-5c.md` |
