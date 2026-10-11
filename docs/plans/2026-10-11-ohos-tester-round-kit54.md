@@ -40,6 +40,6 @@ sh scripts/device-round.sh --kit assets/device-test-kit.tar.gz --suite --out ./r
 
 - 源件：kit/预签/解释器/AOT/Crossgen2 逐件 sha256 与 release sidecar 一致；#48–#53 聚合包保留未动；打包/发布后 40/40、解包复跑
   40/40、外层 sidecar OK、by-id 回读一致；dtk release body 追加 1 行（207→208，仅追加，前缀逐字节一致）。
-- 本页提交：runtime-ohos `feature/openharmony`（docs-only；`commit-paths.sh` 限路径；直推/旁路结果以修正提交回填）；README 索引未改动。
+- 本页提交：runtime-ohos `feature/openharmony`（docs-only；`commit-paths.sh` 限路径；直推 OK `08b8b149c60…→0f2b77b08d8…`，未触发旁路）；README 索引未改动。
 - 不确定项：① Crossgen2 nupkg 未内置（43,792,647 / `6bb8a375…`，folder-feed 见引用文件）；② 预签仅 tester UDID 直装；③ 包内 docs 为 kit #54 波次快照（sha 绑定 `SHA256SUMS`）；④ 子窗 HLS 未单独取景 / 弹窗无托管 MediaElement 映射（设计内）；
   ⑤ 人工卡（子窗 IME 实键盘）与 Back 平台边界按 UITEST-INJECT 口径；⑥ modal overlay 像素与容量 8 / 默认 4 的真机证据引用各卡（MODAL-OVERLAY-FIX / E4-CAPACITY8 / SUBWINDOW-DEFAULT4），测试方按包内判定点复核。
