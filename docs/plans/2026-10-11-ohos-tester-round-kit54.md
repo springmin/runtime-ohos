@@ -6,8 +6,8 @@
 
 ## 1. 发布与指纹
 
-- release：`springmin/sdk-ohos` tag **`device-test-kit`**（id 392356147）；新资产：`tester-round-kit54.tar.gz` asset **630939711**、
-  **160,769,827 B** / `5df0de9b8992ea8ad5cb11e0c0015b0eef3a0f52b2cfafab39256d37965180f6`；sidecar asset **630941542**、92 B / `dd2b4d3e…`。
+- release：`springmin/sdk-ohos` tag **`device-test-kit`**（id 392356147）；新资产：`tester-round-kit54.tar.gz` asset **630954114**、
+  **160,770,425 B** / `bd8948db8992ea8ad5cb11e0c0015b0eef3a0f52b2cfafab39256d37965180f6`；sidecar asset **630955835**、92 B / `09bcd6d6…`。
 - **by-id 复核**：按 asset id 回读（全量经 gh-proxy 通道；直连 release-assets 限速 ~20–40 KB/s）→ 大小/sha256 与发布 digest 一致、sidecar `cmp` 一致；零改动清单 = 新增这 2 项（392356147: 68→70，0 removed/changed；392077166/398739326/398936638 三 release 0 变化）。
 - 包内顶层 `tester-round-kit54/`；`SHA256SUMS` 40 行（`sha256sum -c` 40/40，解包复跑 40/40）；`verify-kit.sh` → KIT OK（裸跑、
   `--expected-abc 623784`、`--tree-digest --expect-tree-digest 251d0c43…` 皆绿）；入口 `README-一轮上手.md`（#54 指纹、MediaElement 主窗/子窗/HLS、
