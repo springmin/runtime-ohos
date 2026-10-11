@@ -76,3 +76,9 @@ sh scripts/cut-kit.sh --kit 54 --phase P4 --execute --i-know --upload-hook <scra
 - P2 严格门以 `verify-kit.sh` 期望为锚：构建内容真实变化（如运行时文件集）需先更新期望，否则按 drift 拒绝（本轮 11→9 是环境 hook 污染，非内容变更）。
 - P1 复跑后下游阶段 rc 不做失效：`--phase P1 --force` 之后需带上 P2/P3（或用 `--force` 全选）重验，避免 state 里旧的 rc=0 被当成已验。
 - P0 默认 selftest 组合较慢（真仓 P0 含默认 selftest ≈2.6 min，主要来自 `selftest-verify-kit`）。
+
+## 6) 预刷态（PREBUMP-54，2026-10-10）
+
+- **#54 tester docs 已预刷并入真仓**（`bump-tester-docs.sh --kit 54` 实跑：19 文件 = 18 wave docs + README，块号 `#53 -> #54`、abc `542936 -> 576664`，二次运行字节不动点；提交 `69efa28f57e`）。真仓 `cut-kit.sh --kit 54 --phase P0 --dry-run` **rc=0**：pins / 四包 abc `576664`+`24324` / suite `771 floor 751` / 导出 `164` / selftests `2/2` / `docs kit #54 PASS (18 wave docs; abc 576664; index ok)`。
+- **rc.2 触发后仅需 cut-kit 全链**（P0→P6；docs 门已过，无需 `--bump-docs`）；块内正文数字与发布指纹（tar/bundle/预签/宿主/套件，当前仍是 #53 数字）由切包轮按 rc.2 实测撰写/刷新。
+- 注意：辅助器只刷新块头行 + README 索引行的 abc；覆盖矩阵 §5 等正文旧值（`542,936`）保持原样，属正文轮次职责。
