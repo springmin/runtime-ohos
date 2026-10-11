@@ -1,8 +1,8 @@
 # CUT-KIT-AUTOMATION：kit 切包流程脚本化 + 包内 tester docs 预检（2026-10-08）
 
-> 状态：**已实现 + 自测 52/52 + P0–P3 实弹冒烟；未真实发布**（P4+ 未动，无上传/clobber，#49–#53 release 资产未动）。
-> 载体：ohos-workload `tooling/cut-kit`（`5baf2be`）已并入 master `86fb3d4`；本轮补全在 `tooling/cut-kit-2`（`9253e76` + `3773c64`，从 master `ca94b55`；未并 master、未强推、普通推送）。
-> 入口：`ohos-workload/scripts/cut-kit.sh`；docs 机械升级 `scripts/bump-tester-docs.sh`；自测 `scripts/selftest-cut-kit.sh`（52/52，已接入 `preflight.sh` step 1）。
+> 状态：**已实现 + 自测 77/77 + P0–P3 实弹冒烟 + BUMP-ABC 闭环；未真实发布**（P4+ 未动，无上传/clobber，#49–#53 release 资产未动）。
+> 载体：ohos-workload `tooling/cut-kit`（`5baf2be`）已并入 master `86fb3d4`；补全在 `tooling/cut-kit-2`（`9253e76` + `3773c64`，从 master `ca94b55`；未并 master、未强推、普通推送）；BUMP-ABC-ENHANCE 在 `tooling/bump-abc`（`4697379`，从 master `cf4b944`；轻合并 master `65d650bb7a80`，CI 5/5）。
+> 入口：`ohos-workload/scripts/cut-kit.sh`；docs 机械升级（块号 + abc 刷新）`scripts/bump-tester-docs.sh`；自测 `scripts/selftest-cut-kit.sh`（77/77，已接入 `preflight.sh` step 1）。
 
 ## 1) 阶段与安全门
 
@@ -20,24 +20,26 @@
 - 安全默认：`--dry-run` 为默认，仅 `--execute` 写；P4–P6 另需 `--i-know`；`--yes` 跳过键入确认仅供演练。
 - 单阶段：`--phase P0,P1` 或 `--phase P4`；未知阶段/用法错误 rc=2，安全门拒绝 rc=3，缺前置件 rc=4。
 
-## 2) docs 预检 + 机械升级（#52/#53 痛点闭环）
+## 2) docs 预检 + 机械升级（#52/#53 痛点闭环；#54 起 abc 自动刷新）
 
-- 契约：18 份 tester docs（#50/#51/#52 波次同表）必须含目标 kit 的块头 `kit #N，当前）` / `kit #N — current)`，且每份含当前壳 abc（`542936`/`542,936`）；`docs/plans/README.md` 必须含 `kit #N 日期口径`。8 份入包文档（对应 `make-device-test-kit.sh` 的 copy_doc 映射）一并做存在性校验。
+- 契约：18 份 tester docs（#50/#51/#52 波次同表）必须含目标 kit 的块头 `kit #N，当前）` / `kit #N — current)`，且每份含当前壳 abc（如 `576664`/`576,664`）；`docs/plans/README.md` 必须含 `kit #N 日期口径`。8 份入包文档（对应 `make-device-test-kit.sh` 的 copy_doc 映射）一并做存在性校验。
 - 失败 fail-closed：P0 rc=3；P1 先复检再构建，拒绝时给 `--bump-docs` 提示。
-- `scripts/bump-tester-docs.sh`（本轮入库，`--bump-docs` 实际调用）：
-  `sh scripts/bump-tester-docs.sh --kit <N> [--abc <A[,B]>] [--docs-dir <dir>] [--dry-run]`
-  - 按 P0 块头规则把 18 份 docs 的 `kit #N-1，当前）`/`#N-1 — current)` 与 README 顶层 `kit #N 日期口径` 机械升到 #N；abc 取 `--abc`（缺省 = `verify-kit.sh` 的 `EXPECT_ABC`），逐档检查存在（plain/千分组任一）。
-  - 幂等（二次运行报 `already at kit #N`、零写）；写默认开启、`--dry-run` 只打印计划；缺档/块头歧义/降级/缺 abc 任一即拒绝且**零文件写入**（事务化；apply 失败从备份回滚）。
+- `scripts/bump-tester-docs.sh`（`--bump-docs` 实际调用；BUMP-ABC-ENHANCE 起在升块的同时刷新 abc）：
+  `sh scripts/bump-tester-docs.sh --kit <N> [--abc <A[,H]>] [--docs-dir <dir>] [--dry-run]`
+  - 按 P0 块头规则把 18 份 docs 的 `kit #N-1，当前）`/`#N-1 — current)` 与 README 顶层 `kit #N 日期口径` 机械升到 #N。
+  - **同时在“被升级的块头行”上把当前壳 abc 引用刷到目标 `EXPECT_ABC`**（`--abc A[,H]`，缺省 = `verify-kit.sh` 的 `EXPECT_ABC`）：`expected-abc A` / `重锚 **A,H**` / `re-anchored A,H` / `abc **A` / 无粗体 `abc A`（英文第二块头）/ `headless H` / `EXPECT_ABC=A,H` / 中文 `）**/H（`。plain（`576664`）与千分组（`576,664`）两种既有写法都识别并按原写法输出；成对值连 headless 一起刷新。历史引用（`#52=534192` 等）与未识别形状一律不动；替换只发生在被升块行 + README 索引行内，且二次应用为字节不动点（不收敛即拒绝）。
+  - 幂等（二次运行报 `already at kit #N`、零写；块号已到而 abc 陈旧时输出 `refresh …: abc -> …`）；写默认开启、`--dry-run` 只打印计划；缺档/块头歧义/降级/刷新后仍缺 abc 任一即拒绝且**零文件写入**（事务化；apply 失败从备份回滚）。
   - 只保证门契约（块头 + abc + 索引口径）；块内正文仍由切包轮撰写。
-- 误报治理：只认“块头”标记（`，当前）`/`— current)` 收尾），历史行如 `**kit #45（当前）**` 不误伤。
+- 误报治理：只认“块头”标记（`，当前）`/`— current)` 收尾），历史行如 `**kit #45（当前）**` 不误伤；abc 刷新同样限定在这些行内（覆盖矩阵 §5、README 表格行等正文数字保持原样）。
 
 ## 3) 用法示例
 
 ```sh
-sh scripts/bump-tester-docs.sh --kit 54 --dry-run                 # docs 升级计划（零写）
+sh scripts/bump-tester-docs.sh --kit 54 --dry-run                 # 升级 + abc 刷新计划（零写）
+sh scripts/bump-tester-docs.sh --kit 54 --abc 576664,24324        # 显式 abc 对（缺省取 verify-kit.sh 的 EXPECT_ABC）
 sh scripts/cut-kit.sh --kit 54                                   # 全阶段干跑（P0 真检，P1..P6 打印计划）
 sh scripts/cut-kit.sh --kit 54 --phase P0 --execute              # 预检 + 落 state.env
-sh scripts/cut-kit.sh --kit 54 --phase P0 --execute --bump-docs  # 先机械升级 docs 再过 docs 门
+sh scripts/cut-kit.sh --kit 54 --phase P0 --execute --bump-docs  # 先机械升级（块号 + abc）再过 docs 门
 sh scripts/cut-kit.sh --kit 54 --phase P0,P1,P2 --execute        # 续跑：构建 + 严格校验
 sh scripts/cut-kit.sh --kit 54 --phase P1,P2,P3 --execute --force --force-build   # 重构建（换 hook/输入后）
 sh scripts/cut-kit.sh --kit 54 --phase P3 --execute --sdk-repo <dir> --no-push    # bundle；锚演练不推
@@ -47,8 +49,9 @@ sh scripts/cut-kit.sh --kit 54 --phase P4 --execute --i-know --upload-hook <scra
 
 ## 4) 自测 + P0–P3 实弹冒烟（2026-10-08，本机）
 
-- 自测：`sh scripts/selftest-cut-kit.sh` **52/52**（原 38 + T6：dry-run 零写 / 98→99 zh+en 块头与 README / 幂等字节不变 / 缺档拒绝 + 零部分写入）；`sh -n` 全绿。
+- 自测：`sh scripts/selftest-cut-kit.sh` **77/77**（v2 的 52 项 + T6 扩展：abc 更新 / plain 与千分组两式 / 成对含 headless / zh+en 槽位 / 历史引用不动 / 幂等字节不变 / 仅 abc 刷新（块号不动）/ 缺档与缺 abc 拒绝 + 零部分写入 / apply 失败回滚 / 升块后 fixture P0 门通过）；`sh -n` 全绿。
 - 真仓 docs 链（kit #54）：`bump-tester-docs.sh --kit 54 --dry-run` 列 18+1 项、19 文件零变化；P0 无 `--bump-docs` 实测 **rc=3**（19 条 issue + 3 条 hint，156 s，state 保留断点）；`--bump-docs` 实测 19 文件升 `#54`（只动块头/索引 + abc 检查，未切包）后 docs 门 PASS（演练后已 revert，见冒烟报告 checksums）。
+- BUMP-ABC-ENHANCE（2026-10-10，本机；`tooling/bump-abc` `4697379` → master 轻合并 `65d650bb7a80`；CI 5/5 @ `65d650bb7a80`：interaction 38097793362 / pixel 38097793350 / host-export 38097793363 / ridgraph 38097793373 / markdownlint 38097793368；`preflight.sh --quick` 全绿含 `selftest-cut-kit` 77/77）：真仓 `bump-tester-docs.sh --kit 54 --dry-run` **rc=0**（19 文件计划：18 docs `#53 -> #54` + abc `576664`/`576,664` + README 索引；旧行为是缺 abc 拒绝），docs/plans 322 md sha256 与 `git status`（除他会话 2 项）零变化；scratch 克隆（`git clone --shared --no-checkout` + `checkout HEAD -- docs/plans`）内 `--apply` 后 `cut-kit.sh --kit 54 --phase P0 --dry-run --docs-dir <clone>` **P0 PASS（rc=0）**——pins ow `cf4b94414e` / maui `625177750f` / runtime `900410675d`、四包 abc `576664`+`24324`、suite `771 floor 751`、导出 `164`、selftests `2/2`、`docs kit #54 PASS (18 wave docs; abc 576664; index ok)`；克隆已丢弃、真仓零写。
 - 冒烟（scratch `smoke-cut-kit/`，pins ow `ca94b55bc9` / maui `b914379269` / runtime `d2b720d406`；**未发布、未 P4/P5/P6**）：
 
 | 阶段 | 结果 | 耗时 | 指纹/证据 |
@@ -69,7 +72,7 @@ sh scripts/cut-kit.sh --kit 54 --phase P4 --execute --i-know --upload-hook <scra
 - P5 预签/manifest 为钩子（每轮 scratch 脚本不同），未内联签名密钥/UDID；P6 需 `--token-file`/GH_TOKEN。
 - `--release-ids` 默认 = #49–#53 四个 release；换线需覆盖；P4 `--also-sdk-release` tag 与 merged sums 按轮提供。
 - sdk 锚的 execute 写入路径未验证：本轮以缺前置 rc=4 按纪律跳过（不刷锚）；真切 #54 先用 `--sdk-repo <dir> --no-push` 演练，再放行 push。
-- docs 波次正文（块内叙述/数字）仍人工撰写；helper 只保证块头/abc/索引口径。
+- docs 波次正文（块内叙述/数字）仍人工撰写；helper 保证块头 + abc 刷新 + 索引口径（BUMP-ABC-ENHANCE 起，`#54` 波次不需要人工预刷 abc；正文级数字仍由波次撰写）。abc 刷新只覆盖被升块行与 README 索引行，正文/其他章节的历史与参数数字（如覆盖矩阵 §5 的验证记录、README 表格行）保持原样，由正文轮次自决。
 - P2 严格门以 `verify-kit.sh` 期望为锚：构建内容真实变化（如运行时文件集）需先更新期望，否则按 drift 拒绝（本轮 11→9 是环境 hook 污染，非内容变更）。
 - P1 复跑后下游阶段 rc 不做失效：`--phase P1 --force` 之后需带上 P2/P3（或用 `--force` 全选）重验，避免 state 里旧的 rc=0 被当成已验。
 - P0 默认 selftest 组合较慢（真仓 P0 含默认 selftest ≈2.6 min，主要来自 `selftest-verify-kit`）。
