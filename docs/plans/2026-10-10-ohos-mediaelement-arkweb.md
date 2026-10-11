@@ -34,7 +34,7 @@
 
 ## 4) 余项 / 边界
 
-- HLS 不支持（需 MSE+hls.js）；DRM/EME 无声明（视为不支持）；MPEG-4 Part2 不支持（Q1 边界）。
-- 子窗无媒体服务（child 池 → 无槽 → Failed 语义）；file/rawfile 一次整流无 Range（>64MB 拒）；每元素 1 CEF+1 槽（默认池 8）。
+- HLS 不支持（需 MSE+hls.js；**B-M1 已补：内置 hls.js 1.7.3 走 MSE，见 `2026-10-10-ohos-media-subwin-hls.md`**）；DRM/EME 无声明（视为不支持）；MPEG-4 Part2 不支持（Q1 边界）。
+- 子窗无媒体服务（child 池 → 无槽 → Failed 语义；**B-M1 已补：子窗媒体服务，见 `2026-10-10-ohos-media-subwin-hls.md`**）；file/rawfile 一次整流无 Range（>64MB 拒）；每元素 1 CEF+1 槽（默认池 8）。
 - modal 下 overlay 像素（含 hybrid）未在截图出现——合成/捕获层问题，待独立复现；CommunityToolkit 适配器归属未定（本仓给 surface/handler + slice 接口）。
 - abc 变化已实测并锚入 `verify-kit.sh EXPECT_ABC=589700,24324`；#54 预刷 tester docs（576,664）待 cut-kit bump 随动。
