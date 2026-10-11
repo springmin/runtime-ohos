@@ -7,6 +7,7 @@
 - **已并主线**：PREPROBE-SWEEP（maui `619c40a483`）· SEC7-A（`b914379269`）· WebAuth 真流程含 Want 对象字面量修复（ow `b49ea76` + maui `2803e15b6c`）· E4 默认 8（ow `adf2efb`）· L3/L4 = C5 裸 `#` 缓解 + SEC7-F ask 限速（ow `e6e4f41`）· L5 SEC-5c E/F（maui `6f278ee99b` + ow `95e4a68`）· L7-M1 N 上限开关（ow `343fc21`/`8b6d4073cb`）——以上随批合并 `15f3dc8`。
 - **MERGE-BATCH-2 入线**：L8 弹窗 `window.open` 子窗（ow `8ee536a`）· harmony-flavor 运行期 free-window 探测（ow `91eb4fd`；workflow `37945657194` 绿）· deeplink 布局修复（maui `9f2b1b06df`→`14cc245902` + ow `4236f0b`）。
 - **MERGE-BATCH-3 入线（2026-10-10）**：L7-M2 N=4 + defer 前台重放（`feat/n-subwindow-m2` `ee9514358dfc`；合并树套件 768/771 floor 751、abc 576,664；已并 ow `a2b3567`）；L8 余项 + B6/hybrid AOT（`fix/l8-remainder` ow `373bee0`/maui `31ed839fd6`；10-10 10:29 分支真机 PASS；已并 ow `db565fe` + maui `625177750f`）——见 `2026-10-10-ohos-batch3-consolidate.md`。
+- **MERGE-BATCH-4 入线（2026-10-10）**：MEDIAELEMENT-ARKWEB A-M1（ow `b674f80` / maui `0adfe6c7fe`；合并树套件 776/779 floor 759、abc 589,700、导出 164/164、preflight 5/5；已并 ow `0177a32` + maui `fbd91e17bc`）——见 `2026-10-10-ohos-batch4-consolidate.md`。
 - **裁决/卫生**：w2b-int/w2b-t3t5 确认删除（无独有载荷；`2026-10-10-ohos-w2b-disposition.md`）。
 
 ## 2. 未完成（分组）
@@ -21,8 +22,8 @@
 ## 3. 结论
 
 - 覆盖矩阵 **20 项 = 16 全闭合 · 2 部分（均上游：#11 键面 / #18 ship-the-slice）· 2 平台（#13 C1 / #15 SDK26）**；10-08 后新增闭合 = WebAuth 真流程、L8 弹窗、deeplink、harmony-flavor、E4 默认 8、L7-M1、L3/L4、L5、PREPROBE、SEC7。
-- 完成度 **≈99%**（本地/离线面；唯一功能缺口 WebAuth 已闭）。**本机还剩什么**：无未做的本地代码/离线验证任务——只剩设备轮回填（L7-M2 进行中、WEBAUTH 隐式）+ L8 余项/B6 分支并入 #54 + tester/AGC/rc.2 外部项。
+- 完成度 **≈99%**（本地/离线面；唯一功能缺口 WebAuth 已闭）。**本机还剩什么**：无未做的本地代码/离线验证任务——只剩设备轮回填（L7-M2 进行中、WEBAUTH 隐式）+ MEDIAELEMENT-ARKWEB A-M1 余项（HLS/DRM、modal 下 overlay 像素）+ tester/AGC/rc.2 外部项。
 - rc.2 监测（2026-10-10 实跑 `rc2-official-watch.sh`，exit 0）：**status: WAIT** —— nuget 四包 latest `11.0.0-rc.1.26451.6`（trigger=no）、GitHub `11.0.100-rc.1.26458.5`（trigger=no）。
-- 不确定项：设备链路/端口随 boot 漂移（10:36 已恢复，见 §2a①；本 session 未触设备）；L7-M2/L8-REMAINDER 已并主线（MERGE-BATCH-3），数字以合并树门禁为准（套件 768/771 floor 751、abc 576,664、导出 164/164；pin `8e871f4`、CI 6/6）。
+- 不确定项：设备链路/端口随 boot 漂移（10:36 已恢复，见 §2a①；本 session 未触设备）；L7-M2/L8-REMAINDER 已并主线（MERGE-BATCH-3），数字以合并树门禁为准（套件 768/771 floor 751、abc 576,664、导出 164/164；pin `8e871f4`、CI 6/6）；MEDIAELEMENT-ARKWEB A-M1 已并主线（MERGE-BATCH-4；套件 776/779 floor 759、abc 589,700、导出 164/164；pin `5e27363`、CI 6/6）。
 
 > 提交：本文件 + `README.md` 索引 → runtime `feature/openharmony`（`commit-paths.sh` 限路径；直推，被拒 fetch/rebase + 旁路钉 `140.82.113.3`，不 force）。
