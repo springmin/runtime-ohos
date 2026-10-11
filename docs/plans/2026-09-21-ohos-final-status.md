@@ -7,6 +7,7 @@
 > `2026-09-24-ohos-device-milestone.md`）、离设备套件 **391 条 / floor 371**（preflight 与 CI 同源），见 §4、§5、§10、§11）。
 > 数字均来自仓库提交、审计报告与 GitHub 实测读取；无法读取或未落名的一律标注，不做推测。
 > 详细依据见主审计报告 `docs/plans/2026-09-19-ohos-code-audit.md`（§1–§41）与索引 `docs/plans/README.md`。
+> **2026-10-11 kit #54 rev2 注**：kit #54 于本日成套重切并替换——kit tar **70,345,291 B / `583d6df43961d371e666dcc078a63a41530d9dc4c74d7c6d7375e0b3c7171f09`**、树 `251d0c43ab5b5146845febc4afee53187e56513ee4a375f4cd7327c2b7462c09`、sidecar 89 B / `094165d72ec079920862bf9ada268da55634a87aba3833f7c3eb1f9a65522543`；预签/轮包同步刷新。修复 = 构建链 pack 同步后重编 7 hap：5 MAUI hap 回归壳 rawfile（`resources/rawfile/media.html` / `hls.min.js` / `hls.LICENSE.txt`）并注入 `myapp://callback` 清单路由与 `app://webauth/*` 设备探针触发器（WebAuth 判读可直接在发布 hap 上执行；旧 rev1 `ecc41f05…`/`c4806485…`/`8fc05b6d…` 作废）；根因/复核见 `2026-10-11-ohos-kit54-hap-verify.md`；本页「当前发布」指针按波次记录、未逐版重写，判定点见 `docs/plans/2026-10-11-ohos-tester-handoff-kit54.md`。
 
 ## 1. 交付主线：第 1–3 项与已解除的受限项
 

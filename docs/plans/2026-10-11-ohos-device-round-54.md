@@ -4,6 +4,7 @@
 > 轮次：18:46:19 取锁（owner=soak54）→ 18:46:44–19:29:06 干净 40 min 轮（18:47:57 注入双窗 child ArkWeb，soak t=0 起双窗常驻）→ 19:31–19:40 ⑥/④ → 19:41–19:45 ⑤ + a11y + N=2 → 19:47–20:01 churn×2 + Home + fps → 20:03–20:38 探针 hap ①②③⑦（含一 build）→ 20:38–20:40 抽装 → 20:40:47 还原并释放锁。
 
 ## 1. 资产 / 设备 / 纪律
+> **rev2 已执行（2026-10-11）**：本文记录的真机轮针对 rev1 字节；rev2 成套替换后的值：kit tar **70,345,291 B / `583d6df43961d371e666dcc078a63a41530d9dc4c74d7c6d7375e0b3c7171f09`**、树 `251d0c43ab5b5146845febc4afee53187e56513ee4a375f4cd7327c2b7462c09`、sidecar 89 B / `094165d72ec079920862bf9ada268da55634a87aba3833f7c3eb1f9a65522543`（预签/轮包见 release rev2 注）。
 
 - kit tar sha `ecc41f05…` == 发布（dtk asset 392356147）；in-kit `verify-kit.sh --expect-tree-digest c0099033…` = KIT OK 0 FAIL/0 WARN（KIT 内 sidecar+anchor 校验）；主 hap 本机重签 `564336bf0765…`（AOT，bundle com.example.hellomauiapp）。
 - 预签：tar/侧车 sha 显式比对 PASS、SUMS 8/8、`verify-app` 7/7（UDID `60CF7B27…` 单值）、ZIP 条目与 kit 原件逐字节一致（**未安装**）。

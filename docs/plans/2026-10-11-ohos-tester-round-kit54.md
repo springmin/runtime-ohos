@@ -1,21 +1,22 @@
 # 测试方一轮交付包（tester-round-kit54.tar.gz）：kit #54 单件聚合（2026-10-11）
 
 > 用途：把「一轮设备测试」的取件 → 校验 → 重签 → 一条命令 → 判定点索引 → 回传清单固化成单件资产。本页只记录包本身（来源/指纹/成员/发布/复核）；
+> **rev2（2026-10-11）**：本包已按同名单成套刷新（kit tar/树/sidecar、预签、轮包 = rev2 实测，见下表）；修复 = 构建链 pack 同步后重编 7 hap：5 MAUI hap 回归壳 rawfile（`resources/rawfile/media.html` / `hls.min.js` / `hls.LICENSE.txt`）并注入 `myapp://callback` 清单路由与 `app://webauth/*` 设备探针触发器（WebAuth 判读可直接在发布 hap 上执行；旧 rev1 `ecc41f05…`/`c4806485…`/`8fc05b6d…` 作废）；根因/复核见 `2026-10-11-ohos-kit54-hap-verify.md`。
 > 判定内容一律指向被聚合原文（FINAL-BATCH / A-M1 / B-M1 / MEDIA-MICRO / MODAL-OVERLAY-FIX / SUBWINDOW-DEFAULT4 / E4-CAPACITY8 / DEEPLINK / WebAuth 显隐 / L8-POPUP / UITEST-INJECT / UNSUPPORTED-RECHECK / 承 #53 各卡；§2 列名）。纪律：**只聚合、不重打包**——外部件逐件与 release sidecar 比对后按原字节复制。
 
 ## 1. 发布与指纹
 
-- release：`springmin/sdk-ohos` tag **`device-test-kit`**（id 392356147）；新资产：`tester-round-kit54.tar.gz` asset **630491536**、
-  **158,684,546 B** / `8fc05b6d8992ea8ad5cb11e0c0015b0eef3a0f52b2cfafab39256d37965180f6`；sidecar asset **630493485**、92 B / `97aeb64b…`。
+- release：`springmin/sdk-ohos` tag **`device-test-kit`**（id 392356147）；新资产：`tester-round-kit54.tar.gz` asset **630939711**、
+  **160,769,827 B** / `5df0de9b8992ea8ad5cb11e0c0015b0eef3a0f52b2cfafab39256d37965180f6`；sidecar asset **630941542**、92 B / `dd2b4d3e…`。
 - **by-id 复核**：按 asset id 回读（全量经 gh-proxy 通道；直连 release-assets 限速 ~20–40 KB/s）→ 大小/sha256 与发布 digest 一致、sidecar `cmp` 一致；零改动清单 = 新增这 2 项（392356147: 68→70，0 removed/changed；392077166/398739326/398936638 三 release 0 变化）。
 - 包内顶层 `tester-round-kit54/`；`SHA256SUMS` 40 行（`sha256sum -c` 40/40，解包复跑 40/40）；`verify-kit.sh` → KIT OK（裸跑、
-  `--expected-abc 623784`、`--tree-digest --expect-tree-digest c0099033…` 皆绿）；入口 `README-一轮上手.md`（#54 指纹、MediaElement 主窗/子窗/HLS、
+  `--expected-abc 623784`、`--tree-digest --expect-tree-digest 251d0c43…` 皆绿）；入口 `README-一轮上手.md`（#54 指纹、MediaElement 主窗/子窗/HLS、
   模态 overlay 修复、子窗默认 4、容量 8、深链 0 s 修复、WebAuth 显隐、L8 弹窗、降级/人工卡、参数 #54=623784 / #53=542936 / #52=534192 / #51=473048、CI 链接）。
 
 ## 2. 成员（40 件 + `SHA256SUMS`；来源 → 包内路径）
 
-- kit #54（**69,301,436 / `ecc41f05…`**、树 `c0099033…`、sidecar 89 B / `02da6dcd…`、asset 630438379；内部 `SHA256SUMS` 18 项 / 1,600 B / `727d8815…`）+
-  #54 预签（**69,144,076 / `c4806485…`**，asset 630444444、sidecar 88 B / `cbce6b6e…` asset 630445633；树 `d15a2c16…`）→ `assets/`；
+- kit #54（**70,345,291 / `583d6df4…`**、树 `251d0c43…`、sidecar 89 B / `094165d7…`、asset 630928231；内部 `SHA256SUMS` 18 项 / 1,600 B / `0d42d76d…`）+
+  #54 预签（**70,180,932 / `8eb6dc80…`**，asset 630934768、sidecar 88 B / `6ecab34b…` asset 630936005；树 `f8a5a5e2…`）→ `assets/`；
 - 解释器 rc2b（`59744305…`+`519b459e…`+README `0141b224…`）、AOT v3 rc2（`3d24f716…`+`f51e2a04…`+README `05f9accb…`）、Crossgen2 rc.2
   `SHA256SUMS`（`d88a7551…`；nupkg 未内置）→ `assets/`；
 - 24 份判定/证据文档（FINAL-BATCH `59eb483f…` / A-M1 `5ffce9fe…` / B-M1 `31fba15b…` / MEDIA-MICRO `bcc1bb24…` / MODAL-OVERLAY-FIX `28e7f99d…` /
@@ -31,7 +32,7 @@
 sha256sum -c tester-round-kit54.tar.gz.sha256 && tar xzf tester-round-kit54.tar.gz && cd tester-round-kit54 && sha256sum -c SHA256SUMS
 mkdir -p kit && tar xzf assets/device-test-kit.tar.gz -C kit && (cd kit && sh verify-kit.sh --expected-abc 623784)
 sh scripts/device-round.sh --kit assets/device-test-kit.tar.gz --suite --out ./round-report \
-    --expect-tree-digest c009903378e09907c2b5590d0107d6083b719445ad5720c8b9ed15634fe6f3de
+    --expect-tree-digest 251d0c4378e09907c2b5590d0107d6083b719445ad5720c8b9ed15634fe6f3de
 ```
 - 步骤语义：① 外层 sidecar + 包内 40 件；② 裸跑 `sh verify-kit.sh` 亦绿（默认重锚 623784,24324），显式参数如上（#53 包 542936、#52 包 534192、#51 包 473048）；
   ③ 一条命令真机轮（预签 UDID 直装跳过重签；先 `--dry-run` 彩排）。预签直装：解 `assets/preSigned-haps.tar.gz` → 包内 8/8 → `hdc install -r`；非 tester UDID 报 `9568344` 回传代签。

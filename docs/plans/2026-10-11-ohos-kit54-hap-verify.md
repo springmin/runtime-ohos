@@ -3,6 +3,7 @@
 > 结论：**DEVICE-ROUND-54 发现 11 复核成立**——kit #54 的 5 个 MAUI(AOT) hap 缺壳 rawfile `resources/rawfile/media.html`/`hls.min.js`/`hls.LICENSE.txt`（A-M1/B-M1 壳契约件），7 hap 的 `module.json` 均无 WebAuth 回调 skill；根因 = P1 用的 `~/.dotnet.rc2-fix` 的 preview.28 SDK pack 停在 #53 代且缺 #54 目标，而 repo/pin worktree（与 `~/.dotnet` 的目标件）已是 #54 代。静态核查为主：无设备、未动 release 资产（#49–#54 资产未动）。
 
 ## 1. 逐 hap 检查表（`reg-kit54/device-test-kit/`，tar 69,301,436 / `ecc41f05…`）
+> **rev2 已执行（2026-10-11）**：本文的修复方案已落地并成套替换 #54 资产（pack-sync + P0 install-pack 门禁 + 重编 7 hap）；rev2 值：kit tar **70,345,291 B / `583d6df43961d371e666dcc078a63a41530d9dc4c74d7c6d7375e0b3c7171f09`**、树 `251d0c43ab5b5146845febc4afee53187e56513ee4a375f4cd7327c2b7462c09`、sidecar 89 B / `094165d72ec079920862bf9ada268da55634a87aba3833f7c3eb1f9a65522543`（见 handoff54）。本文保留核查时点（rev1）的原始记录。
 
 | hap | sha(8) | media.html | hls.min.js / LICENSE | module.json skill |
 |---|---|---|---|---|
