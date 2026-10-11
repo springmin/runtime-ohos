@@ -49,3 +49,13 @@
 ## 6. 复核命令 / 证据
 
 - `unzip -l <hap> | grep -E 'rawfile/(media|hls)'` · `diff ~/.dotnet.rc2-fix/packs/Microsoft.OpenHarmony.Sdk/1.0.0-preview.28 <pin>/packs/…` · `strings …Tasks.dll | grep -c WebAuthenticatorCallbackUrls`（0=坏 / 3=好）；证据：`reg-kit54/device-test-kit*`、`reg-kit54/soak54/bin/repack-probe54.sh`、`reg-kit54/ow/.../openharmony-hap/`、`mediamicro/device/kit/jit/*`、`wt-wa/webauth-kit4/*`、本机两安装 pack。
+
+## 7. rev2 抽验（真机 KIT54-REV2-SPOTCHECK，2026-10-11 22:52–22:53）
+
+> 输入 = 本地 `reg-kit54-rev2/device-test-kit.tar.gz`（70,345,291 / `583d6df4…`，sha256 复核一致）；设备 HAD-W32 / OpenHarmony-7.0.0.109 / hdc `127.0.0.1:36823`（UDID `1BCE13C8…`，非预签 UDID）；本 session 不改上游 PR。
+
+- **装机/启动**：取 kit `hello-maui-app-unsigned.hap` 经 `scripts/sign-for-device.sh <udid>` 设备重签（**23,749,705 B / `5b3b33ba…`**）→ `hdc install -r` success；`bm dump` 设备侧确认 `myapp://callback` skill；冷启（AOT）pid=10457、主窗首帧出画（`evidence/first-frame.jpeg`）。
+- **WebAuth 判据（注入实际生效）**：`aa start -b … -a EntryAbility -U 'app://webauth/start'` → `pending +1`；再 `-U 'myapp://callback?code=REV2&state=s1'` → **+8 s `[maui] status: [webauth-probe] webauth: ok code=REV2 state=s1 token=`**（窗口标题通道同证）；激活链 `activation seq=3 uri='myapp://callback?code=REV2&state=s1'`。探针 = rev2 件内建（`libhello-maui-app.so` 含 `[webauth-probe]`/`app://webauth/*` 字面量 + 清单 skill）。
+- **MediaElement 判据：N/A（无探针）**——rev2 cut 仅开 `DEVICE_TEST_KIT_WEBAUTH_PROBE=1`（无 `-p:MediaElementProbe=true`），`app://media/element/*` 路由未编译（App.cs `#if MEDIAELEMENT_PROBE`），真机无触发入口；hap 侧证据（重签件/kit 签件/unsigned 三处逐字节同）：`media.html` 16,768 / `465f8190…`、`hls.min.js` 619,692 / `a12e7ee1…`、`hls.LICENSE.txt` 1,338 / `ca8773cf…`、`runtime-mode.txt=aot`。
+- **0 fault**：`hidumper -e --list` 前后 diff = 0 新 fault（列表内 10-11 20:04 CppCrash 三条为前轮既存）。纪律：锁独占、常亮 6 h、hilog 16M→512K 还原；结束恢复设备原状（l7m2-s2 `f78695d5…` 重装成功，updateTime 22:53:08）+ 释放锁；证据 `…/opencode/spotcheck54-rev2/evidence/`。
+- 不确定项：无阻断项；WebAuth 用显式投递（隐式 chooser 链 2026-10-10 已有 JIT 探针证据）；MediaElement「播至 ended」待含 `-p:MediaElementProbe=true` 的轮次补（本件无入口，非缺陷）。
