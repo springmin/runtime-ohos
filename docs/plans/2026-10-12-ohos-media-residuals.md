@@ -22,4 +22,5 @@
 - 真机（round 09:05–09:12，两遍）：① 冷启短样全链（play/opened/ended/transport/audio/stop/close）；③ hlslocal `ended=True`（回归）；③ hlsrange `ended=True Completed`（修复目标）；`fault-new=0`、pid 恒稳（41253/50311 全程）、fixture 还原 + hilog 512K + 锁释放。
 - 离线：maui-platform-verify **checks=798 floor=781**（+2 MEDIA-RESIDUALS pin）；红控 2（去 `fLoader` 接线→page pins=False；去 `await WaitForPageReadyAsync()`→coldstart=False，均 rc=134，已还原）；`lint-packs` OK。
 - 旁注：壳的 status 文件镜像（12×3s）本轮未捕获到 `local-slice` 行（CEF stderr 洪泛/窗口限制）——不影响判据：壳日志「整取 2 次 + 0 次 Range + 0 fragLoadError + 播放到 Completed」唯一定位 slice 路径。
+- 证据：scratch `…/opencode/mediaresiduals/`（build.log、assert-static-{unsigned,probe}.txt、summary{,2}.txt、round{,2}.log、passA-hlsrange/passB-short/passC-hlslocal lines、截图、fault diff）；提交 = 本文件 + README 行（runtime）、ow `d7df09c`、maui `44dcef8d15`（三仓 origin 已推）。
 - 不确定项：平台若给 intercepted BUFFER 型补齐 Skip（或改走 fd/Resource 应答）可让页面回归原生 Range；当前规避对同源单文件源整取一次（单条缓存，≤64MB 内），多文件源按 URL 失效。
