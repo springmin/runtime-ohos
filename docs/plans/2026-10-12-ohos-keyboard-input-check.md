@@ -12,7 +12,7 @@
 | `uitest uiInput keyEvent <kc>` | **可达**（逐键；SHIFT=2047 切 Zh/En） | `isSingleShiftKeyUp`→`InputEnLowerService`；英文直提（09 截图） |
 | `uinput -K -t <t>` / `-d <kc>` `-u <kc>` | **可达**（内核虚拟键盘，IME 硬件通路） | `-t xyz`+SPACE→`下一站`；`-d/-u 2017/2018`+SPACE→`安保`（05 截图） |
 | 纯字母、无提交键（中文态） | 不落文本（仅组合+候选日志） | 上轮"只动 caret/无文本事件"= 未提交的组合态，非通路断 |
-| ENTER（2054） | 提交组合文本（`…你好ab`） | 未观测 TextSubmitted→Completed（子窗 Entry 无 Completed；label 末事件=TextComposition）——边界 |
+| ENTER（2054） | 提交组合文本（`…你好ab`） | 未观测 TextSubmitted→Completed（子窗 Entry 无 Completed；label 末事件=TextComposition）——边界（2026-10-12 已修：ow `34bcaa4`，见 `2026-10-12-ohos-subwin-completed.md`） |
 | 软键盘 | 未触发（2in1+物理键盘，IME `isSoftKeyboardShow:false`） | 聚焦后无键盘窗；注入仍走硬件通路 |
 
 ## 2. 结论与证据
@@ -40,7 +40,7 @@
   `seed` → `seedjjj78`（11:23:19/11:23:40）→ `seedjjj7800`（11:23:51）；证据 `hit-1123{18,29,39,50}.{json,jpeg}`。
 - **结论：MAUI 键盘输入 = OK**（物理键盘 → IME 硬件通路 → 隐藏输入 onChange → 托管 Entry；与 §1 注入矩阵一致）。
 - 11:25:28 后 inputs 清空（窗口状态变化）；捕获按计划 ~11:56 自动收尾并还原（hilog 512K + 释放锁）。
-- 备注：`ENTER` 提交未观测 `TextSubmitted→Completed`（子窗无 Completed 处理器）——保留边界，下批可补。
+- 备注：`ENTER` 提交未观测 `TextSubmitted→Completed`（子窗无 Completed 处理器）——已补：ow `34bcaa4`（样例 Completed 探针 + 套件 pin；真机闭环见 `2026-10-12-ohos-subwin-completed.md`）。
 
 ## 4. 文档 / 提交
 
