@@ -25,5 +25,5 @@
 ## 验证 / 合并 / CI
 
 - selftest 全绿（零构建）：cut-kit **185**（was 109；T7 锚三形态 + seed 自动/显式/缺失 + resume；T8 P4–P6 dry 零写）、make-mode-kit 89（顺修一条被换行吞掉的 SHA256SUMS 断言）、make-device-test-kit 52。
-- ow merge `34f87cb` 推 origin/master（直连 SSL EOF → pin IP 140.82.112.3 成功）；CI @34f87cb：ridgraph/markdownlint/host-export/pixel success，interaction run `38215361043` 运行中（前序 34bcaa4 的 interaction failure 属既有、非本轮）。
+- ow merge `34f87cb` 推 origin/master（直连 SSL EOF → pin IP 140.82.112.3 成功）；CI @34f87cb：ridgraph/markdownlint/host-export/pixel success，interaction run `38215361043` **failure 属既有**（`mediaresiduals coldstart wait=False` → "MEDIA-RESIDUALS cold-start page-ready wait drifted"；与 34bcaa4 的 `38204552669` 同签名——suite 源扫撞 stale maui pin `36da77cba4`，maui 侧修复 `44dcef8d15` 未在 pin 内；非本轮 scripts/docs 改动）。
 - 不确定项：seed 下载依赖 github.com/gh-proxy（本机抖动时靠 pin IP）；NOTES finding 3（fresh worktree hosts payload）不在本次范围；#55 是 P4–P6 首次实跑。
