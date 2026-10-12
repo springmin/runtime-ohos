@@ -34,6 +34,14 @@
 - 并发会话备注：取锁时 Flectar Mail（另一实测）在前台；本轮已置 MAUI 前台等待键入，如需先测 mail 由主会
   话切换。
 
+## 3b. 实体键入结果（2026-10-12 11:23–11:25，用户实操）
+
+- 子窗 Entry 聚焦（系统焦点窗 775 `ohos_dotnet_subwindo`）下实体键盘直敲 → `sub-1__input` 连续 INPUT-CHANGE：
+  `seed` → `seedjjj78`（11:23:19/11:23:40）→ `seedjjj7800`（11:23:51）；证据 `hit-1123{18,29,39,50}.{json,jpeg}`。
+- **结论：MAUI 键盘输入 = OK**（物理键盘 → IME 硬件通路 → 隐藏输入 onChange → 托管 Entry；与 §1 注入矩阵一致）。
+- 11:25:28 后 inputs 清空（窗口状态变化）；捕获按计划 ~11:56 自动收尾并还原（hilog 512K + 释放锁）。
+- 备注：`ENTER` 提交未观测 `TextSubmitted→Completed`（子窗无 Completed 处理器）——保留边界，下批可补。
+
 ## 4. 文档 / 提交
 
 - 本文件 + `docs/plans/README.md` 索引行 → runtime `commit-paths.sh`（限路径；直推，被拒 fetch/rebase）。
