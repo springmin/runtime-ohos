@@ -52,6 +52,6 @@
 - 必重跑门禁：切片 0 error/0 IL、interaction **801/804 floor 784**、pixel PASS、host-export **164/164**、ridgraph 20/20、markdownlint、sdk `ohos-install-tests`；kit #55 后 `device-round.sh` + soak（子窗 Home suspend、建窗 E=0、close WARN 1）。
 - #55 边界：**api20 band 本镜像装不上**（9568297 "older sdk version in the device"；kit54 旧件 re-sign 同败 → 镜像级收紧，非回归）→ 需要 api20 真机对照时先抬 target/compileSdk 或换降级设备；对照证据可暂用 host 侧（V2 index + labelId/iconId）。
 - #55 边界：**clipboard 真读**（托管 `GetTextAsync`）服务侧仍按 ACL 拦截（host NDK 读同样被拒：`GetPasteDataInner# check permission failed`；写路径零权限可用）→ 真读需 ACL profile（`READ_PASTEBOARD` + system_basic 签名）或用户粘贴触发，**产品决策**；NDK 读封装已就位（获权即通）。**实测补充（2026-10-13）**：**Ctrl+V 用户粘贴零权限可用**（同/跨应用数据均落文本；服务 `IsCtrlVProcess` 2s 一次性窗放行）→ 桌面/键盘形态已闭环；触屏缺口=壳/切片（自绘 Entry 长按菜单不可达）→ 候选=壳级 `PasteButton`（#56，1–2pd）；详见 `2026-10-13-ohos-clipboard-read-ux.md`。
-- 待定项（口径见 `2026-10-12-ohos-mail-lessons.md`，勿在本文件重写）：A loopback 监听可选（≈1–2 人日，免 scheme/chooser，仍受 INTERNET 约束）；B SecureStorage Asset 后端 + fail-closed 开关（低优先）。
+- 待定项（口径见 `2026-10-12-ohos-mail-lessons.md`，勿在本文件重写）：A loopback 监听可选（≈1–2 人日，免 scheme/chooser，仍受 INTERNET 约束）；B SecureStorage Asset 后端 + fail-closed 开关（低优先）。**[2026-10-13 ENG-WAVE] A loopback 与 B fail-closed 开关均已落地入库（ow `630a10b` = `5ecf0b2` + `5b2dc94` 合并；maui `5cfb1b8991`；套件重锚 810/813 floor 793、三 workflow pin 已随动），随下一次切一并带货；Asset 后端仍开放。**
 - kit 组装/文档锚 fail-closed：`check_webauth()` 缺 `(myapp,callback)` 拒装（`f66d67c` 起回调路由无条件随件）；bump 须显式 `--abc-sha`（#54 预刷曾漏 sha → BUMP-SHA-FIX）；`verify-kit` 期望随包重锚（旧值 FAIL 属预期）。
 - 预签 UDID 若变更/缺失则预签件落空，需重签；README 索引与部分 tester 文档按惯例稍后合并补。
