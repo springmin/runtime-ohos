@@ -1,7 +1,7 @@
 # OpenHarmony .NET/MAUI 移植终版一览（STATE-OF-PORT，2026-10-03；当前口径 = kit #55 / 2026-10-13）
 
 > 一页纸（≤60 行）：三路径终局（§1）· kit #55 交付与 off-cycle 维护波（§2）· 修复全景（§3）· 外部项（§4）· 已知限制（§5）· 历史快照（§6）。
-> 当前数字 = release「## Integrity（kit #55）」与随包校验；已与 FINAL（`2026-10-05-ohos-maui-completion-verdict.md`「kit #55 终态」、`2026-10-13-ohos-pre55-integration.md`）、`2026-10-13-ohos-tester-handoff-kit55.md` 交叉一致。证据/明细见各专题报告（README 索引置顶行指向本页）。
+> 当前数字 = release「## Integrity（kit #55）」与随包校验；已与 FINAL（`2026-10-05-ohos-maui-completion-verdict.md`「kit #55 终态」、`2026-10-13-ohos-pre55-integration.md`）、`2026-10-13-ohos-tester-handoff-kit55.md` 交叉一致。**#55 后主线 = ENG-WAVE 整合**（ow `630a10b` / maui `5cfb1b8991`、套件重锚 810/813 floor 793；loopback + fail-closed 已入库待下一刀，见 `2026-10-13-ohos-eng-wave-consolidation.md`）。证据/明细见各专题报告（README 索引置顶行指向本页）。
 > 历史节（§1 表、§3 表、§6 快照）按快照保留；旧轮判定点继续有效。
 
 ## 1. 三路径终局（kit #42 基线；机制与定位未变）
