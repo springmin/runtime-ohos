@@ -1,5 +1,7 @@
 # PRE55-INTEGRATION：最终 master 端到端整合（安装位重同步 + 合并树样例 + 真机轮 + #55 锚）（2026-10-13）
 
+> **[已切] 本整备轮的最终 master（`fa21a1a`）作为 kit #55 基线已于 2026-10-13 切包发布**：发布数字见 release「## Integrity（kit #55）」与 `2026-10-13-ohos-tester-handoff-kit55.md`；本文件转为 #55 证据（off-cycle 波增量 = launcher identity / pasteboard / media 两修 / webauth 解耦 / subwin 样例 / packs+cutkit 加固）。
+
 > 目标：把 LAUNCHER-IDENTITY（`8a48a91`）+ PASTEBOARD-FIX（merge `15237a5`）并入后的 ow `master fa21a1a` 做成一次完整核对——两安装位 pack 重同步（此前为两分支轮残留混合态）、hello-maui 样例默认/`all` 合并树构建 + 离线断言、真机整合轮（互斥锁独占）。#49–#54 资产未动、无上游 PR；一次一构建。载体 = scratch `/data/storage/el2/base/tmp/opencode/pre55-integration/`（fp/cmp/sync/gate/round 脚本与日志）。
 
 ## ① 安装位重同步（install == repo，fail-closed）

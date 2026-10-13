@@ -37,7 +37,7 @@
   （runtime `cfe8a6c4600`）复跑（39/39 merge-tree clean、20/21 rebase clean、0 支需重做）；该预演为
   **周期维护**（随 rc2-watch 周程/上游前进时重跑并更新 `2026-09-28-ohos-upstream-rebase-rehearsal.md`），
   PR 描述等上游写操作按既定约定不做。
-- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #53（#43→#53 均为同一功能面 + 性能/工具增量）。
+- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #55（#43→#55 均为同一功能面 + 性能/工具增量；#55 = off-cycle 维护波）。
 
 ## 5. 平台限制清单
 
@@ -108,3 +108,11 @@
 - **数字口径注（不确定项）**：同 #52/#53——kit 内 5 MAUI AOT 用 `~/.dotnet.rc2-fix`（SDK `26451.112` = 声明基线）打包；构建机默认 `~/.dotnet`（`26451.109`）的 ILCompiler 为 `11.0.0-rc.1.26451.109`（两安装的 preview.28 pack 已逐字节同步）。**打包工具注（供下轮）**：cut-kit P3 需 `--seed-bundle` 保持累积（本轮以 #53 发布 bundle 为种子）；sdk-anchor 正则与 `:=` 形式不兼容（本轮走 KIT53 等价脚本）；fresh worktree 需恢复 git-ignored 的 `packs/**/hosts/**` 宿主。
 - **剩余外部**：tester 轮（#54 主判点回传；读屏环境、实键盘敲击、hybrid 样例复跑）、AGC（App Linking/JIT ACL/rc.2 正式 pin——rc2-watch 10-10 复核 WAIT）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、镜像分支并入状态；本地工程尾巴仅 csc/VBCS 活锁（watchdog 已进 preflight）。**判定不变**：本机可执行功能项 = 0，多窗（S+M+L+L2+L3+POST-L3）全部落地、媒体波闭合（A-M1/B-M1/MEDIA-MICRO），余项纯外部/已文档化降级；当前发布 = kit #54（交接 = `2026-10-11-ohos-tester-handoff-kit54.md`）。
 
+
+## kit #55 终态（off-cycle 维护波，2026-10-13）
+
+- **功能面增量**：**off-cycle 维护波** 随 kit #55 交付——**LAUNCHER-IDENTITY**（ow `8a48a91`）：四包 targets 设备带 minAPIVersion floor `50002014`→`60000020`（restool 出 **RestoolV2** `resources.index`）+ restool 解析版 `module.json` 替换 staged 件（app labelId/iconId、module/ability descriptionId、startWindow\*Id；缺失 fail-closed）+ `OpenHarmonyFeatures` 默认 **`network`**（INTERNET + reason/usedScene；`none` 哨兵）+ Blazor 链 `pack-host.sh` V2-floor 重跑 restool；真机桌面名称/图标 + INTERNET granted。**PASTEBOARD-FIX**（ow `fa9916b`/merge `15237a5`）：剪贴板读移宿主 pasteboard NDK（`host_clipboard.{h,c}` + dlopen 表 + op0/1 本地应答）；ACL 级权限退出特性矩阵与 `all`（`<Acl>` 概念；`all` = 8 非 ACL；显式 `contacts` 仍可）；真机 `all` 装 rc=0、写通、读=服务 ACL（`GetPasteDataInner# check permission failed`；mail 免权限 NDK 读未复现——其读在用户粘贴窗内）。**MEDIA-RESIDUALS**（ow `d7df09c`；maui `44dcef8d15`）：HLS 同源 byte-range 本地切片装载（ArkWeb 拦截 ArrayBuffer 无法 CEF-skip 非零偏移 → -328 → fragLoadError；页面整取切片，壳 206 语义保留）+ 冷启首播有界等页（50 ms/1500 ms 上限）；真机 hlsrange/hlslocal 播完 + 两遍冷启首播 `Success`。**WEBAUTH-DECOUPLE**（ow `f66d67c`）：`myapp://callback` 回调路由从 `WebAuthProbe` 解耦为无条件（默认 hap 即带 skill）+ kit 组装期 `check_webauth()` 门禁。**SUBWIN-COMPLETED**（ow `34bcaa4`）：子窗 Entry `Completed` 探针（样例 + 套件 +3；maui/shell 零改动、abc 不变）。
+- **流程件**：packs/cut-kit 加固随波（PACK-FULL-SYNC P0 安装 pack 门禁 + P1 宿主物化；CUT-KIT-HARDEN P3 三形态锚/累计 seed/P4–P6 预演/AOT InvariantGlobalization；P4 notes append 修复 `a4071cb`；AOT Exec 本地钩子同步修复）。
+- **数字**：7 hap 全 AOT 线（5 MAUI NativeAOT + Blazor 默认/`-nocsp`）、ui/shell abc **620,908/`c473b7be…`**（headless 24,324/`798b2477…` 不变）、宿主 **367,520/`8826adde…`**（PASTEBOARD 重建；导出 164/164）、套件 **801/804 floor 784**、权限矩阵 1/6/8 非 ACL；kit tar **70,312,042 / `504ea1ae…`**、树 `7a226f94…`、sidecar `005cfecb…`、bundle **73,468,932 / `8aa53b67…`**（sdk 锚 `cd5bee91dc…`）；预签 70,151,840 / `fcfb6085…`；轮包 160,728,131 / `db585877…`。
+- **CI**：ow 5/5 @ `fa21a1ab`（interaction 38282810663 / pixel 38282810760 / host-export 38282810742 / ridgraph 38282810697 / markdownlint 38282810671）+ harmony 38282449682 @ 15237a58（= pin 父提交；fa21a1ab 仅 docs）；sdk 锚 `cd5bee91dc…`。
+- **剩余外部**：tester 轮（#55 主判点回传）、AGC（App Linking/JIT ACL/rc.2 正式 pin——rc2-watch 复核 WAIT）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、镜像分支并入状态；本地工程尾巴仅 csc/VBCS 活锁（watchdog 已进 preflight）。**判定不变**：本机可执行功能项 = 0，多窗/媒体波闭合、off-cycle 维护波闭合，余项纯外部/已文档化降级；当前发布 = kit #55（交接 = `2026-10-13-ohos-tester-handoff-kit55.md`）。
