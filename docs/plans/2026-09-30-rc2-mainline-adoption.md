@@ -74,7 +74,8 @@
 
 触发：MAUI `11.0.0-rc.2.26478.12`（dnceng `dotnet11` daily）对应的**官方 rc.2 包上 nuget.org**。
 
-> **现状（2026-10-04 复核）：官方 rc.2 未发布 → WAIT（watcher exit 0）**。ohos-workload 已加监测（RC2-WATCH，`1d39eb7`）：
+> **已完成（2026-10-13 触发 / 2026-10-14 执行，RC2-ALIGN）**：本节 1–5 全清单已落 —— maui 切片 `1c5ff3cbeb`（四包 → `11.0.0-rc.2.26505.5`）、ow `a914a15`（9 工程同步 + 三 workflow pin 随动 + dnceng feed step 删）、Blazor flight 一并换官方 `11.0.0-rc.2.26504.105`；本地门禁：切片 0 error/0 IL、套件 810/813 floor 793、像素 PASS、导出 164/164、§2.2 pack 复核 no-op。
+> **历史（2026-10-04 复核）：官方 rc.2 未发布 → WAIT（watcher exit 0）**。ohos-workload 已加监测（RC2-WATCH，`1d39eb7`）：
 > `scripts/rc2-official-watch.sh`（只读轮询：0=未出现继续等 / 10=出现 / 1=所有源取不到）+ `scripts/selftest-rc2-official-watch.sh`（离线夹具）+
 > `.github/workflows/rc2-watch.yml`（每周一 03:17 UTC + 手动 dispatch）；版本基线与现状见其 `docs/rc2-official-watch.md`
 > （nuget.org 最新 `11.0.0-rc.1.26451.6`、GitHub `11.0.100-rc.1.26458.5`，均未到 rc.2）。触发（exit 10）后按本节 1–5 换 pin。

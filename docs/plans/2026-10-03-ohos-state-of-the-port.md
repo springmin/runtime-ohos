@@ -37,7 +37,7 @@
 1. **tester 轮**：kit #55 交接 + `tester-round-kit55.tar.gz` 已交付，等测试方回传（主判 = launcher 名称/图标 + INTERNET / clipboard 写·读边界 / media 两修 / WebAuth 回调路由 / 子窗 Completed / 权限矩阵 1·6·8 + 承 #54 全量判定点；预签按 tester UDID 直装）。
 2. **AGC**：ACL 申请包（正文 / 技术附件 / 提交顺序）就绪，待账号侧提交；App Linking 域名登记 + `domainVerify` 部署 + 真机 https 投递待办。
 3. **上游**：A1 拆分完成——#132827 的 NamedMutex 部分已开 **dotnet/runtime#135321**（基于 main `b08c345c912`），告知评论已发；`#132827`（余 SharedMemoryManager + 测试）与 `#132953`/`#132866` 等仍 open；17 支 `pr/*` 重锚演练就绪。
-4. **rc.2 正式 pin**：MAUI `11.0.0-rc.2.26478.12` 仍走 dnceng daily feed；**监测记录（最近复核 2026-10-10，`rc2-official-watch.sh` exit 0）**：`status: WAIT`——nuget 四包 latest `11.0.0-rc.1.26451.6`（trigger=no）、GitHub `11.0.100-rc.1.26458.5`（trigger=no）；官方发布后按 rc2-align-runbook 换 pin、删 feed step。
+4. **rc.2 正式 pin（✅ 已切 2026-10-14）**：MAUI 四包 → 官方 `11.0.0-rc.2.26505.5`（maui 切片 `1c5ff3cbeb`、ow `a914a15`；三 workflow pin + dispatch 默认随动，interaction/pixel dnceng feed step 已删；Blazor flight 同步换官方 `11.0.0-rc.2.26504.105`）；覆写此前的 `status: WAIT`（历史记录：2026-10-10 复核 nuget 四包 latest `11.0.0-rc.1.26451.6`（trigger=no）、GitHub `11.0.100-rc.1.26458.5`（trigger=no））。触发/落地记录见 `ohos-workload/docs/rc2-official-watch.md` 与 rc2-align-runbook 头注；下一刀 = 官方戳重切（`2026-10-14-rc2-official-release-assessment.md`）。
 
 ## 5. 已知限制
 
