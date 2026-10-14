@@ -24,7 +24,7 @@
 #include <fcntl.h>
 
 #if defined(__linux__)
-// Also provides SYS_getdents64 for the /proc/self/fd fallback in SetCloexecForAllFdsFallback.
+// Also provides SYS_getdents64 for the OpenHarmony /proc/self/fd fallback.
 #include <sys/syscall.h>
 #if !defined(HAVE_CLOSE_RANGE)
 #if !defined(__NR_close_range)
@@ -232,7 +232,7 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
-#if HAVE_FDWALK || (defined(__linux__) && defined(SYS_getdents64))
+#if HAVE_FDWALK || (defined(TARGET_OPENHARMONY) && defined(__linux__) && defined(SYS_getdents64))
 // Sets FD_CLOEXEC on one open descriptor >= 3. Never closes; see RestrictHandleInheritance.
 // Only defined where a bulk helper below can call it, so no build warns about it being unused.
 static void SetCloexecForFdValue(int fd)
@@ -258,10 +258,10 @@ static int SetCloexecForFd(void* context, int fd)
 }
 #endif
 
-#if defined(__linux__) && defined(SYS_getdents64)
-// Linux lists the open descriptors in /proc/self/fd, so the fallback can touch only the real
-// ones instead of fcntl()ing every number up to RLIMIT_NOFILE (tens of thousands of calls on
-// a device with a high limit).
+#if defined(TARGET_OPENHARMONY) && defined(__linux__) && defined(SYS_getdents64)
+// OpenHarmony traps close_range in seccomp (SIGSYS), so list the open descriptors in
+// /proc/self/fd and touch only the real ones instead of fcntl()ing every number up to
+// RLIMIT_NOFILE (tens of thousands of calls on a device with a high limit).
 //
 // This runs inside the forked child, where malloc is not safe (another thread may have held
 // the allocator lock at fork time), so the listing is read with getdents64 into a stack buffer
@@ -325,12 +325,15 @@ static bool SetCloexecForOpenFdsProc(void)
                     isNumber = false;
                     break;
                 }
-                fd = fd * 10 + (*name - '0');
-                if (fd > (1 << 20))
+                if (fd > (INT_MAX - 9) / 10)
                 {
+                    // Out of int range: treat the listing as incomplete so the caller
+                    // falls back to the bounded rlimit scan.
+                    complete = false;
                     isNumber = false;
                     break;
                 }
+                fd = fd * 10 + (*name - '0');
             }
             if (isNumber)
             {
@@ -348,14 +351,16 @@ static bool SetCloexecForOpenFdsProc(void)
 }
 #endif
 
-// Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
-// Always sets FD_CLOEXEC rather than closing fds directly. Closing fds directly would close
+#if defined(TARGET_OPENHARMONY)
+// Sets FD_CLOEXEC on every open descriptor when no bulk close_range is usable
+// (OpenHarmony: the seccomp policy traps it with SIGSYS). Uses the /proc/self/fd listing
+// when available and falls back to a bounded rlimit scan otherwise.
+// Always sets FD_CLOEXEC rather than closing fds directly: closing fds directly would close
 // waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC), making it impossible to
 // report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
 static void SetCloexecForAllFdsFallback(void)
 {
 #if defined(__linux__) && defined(SYS_getdents64)
-    // Touch only the descriptors that are actually open when the kernel exposes them.
     if (SetCloexecForOpenFdsProc())
     {
         return;
@@ -391,33 +396,18 @@ static void SetCloexecForAllFdsFallback(void)
         }
     }
 }
-
-#if !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range))
-// The close_range availability answer is probed once per process, in the parent, and cached;
-// the fork child sees the cached value, so a kernel or policy that refuses the syscall costs
-// one failed call for the lifetime of the process instead of one per spawn.
-// -1 = not probed yet, 0 = unavailable, 1 = available.
-static volatile int s_closeRangeAvailable = -1;
-
-// Probing with descriptor UINT_MAX is side-effect free: CLOSE_RANGE_CLOEXEC on a descriptor
-// that is not open only asks the kernel whether the syscall is supported. The probe must not
-// run on OpenHarmony (see RestrictHandleInheritance) because its seccomp policy raises SIGSYS.
-static void ProbeCloseRange(void)
-{
-    if (s_closeRangeAvailable >= 0)
-    {
-        return;
-    }
-#if HAVE_CLOSE_RANGE
-    int rc = close_range(UINT_MAX, UINT_MAX, CLOSE_RANGE_CLOEXEC);
-#else
-    int rc = (int)syscall(__NR_close_range, UINT_MAX, UINT_MAX, CLOSE_RANGE_CLOEXEC);
-#endif
-    s_closeRangeAvailable = rc == 0 ? 1 : 0;
-}
 #endif
 
-static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
+// Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
+// a performant native way (close_range()/fdwalk()) to restrict which fds a child process inherits.
+//
+// We intentionally do NOT fall back to manually scanning every possible fd via fcntl() in that
+// case: without close_range()/fdwalk(), there is no reliable way to learn only the fds that are
+// actually open, so such a scan would need to cover the entire valid fd range (up to INT_MAX) to
+// be correct -- something that has been measured to take multiple minutes of CPU time per
+// Process.Start call. That's not an acceptable cost, so we report failure instead and let the
+// managed layer surface a clear, actionable error.
+static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
 {
     // FDs 0-2 are stdin/stdout/stderr; this method must be called AFTER the dup2 calls.
     // We always set FD_CLOEXEC rather than closing fds directly. This is critical because
@@ -425,49 +415,32 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     // until execve() is called so that exec failures can be reported back to the parent.
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
+    int result;
 #if HAVE_CLOSE_RANGE && !defined(TARGET_OPENHARMONY)
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
-    // TARGET_OPENHARMONY: the OpenHarmony seccomp policy traps close_range (SIGSYS);
-    // use the fallback until the syscall is allowed.
-    bool restricted = false;
-    if (s_closeRangeAvailable != 0)
-    {
-        restricted = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) == 0;
-        if (!restricted)
-        {
-            s_closeRangeAvailable = 0;   // remember for the next spawn
-        }
-    }
-    if (!restricted)
-    {
-        SetCloexecForAllFdsFallback();
-    }
+    result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif defined(__NR_close_range) && !defined(TARGET_OPENHARMONY)
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-    // TARGET_OPENHARMONY: same seccomp restriction as above; use the fallback.
-    bool restricted = false;
-    if (s_closeRangeAvailable != 0)
-    {
-        restricted = syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) == 0;
-        if (!restricted)
-        {
-            s_closeRangeAvailable = 0;   // remember for the next spawn
-        }
-    }
-    if (!restricted)
-    {
-        SetCloexecForAllFdsFallback();
-    }
+    result = (int)syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif HAVE_FDWALK
     // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
-    if (fdwalk(SetCloexecForFd, NULL) != 0)
-    {
-        SetCloexecForAllFdsFallback();
-    }
-#else
+    result = fdwalk(SetCloexecForFd, NULL);
+#elif defined(TARGET_OPENHARMONY)
+    // OpenHarmony's seccomp policy traps close_range with SIGSYS, so set FD_CLOEXEC
+    // by walking /proc/self/fd instead (bounded; falls back to an rlimit scan if the
+    // listing cannot be read).
     SetCloexecForAllFdsFallback();
+    result = 0;
+#else
+    result = -1;
 #endif
+
+    if (result != 0)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
 
     // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
     for (int i = 0; i < inheritedFdCount; i++)
@@ -482,6 +455,8 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
             }
         }
     }
+
+    return 0;
 }
 
 // Forward declaration of the internal fork+exec function
@@ -932,16 +907,6 @@ static int32_t ForkAndExecProcessInternal(
     (void)! SystemNative_Pipe(waitForChildToExecPipe, PAL_O_CLOEXEC);
 #endif
 
-#if !defined(TARGET_OPENHARMONY) && (HAVE_CLOSE_RANGE || defined(__NR_close_range))
-    if (inheritedFdCount >= 0)
-    {
-        // One-time probe in the parent: the fork child only reads the cached answer instead of
-        // paying a failed close_range call on every spawn. Never probed on OpenHarmony, where
-        // the syscall raises SIGSYS.
-        ProbeCloseRange();
-    }
-#endif
-
     // The fork child must not be signalled until it calls exec(): our signal handlers do not
     // handle being raised in the child process correctly
     sigfillset(&signal_set);
@@ -1072,9 +1037,9 @@ static int32_t ForkAndExecProcessInternal(
             }
         }
 
-        if (inheritedFdCount >= 0)
+        if (inheritedFdCount >= 0 && RestrictHandleInheritance(inheritedFds, inheritedFdCount) != 0)
         {
-            RestrictHandleInheritance(inheritedFds, inheritedFdCount);
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
 #if HAVE_PR_SET_PDEATHSIG

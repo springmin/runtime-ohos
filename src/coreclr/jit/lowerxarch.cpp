@@ -402,7 +402,8 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     // up to 16 bytes lower than offset + size. But offsets large enough to hit this case are likely
     // to be extremely rare for this to ever be a CQ issue.
     // On x86 this shouldn't be needed but then again, offsets large enough to hit this are rare.
-    if (addrMode->Offset() > (INT32_MAX - static_cast<int>(size)))
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    if (addrMode->Offset() >= (INT32_MAX - static_cast<int>(size)))
     {
         return;
     }
@@ -1215,6 +1216,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 {
     assert(node->GetOperandCount() == 3);
+    assert(varTypeIsFloating(node->GetSimdBaseType()));
 
     bool negated  = false;
     bool subtract = false;
@@ -1296,12 +1298,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     {
         GenTree* arg = node->Op(i);
 
-        if (isScalar && arg->OperIs(GT_NEG))
+        if (isScalar && arg->OperIs(GT_NEG) && arg->TypeIs(node->GetSimdBaseType()))
         {
             // For scalar FMA the CreateScalarUnsafe wrapper around each argument has already been
             // removed during lowering (floating-point CreateScalarUnsafe is a no-op), so a negated
-            // scalar argument now appears as a bare GT_NEG. Fold that negation into the FMA variant
-            // and drop the GT_NEG node.
+            // scalar argument now appears as a bare GT_NEG. Only fold it if its type matches the FMA
+            // element type: a reinterpret can otherwise change which bit represents the sign.
 
             GenTree* negOp = arg->gtGetOp1();
             BlockRange().Remove(arg);
@@ -1310,6 +1312,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
             node->Op(i) = negOp;
 
             negatedArgs[i - 1] ^= true;
+            continue;
+        }
+
+        if (isScalar && (i == 1))
+        {
+            // Scalar FMA copies the upper elements of its first operand, including any vector negation.
             continue;
         }
 
@@ -1424,21 +1432,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t   numArgs = node->GetOperandCount();
         GenTree* lastOp  = node->Op(numArgs);
-        uint8_t  mode    = 0xFF;
 
         if (lastOp->IsCnsIntOrI())
         {
             // Mark the constant as contained since it's specially encoded
             MakeSrcContained(node, lastOp);
-
-            mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
         }
 
-        if ((mode & 0x03) != 0x00)
-        {
-            // Embedded rounding only works for register-to-register operations, so skip containment
-            return node->gtNext;
-        }
+        // Codegen consumes the rounding operand. The remaining lowering and containment
+        // expect the ordinary operand count, even when the rounding mode is implicit.
+        return node->gtNext;
     }
 
     bool       isScalar = false;
@@ -2231,11 +2234,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // or uint) and for a source vector of any width, provided the element being
             // extracted is one of the first four. That is all count_s can encode and all
             // that resides in the low 128 bits, which is the only part insertps reads.
+            //
+            // A floating-point CreateScalarUnsafe whose user is another HW intrinsic has
+            // already been removed by the time we get here (operands are lowered before
+            // their users), so we must also recognize the bare extraction as op2.
 
-            if ((count_s == 0) && op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe))
+            if ((count_s == 0) && op2->OperIsHWIntrinsic())
             {
-                GenTreeHWIntrinsic* createScalar = op2->AsHWIntrinsic();
-                GenTree*            scalarOp     = createScalar->Op(1);
+                GenTreeHWIntrinsic* createScalar =
+                    op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe) ? op2->AsHWIntrinsic() : nullptr;
+                GenTree* scalarOp = (createScalar != nullptr) ? createScalar->Op(1) : op2;
 
                 if (scalarOp->OperIsHWIntrinsic() && (genTypeSize(scalarOp->AsHWIntrinsic()->GetSimdBaseType()) == 4))
                 {
@@ -2287,7 +2295,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         BlockRange().Remove(extract);
-                        BlockRange().Remove(createScalar);
+
+                        if (createScalar != nullptr)
+                        {
+                            BlockRange().Remove(createScalar);
+                        }
                     }
                 }
             }
@@ -8159,7 +8171,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
@@ -8328,6 +8341,27 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     // TODO-XArch-CQ: factor out cmp optimization in 'genCondSetFlags' to be used here
     // or in other backend.
 
+    auto canCompareAtMemoryWidth = [this, cmp](GenTree* memoryOp, GenTree* otherOp) {
+        if (memoryOp->TypeGet() == otherOp->TypeGet())
+        {
+            return true;
+        }
+
+        if (!cmp->OperIsCmpCompare() || !m_compiler->opts.OptimizationEnabled() || !varTypeIsSmall(memoryOp) ||
+            !varTypeIsIntegral(otherOp))
+        {
+            return false;
+        }
+
+        IntegralRange range = IntegralRange::ForType(memoryOp->TypeGet());
+        if (otherOp->IsIntegralConst())
+        {
+            return range.Contains(otherOp->AsIntConCommon()->IntegralValue());
+        }
+
+        return range.Contains(IntegralRange::ForNode(otherOp, m_compiler));
+    };
+
     if (CheckImmedAndMakeContained(cmp, op2))
     {
         // If the types are the same, or if the constant is of the correct size,
@@ -8336,8 +8370,12 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         {
             TryMakeSrcContainedOrRegOptional(cmp, op1);
         }
+        else if (IsContainableMemoryOp(op1) && canCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+        }
     }
-    else if (op1Type == op2Type)
+    else
     {
         // Note that TEST does not have a r,rm encoding like CMP has but we can still
         // contain the second operand because the emitter maps both r,rm and rm,r to
@@ -8346,7 +8384,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         bool isSafeToContainOp1 = true;
         bool isSafeToContainOp2 = true;
 
-        if (IsContainableMemoryOp(op2))
+        if (IsContainableMemoryOp(op2) && canCompareAtMemoryWidth(op2, op1))
         {
             isSafeToContainOp2 = IsSafeToContainMem(cmp, op2);
             if (isSafeToContainOp2)
@@ -8355,7 +8393,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
         }
 
-        if (!op2->isContained() && IsContainableMemoryOp(op1))
+        if (!op2->isContained() && IsContainableMemoryOp(op1) && canCompareAtMemoryWidth(op1, op2))
         {
             isSafeToContainOp1 = IsSafeToContainMem(cmp, op1);
             if (isSafeToContainOp1)
@@ -8364,7 +8402,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
         }
 
-        if (!op1->isContained() && !op2->isContained())
+        if ((op1Type == op2Type) && !op1->isContained() && !op2->isContained())
         {
             // One of op1 or op2 could be marked as reg optional
             // to indicate that codegen can still generate code
@@ -8378,6 +8416,17 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
                 MakeSrcRegOptional(cmp, regOptionalCandidate);
             }
         }
+    }
+
+    // A contained memory operand bounds both values; otherwise small compares
+    // have matching operand types.
+    GenTree* rangeSource = (op2->isContained() && !op2->IsCnsIntOrI()) ? op2 : op1;
+    if (cmp->OperIsCompare() && (cmp->GetCompareSize() < genTypeSize(TYP_INT)) && varTypeIsUnsigned(rangeSource))
+    {
+        // A small compare uses a lower-numbered sign bit. Use unsigned conditions
+        // when zero extension would have made the wider sign bit zero.
+        // For example, byte 200 < 100 is false, but signed byte -56 < 100 is true.
+        cmp->SetUnsigned();
     }
 }
 
@@ -8751,6 +8800,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
     // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
+
+    if ((parentIntrinsicId == NI_AVX512_BlendVariableMask) && childNode->NodeOrContainedOperandsMayThrow(m_compiler))
+    {
+        // The blend itself suppresses faults from unselected memory lanes, even
+        // when we are not embedding another operation under its mask.
+        *supportsRegOptional = false;
+        return false;
+    }
 
     // In general, we can mark the child regOptional as long as it is at least as large as the parent instruction's
     // memory operand size.
