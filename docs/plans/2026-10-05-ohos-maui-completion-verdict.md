@@ -37,7 +37,7 @@
   （runtime `cfe8a6c4600`）复跑（39/39 merge-tree clean、20/21 rebase clean、0 支需重做）；该预演为
   **周期维护**（随 rc2-watch 周程/上游前进时重跑并更新 `2026-09-28-ohos-upstream-rebase-rehearsal.md`），
   PR 描述等上游写操作按既定约定不做。
-- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #55（#43→#55 均为同一功能面 + 性能/工具增量；#55 = off-cycle 维护波）。
+- 版本注：本判定不随 kit 版本号变化；现行发布为 kit #56（#43→#56 均为同一功能面 + 性能/工具增量；#56 = rc.2 官方包对齐 + TOUCH-PASTE + ENG-WAVE）。
 
 ## 5. 平台限制清单
 
@@ -116,3 +116,11 @@
 - **数字**：7 hap 全 AOT 线（5 MAUI NativeAOT + Blazor 默认/`-nocsp`）、ui/shell abc **620,908/`c473b7be…`**（headless 24,324/`798b2477…` 不变）、宿主 **367,520/`8826adde…`**（PASTEBOARD 重建；导出 164/164）、套件 **801/804 floor 784**、权限矩阵 1/6/8 非 ACL；kit tar **70,312,042 / `504ea1ae…`**、树 `7a226f94…`、sidecar `005cfecb…`、bundle **73,468,932 / `8aa53b67…`**（sdk 锚 `cd5bee91dc…`）；预签 70,151,840 / `fcfb6085…`；轮包 160,728,131 / `db585877…`。
 - **CI**：ow 5/5 @ `fa21a1ab`（interaction 38282810663 / pixel 38282810760 / host-export 38282810742 / ridgraph 38282810697 / markdownlint 38282810671）+ harmony 38282449682 @ 15237a58（= pin 父提交；fa21a1ab 仅 docs）；sdk 锚 `cd5bee91dc…`。
 - **剩余外部**：tester 轮（#55 主判点回传）、AGC（App Linking/JIT ACL/rc.2 正式 pin——rc2-watch 复核 WAIT）、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）、镜像分支并入状态；本地工程尾巴仅 csc/VBCS 活锁（watchdog 已进 preflight）。**判定不变**：本机可执行功能项 = 0，多窗/媒体波闭合、off-cycle 维护波闭合，余项纯外部/已文档化降级；当前发布 = kit #55（交接 = `2026-10-13-ohos-tester-handoff-kit55.md`）。
+
+## kit #56 终态（rc.2 官方包对齐 + TOUCH-PASTE + ENG-WAVE，2026-10-14）
+
+- **功能面增量**：**RC2-ALIGN**（官方 MAUI 四包 `11.0.0-rc.2.26505.5`（nuget.org）落地：切片 maui `1c5ff3cbeb`、ow 9 工程、三 workflow pin、interaction/pixel 删 dnceng feed step、`hello-blazorwasm` flight → 官方 `11.0.0-rc.2.26504.105`；零功能面改动）+ **TOUCH-PASTE**（ow `56f1624` → merge `cc6ca34`）：壳级 ArkUI `PasteButton` 安全控件闭环（长按 → 浮层 → 点击 = 系统临时授予剪贴板读 → 按 selection 插值 → `notifyTextInput` 落聚焦 Entry）；opt-in = 沙箱标记 `filesDir/touch-paste.enabled`；abc **620,908→637,224（`8503a3c2…`）**、套件 **814/817 floor 797**；真机跨应用闭环 + 零回归。**WEBAUTH-LOOPBACK**（maui `2a195809db`；ow `5b2dc94`）：loopback 单次监听回跳（免 chooser；https/特权端口拒绝；v6 `localhost` 101 ms）。**SECURE-STORAGE-FAILCLOSED**（maui `ad15ff83a3` → merge `ffa9f68a77`；ow `5ecf0b2`）：`OpenHarmonySecureStorage.FailClosed` opt-in（失败态 Set 抛错不落盘 / sealed 读抛错；默认关）。
+- **流程件**：ENG-WAVE 合并（ow `630a10b`、maui `5cfb1b8991`、三 pin 随动）+ rc2-watch 收口 + 本条 kit 切包全链（P0 双安装门禁 + 红控、build/verify/bundle/sdk 锚、clobber 10 项、预签、manifest、CI、轮包）。
+- **数字**：7 hap 全 AOT 线（5 MAUI NativeAOT + Blazor 默认/`-nocsp`）、ui/shell abc **637,224/`8503a3c2…`**（headless 24,324/`798b2477…` 不变）、宿主 **367,520/`8826adde…`**（导出 164/164）、套件 **814/817 floor 797**、权限矩阵 1/6/8 非 ACL；kit tar **70,420,041 / `aba73b61…`**、树 `99a37cec…`、sidecar `527b6e3a…`、bundle **73,470,627 / `c678a7ee…`**（sdk 锚 `d62bfe0b79…`）；预签 70,240,169 / `0e062b5e…`；轮包 160,943,858 / `7fd703cc…`。
+- **CI**：ow 5/5 @ `cc6ca34`（interaction 38504581652 / pixel 38504581628 / host-export 38504581746 / ridgraph 38504581637 / markdownlint 38504581605）+ harmony 38504581686 @ cc6ca346；sdk 锚 `d62bfe0b79…`。
+- **剩余外部**：tester 轮（#56 主判点回传）、AGC（App Linking/JIT ACL）、**RC2-OFFICIAL 官方戳重切（三仓 `.105`，另一会话推进中）**、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）；本地工程尾巴仅 csc/VBCS 活锁（watchdog 已进 preflight）。**判定不变**：本机可执行功能项 = 0，多窗/媒体波闭合、rc.2 对齐与 ENG-WAVE/TOUCH-PASTE 闭合，余项纯外部/已文档化降级；当前发布 = kit #56（交接 = `2026-10-14-ohos-tester-handoff-kit56.md`）。
