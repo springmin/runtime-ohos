@@ -1,6 +1,6 @@
 # N 组 PR 批量开启清单（预生成，2026-09-28）
 
-> **现况更新（2026-10-14）**：①`#132953` **APPROVED ＋ MERGEABLE** ✓（10-14 04:15Z jkoritzinsky 批、04:21Z jkotas Update branch → head `fb3ff1a99b` ✗；CI 重跑后合并 → **C3 随时触发** ⏳）；
+> **现况更新（2026-10-14）**：①`#132953` **已 MERGED ✓✓**（jkotas 于 10-14 13:48:36Z **squash** ✗ → `14399016e4c` ✓ 已验证在 main=`0232cf718cd` ✗）——**C3 正式激活** ⏳（复演对 post-infra main 重跑中 ✗；eng/common 同步待做 ✗；`#132866` 仍缺 ✗）；
 > ②`upstream/main` 已前进到 `14e8bce614e`（+218 提交）→ **前置 2 已执行** ✓：10-09 复演完成（见演练文档
 > 刷新节）——`infra`＋15 支 CLEAN-SAME；**N15/C2 各 1 处机械冲突，分辨率已验证在案** ⚠️；
 > `platform-numa`/`named-mutex` 确认可弃、`tls-flag-cleanup` 既定丢弃 ✓；③`eng/common` 前提已清 ✓
