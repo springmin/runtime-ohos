@@ -8,6 +8,8 @@
 > （arcade#17608 于 09-24 合并 ✓）；④**`#135321` 已合并**（10-07 ✓）→ 去重清单中的
 > `NamedMutex.Unix.cs` **以上游为准** ✓（`pr/ohos-named-mutex` 重演净 diff 空 → 可弃 ✓）；⑤C2/C3 仍等 `#132866` 答复 ✗；
 > ⑥自 2026-10-08 起**所有上游可见动作逐次报批** ✓（playbook §3 ✓）。
+> **N1 已开（10-15）**：`#135808`（刷新重切版，净差门 4+/3- 纯 OpenHarmony）；**波次政策**：
+> 在飞 ≤3–4 笔、「合 1 补 1」（先例 OpenBSD 38 笔小步快跑、中位 1.7 天；规避洪泛与 CI 成本）。
 
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
