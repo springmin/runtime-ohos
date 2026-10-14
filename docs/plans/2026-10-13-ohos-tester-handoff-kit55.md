@@ -52,7 +52,7 @@ sh tester-run.sh --mode-matrix --kit-tar ./device-test-kit.tar.gz \
 | **media 两修（#55 主判点 3）** | `app://media/element/hlslocal`、`app://media/element/hlsrange`、`app://media/element/short`（冷启直点） | hlslocal/hlsrange 均 `ended=True state=Completed`；冷启首播 `play=Success`（无 Unavailable）；壳日志 Range=0、fragLoadError=0、整取 ≤2 | hilog（`__OHMEDIA`/`local-slice`/`media range`）+ 截图 + （可选）loopback 服务端日志 |
 | **WebAuth 回调路由（#55 主判点 4）** | 默认 hap：`aa start -U 'myapp://callback?code=test&state=s1'`（系统 chooser 点选本 App 亦可） | `[webauth-probe] webauth: ok code=test state=s1`（或回调后被样例 UI 状态记录）；未注册 scheme 负控无转发 | hilog `webauth` 行 + 状态页截图 |
 | **子窗 Completed（#55 主判点 5）** | 开子窗样例 → 子窗 Entry 聚焦 → 实键盘回车 | label `child entry completed: <text>`（与 TextChanged 同链） | 截图（子窗）+ hilog（`SUB_EVENT_TEXT_SUBMITTED` op15 链） |
-| **权限矩阵（#55 主判点 6）** | 分别装默认 / `-permissions` / `all` 件（同 bundle 替换安装）→ `bm dump` | 默认 1（INTERNET）；permissions 6（含 READ_CONTACTS 安装风险告警）；`all` 8 非 ACL（无 READ_CONTACTS/READ_PASTEBOARD）；卸载重装链干净 | `bm dump` 原文 3 组 |
+| **权限矩阵（#55 主判点 6）** | 分别装默认 / `-permissions` / `all` 件（同 bundle 替换安装）→ `bm dump` | 默认 1（INTERNET）；permissions 6（含 READ_CONTACTS 安装风险告警；**本机 7.0.0.109 实测该件拒装 9568289**=ACL 边界，勿作缺陷）；`all` 8 非 ACL（无 READ_CONTACTS/READ_PASTEBOARD）；卸载重装链干净 | `bm dump` 原文 3 组 |
 | **门禁回归 / 指纹基座** | 有源码测试者跑 `sh verify-kit.sh` 与 `test/maui-platform-verify` | verify-kit **0 FAIL/0 WARN**（默认 620908,24324）；`[suite] checks=801 total=804 floor=784 assert=True`；导出 **164/164**；像素 PASS | 终端输出 |
 | **承 #54 判定点**（A-M1 / B-M1 / MEDIA-MICRO / MODAL-OVERLAY / SUBWINDOW-DEFAULT4 / 深链 / WebAuth 显隐 / 弹窗 / POST-L3 等） | 同 `2026-10-11-ohos-tester-handoff-kit54.md` §2 | 不变 | 同上 §2 各卡 |
 
