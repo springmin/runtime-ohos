@@ -97,4 +97,11 @@
    所有版本的别名播种被整段跳过 ✗。修复提交 **`6b43c08e92`** ✗：新增 `ALIAS_SOURCE_RUNTIME_VERSION`
    （versions.env ✗，= 最近已发布 `11.0.0-rc.2.26451.112` ✗）＋ 同版本不可得时**回落到它**（经 release
    `SHA256SUMS` 验证 ✓；alias 按目标版本重写 ✗——任意已发布 OHOS pack 均为合法基底 ✓）。
-   → **重派 run `38505697606`** ⏳（观察中 ✗）。
+   → 重派 run `38505697606`（45m30s ✗）：**alias 修复生效** ✓（runtime 阶段全过：R2R 180/180 ✓、`.105`
+   runtime tar 叠层 ✓；aspnet 过 ✓）——但 **sdk 阶段编译失败** ✗（10 个合并残留错误 ✗）。
+6. **合并残留编译错修复** ⚠️：run `38505697606` 在 sdk 编译报 10 错 ✗，全部为"冲突取官方侧 ＋ main 线更新"
+   混搭的残留 ✗：①同名 const 被自动合并成两份（`MSBuildLogger` ✗）；②测试方法双侧重复（CS0111 ✗，
+   2 文件 3 方法 ✗）；③`RegistryTests` 调 `GetStreamAsync` 而官方 src 已改名 `GetUnvalidatedStreamAsync` ✗；
+   ④`MicrosoftTestingPlatformTestCommand`（官方版早于 main 的 `CLI_AOT` 护栏 ✗）把 `MSBuildSession`（MSBuild
+   API ✗）带进 AOT 编译集 ✗——**恢复 main 护栏版** ✓。修复提交 **`d709fe3270`** ✗（3 方法去重、2 调用改名、
+   1 文件还原 ✓）→ **重派 run `38513763455`** ⏳（观察中 ✗）。

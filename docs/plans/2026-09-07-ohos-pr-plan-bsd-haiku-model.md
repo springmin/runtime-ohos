@@ -196,7 +196,11 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   route posted 2026-10-14 01:22Z** (`#issuecomment-6158765255`,
   @dotnet/area-infrastructure-libraries) after three full PT workdays of
   silence on the direct ask (jkotas was active elsewhere — queue vs
-  notifications); then C3.
+  notifications); **the route worked the same day (10-14)**: jkoritzinsky
+  approved 04:15Z and jkotas used "Update branch" at 04:21Z (head ->
+  fb3ff1a99b; reviewDecision APPROVED, MERGEABLE, checks re-running);
+  C3 triggers on merge. Copilot bot posted 2 medium musl-host RID findings —
+  no code push while the approval stands.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**; later
   labeled `blocked` (jkotas: waiting on jkoritzinsky's shared-memory design
   changes; the non-shared-mutex parts are fine **if separated**). **Split
