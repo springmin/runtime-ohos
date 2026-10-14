@@ -91,3 +91,10 @@
    `upload_release=true` ✗）——构建完成后自动上传三仓 `v…-ohos` 线 ✓。
 4. **构建后待办** ⏳：三仓 `-ohos` 资产核验 → selfsign 重挂（如缺 ✗）→ 镜像至 `-openharmony` → 锚重测
    （`SDK_TARBALL_SHA256` / `RUNTIME_TARBALL_SHA256` 将变 ✗；selfsign 复核 ✓）→ 设备 smoke → 交接/记录更新 ✓。
+5. **首跑失败与修复** ⚠️：run `38502009121`（29m36s ✗）在 runtime 阶段报 `NETSDK1112`（linux-musl-arm64 pack
+   缺 ✗）——根因 = **musl alias 的 bootstrap 鸡生蛋** ✗：`seed_musl_runtime_pack_alias_from_release` 要取
+   `v$RT_VERSION-ohos` 的 runtime pack 作别名基底，但 `.105` 尚未发布 → fail-closed 拒下 → 函数**早退** ✗、
+   所有版本的别名播种被整段跳过 ✗。修复提交 **`6b43c08e92`** ✗：新增 `ALIAS_SOURCE_RUNTIME_VERSION`
+   （versions.env ✗，= 最近已发布 `11.0.0-rc.2.26451.112` ✗）＋ 同版本不可得时**回落到它**（经 release
+   `SHA256SUMS` 验证 ✓；alias 按目标版本重写 ✗——任意已发布 OHOS pack 均为合法基底 ✓）。
+   → **重派 run `38505697606`** ⏳（观察中 ✗）。
