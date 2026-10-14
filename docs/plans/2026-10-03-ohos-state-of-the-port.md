@@ -1,7 +1,8 @@
-# OpenHarmony .NET/MAUI 移植终版一览（STATE-OF-PORT，2026-10-03；当前口径 = kit #56 / 2026-10-14）
+# OpenHarmony .NET/MAUI 移植终版一览（STATE-OF-PORT，2026-10-03；当前口径 = kit #57 / 2026-10-14）
 
-> 一页纸（≤60 行）：三路径终局（§1）· kit #56 交付与 rc.2 官方对齐 + TOUCH-PASTE 波（§2）· 修复全景（§3）· 外部项（§4）· 已知限制（§5）· 历史快照（§6）。
-> 当前数字 = release「## Integrity（kit #56）」与随包校验；已与 FINAL（`2026-10-05-ohos-maui-completion-verdict.md`「kit #56 终态」）、`2026-10-14-ohos-tester-handoff-kit56.md` 交叉一致。**#56 波 = rc.2 官方包对齐（RC2-ALIGN）+ ENG-WAVE（loopback/fail-closed）+ TOUCH-PASTE**（maui `1c5ff3cbeb` / ow `cc6ca34`；详见 `2026-10-14-rc2-official-release-assessment.md`、`2026-10-13-ohos-touch-paste.md`、`2026-10-13-ohos-eng-wave-consolidation.md`）；**下一刀 = 待定触发**（RC2-OFFICIAL 官方戳重切为候选）。证据/明细见各专题报告（README 索引置顶行指向本页）。
+> 一页纸（≤60 行）：三路径终局（§1）· kit #57 交付与官方 rc.2 重切 + 三卡（§2）· 修复全景（§3）· 外部项（§4）· 已知限制（§5）· 历史快照（§6）。
+> 当前数字 = release「## Integrity（kit #57）」与随包校验；已与 FINAL（`2026-10-05-ohos-maui-completion-verdict.md`「kit #56 终态」）、`2026-10-14-ohos-tester-handoff-kit57.md` 交叉一致。**#57 波 = 官方 rc.2 戳重切（RC2-OFFICIAL；SDK `.105` / workload `.29`）+ JIT/interp 件与三卡（CG2-R2R / AOT-STARTUP / FIXRR）**，功能面 = #56 全量（rc.2 官方包对齐（RC2-ALIGN）+ ENG-WAVE（loopback/fail-closed）+ TOUCH-PASTE；maui `1c5ff3cbeb` / ow `cc6ca34`→`6b62a49`；详见 `2026-10-14-ohos-tester-handoff-kit57.md`）。
+> kit #56 旧数字（历史）：release「## Integrity（kit #56）」；旧描述行保留于下方历史节。**#56 波 = rc.2 官方包对齐（RC2-ALIGN）+ ENG-WAVE（loopback/fail-closed）+ TOUCH-PASTE**（maui `1c5ff3cbeb` / ow `cc6ca34`；详见 `2026-10-14-rc2-official-release-assessment.md`、`2026-10-13-ohos-touch-paste.md`、`2026-10-13-ohos-eng-wave-consolidation.md`）；**下一刀 = 待定触发**（RC2-OFFICIAL 官方戳重切为候选）。证据/明细见各专题报告（README 索引置顶行指向本页）。
 > 历史节（§1 表、§3 表、§6 快照）按快照保留；旧轮判定点继续有效。
 
 ## 1. 三路径终局（kit #42 基线；机制与定位未变）
