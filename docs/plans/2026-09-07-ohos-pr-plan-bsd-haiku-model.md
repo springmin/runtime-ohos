@@ -199,8 +199,11 @@ Open PRs (dotnet/runtime), all quiet as of 2026-10-01:
   notifications); **the route worked the same day (10-14)**: jkoritzinsky
   approved 04:15Z and jkotas used "Update branch" at 04:21Z (head ->
   fb3ff1a99b; reviewDecision APPROVED, MERGEABLE, checks re-running);
-  C3 triggers on merge. Copilot bot posted 2 medium musl-host RID findings —
-  no code push while the approval stands.
+  C3 triggers on merge. Copilot bot posted 2 medium musl-host RID findings
+  (musl build host clobbers __PortableTargetOS via the host ldd probe); replies
+  posted 05:28Z (discussion_r4267114051 / r4267114298): arcade#17608 already
+  scopes the probe to targetOs=linux, so the eng/common sync resolves it — no
+  code push while the approval stands.
 - **#132827** sandbox fixes (3 files, +19/−2) — **APPROVED 09-26**; later
   labeled `blocked` (jkotas: waiting on jkoritzinsky's shared-memory design
   changes; the non-shared-mutex parts are fine **if separated**). **Split
