@@ -1,8 +1,9 @@
 # N 组 PR 批量开启清单（预生成，2026-09-28）
 
-> **现况更新（2026-10-14）**：①`#132953` **已 MERGED ✓✓**（jkotas 于 10-14 13:48:36Z **squash** ✗ → `14399016e4c` ✓ 已验证在 main=`0232cf718cd` ✗）——**C3 正式激活** ⏳（复演对 post-infra main 重跑中 ✗；eng/common 同步待做 ✗；`#132866` 仍缺 ✗）；
-> ②`upstream/main` 已前进到 `14e8bce614e`（+218 提交）→ **前置 2 已执行** ✓：10-09 复演完成（见演练文档
-> 刷新节）——`infra`＋15 支 CLEAN-SAME；**N15/C2 各 1 处机械冲突，分辨率已验证在案** ⚠️；
+> **现况更新（2026-10-14）**：①`#132953` **已 MERGED ✓✓**（jkotas 于 10-14 13:48:36Z **squash** ✗ → `14399016e4c` ✓ 已验证在 main=`0232cf718cd` ✗）——**C3 正式激活** ⏳（复演刷新已完成 ✗；eng/common 同步待做 ✗；`#132866` 仍缺 ✗）；
+> ②`upstream/main` = `0232cf718cd`（post-infra ✗）→ **C3 复演刷新已执行** ✓（10-14 ✗，隔离 scratch ✗）：13 支 CLEAN-SAME ✓；
+> **4 支冲突已全解析并终验** ✓（`pal-process`/`crossgen-corelib`＝上游新变更（`#135753`/`#135397`）所致 ✗；`libs-tfm`/C2＝机械复现 ✗；
+> recipes/tips/pids 见演练文档「10-14 C3 复演刷新」节 ✗）；`infra` 已合并免重放 ✓，`tls`/`platform-numa`/`named-mutex` 弃 ✓；
 > `platform-numa`/`named-mutex` 确认可弃、`tls-flag-cleanup` 既定丢弃 ✓；③`eng/common` 前提已清 ✓
 > （arcade#17608 于 09-24 合并 ✓）；④**`#135321` 已合并**（10-07 ✓）→ 去重清单中的
 > `NamedMutex.Unix.cs` **以上游为准** ✓（`pr/ohos-named-mutex` 重演净 diff 空 → 可弃 ✓）；⑤C2/C3 仍等 `#132866` 答复 ✗；

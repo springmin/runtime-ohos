@@ -108,3 +108,26 @@
 - **#134670 去重提示**：`OperatingSystem.cs` / `numasupport.cpp` / `System.Private.CoreLib.Shared.projitems` 已在上游；`feature/openharmony` 尚未含该提交（09-28 tip `ccade4009c4`，落后 377），按 playbook §1 合并/去重时以上游为准。
 - `rehearse2/*` 清单（18 ref，base 均 `5b82fc4ae86b`，提交数=旧 infra 栈＋自有）：infra(15)、clrfeatures/pal/zstd/libs-native/apphost/tryrun/pal-process/ifaddrs/wx-default/crossgen-corelib/aot-unix/aot-singleentry/libs-tfm(16)、console/shims-tfm-cleanup(17)、packs/illink-ntlm(1)；本轮 merge-tree 18/18 CLEAN，但为 09-23 产物且滞后 75 提交，**不要直接当 PR head**（本轮已用 `pr/*` 等价重演）。
 - 演练时间：2026-09-28（CST）上午；上游复查命令仅 `git fetch upstream main`（直连可用）。
+
+---
+
+## 10-14 C3 复演刷新（post-infra `upstream/main` = `0232cf718cd`）
+
+> 触发：`#132953` 于 10-14 13:48Z 被 jkotas **squash** 合入（`14399016e4c`，已验证为 main 祖先）。scratch：`/data/storage/el2/base/tmp/opencode/up-rehearse-c3/`（隔离 `--shared` clone，原仓零改动）。
+
+### 结果总览（22 ref：rebase 22 ＋ merge-tree 22）
+
+- **13 支 CLEAN-SAME** ✓（patch-id 与旧 slice 全同）：clrfeatures、pal、zstd、libs-native、apphost、tryrun、ifaddrs、wx-default、aot-unix、aot-singleentry、packs、console、illink-ntlm。
+- **4 支冲突 → 已解析并终验** ✓（新 tips/pids；原 slice 对照见 tsv）：
+  - `pal-process`（N7）→ tip `08e26fb2534`（pid `f41b7a13…`）：上游 **`#135753`** 重写了 `RestrictHandleInheritance`（新 `int32_t`＋ENOTSUP 失败路径、删除回退扫描）。**折叠**＝保留上游新骨架：两个 close_range 分支加 `&& !defined(TARGET_OPENHARMONY)` ＋新增 `#elif defined(TARGET_OPENHARMONY)` 有界扫描分支（helper 用 `#if defined(TARGET_OPENHARMONY)` 包裹，**防非 OHOS 平台 `-Wunused-function`**）。
+  - `crossgen-corelib` → tip `40ea68984eb`（pid `e1408033…`）：上游 **`#135397`** 改为 `RunReadyToRunCompiler` task（TargetOS 走 `_CoreLibCrossgen2Tool` 元数据，`RunReadyToRunCompiler.cs:315` 拼 `--targetos:`）。**折叠**＝`PublishReadyToRun=false`（OHOS IL-only）照旧；`_CrossGenTargetOS`（openharmony→linux）移入同一 PropertyGroup，工具项改 `<TargetOS>$(_CrossGenTargetOS)</TargetOS>`。
+  - `libs-tfm`（N15）→ tip `efc2494d2f3`（pid `994cfab3…`）：与上游新 WASI 块（`TestWasmReadyToRun`）**同点插入** → keep-both（上游块后接我方 `LibrariesOpenHarmonySfxTfm/ShimsTfm` 块）；stat 与原 slice 对照 SAME（+23/-3）。
+  - `shims-tfm-cleanup`（C2）→ tip `a9ded433cbb`（pid `9a0bf6d3…`）：第一提交与 N15 **同内容**（dedup 候选：N15 落地后开 C2 时应 `git rebase --skip` 该提交）、第二提交收束为 linux 组（单 `SfxTfm` 属性＋`shims/Directory.Build.props` 条件重写）；stat SAME（+27/-3）。
+- **免重放/丢弃**：`infra`（已合并，重放无意义/冲突即 squash 噪音）；`tls-flag-cleanup`（既定弃）；`platform-numa`（EMPTY，`#134670` 已在上游，弃）；`named-mutex`（`#135321` 已合并，弃）；`sandbox-fixes`（本体即 `#132827`，暂缓）。
+- merge-tree 全量 CLEAN=6 / CONFLICT=16——16 个冲突全是「旧 infra 前缀 vs main 里的 squash」噪音（`eng/native/*` 等），**与 PR 无关**（PR 走 rebase 剥前缀）。
+
+### 终验
+
+- 残冲突标记 0（四支全清）；`crossgen-corelib.proj`＋三个 props 全过 `xml.etree` 解析；libs-tfm/shims 与原 slice stat 对照 SAME。
+- 解析工具（复用）：`up-rehearse-c3/resolve-edit.py`（锚点替换，mode=pal/crossgen/libs-tfm/shims/shims-final/shims-dir-final）；驱动 `run-resolutions.sh`。
+- **fork 主线六步同步提示**：同域冲突（`pal_process.c`、`crossgen-corelib.proj`、`src/libraries/Directory.Build.props`）将复现，解析内容可直接复用本节的折叠配方。
