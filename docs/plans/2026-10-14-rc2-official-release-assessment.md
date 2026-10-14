@@ -127,3 +127,16 @@
      **"workload bundle（pack 版本随动 ✗）"**——本轮按"MAUI 单独处理"缓做 ✗，但**对消费端 app 构建是必需项** ✓。
      **repack 输入已就绪** ✓（runtime `.105` release 含 `Microsoft.NETCore.App.Runtime.openharmony-arm64.11.0.0-rc.2.26504.105.nupkg`
      ✗）；**建议**：尽快与 kit 窗口协调，重打 bundle（`.105` packs ✗）＋重锚＋交接 ✓。
+9. **workload bundle 重打（`.105` packs ✗，10-14 ✗）** ✓：按选项 1 执行 ✗——
+   `prepare-packs`（`RTV=.26504.105` ✗、`SHA=5c06a274…` ✗、`VER=.29` ✗）＋两份 manifest 七值 ✗＋
+   Sdk pack `.29`（KFR 三 pin ✗）＋Aspnet `.105` pack ✗；**gate 全绿** ✓：`selftest-packs` 25/25 ✗、
+   `selftest-tasks` 9/9（**S3 转绿** ✓：committed tasks dll 与构建逐位一致 `dfa3a085…` ✗）。
+   bundle `1.0.0-preview.29`（46.4MB ✗、`21e2d128…` ✗、feed 7 件全 `.29`/`.105` ✗）→
+   **发布三面** ✓（`workload-1.0.0-preview.29` ✗＋rolling `workload-latest`（显式
+   `--allow-clobber-mismatch` ✗，设计路径 ✓）＋SDK `.105` `-ohos` 附挂＋合并 SUMS 14 行 ✗）→
+   **镜像 `-openharmony` 同步** ✓（SUMS workload 两行 = `21e2d128…` ✗）。
+   **设备验收** ✓✓：装入 `.105` 安装（rc=0 ✗，workload `.29` ✗）→ **hello publish＋真机运行
+   `rc=0`** ✓（`hello rc2-105` ✗）——消费端 app 全链闭环 ✓（设备构建需护栏 env ✗，同 `lib-dotnet-env` ✗）。
+   **重锚** ✓ `49df3e8220`（sdk `versions.env`：bundle `.29`/`21e2d128…` ✗）；bundle 源码批
+   **`1e85306`**（ohos-workload ✗，含 `.25–.27` tasks 副本刷新 ✗）；交接页 `docs/rc2-line-notes.md`
+   已加 dated 块（**kit 引用 `.28→.29`** ✗）。kit 套件本轮**未动** ✓（`--skip-kit` ✗，待窗口重出 ✗）。
