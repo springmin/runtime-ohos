@@ -1,6 +1,6 @@
 # TOUCH-PASTE：触屏粘贴闭环（壳级 PasteButton 安全控件；opt-in）（2026-10-13/14）
 
-> 结论：触屏粘贴真机闭环——**壳级 ArkUI `PasteButton` 安全控件**：用户点击时系统授予应用临时剪贴板读（与 ACL/`READ_PASTEBOARD` 无关），壳在点击回调内读取、按输入框当前 selection 插值，并用既有 `notifyTextInput` wire 把全文交给聚焦 Entry。入口 = 长按浮层（`LongPressGesture` + `onTouch` 兜底）；opt-in = 应用沙箱标记 `filesDir/touch-paste.enabled`（env `OHOS_TOUCH_PASTE` 为次源：**实测 .NET 侧 setenv 对 ArkTS process API 不可见**）；且仅在壳输入为文本 sink（IME 回退路径）时生效。四包 abc 620,908→**637,224**（`8503a3c2…`，headless 24,324 不变）；套件 **814/817 floor 797**；载体 ow `feat/touch-paste` → master merge **`cc6ca34`**（已推，CI 上跑）。
+> 结论：触屏粘贴真机闭环——**壳级 ArkUI `PasteButton` 安全控件**：用户点击时系统授予应用临时剪贴板读（与 ACL/`READ_PASTEBOARD` 无关），壳在点击回调内读取、按输入框当前 selection 插值，并用既有 `notifyTextInput` wire 把全文交给聚焦 Entry。入口 = 长按浮层（`LongPressGesture` + `onTouch` 兜底）；opt-in = 应用沙箱标记 `filesDir/touch-paste.enabled`（env `OHOS_TOUCH_PASTE` 为次源：**实测 .NET 侧 setenv 对 ArkTS process API 不可见**）；且仅在壳输入为文本 sink（IME 回退路径）时生效。四包 abc 620,908→**637,224**（`8503a3c2…`，headless 24,324 不变）；套件 **814/817 floor 797**；载体 ow `feat/touch-paste` → master merge **`cc6ca34`**（ff 已推；**CI 6/6 绿**：interaction/pixel/host-export/ridgraph/markdownlint/harmony @ `cc6ca34`）。
 
 ## ① 设计（壳，四包 `Index.ets`；无 host/切片/maui 改动）
 
@@ -23,6 +23,6 @@
 
 ## ④ 提交 / 边界 / 不确定
 
-- ow：`feat/touch-paste` `56f1624` → merge `a914a15`（唯一冲突 = 套件注释，保留 814/817/797 + RC2-ALIGN 注）→ `cc6ca34` master **ff 已推**（禁强推）；两四包模板 + 3 workflow 注释 + verify-kit/selftest/套件/README 全链随动。
+- ow：`feat/touch-paste` `56f1624` → merge `a914a15`（唯一冲突 = 套件注释，保留 814/817/797 + RC2-ALIGN 注）→ `cc6ca34` master **ff 已推**（禁强推）；**CI 6/6 绿**（interaction `38513…` 族 @ `cc6ca34`，套件 814/817 在 CI 实测过）；两四包模板 + 3 workflow 注释 + verify-kit/selftest/套件/README 全链随动；本地分支已删。
 - maui：**无改动**（loopback 主线已含；`loopback-localhost` 触发器在样例 `WebAuthProbe`）。
 - 不确定：① env 不可见 ⇒ 壳 `OHOS_SUBWINDOW_MAX/OHOS_OVERLAY_MAX` 的 env 半边疑同（有 rawfile/URI 兜底，未复测）；② 浮层位置=手指处（未接输入几何 wire），产品化可换 caret 几何；③ 单机型 debug 域；④ 设备为多会话共享，窗口抢焦时终判需紧凑时序（本轮已按此取证）。
