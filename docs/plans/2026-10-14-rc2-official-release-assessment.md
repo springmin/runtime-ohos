@@ -76,3 +76,18 @@
 **建议**：① 给 maui-ohos 加一个 **dispatch-only 最小切片 workflow**（构建切片 → tarball+sha256 → 建 release ✗；量小 ✓；README 规程保留为兜底 ✗）——随 session 收口后落地 ✓；② 或不加 CI、沿用人工（零改动 ✗）。**推荐 ①** ✓。
 
 **执行顺序（4 仓推进 ✗）**：等 session 完成 → 切 `ohos-slice-1.0.2` ＋ `MAUI_OHOS_REF` 换新 ＋ 删 dnceng feed（§8 ✗）＋ MauiGraphics 换 `26505.5` → 门禁 5/5 → 三仓换戳重切（§3 ✗）→ bundle/锚/发布 ✓。
+
+## 7. RC2-OFFICIAL 执行记录（三仓先行，2026-10-14）
+
+> 用户决定：**MAUI 单独处理**（不加 CI、不进本批 ✗）；**三仓先行**：「sdk 并源码，开干」✓。
+
+1. **sdk 源码并入** ✓：官方 `release/11.0.1xx-rc2`（tag 目标 `b370d9f850` ✗）并入 `feature/openharmony` →
+   合并提交 **`ed2706c021`**（双亲 `cd5bee91dc` ＋ `b370d9f850` ✗）；**83 个冲突全部无 fork 自有提交**
+   （逐文件核过 ✗）→ 一律**取官方侧** ✓；fork 路径（`eng/ohos-install`、`.github/workflows` ✗）**零变化** ✓；
+   净变化 549 文件 / +15893−16862 ✗。runtime/aspnetcore 无需源码并入（已逐位对齐/超集 ✓）。
+2. **换官方戳** ✓：提交 **`7d5636e485`**（`RT_VERSION=11.0.0-rc.2.26504.105`、`SDK_VERSION=11.0.100-rc.2.26504.105`、
+   `DEFAULT_BUILDID=20261004.105` ✗；legacy rc.1 覆盖保留 ✓）→ 已推 origin `feature/openharmony` ✓。
+3. **派发 full-build** ✓：run **`38502009121`**（`buildid=20261004.105` 显式（绕缓存 ✗）、三仓 ref 均 `feature/openharmony` ✗、
+   `upload_release=true` ✗）——构建完成后自动上传三仓 `v…-ohos` 线 ✓。
+4. **构建后待办** ⏳：三仓 `-ohos` 资产核验 → selfsign 重挂（如缺 ✗）→ 镜像至 `-openharmony` → 锚重测
+   （`SDK_TARBALL_SHA256` / `RUNTIME_TARBALL_SHA256` 将变 ✗；selfsign 复核 ✓）→ 设备 smoke → 交接/记录更新 ✓。
