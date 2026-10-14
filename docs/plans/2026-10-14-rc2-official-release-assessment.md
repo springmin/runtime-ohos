@@ -112,3 +112,18 @@
    `DoNotPassDisposables...` 的原始字符串截断（CS1519 ✗）。修复提交 **`4731e1fa7f`** ✗（前两者恢复 main 版 ✗、
    第三者补 `[ResourceLock(WellKnownResources.EnvironmentVariables)]` ✗、截断文件整体恢复 ✗）→ 推送时吸收
    kit 新提交（merge → `bc7a8997c6` ✗）→ **重派 run `38518894431`** ⏳（观察中 ✗）。
+8. **重切成功 ＋ 收尾链（10-14 ✗）** ✓：run `38523391612` **全绿** ✗（07:13Z ✗；第 5 跑 ✗）→ 三仓
+   `v…-rc.2.26504.105-ohos` 线发布 ✓（runtime 20 / SDK 12 / aspnet 4 件 + SUMS ✗）；**selfsign 重挂** ✓
+   （`a403a1b4` 与锚一致 ✗）；**镜像**——修复"缺则建 release"缺口（`e2e2f82bf4` ✗，`-openharmony` 三线
+   **21/4/15** 资产 ✓、sdk 合并 SUMS 含 workload 两行 ✗）；**锚重测** ✓ `bd32bf87cb`
+   （sdk `0f668e89…` / runtime `a228fa81…` ✗）。
+   - **设备 smoke** ✗：`install rc=0` ✓；`dotnet --info` = `11.0.100-rc.2.26504.105` ＋ `OS Platform: Linux`
+     ＋ `RID: openharmony-arm64` ✓；workload `1.0.0-preview.28/11.0.100-rc.2` ✓；**selfsign 端到端
+     `signed=28 already_signed=1 failed=0`** ✓；四锚下载全 `sha256 OK` ✓。
+   - ⚠️ **app 构建暴露一致性缺口（与 MAUI 无关 ✗）**：`.105` SDK ＋ `.28` bundle 下
+     `net11.0-openharmony20.0` 应用 restore 报 **NU1101**（`Microsoft.NETCore.App.Runtime.openharmony-arm64` ✗）。
+     根因 = **workload bundle 的 BCL pack 仍为 `.112`** ✗（两安装 `packs/` 皆 `.112` 实证 ✗），而 `.105` SDK 的
+     KFR Default/Latest = `11.0.0-rc.2.26504.105` ✗ → 版本不相交 → 转投 nuget ✗。这正是原计划 §3 第 3 步的
+     **"workload bundle（pack 版本随动 ✗）"**——本轮按"MAUI 单独处理"缓做 ✗，但**对消费端 app 构建是必需项** ✓。
+     **repack 输入已就绪** ✓（runtime `.105` release 含 `Microsoft.NETCore.App.Runtime.openharmony-arm64.11.0.0-rc.2.26504.105.nupkg`
+     ✗）；**建议**：尽快与 kit 窗口协调，重打 bundle（`.105` packs ✗）＋重锚＋交接 ✓。
