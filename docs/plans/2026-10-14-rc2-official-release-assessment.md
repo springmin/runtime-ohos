@@ -55,3 +55,24 @@
 
 > 证据：本页核对均来自 GitHub compare/tags/releases API、NuGet flat-container、RC2-WATCH 脚本输出
 > （`ohos-workload/scripts/rc2-official-watch.sh` exit=10 ✗）；取证轮次与原始输出见会话记录。
+
+## 6. CI 覆盖面审（2026-10-14，应"4 仓推进"前置检查）
+
+**现状（核实 ✓）**：
+
+| 面 | 载体 | 范围 | MAUI |
+|---|---|---|---|
+| 三仓构建/发布 | sdk-ohos `ohos-full-build.yml` | 输入 `runtime_ref`/`aspnetcore_ref`/`sdk_ref`；上传 runtime-ohos / aspnetcore-ohos / sdk-ohos 三个 `-ohos` release ✗ | **不在**（设计边界 ✗） |
+| 发布镜像 | sdk-ohos `ohos-release-mirror.yml` | 矩阵 = 同三仓（sdk 任务兼搬 `workload-*` 资产 ✗）→ `-openharmony` 线 ✗ | **不在** |
+| MAUI 切片 | maui-ohos releases `ohos-slice-1.0.0/1.0.1` | **源码 drop**（branch＋tag＋tarball ✗；README 规程 ✗；**无 CI workflow** ⚠️） | 即本体 ✓ |
+| workload | ohos-workload 脚本（`prepare-packs` / `publish-workload-release` ✗） | 本地/kit 驱动；`Microsoft.OpenHarmony.Maui.Graphics` 现 pin dnceng daily `26478.12` ⚠️ | 消费方 ✓ |
+
+**判定**：
+
+1. **sdk full-build 无需纳入 MAUI** ✓——其构建闭包 = .NET 三件套 ✗（stage1 runtime / stage3 aspnetcore ✗）；MAUI 不在闭包内 ✗，塞入会把流水线与 MAUI 节奏/包源耦合 ✗。rc2 波对它**只改 pin** ✓（`versions.env`：`DEFAULT_BUILDID=20261004.105`、`RT_VERSION`/`SDK_VERSION=…-rc.2.26504.105` ✗）。
+2. **四仓发布的真实缺口 = MAUI 切片的新一轮发布** ⚠️：port session（maui-ohos `feature/openharmony` ✗）**已把切片切到官方 `26505.5`** ✓（切片 csproj 76–79 行与 docs 均已是官方版本 ✗）；session 收口后需切 `ohos-slice-1.0.2` ✗——目前**无 CI、靠 README 规程人工** ⚠️。
+3. workload 侧：`Microsoft.OpenHarmony.Maui.Graphics` 的 daily pin 与 §8 的 dnceng feed step 需在 rc2 批次一并换官方 ✓。
+
+**建议**：① 给 maui-ohos 加一个 **dispatch-only 最小切片 workflow**（构建切片 → tarball+sha256 → 建 release ✗；量小 ✓；README 规程保留为兜底 ✗）——随 session 收口后落地 ✓；② 或不加 CI、沿用人工（零改动 ✗）。**推荐 ①** ✓。
+
+**执行顺序（4 仓推进 ✗）**：等 session 完成 → 切 `ohos-slice-1.0.2` ＋ `MAUI_OHOS_REF` 换新 ＋ 删 dnceng feed（§8 ✗）＋ MauiGraphics 换 `26505.5` → 门禁 5/5 → 三仓换戳重切（§3 ✗）→ bundle/锚/发布 ✓。
