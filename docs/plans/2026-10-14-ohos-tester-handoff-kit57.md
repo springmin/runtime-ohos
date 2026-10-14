@@ -60,6 +60,6 @@ sh tester-run.sh --install --start --capture 30 --probes probes --kit-dir device
 
 - release「## Integrity (kit #57)」（四 release：dtk 392356147 / workload-latest 392077166 / workload-1.0.0-preview.29 412533677 / SDK `.105 -ohos` 412433510）；
 - kit 数字：tar **70,428,755 B / `bc0e8c4790f4400b4c0cc8fe4eaf2146e4f470ed055575d0748fe030d3327f95`**、树 `a1d72306ea9e533e8de51e7938a89658cfaf691a664c65a571bf8d269a095e35`、sidecar `9f51ac4891c27470…`（89 B）；pins ow `6b62a49128f3ee5d50bef9a62e425f5dc365991e`（承 `fc66209`）/ maui `1c5ff3cbeb` / runtime `88e84fa8b5c`；
-- 证据归档 `kit57-evidence-20261014.tar.gz`（91,951 B / `0539fbe0…`；asset 640183713 区；含本刀全部 log/state/values、三卡构建件 sha 与配方、bundle 决策对照、设备连接尝试记录）；
+- 证据归档 `kit57-evidence-20261014.tar.gz`（91,951 B / `0539fbe0…`；asset 640183450，sidecar 640183713；含本刀全部 log/state/values、三卡构建件 sha 与配方、bundle 决策对照、设备连接尝试记录）；
 - 轮包 `tester-round-kit57.tar.gz`（204,544,452 B / `9e7d3e23…`；61 件；asset 640188005，sidecar 640193233；含 kit+预签+解释器 rc2b+AOT v3 rc2+Crossgen2 引用（`.112` 档 + **`.105` 官方 nupkg**）+ 三卡说明 `cards/` + 文档 + device-round）；
 - 预签：`preSigned-haps.tar.gz`（70,242,500 / `52baf033…`，asset 640169891；刷新至 #57）。
