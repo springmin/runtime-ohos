@@ -29,5 +29,5 @@
 
 ## 提交 / 不确定项
 
-- 提交：ow `4d4b46e`（host+scripts+docs 一条；其上 `e364570` = 他会话 cut-kit P3 payload，含本提交，已推 `origin/master`）；CI @ `e364570`：markdownlint/host-export/pixel/ridgraph **success**、interaction 进行中（窗口内未回读）；runtime 本文件 + README 行（commit-paths）。
+- 提交：ow `4d4b46e`（host+scripts+docs 一条）+ `8dfa90a`（`maui-platform-verify` 的 CG2-R2R pin 重锚到 `pure_interp` 判定；中间 `e364570` = 他会话 cut-kit P3 payload，三条均已推 `origin/master`）；CI @ `8dfa90a`：interaction/host-export/pixel/ridgraph/markdownlint **5/5 success**；runtime 本文件 + README 行（commit-paths）。
 - 不确定项：发布件宿主未随（kit #57 仍 8826adde，需下一刀 kit/预签重出）；`hdcp4` 为环境特定二进制（socket 路径与沙箱绑定，不入仓）；host 重签字节不可复现，重锚以本件 sha 为准；壳镜像的早期轮询是时序竞争，证据按“流式捕获跨 force-stop/start”口径。
