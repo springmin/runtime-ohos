@@ -105,3 +105,10 @@
    ④`MicrosoftTestingPlatformTestCommand`（官方版早于 main 的 `CLI_AOT` 护栏 ✗）把 `MSBuildSession`（MSBuild
    API ✗）带进 AOT 编译集 ✗——**恢复 main 护栏版** ✓。修复提交 **`d709fe3270`** ✗（3 方法去重、2 调用改名、
    1 文件还原 ✓）→ **重派 run `38513763455`** ⏳（观察中 ✗）。
+7. **编译残留修复（第二轮）** ⚠️：run `38513763455`（54m07s ✗）——**首轮三处修复生效** ✓（CS0102/CS1061/CS0246
+   全消失 ✗），剩两类 ✗：①**MSTEST0074**（合并后的 MSTest 分析器 + `TreatWarningsAsErrors` 把"测试内改环境
+   变量需 `[ResourceLock]`"判为错误 ✗）命中取官方版的 `TestCommandParserTests` / `SdkForwardingAppTests`
+   （main 版才有标注 ✗）＋双方均漏标的 `NoCacheOptionParserTests` ✗；②首轮去重把
+   `DoNotPassDisposables...` 的原始字符串截断（CS1519 ✗）。修复提交 **`4731e1fa7f`** ✗（前两者恢复 main 版 ✗、
+   第三者补 `[ResourceLock(WellKnownResources.EnvironmentVariables)]` ✗、截断文件整体恢复 ✗）→ 推送时吸收
+   kit 新提交（merge → `bc7a8997c6` ✗）→ **重派 run `38518894431`** ⏳（观察中 ✗）。
