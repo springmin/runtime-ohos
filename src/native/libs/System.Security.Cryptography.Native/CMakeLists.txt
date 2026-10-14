@@ -111,8 +111,7 @@ endif()
 # shares the objects above unless the shared library links OpenSSL statically
 # (OpenHarmony -linkstaticopenssl); then the archive gets its own shim-enabled
 # object set, selected by FEATURE_DISTRO_AGNOSTIC_SSL_STATIC (defaults to
-# FEATURE_DISTRO_AGNOSTIC_SSL). See
-# docs/plans/2026-10-03-ohos-aotpack-structural.md.
+# FEATURE_DISTRO_AGNOSTIC_SSL).
 if (NOT DEFINED FEATURE_DISTRO_AGNOSTIC_SSL_STATIC)
     set(FEATURE_DISTRO_AGNOSTIC_SSL_STATIC ${FEATURE_DISTRO_AGNOSTIC_SSL})
 endif()

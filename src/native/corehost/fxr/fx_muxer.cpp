@@ -83,13 +83,15 @@ namespace
         trace::verbose(_X("Found AOT-ed SDK [%s]"), sdk_aot_path.c_str());
 
         pal::dll_t aot_dll = nullptr;
-        // The AOT-ed SDK is optional. Not publishing libdotnet-aot is a supported
-        // SDK configuration (for example, SDK layouts built with
-        // _ShouldPublishDotnetAot=false), and a stale or mismatched file can be
-        // left behind in an existing layout. Probe for it without producing error
-        // output, so that falling back to the managed SDK is quiet.
+        // The AOT-ed SDK is optional: not publishing libdotnet-aot is a supported SDK
+        // configuration (for example, layouts built with _ShouldPublishDotnetAot=false),
+        // so the absence check above is quiet. A file that exists but cannot be loaded is
+        // a stale or mismatched layout; warn once before falling back to the managed SDK.
         if (!pal::try_load_library(&sdk_aot_path, &aot_dll))
+        {
+            trace::warning(_X("Found but could not load the AOT-ed SDK [%s]; falling back to the managed SDK."), sdk_aot_path.c_str());
             return false;
+        }
 
         // See docs/design/features/sharedfx-lookup.md#sdk-search
         typedef int (__stdcall *dotnet_execute_fn)(

@@ -198,7 +198,7 @@
   </ItemGroup>
 
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetsOpenHarmony)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or ('$(TargetsOpenHarmony)' == 'true' and '$(TargetPlatformIdentifier)' == '')">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />

@@ -1217,6 +1217,7 @@ void InitThreadManager()
             // The page could not be committed with the executable protection requested above
             // (e.g. a W^X policy denied it). Fall back to the read-only write barrier instead
             // of writing the copy into a page that is not writable.
+            ExecutableAllocator::Instance()->Release(s_barrierCopy);
             s_barrierCopy = NULL;
             g_pConfig->SetWriteBarrierCopyEnabled(false);
             minipal_log_print_error("Failed to commit the GC write barrier copy page; using the read-only write barrier.\n");

@@ -310,17 +310,23 @@ static bool SetCloexecForOpenFdsProc(void)
         for (long offset = 0; offset < bytes;)
         {
             struct SetCloexecProcDirent* entry = (struct SetCloexecProcDirent*)(void*)(buffer + offset);
-            if (entry->d_reclen == 0)
+            size_t dNameOffset = (size_t)((const char*)entry->d_name - (const char*)entry);
+            if ((long)entry->d_reclen <= (long)dNameOffset || (long)entry->d_reclen > (bytes - offset))
             {
+                // Garbled entry: treat the listing as incomplete so the caller falls back
+                // to the bounded rlimit scan.
                 complete = false;
                 break;
             }
             // The names are decimal fd numbers; "." / ".." and any malformed name are skipped.
             int fd = 0;
             bool isNumber = entry->d_name[0] != '\0';
-            for (const char* name = entry->d_name; *name != '\0'; name++)
+            size_t nameLimit = (size_t)entry->d_reclen - dNameOffset;
+            size_t nameIndex = 0;
+            for (; isNumber && nameIndex < nameLimit && entry->d_name[nameIndex] != '\0'; nameIndex++)
             {
-                if (*name < '0' || *name > '9')
+                char nameChar = entry->d_name[nameIndex];
+                if (nameChar < '0' || nameChar > '9')
                 {
                     isNumber = false;
                     break;
@@ -333,7 +339,12 @@ static bool SetCloexecForOpenFdsProc(void)
                     isNumber = false;
                     break;
                 }
-                fd = fd * 10 + (*name - '0');
+                fd = fd * 10 + (nameChar - '0');
+            }
+            if (isNumber && nameIndex == nameLimit)
+            {
+                // The name filled the entry without a terminator; treat it as malformed.
+                isNumber = false;
             }
             if (isNumber)
             {

@@ -89,6 +89,14 @@ static int GetSiblingLibraryPath(const char* libraryName, char* libraryPath, siz
         return -1;
     }
 
+    // The sibling is only opened when this shim's own path is absolute: a relative
+    // path (or a bare soname) would resolve against the current working directory,
+    // which may not be the directory this shim was loaded from.
+    if (info.dli_fname[0] != '/')
+    {
+        return -1;
+    }
+
     const char* lastSlash = strrchr(info.dli_fname, '/');
     if (lastSlash == NULL)
     {
@@ -117,7 +125,7 @@ static void DlOpenSibling(const char* libraryName)
     char libraryPath[PATH_MAX];
     if (GetSiblingLibraryPath(libraryName, libraryPath, sizeof(libraryPath)) != 0)
     {
-        fprintf(stderr, "OpenSSL shim: cannot determine the directory of this library; refusing to open '%s' by name\n", libraryName);
+        fprintf(stderr, "OpenSSL shim: cannot determine an absolute path of this library; refusing to open '%s' by name\n", libraryName);
         return;
     }
 

@@ -132,11 +132,11 @@ namespace System
 
             return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
 #if TARGET_OPENHARMONY
-            // OpenHarmony is Linux-ABI (the fork maps openharmony-* RIDs to
-            // linux-musl-*). Accept LINUX as an alias so callers that probe for
-            // Linux - e.g. MSBuild's IsOSPlatform(OSPlatform.Linux), which
-            // selects sh vs Windows-style Exec scripts - behave as on Linux on
-            // device, while OPENHARMONY stays the canonical name.
+            // OpenHarmony is Linux-ABI: the NDK targets aarch64-linux-ohos and the
+            // runtime builds against the Linux PAL, so callers that probe for Linux -
+            // for example MSBuild's IsOSPlatform(OSPlatform.Linux), which selects sh
+            // vs Windows-style Exec scripts - behave as on Linux on device, while
+            // OPENHARMONY stays the canonical name.
             || platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase)
 #endif
 #if TARGET_OSX
@@ -185,7 +185,7 @@ namespace System
         /// </summary>
         [NonVersionable]
         public static bool IsLinux() =>
-#if (TARGET_LINUX && !TARGET_ANDROID) || TARGET_OPENHARMONY
+#if TARGET_LINUX && !TARGET_ANDROID
             true;
 #else
             false;

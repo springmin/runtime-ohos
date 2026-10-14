@@ -22,10 +22,10 @@ macro(set_cache_value)
 endmacro()
 
 # OpenHarmony cross builds cannot run the FIFO probes. Pin the two answers here;
-# the remaining linux-family answers come from the branch below. CMAKE_SYSTEM_NAME
-# is passed on the CMake command line (`-DCMAKE_SYSTEM_NAME=OHOS` for cross
-# builds), which the initial-cache script can read.
-if(CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+# the remaining linux-family answers come from the branch below. OpenHarmony builds
+# require OHOS_NDK_HOME in the environment (eng/native/build-commons.sh validates it),
+# which this initial-cache script can read.
+if(DEFINED ENV{OHOS_NDK_HOME} AND NOT "$ENV{OHOS_NDK_HOME}" STREQUAL "")
   set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
   set_cache_value(HAVE_BROKEN_FIFO_SELECT_EXITCODE 1)
 endif()

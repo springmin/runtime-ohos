@@ -8,7 +8,7 @@
          shared-framework traversal (LibrariesOpenHarmonySfxTfm) so sfx-src does
          not filter the shims out as incompatible; the Compression/Brotli unix
          flavors still resolve from a linux-group consumer. -->
-    <TargetFramework Condition="'$(TargetOS)' == 'openharmony'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
