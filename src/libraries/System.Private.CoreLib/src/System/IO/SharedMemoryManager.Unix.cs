@@ -414,7 +414,15 @@ namespace System.IO
                 }
             }
 
+#if TARGET_OPENHARMONY
+            // The OpenHarmony /tmp mount denies file locks (fcntl(F_SETLK) returns EACCES), and
+            // named mutexes on OpenHarmony use the file-lock path, so keep the shared memory files
+            // in the process temp directory (which honors TMPDIR) instead of /tmp.
+            return Path.GetTempPath();
+#else
+            // Other platforms: shared memory files live under the fixed /tmp path (historical behavior).
             return "/tmp/";
+#endif
         }
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
