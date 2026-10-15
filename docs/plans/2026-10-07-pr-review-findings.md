@@ -7,7 +7,7 @@
 
 | # | 谁 | 内容 | 证据 | 影响 |
 |---|---|---|---|---|
-| B1 | **@jkoritzinsky** | **shared-memory 区域的设计变更**（进行中） | jkotas 09-25 inline `SharedMemoryManager.Unix.cs:418`："I would wait with merging this change. **@jkoritzinsky is working on some design changes in this area** that should address the problem for Harmony as well." | **#132827 `blocked` 标签的根因**；也可能解释他未复看 #132953 ⚠️ |
+| B1 | **@jkoritzinsky** | **shared-memory 区域的设计变更**——✅ **已落地**（2026-10-15：#135778，`5891955bdde`；见 §7） | jkotas 09-25 inline `SharedMemoryManager.Unix.cs:418`："I would wait with merging this change. **@jkoritzinsky is working on some design changes in this area** that should address the problem for Harmony as well." | **#132827 `blocked` 的根因**（设计已落地 → **#132827 待按新设计重画** ⏳，见 §7）；也可能解释他未复看 #132953 ⚠️ |
 | B2 | **@akoeplinger** | 合并队列（#132827 批准人） | 09-25 APPROVED 评审；09-24 提出过 `NamedMutex.Unix.cs` 合并冲突（**已修** ✓） | 拆分后 PR-B 的合并人候选 ✓ |
 | B3 | 外部 | `#132866` 的 **C2/C3 归属答复** | 我方 09-14 计划更新后无维护者回复（23 天） | C2/C3 开 PR 的前置 ⏳ |
 
@@ -54,3 +54,16 @@
   - `src/libraries/System.Private.CoreLib/src/System/IO/SharedMemoryManager.Unix.cs`——撤 `#if TARGET_OPENHARMONY → Path.GetTempPath()` 分支 ✗，恢复上游 `return "/tmp/";` ✗；
   - `src/libraries/System.Threading/tests/MutexTests.cs`——撤 `GlobalSharedMemoryDirectory` 的 OHOS 镜像推导 ✗，恢复上游常量 ✗。
 - **#132827 影响 ✗**：**已更正（同日 ✗）**——后续发现 `/tmp` **可写但不可锁** ✗（`fcntl.lockf` 无竞争亦 `EACCES` ✗；SQLite `database is locked` 复现 ✗；userdata 锁正常 ✓），而 OHOS 命名互斥走**文件锁路径** ✗（musl 无 robust pthread mutex ✗）→ **底层诉求仍成立 ✓**：**fork 适配已重挂 ✓**（`SharedMemoryManager.Unix.cs` 注释改为锁理由 ✗＋`MutexTests.cs` 复原 ✗；对上游净差 16+/1- ✗）；**#132827 已重开 ✓**（2026-10-15 14:48:09Z ✗；保留 `blocked` 等 B1 ✗）——更正评论（[`#issuecomment-6194806938`](https://github.com/dotnet/runtime/pull/132827#issuecomment-6194806938) ✗）所载证据继续作为设计输入 ✓；重开说明评论已发 ✓（[`#issuecomment-6201780106`](https://github.com/dotnet/runtime/pull/132827#issuecomment-6201780106) ✗）；B1 落地告警保留 ✓。
+
+## 7. 2026-10-15 追加：B1 设计已落地（#135778）
+
+- **事件**：`5891955bdde`（*Fix shared mutex privliges/permissions/defaults to be secure*，#135778，**MERGED 2026-10-15T17:50:01Z**，jkoritzinsky）——即 jkotas 09-25 所指、"should address the problem for Harmony as well" 的 shared-memory 设计。
+- **要点**（`SharedMemoryManager.Unix.cs` +415/−247，另 `NamedMutex`/`Mutex`/`MutexTests`＋interop/pal）：
+  - **默认改 user-scoped**（`Mutex.UnsafeDefaultMutexScopeGlobal` 开关可回退全局，默认关）；
+  - **用户域目录**：Apple＝容器/TMPDIR；**Linux＝`XDG_RUNTIME_DIR`**；**其余（含 OHOS）＝`$HOME/.dotnet/Runtime/SharedMemory` 家目录回退**——OHOS 上为 userdata 型、可锁 ✓；
+  - **全局域仍 `/tmp/`**（`InitalizeSharedFilesPath` 未变）→ OHOS 全局域仍落**不可锁**挂载 ⚠️；
+  - 路径改 fd/`O_NOFOLLOW`、**禁符号链接**；不再改目录权限（假定正确）；锁文件目录随运行时目录句柄；
+  - 我方 `#135321` 存活 ✓（`UsePThreadMutexes` 仍排除 OHOS）。
+- **对 #132827**：park 理由（等设计）**已消**；剩余内容（`InitalizeSharedFilesPath` TMPDIR＋MutexTests 镜像）需按新结构 **rebase/重画** ⏳——默认用户域在 OHOS 已可工作 ✓（**待设备验证 HOME 已设** ⚠️），剩余价值主要在**全局域**。
+- **对 fork**：`17e5300242d` 重挂的适配与新结构不对齐 ⏳（下次 fork 同步合并时将冲突/需重做）。
+- **对 #135863（N5）**：与 #135778 无文件交集 ✓；jkotas 17:38Z 追问"CMake bug 与否"✗——**已实证为 CMake 侧缺项**（`Platform/Linker/` 无任何 `OHOS-*` 键；加载名＝`${CMAKE_EFFECTIVE_SYSTEM_NAME}-${COMPILER_LINKER_ID}[-lang]`），回复草稿已备 ⏳。
