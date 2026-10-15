@@ -18,14 +18,15 @@ update).
 > 纯 OpenHarmony ；head 随上游 rebase 移动，以远端为准）。其余支仍为 09-22
 > 口径的旧切片，**逐支在开前按「最新 main＋3-way 摘 OHOS 差＋净差门」刷新**。
 > 波次政策：在飞 ≤3–4 笔、「合 1 补 1」（先例：OpenBSD 38 笔小步快跑，中位
-> 1.7 天合入）。
+> 1.7 天合入）。→ **Wave-1 三支已开**（#135838/#135839/#135840，均按其时最新
+> `main` rebase、净差门过；N4 注释已按开前 pass 收紧）。
 
 | PR | branch | commit | files | size |
 |---|---|---|---|---|
 | N1 **✅已开** | `pr/ohos-clrfeatures` | `4fcf1d5f9a9`（[#135808](https://github.com/dotnet/runtime/pull/135808)） | `src/coreclr/clrfeatures.cmake` | 4+/3- |
-| N2 | `pr/ohos-pal` | `0f9fcf089c4` | `pal/src/CMakeLists.txt` | 2+/2- |
-| N3 | `pr/ohos-zstd` | `83dae1c2849` | `src/native/external/zstd.cmake` | 2+/2- |
-| N4 | `pr/ohos-libs-native` | `9e48c9e4a93` | `libs/CMakeLists.txt`, `Net.Security.Native/extra_libs.cmake` | 9+ |
+| N2 **✅已开** | `pr/ohos-pal` | `2deefa2ffad`（[#135838](https://github.com/dotnet/runtime/pull/135838)） | `pal/src/CMakeLists.txt` | 2+/2- |
+| N3 **✅已开** | `pr/ohos-zstd` | `7d2d3aefc5d`（[#135839](https://github.com/dotnet/runtime/pull/135839)） | `src/native/external/zstd.cmake` | 2+/2- |
+| N4 **✅已开** | `pr/ohos-libs-native` | `0dd8ab02477`（[#135840](https://github.com/dotnet/runtime/pull/135840)） | `libs/CMakeLists.txt`, `Net.Security.Native/extra_libs.cmake` | 8+ |
 | N5 | `pr/ohos-apphost` | `934173210f1` | `corehost/apphost/static/CMakeLists.txt` | 13+/4- |
 | N7 | `pr/ohos-pal-process` | `c5e1dc3e4aa` | `libs/System.Native/pal_process.c` | 5+/2- |
 | N8 | `pr/ohos-ifaddrs` | `3eb1ab8f51c` | `libs/System.Native/pal_interfaceaddresses.c` | 4+ |
