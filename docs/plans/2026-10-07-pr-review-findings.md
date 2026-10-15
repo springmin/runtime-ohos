@@ -53,4 +53,4 @@
 - **处置 ✗**：删除 runtime fork 的 `/tmp` 只读适配（共 2 文件 ✗）：
   - `src/libraries/System.Private.CoreLib/src/System/IO/SharedMemoryManager.Unix.cs`——撤 `#if TARGET_OPENHARMONY → Path.GetTempPath()` 分支 ✗，恢复上游 `return "/tmp/";` ✗；
   - `src/libraries/System.Threading/tests/MutexTests.cs`——撤 `GlobalSharedMemoryDirectory` 的 OHOS 镜像推导 ✗，恢复上游常量 ✗。
-- **#132827 影响 ✗**：其剩余内容（SharedMemoryManager `/tmp→TMPDIR` ✗）**随之作废** ✗——拟 **收编/关闭该 PR** ⏳（上游可见动作 ✗，待批 ✗）；B1 落地告警改为**观察其是否与本决定冲突**（若 jkoritzinsky 的设计含 /tmp 位置变更 → 以其为准 ✓）。
+- **#132827 影响 ✗**：其剩余内容（SharedMemoryManager `/tmp→TMPDIR` ✗）**随之作废** ✗——**已收尾 ✓**：评论（[`#issuecomment-6194466254`](https://github.com/dotnet/runtime/pull/132827#issuecomment-6194466254) ✗）＋ **CLOSED @ 2026-10-15 14:27Z** ✓；B1 落地告警保留 ✗（观察其设计是否与本决定冲突 ✗）。
