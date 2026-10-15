@@ -1,7 +1,7 @@
 # CLIPBOARD-ACL：剪贴板读的 ACL-gated 特征（ow 可做面 + 外部门槛）（2026-10-15）
 
 > 结论：`clipboard` 特征重新入矩阵，但**只做显式 ACL 门控**——`READ_PASTEBOARD`（system_basic）仅在 `-p:OpenHarmonyFeatures=clipboard` 时声明（条目带 `<Acl>true</Acl>`：默认特征集与 `all` 绝不包含；声明时告警装机风险）。宿主 NDK 读封装（PASTEBOARD-FIX）获 profile 即通、零代码改动；普通签名包声明即装机拒（9568289 类），证书与 profile 在 AGC 侧（外部门槛）。
-> 载体：ow `aa0b98b`（master；套件 matrix pin 随动；commit-paths；禁强推）＋ 本文（runtime `docs/plans/`）。
+> 载体：ow `aa0b98b` + `e86aa11`（master；后者为收尾——把并发会话在 `Program.cs` 中被误扫的 TOUCH-PASTE-DEFAULT hunk 还原、只留 ACL 两注释+matrix pin；CI 5/5 @e86aa11；commit-paths；禁强推）＋ 本文（runtime `docs/plans/`）。
 
 ## 1. 申请路径（AGC 侧；材料结构参照 AGC-ACL-PACK）
 - 入口：AGC「项目设置 → ACL 权限」申请受限权限（单次 ≤30 条）；`ohos.permission.READ_PASTEBOARD` = `availableLevel system_basic` 的受限 user_grant，审核口径以控制台为准。
