@@ -19,7 +19,7 @@ update).
 > 口径的旧切片，**逐支在开前按「最新 main＋3-way 摘 OHOS 差＋净差门」刷新**。
 > 波次政策：在飞 ≤3–4 笔、「合 1 补 1」（先例：OpenBSD 38 笔小步快跑，中位
 > 1.7 天合入）。→ **Wave-1 三支已开**（#135838/#135839/#135840，均按其时最新
-> `main` rebase、净差门过；N4 注释已按开前 pass 收紧）。 **N1 已合**（10-15 06:48Z，jkotas）——首笔 N 系列落地 ✓。 **N5 已补发**（[#135863](https://github.com/dotnet/runtime/pull/135863)，合 1 补 1）✓；已回 jkotas 的 cmake 问（结论：**非 CMake bug＝其平台支持表未含 OHOS**，宿主原生对照同报错；`r4284243009`）✓。**N2 已合**（10-15 14:12Z，jkotas；`345da8f18d3`）✓。
+> `main` rebase、净差门过；N4 注释已按开前 pass 收紧）。 **N1 已合**（10-15 06:48Z，jkotas）——首笔 N 系列落地 ✓。 **N5 已补发**（[#135863](https://github.com/dotnet/runtime/pull/135863)，合 1 补 1）✓；已回 jkotas 的 cmake 问（结论：**非 CMake bug＝其平台支持表未含 OHOS**，宿主原生对照同报错；`r4284243009`）✓。**N2 已合**（10-15 14:12Z，jkotas；`345da8f18d3`）✓。**N8 已补发**（[#135866](https://github.com/dotnet/runtime/pull/135866)，合 1 补 1）✓。
 
 | PR | branch | commit | files | size |
 |---|---|---|---|---|
@@ -29,7 +29,7 @@ update).
 | N4 **✅已开** | `pr/ohos-libs-native` | `0dd8ab02477`（[#135840](https://github.com/dotnet/runtime/pull/135840)） | `libs/CMakeLists.txt`, `Net.Security.Native/extra_libs.cmake` | 8+ |
 | N5 **✅已开** | `pr/ohos-apphost` | `b3c8e3bd2cc`（[#135863](https://github.com/dotnet/runtime/pull/135863)） | `corehost/apphost/static/CMakeLists.txt` | 12+/4- |
 | N7 | `pr/ohos-pal-process` | `c5e1dc3e4aa` | `libs/System.Native/pal_process.c` | 5+/2- |
-| N8 | `pr/ohos-ifaddrs` | `3eb1ab8f51c` | `libs/System.Native/pal_interfaceaddresses.c` | 4+ |
+| N8 **✅已开** | `pr/ohos-ifaddrs` | `2244f6f8801`（[#135866](https://github.com/dotnet/runtime/pull/135866)） | `libs/System.Native/pal_interfaceaddresses.c` | 4+ |
 | N9 | `pr/ohos-wx-default` | `bb7e8e69e76` | `src/coreclr/inc/clrconfigvalues.h` | 4+/2- |
 | N10 | `pr/ohos-crossgen-corelib` | `169c072d07c` | `src/coreclr/crossgen-corelib.proj` | 11+/1- |
 | N11 | `pr/ohos-aot-unix` | `91a2e8e5a62` | `AOT/Microsoft.NETCore.Native.Unix.targets` | 6+/1- |
