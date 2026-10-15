@@ -67,3 +67,12 @@
 - **对 #132827**：park 理由（等设计）**已消**；剩余内容（`InitalizeSharedFilesPath` TMPDIR＋MutexTests 镜像）需按新结构 **rebase/重画** ⏳——默认用户域在 OHOS 已可工作 ✓（**待设备验证 HOME 已设** ⚠️），剩余价值主要在**全局域**。
 - **对 fork**：`17e5300242d` 重挂的适配与新结构不对齐 ⏳（下次 fork 同步合并时将冲突/需重做）。
 - **对 #135863（N5）**：与 #135778 无文件交集 ✓；jkotas 17:38Z 追问"CMake bug 与否"✗——**已实证为 CMake 侧缺项**（`Platform/Linker/` 无任何 `OHOS-*` 键；加载名＝`${CMAKE_EFFECTIVE_SYSTEM_NAME}-${COMPILER_LINKER_ID}[-lang]`），回复草稿已备 ⏳。
+
+### 7.1 #132827 重画结果（本日）
+
+- **设备验证**（开工前置）：
+  - `HOME` 已设 ✓（`/storage/Users/currentUser`）；**`getpwuid` 无条目**（`KeyError: uid not found`）→ 新设计"HOME 优先"是 OHOS 上唯一可用来源 ⚠️；
+  - `$HOME/.dotnet` **锁互操作正常 ✓**（`EAGAIN` 正确阻塞 ✗）；`/tmp` 复证**不可锁 ✓**（`EACCES`，无竞争亦拒）；
+  - ⚠️ **`/storage` 有 uid 映射**：`euid=20220077` vs 实测目录 `uid=20201006`、mode 被改写成 **2771（含组写）**→ 新设计**用户域检查**（`uid==euid && 无组/他写 ✗`）在该存储层**会判不合规 ⚠️**（应用沙盒 HOME 未必同，待真机 App 场景验）；**全局域检查只要求 owner-rwx**（2771 满足 ✓）。
+- **重画**：`pr/ohos-sandbox-fixes` 重放到 `1d7bc42efc3`（**零冲突**）→ 净差收敛为 **2 文件 15+/1-**（`SharedMemoryManager` 7+＋`MutexTests` 9+/1-）；`NamedMutex` 残余注释**弃**（该文件已由 #135321 合入）；SMM 注释换**锁理由**；提交 `1625cb67be0`。
+- **待发**（草稿已备）：推支（`--force-with-lease`）＋PR title/body 刷新＋线程评论（设计落地/重画说明）。
