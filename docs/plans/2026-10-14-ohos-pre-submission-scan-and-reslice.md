@@ -89,3 +89,36 @@
 - M2：`…/scan/report-m2-msbuild.md`
 - 判据：`…/scan/review-lessons.md`（三 PR 评审汇编 ✗）
 - **入库副本**：`docs/plans/scans/2026-10-14/`（四报告＋判据 ✗，随本文件提交 ✗）。
+
+## 7. 开前注释 pass（2026-10-15 审）
+
+> 由来：N1（#135808）评审中 jkotas 的 "Simplify the comment." 教训——**不维护平台清单、注释求简、不带 fork 叙述**。
+> 执行：各支刷新重切/开 PR 前，按下表把注释替换为「成稿」版；复核口径＝对每支 payload（`upstream → fork` 净差）
+> 抽全部新增注释行逐条审（2026-10-15 审全 15+2 支与 N17/N18 候选）。
+
+**已直接应用**：**N4 `Net.Security.Native/extra_libs.cmake`（3→2 行）**——Wave-1 支已 amend（`9f49c0c5b04`）：
+
+```cmake
+       # OpenHarmony has no krb5 in its sysroot; the shared apphost dlopens libgssapi_krb5 on demand.
+       # The static apphost links this macro even though Net.Security.Native is not built for OpenHarmony.
+```
+
+**开前逐条应用（成稿）**：
+
+| # | 支/文件 | 动作 | 成稿（按行 ✗） |
+|---|---|---|---|
+| 1 | N17 `opensslshim.c` | 12→4 行 | `// OpenHarmony allows more than one OpenSSL in a process, and a bare soname could pick up` ｜ `// one from the loader search path (silently changing the process-wide TLS trust anchors).` ｜ `// Open only the sibling libssl/libcrypto next to this shim, by absolute path; fail closed.` |
+| 2 | N15 `libraries/Directory.Build.props` | 4→2 行 | `<!-- OpenHarmony has no -openharmony TFM yet; compile managed libraries in the linux` ｜ `     group, and the shims in the same group so sfx-src keeps them in the layout. -->` |
+| 3 | C2 `shims/Directory.Build.props` | 4→2 行 | `<!-- No -openharmony TFM: compile in the linux group, the same TFM as the shared-framework` ｜ `     traversal (LibrariesOpenHarmonySfxTfm) so sfx-src keeps the shims in the layout. -->` |
+| 4 | N14 `eng/native/tryrun.cmake` | 4→3 行 | `# OpenHarmony cross builds cannot run the FIFO probes; pin the two answers here` ｜ `# (the remaining linux-family answers come from the code below). OHOS_NDK_HOME,` ｜ `# which this initial-cache script can read, identifies the build.` |
+| 5 | N18 `pal.unix.c` | 6→3 行 | `// Same as pal_load_library, but a load failure is an expected outcome and is logged at` ｜ `// info level instead of error. Use for optional components whose absence should not` ｜ `// produce error output on every invocation.` |
+| 5b | N18 `pal.windows.c` ×2 处 | 3→2 行 | `// Logs a library load failure; probing for an optional library is an expected outcome,` ｜ `// so it is reported at info level instead of error.` |
+| 6 | N17 crypto `CMakeLists.txt` | 6→4 行 | `# The static archive is linked directly into NativeAOT apps by ilc, which does not link` ｜ `# libcrypto/libssl, so the archive always needs the dlopen shim. When the shared library` ｜ `# links OpenSSL statically (OpenHarmony -linkstaticopenssl) the archive gets its own` ｜ `# shim-enabled object set, selected by FEATURE_DISTRO_AGNOSTIC_SSL_STATIC.` |
+| 7 | N5 `apphost/static/CMakeLists.txt` | 3→2 行 | `<!-- Force the whole runtimeinfo archive into the link; the WHOLE_ARCHIVE generator` ｜ `     expression is not usable with the OpenHarmony NDK toolchain, so use --whole-archive. -->` |
+| 8 | N7 `pal_process.c` 引言 ×2 | 6→4、3→2 行 | ① `// OpenHarmony traps close_range in seccomp (SIGSYS), so list the open descriptors in` ｜ `// /proc/self/fd and touch only the real ones instead of scanning up to RLIMIT_NOFILE.` ｜ `//` ｜ `// This runs inside the forked child, where malloc is not safe, so the listing is read` ｜ `// with getdents64 into a stack buffer.` ② `// Sets FD_CLOEXEC on every open descriptor when no bulk close_range is usable` ｜ `// (OpenHarmony: seccomp traps it with SIGSYS), via /proc/self/fd with an rlimit fallback.` |
+| 9 | N17 `threadstatics.cpp` | **整件移出 N17**（NB 判定：保持自留）＋`_GNU_SOURCE` 块 4→2 行 | `// dladdr() needs _GNU_SOURCE before the first system header; the native-libs build already` ｜ `// passes -D_GNU_SOURCE, and this keeps the shim buildable stand-alone.` |
+| 10 | C3 `src/tools/illink/…/Microsoft.NET.ILLink.targets` | 1 行，轻 ⏳ | 去冗余括号可选：`<!-- OpenHarmony also lacks GSSAPI/krb5 in its sysroot, so use the managed implementation -->` |
+
+**判定保持原样**（与相邻上游句式一致/事实必要）：N2（贴相邻条件）、N3（沿上游句式）、N8、N9（安全理由）、
+N10（交叉引用有用）、N11/N12（映射理由）、N16（CA1416 退出条件）、N13 其余注释（另：N13 的 A/B 门注释按
+既有政策换中性形）。全库仅 N1 出现过「平台清单式」注释，已修。
