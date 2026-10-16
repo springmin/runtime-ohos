@@ -2,7 +2,7 @@
 
 > 目的：debug（SDK 模板/测试方材料，绑 UDID）→ release（华为发布证书 + 无 UDID Profile）的工作流；**接收端已接线**（ow `sign-for-device.sh --release` + ACL 验收脚本），材料一到即可一键签/验/装。
 > 输入：`2026-09-28-ohos-agc-store-readiness.md` §2、`2026-09-19-ohos-signing-and-udid-guide.md` §3–5、`ohos-workload/scripts/{sign-for-device,sign-huawei,selfsign}.sh`。
-> 边界：不登录 AGC、不生成华为私钥（p12 由 DevEco/本地生成并自管）；字段名/入口以控制台为准；**真实发布材料未到**——发布域真机安装与 ACL 获批后的运行验收未做（离线自测已覆盖到真签真验）。
+> 边界：不登录 AGC、不生成华为私钥（p12 由 DevEco/本地生成并自管）；字段名/入口以控制台为准；**真实发布材料已到（2026-10-15）**——首签记录见 `2026-10-15-ohos-release-first-sign.md`；发布域真机安装与 ACL 获批后的运行验收待设备回线补（离线自测 + 真签真验在案）。
 
 ## 1. 控制台申请顺序（发布材料四件套）
 
@@ -72,5 +72,5 @@ sh scripts/clipboard-acl-accept.sh --build \
 
 ## 6. 不确定项
 
-- 控制台字段名、CSR 交互与审核时长以 AGC 为准；**真实发布材料未到**：`--release` 目前只用 SDK 测试钥匙合成的 release Profile 端到端验证过，华为发布链/发布域真机安装待材料到位后按 §2 一条命令复跑。
+- 控制台字段名、CSR 交互与审核时长以 AGC 为准；**真实发布材料已到（2026-10-15）**：华为发布链已真签 + `verify-app` 通过（见 `2026-10-15-ohos-release-first-sign.md`）；发布域真机安装待设备回线后按 §2 一条命令复跑。
 - ACL（`READ_PASTEBOARD`）获批时间与 Profile 下发形态未实测；验收脚本对 `bm dump` 的两种形态容忍，真机形态以首次验收为准；华为发布 Profile 的 p12 别名由申请人生成时自定，默认 `releaseKey` 只是建议值。
