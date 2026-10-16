@@ -3,6 +3,11 @@
 > 审计源：FINAL-AUDIT（上轮七项）· 覆盖矩阵（kit #47 口径）· STATE-OF-PORT · handoff #47 · 工具件
 > A11Y-CLIENT（已交付）/ DEVICE-ROUND（在跑）。方法：逐项核对到提交/报告；本轮为核实类，无代码改动。
 >
+> **2026-10-16 kit #58 更新（BUNDLE-SWITCH + TOUCH-PASTE-DEFAULT + SECURE-STORAGE-ASSET + CLIPBOARD-ACL）**：终审结论继续有效——功能面 = kit #57 全量（官方 rc.2 重切 `.105`/`.29` + 三卡）
+> 之上四波：bundle 落定 `mauidemo.dotnet.springmin.com`（AGC 应用 = 发布 Profile；五包壳 abc 637,300/`4070204a…`）、触屏粘贴默认开（opt-out）、SecureStorage Asset Store 后端 + FailClosed 默认 true、`READ_PASTEBOARD` 转 Acl-gated（默认/all 不含）；
+> bundle 重打包 `8772ef23…` 三处同步 + sdk 重锚 `def202206b`；release-signed 主 hap 真机 `9568322 not trusted app source`（发布源信任边界，如实记录）；
+> kit #58 数字见 STATE-OF-PORT 与 `2026-10-16-ohos-tester-handoff-kit58.md`。
+>
 > **2026-10-14 kit #57 更新（官方 rc.2 重切 + JIT/interp 件与三卡）**：终审结论继续有效——功能面 = kit #56 全量
 > （rc.2 官方包对齐 + TOUCH-PASTE + WEBAUTH-LOOPBACK + SECURE-STORAGE-FAILCLOSED），本刀只换官方戳
 > （SDK `.105` / workload `.29`）并补 JIT/interp 件（CG2-R2R / FIXRR）与 AOT-STARTUP 复跑；kit #57 数字见
