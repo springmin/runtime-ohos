@@ -12,6 +12,11 @@
 > 在飞 ≤3–4 笔、「合 1 补 1」（先例 OpenBSD 38 笔小步快跑、中位 1.7 天；规避洪泛与 CI 成本）。
 > **Wave-1 已开（10-15）**：#135838（pal）· #135839（zstd）· #135840（libs-native）——在飞 4 笔＝上限。**N1 已合（06:48Z）**；**N5 已补发（#135863）**；**N2 已合（14:12Z）**；**N8 已补发（#135866）**——在飞 4 笔（N3/N4/N5/N8）＝上限。
 
+> **10-17 开前预检完成（N9＋W4）**：基线 `upstream/main=d80abfc4b04`。
+> **N9** `pr/ohos-wx-default` → `770c2c80b6d`（零冲突；1 文件 4+/2-；§7 判定保持）；fire 包 `sync/bodies/N9-fire.md`。
+> **W4**（fire 包齐 `sync/bodies/N{7,11,12,13,16}-fire.md`）：N7 `bad2a31158c`（`pal_process.c` **171+/8-**，含 `/proc` 版；OHOS NDK 编译核通过）、N11 `2d25123a366`（6+/1-）、N12 `ac328dbbddb`（4+）、N13 `5e13db906e8`（42+/5-；A/B 注释中性化＋B3 OR 形；残留：`_RemoveDuplicateSymbolFiles` 依赖的新 SDK 目标名本地不可核 ⚠️）、N16 `1297a3335e6`（叠 N15 `79178f8d0fc`；自身 delta 8+/3-；**N15 刷新后须再 rebase** ⚠️）。
+> 全部**未推**；按「合 1 补 1」待合入触发。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
