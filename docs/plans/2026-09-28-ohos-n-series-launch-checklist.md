@@ -17,7 +17,7 @@
 > **W4**（fire 包齐 `sync/bodies/N{7,11,12,13,16}-fire.md`）：N7 `bad2a31158c`（`pal_process.c` **171+/8-**，含 `/proc` 版；OHOS NDK 编译核通过）、N11 `2d25123a366`（6+/1-）、N12 `ac328dbbddb`（4+）、N13 `5e13db906e8`（42+/5-；A/B 注释中性化＋B3 OR 形；残留：`_RemoveDuplicateSymbolFiles` 依赖的新 SDK 目标名本地不可核 ⚠️）、N16 `1297a3335e6`（叠 N15 `79178f8d0fc`；自身 delta 8+/3-；**N15 刷新后须再 rebase** ⚠️）。
 > 全部**未推**；按「合 1 补 1」待合入触发。
 
-> **10-19 N5 评审处置**：jkotas 同意报 CMake（"Yes… make OHOS a first-class across all commonly used tools"）；Copilot bot 2 条 → **Medium 已修**（`4236198a4db`：`runtimeinfo` 恢复为链接目标、保留 raw `--whole-archive` 语义）×High 以 Android 先例＋`#111523` 回复（线程回复 `r4311267124`／`r4311266765`）；**jkotas 已把 main 合入本分支**（`c1a22d8f9a`）；**CMake issue 待提交**（稿在 scratch `sync/bodies/cmake-ohos-wholearchive-issue.md`）＋**jkotas 回帖待 issue 链接**。
+> **10-19 N5 评审处置**：jkotas 同意报 CMake（"Yes… make OHOS a first-class across all commonly used tools"）；Copilot bot 2 条 → **Medium 已修**（`4236198a4db`：`runtimeinfo` 恢复为链接目标、保留 raw `--whole-archive` 语义）×High 以 Android 先例＋`#111523` 回复（线程回复 `r4311267124`／`r4311266765`）；**jkotas 已把 main 合入本分支**（`c1a22d8f9a`）；**CMake issue 已提交**（[`cmake/cmake#28188`](https://gitlab.kitware.com/cmake/cmake/-/work_items/28188)）＋**jkotas 回帖定稿待「发」**。
 
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
