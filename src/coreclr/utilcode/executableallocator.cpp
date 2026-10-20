@@ -287,6 +287,7 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
+            minipal_log_print_error("Double mapping of executable memory is unavailable; falling back to the allocator with W^X disabled.\n");
             g_isWXorXEnabled = false;
             return true;
         }
