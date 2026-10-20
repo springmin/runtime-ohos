@@ -42,6 +42,8 @@
 > **C** `pr/ohos-pal-process @ ae3720591c8`（**1 文件 171+/8-** ✗；NA 缺陷已含于现支 ✗；`d_reclen`／INT_MAX／OHOS 收窄 ✓）。
 > fire 包：`batchA-fire.md`／`batchB-fire.md`／N7 原包 ✓。
 
+> **10-20 三批已开** ✓：A [`#136185`](https://github.com/dotnet/runtime/pull/136185) ✗、B [`#136186`](https://github.com/dotnet/runtime/pull/136186) ✗、C [`#136187`](https://github.com/dotnet/runtime/pull/136187) ✗（tips `c2f3dcfb68d`／`8730373688c`／`ae3720591c8` ✗；diff 面 **7／7／1** 文件 ✓）——**在飞 6 笔**（N3/N4/N8＋A/B/C ✗）。S1c 追问草稿已备，**未发** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
