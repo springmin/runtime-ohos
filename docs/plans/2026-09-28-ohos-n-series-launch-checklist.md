@@ -19,6 +19,8 @@
 
 > **10-19 N5 评审处置**：jkotas 同意报 CMake（"Yes… make OHOS a first-class across all commonly used tools"）；Copilot bot 2 条 → **Medium 已修**（`4236198a4db`：`runtimeinfo` 恢复为链接目标、保留 raw `--whole-archive` 语义）×High 以 Android 先例＋`#111523` 回复（线程回复 `r4311267124`／`r4311266765`）；**jkotas 已把 main 合入本分支**（`c1a22d8f9a`）；**CMake issue 已提交**（[`cmake/cmake#28188`](https://gitlab.kitware.com/cmake/cmake/-/work_items/28188)）＋**jkotas 回帖已发**（[`discussion_r4311471822`](https://github.com/dotnet/runtime/pull/135863#discussion_r4311471822)）。
 
+> **10-20 N5 续** ✗：jkotas 注释建议已应用 ✓（`985a9ba061` ✗："Workaround for missing OpenHarmony WHOLE_ARCHIVE support in CMake. Remove once the minimum required CMake version is 4.5." ✗）；Copilot 第二轮 High（安全依赖块 191–196 ✗）**有效 ✓** → **已修** ✗（`bdc286176c3` ✗：guard 加 `NOT CLR_CMAKE_TARGET_OPENHARMONY` ✗）＋回复 [`discussion_r4320470576`](https://github.com/dotnet/runtime/pull/135863#discussion_r4320470576) ✓；CI 仍 **4 红**（flake ✗，build `1641156` ✗）。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
