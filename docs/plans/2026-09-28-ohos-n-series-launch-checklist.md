@@ -49,6 +49,8 @@
 > **10-20 #132866 询问已发** ✓：[`6303946181`](https://github.com/dotnet/runtime/issues/132866#issuecomment-6303946181) ✗——问 N3/N4/N8 是否合并为一个 PR＋剩余 runtime 计划（未含自留项 ✗）。
 > **10-20 SDK 两支已重放** ✓：S1a `pr/ohos-sdk-rids @ 41e998e3d0`（4 文件 **545+/3-** ✗）、S1b `pr/ohos-sdk-sandbox @ cd0ed5a950`（自身 **17 文件 182+/15-** ✗，以 S1a 为基 ✗；`NativeEntryPoint.cs` 冲突已解：保留上游 UI 语言初始化＋加 `Apply()` ✗）。目标分支 dotnet/sdk `main`（`6675a7226e` ✗）；fire 包 `sdkS1a-fire.md`／`sdkS1b-fire.md` ✓。**均未开 PR** ✓。
 
+> **10-20 SDK 两笔已开** ✓：S1a [`dotnet/sdk#56732`](https://github.com/dotnet/sdk/pull/56732) ✗（`41e998e3d0` ✗，**4 文件 545+/3-** ✗）、S1b [`dotnet/sdk#56733`](https://github.com/dotnet/sdk/pull/56733) ✗（`cd0ed5a950` ✗，diff 20 文件（含 S1a ✗），自身 **17 文件 182+/15-** ✗，正文注明叠 #56732 ✗）。runtime D/E/F 仍备而未发 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
