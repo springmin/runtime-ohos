@@ -27,6 +27,8 @@
 
 > **10-20 N14 已开** ✓ **`#136132`** ✗：`eng/native: pin the OHOS cross-build FIFO probe answers` ✗；`pr/ohos-tryrun` 重放至 `b37852e7e2c` → **`7c3d4e4ed79`** ✗（净差 **1 文件 8+** ✓；首推遇旧远端支 `c2a5e90db55` 曾拒 ✗，已 force-with-lease 覆盖 ✓）。**在飞 5 笔**（N3/N4/N8/N9/N14 ✗；N9 已批待合 ✗）。
 
+> **10-20 #132866 进度同步已发** ✓：[`#issuecomment-6285162682`](https://github.com/dotnet/runtime/issues/132866#issuecomment-6285162682) ✗——覆盖 6 合入／5 在飞／`#132827` 关闭／队列／三项待答（C3 带默认路径 ✗、C2 跟随 N15 ✗、S1c 仍问 ✗）；全量审计确认 **C2/C3 此前均无上游答复** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
