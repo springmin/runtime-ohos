@@ -33,6 +33,9 @@
 
 > **10-20 N14 评审处置** ✓：am11（08:38Z ✗）在 `tryrun.cmake:27` 要求把 OHOS 检测并入 platform probe、沿用既有 `elseif` 模式、删注释 ✓ → 已 amend＋rebase 至 `2422bb8fc1f` → **`fe9a4a1d020`**（净差 **1 文件 5+** ✗；本机 cmake 实测：env 设＝两项 1 ✓／env 空＝未设 ✓）→ force-push ✓；inline 回复 [`r4324508219`](https://github.com/dotnet/runtime/pull/136132#discussion_r4324508219) ✗。
 
+> **10-20 N9 MERGED ✓**：`#136131` squash **`d260b5c598a`**（**14:04:04Z** ✗；jkotas 14:01 注 `/ba-g` 非必需 leg 为 flaky network ✗）——W^X 默认已在 main ✓。
+> **10-20 N14 CLOSED** ⛔：am11（12:54Z ✗）判 `HAVE_BROKEN_FIFO_KEVENT/SELECT` **均未使用** ✗，其 **#136147「Cleanup unused cmake configs」**（已 MERGED ✗）把两者从 `tryrun*.cmake`／`configure.cmake`／config 头中删除 ✓ → N14 失效，**不重开** ✓。am11 重申方向 ✓：*"instead of these tiny few liner PRs, it would be good to push substantial changes in batches"*（同其 08-30 `#132827` 评论 ✗）→ **剩余队列需重新分批** ⏳。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
