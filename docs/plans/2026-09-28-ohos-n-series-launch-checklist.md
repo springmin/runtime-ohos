@@ -21,6 +21,8 @@
 
 > **10-20 N5 续** ✗：jkotas 注释建议已应用 ✓（`985a9ba061` ✗："Workaround for missing OpenHarmony WHOLE_ARCHIVE support in CMake. Remove once the minimum required CMake version is 4.5." ✗）；Copilot 第二轮 High（安全依赖块 191–196 ✗）**有效 ✓** → **已修** ✗（`bdc286176c3` ✗：guard 加 `NOT CLR_CMAKE_TARGET_OPENHARMONY` ✗）＋回复 [`discussion_r4320470576`](https://github.com/dotnet/runtime/pull/135863#discussion_r4320470576) ✓；CI 仍 **4 红**（flake ✗，build `1641156` ✗）。
 
+> **10-20 次波预检（N14/N10/N15＋N16 重叠 ✗）** ✗：基线 `upstream/main=046f365b90c` ✗。N14 `pr/ohos-tryrun` → `13a04c52975` ✗（净差 **1 文件 8+** ✗；§7 注释已成稿 ✓）；N10 `pr/ohos-crossgen-corelib` → `ddfe9c77272` ✗（**1 文件 10+/1-** ✗；注释保留 ✓）；N15 `pr/ohos-libs-tfm` → `767cbcc2330` ✗（**6 文件 25+/3-** ✗；§7 成稿 ✓）；N16 `pr/ohos-console` **重叠至新 N15** → `15b7413acc1` ✗（自身 delta **8+/3-** ✗）。fire 包齐 ✓（`sync/bodies/N{14,10,15}-fire.md` ✗；N16 已更新 ✗）。**均未推** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
