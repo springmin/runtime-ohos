@@ -26,3 +26,33 @@
 
 - **12.0 迁移＝产品决策**（未做；等 11.0 发版后评估，MAUI 需等其 12 线出现）；
 - kit 构建/复现按上表选支；**下次 kit 构建需验证 sdk 的 RTM pin**。
+
+## 4. 构建环境约束（2026-10-19 实测）
+
+- **hmmac 禁止执行/映射"新创建"文件**：把 `/system/bin/sh` 拷到 `/storage` 或 `/data` 后执行均为
+  `Permission denied`；而**同权限位、同属主**的既有 `~/.dotnet.rc2-105/dotnet` 正常执行 →
+  不是 mode/owner 问题，而是**新建文件无执行权**。
+- 推论：**不能引导新 SDK**（`build.sh` 装出的 `.dotnet/dotnet` 与 `libhostfxr.so` 均为 `EACCES`）；
+  构建必须使用**既有 SDK root**（`~/.dotnet.rc2-105`、`~/.dotnet.rc2-112` 等）。
+- `dotnet build` 在本环境曾于 `dotnet-aot` 工程上**病态自旋**（>1 天 CPU、0 字节输出、
+  `timeout 7200` 未终止），已 `kill -9`；**不再尝试从源码整构建 dotnet/sdk**——
+  kit 流程本就用官方 SDK＋仓内脚本。
+- **MSBuild 多进程节点不可用**：`NodeLauncher.StartInternal` 抛 `PlatformNotSupportedException`
+  （`MSB0001: Cannot acquire required number of nodes`）→ 必须 `-m:1` 单节点。
+- 即使 `-m:1`，`dotnet msbuild -t:Restore` 在 aspnetcore 工程上仍会**病态自旋**（CPU 2h+、0 输出），
+  已 `kill -9`；**设备上不做整仓构建/还原验证**。
+
+## 5. 三仓同步验证（2026-10-19/20）
+
+- **sdk**：改用仓内 OHOS 回归套件（CI `ohos-install-tests` 同款）——
+  `test-installer-verification` 43 ✗、`test-sdk-arch-check` 21 ✗、
+  `test-fetch-aot-packs-resolution` 17 ✗、`test-hostfeed-verification` 10 ✗、
+  `test-codesign-filewrites` 5 ✗、`test-packsplit-equivalence` 6 CASE ✗（需 bash ✗）：
+  **96 PASS ＋ 6 CASE OK，0 FAIL** ✓。
+- **aspnetcore**：`dotnet msbuild src/Http/.../Microsoft.AspNetCore.Http.Abstractions.csproj -t:Restore -m:1`
+  （既有 SDK ✗）→ **病态自旋**（CPU 2h+ ✗、0 输出 ✗）→ 已 kill ✗；**设备上不可行** ⚠️。
+  同步内容为发布支的**版本/config** ✗（上游 CI 覆盖 ✓）。
+- **maui**：`dotnet msbuild src/Core/src/Core.csproj -t:Restore -m:1` → **NETSDK1139** ✗
+  （`ios` TFM 未被当前 SDK 识别 ✗——设备 SDK 无 iOS workload ✗）；**非同步问题** ✓；
+  同步内容为上游发布支提交 ✓（上游 CI 覆盖 ✓），本地不做整构建 ✓。
+- **结论** ✓：设备侧验证以 **sdk 仓内套件**为准 ✓；aspnetcore/maui 受环境限制 ⚠️，不做整构建/还原 ✗。
