@@ -44,6 +44,8 @@
 
 > **10-20 三批已开** ✓：A [`#136185`](https://github.com/dotnet/runtime/pull/136185) ✗、B [`#136186`](https://github.com/dotnet/runtime/pull/136186) ✗、C [`#136187`](https://github.com/dotnet/runtime/pull/136187) ✗（tips `c2f3dcfb68d`／`8730373688c`／`ae3720591c8` ✗；diff 面 **7／7／1** 文件 ✓）——**在飞 6 笔**（N3/N4/N8＋A/B/C ✗）。S1c 追问草稿已备，**未发** ✓。
 
+> **10-20 第二波分支已备并推 fork** ✓（**未开 PR** ✓）：**D** `pr/ohos-crypto-shim @ a374e01e975`（5 文件 **130+/8-** ✗；N17 已剔除 threadstatics／docs ✗；B6 绝对路径修复已含 ✓）、**E** `pr/ohos-demote-aot @ 555ed5c87e8`（8 文件 **102+/8-** ✗）、**F** `pr/ohos-wx-hardening @ d4be873199e`（3 文件 **21+/1-** ✗；WX-PROBE 探针未含 ✗；B2 `Release` 已含 ✓）。fire 包：`batchD-fire.md`／`batchE-fire.md`／`batchF-fire.md` ✓。**I（CI leg）未启动** ✓——依赖带 OHOS NDK 的 prereqs 镜像，且按计划留最后 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
