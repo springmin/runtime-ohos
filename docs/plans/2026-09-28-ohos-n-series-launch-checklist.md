@@ -36,6 +36,12 @@
 > **10-20 N9 MERGED ✓**：`#136131` squash **`d260b5c598a`**（**14:04:04Z** ✗；jkotas 14:01 注 `/ba-g` 非必需 leg 为 flaky network ✗）——W^X 默认已在 main ✓。
 > **10-20 N14 CLOSED** ⛔：am11（12:54Z ✗）判 `HAVE_BROKEN_FIFO_KEVENT/SELECT` **均未使用** ✗，其 **#136147「Cleanup unused cmake configs」**（已 MERGED ✗）把两者从 `tryrun*.cmake`／`configure.cmake`／config 头中删除 ✓ → N14 失效，**不重开** ✓。am11 重申方向 ✓：*"instead of these tiny few liner PRs, it would be good to push substantial changes in batches"*（同其 08-30 `#132827` 评论 ✗）→ **剩余队列需重新分批** ⏳。
 
+> **10-20 三批就绪** ✓（基线 **`cf3fbf9c8d1`** ✗，**均未推** ✓）：
+> **A** `pr/ohos-batch-aot-packs @ c2f3dcfb68d`（**7 文件 57+/7-** ✗；N10-N13＋C3 ✗；已移除 `OHOS_CXXRUNTIME_DIR` 打包块 ✗；XML 全过 ✓）；
+> **B** `pr/ohos-batch-libs @ 8730373688c`（**7 文件 31+/6-** ✗；N15 已内置 C2 ✗；CA1416 抑制保留并带退出条件 ✗；XML 全过 ✓）；
+> **C** `pr/ohos-pal-process @ ae3720591c8`（**1 文件 171+/8-** ✗；NA 缺陷已含于现支 ✗；`d_reclen`／INT_MAX／OHOS 收窄 ✓）。
+> fire 包：`batchA-fire.md`／`batchB-fire.md`／N7 原包 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
