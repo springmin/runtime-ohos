@@ -31,6 +31,8 @@
 
 > **10-20 W4 四支已重放** ✓（基线 **`b37852e7e2c`** ✗）：N7 `0caa588edc1`（**1 文件 171+/8-** ✗；lease `c5e1dc3e4aa` ✗）、N11 `e127a79075d`（**6+/1-** ✗；lease `91a2e8e5a62` ✗）、N12 `3a9ce269991`（**4+** ✗；lease `da4dc098a4a` ✗）、N13 `1f860da25eb`（**4 文件 42+/5-** ✗；lease `fed16fdbdc9` ✗）。全部 behind 0／零冲突／净差面与预检一致 ✓，**均未推** ✓。
 
+> **10-20 N14 评审处置** ✓：am11（08:38Z ✗）在 `tryrun.cmake:27` 要求把 OHOS 检测并入 platform probe、沿用既有 `elseif` 模式、删注释 ✓ → 已 amend＋rebase 至 `2422bb8fc1f` → **`fe9a4a1d020`**（净差 **1 文件 5+** ✗；本机 cmake 实测：env 设＝两项 1 ✓／env 空＝未设 ✓）→ force-push ✓；inline 回复 [`r4324508219`](https://github.com/dotnet/runtime/pull/136132#discussion_r4324508219) ✗。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
