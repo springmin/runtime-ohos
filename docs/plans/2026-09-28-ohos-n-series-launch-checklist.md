@@ -53,6 +53,8 @@
 
 > **10-21 S1c 分支已切＋追问已发** ✓：`pr/ohos-sdk-codesign @ 0e85179ddcc` ✗（**17 文件 1738+/1-** ✗：`OpenHarmonyCodesign` 79 行＋`ElfSigner` 1331 行＋`Microsoft.NET.Sdk.targets` 钩子 51 行＋`Strings.resx`／13 个 xlf ✗；资源号 **NETSDK1247–1250** ✓；未含 selfsign CLI ✗）；追问 [`6304910366`](https://github.com/dotnet/runtime/issues/132866#issuecomment-6304910366) ✗（点明分支已备 ✓）。**未开 PR** ✓（等 reviewer 表态 ✗）。
 
+> **10-21 native 整合支＋设备证据** ✓：`pr/ohos-native-fixes @ c9ea916469a` ✗（**10 文件 315+/18-** ✗；N3+N4+N7+N8+D 合一 ✗）；设备实测（HarmonyOS aarch64 ✗，SDK rc2-112 ✗）：`dotnet --info` RID ✓、hello world ✓、子进程 `exit=0` ✓、NIC 枚举 ✓（`speed=-1` ✗）、RSA 2048 ✓、TLS 577B ✓；证据存 `sync/evidence/native-2026-10-21/` ✓；fire 包 `native-fire.md` ✓。**未开 PR／未关旧四笔** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
