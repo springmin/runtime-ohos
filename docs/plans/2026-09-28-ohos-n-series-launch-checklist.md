@@ -67,6 +67,8 @@
 
 > **10-21 A1 PR 已开** ✓：[`dotnet/aspnetcore#69952`](https://github.com/dotnet/aspnetcore/pull/69952) ✗（`133b6799f5f` ✗，**5 文件 17+/4-** ✗；标题「Add the openharmony RIDs and **skip repo-side NativeAOT**」✗；正文含 Follow-up：等 ILCompiler pack＋交叉工具链再 enable ✗）。全仓在飞：runtime **4**＋sdk **3**＋aspnetcore **1**＝**8 笔** ✗。
 
+> **10-21 A 评审处置（jkotas 6 条 ✗）** ✓：开启 **R2R**（删 IL-only＋pdb 去重 target ✗）、`CommandLineHelpers` 通用映射 `openharmony→Linux` ✗、删局部 `_CrossGenTargetOS`/`_CrossGen2TargetOS` ✗、链路器条件改 `_targetOS` ✗、删 2 处无用注释 ✗；新 head **`7ce2047772e`** ✗（**6 文件 25+/6-** ✗）；6 条 inline 全回复＋总结 [`6306415914`](https://github.com/dotnet/runtime/pull/136185#issuecomment-6306415914) ✗；CI 已在新 head 重跑 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
