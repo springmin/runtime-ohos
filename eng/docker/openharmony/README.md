@@ -44,7 +44,7 @@ image, the job no longer needs `preBuildSteps` for the SDK/OpenSSL/ICU.
 - For `dotnet/dotnet-buildtools-prereqs-docker`, move this to
   `src/azurelinux/4.0/net12.0/cross/openharmony/<ver>/amd64/Dockerfile` and use
   the repository's Azure Linux base image instead of `ubuntu:24.04`.
-- The OpenSSL and ICU tarballs are pinned by version; their sha256 values still
-  need to be added to `build-ohos-assets.sh`.
+- The OpenSSL and ICU tarballs are pinned by version and sha256 in
+  `build-ohos-assets.sh`.
 - The image is a draft; it has not been built in this environment. The runtime
   build itself was validated by the fork smoke workflow.
