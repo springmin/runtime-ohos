@@ -63,6 +63,8 @@
 
 > **10-21 S1c PR 已开＋prereqs issue 已提** ✓：[`dotnet/sdk#56735`](https://github.com/dotnet/sdk/pull/56735) ✗（`0e85179ddcc` ✗，**17 文件 1738+/1-** ✗；正文含 scope note「不要则关」✗；设备证据：`dotnet publish -r openharmony-arm64` → apphost `.codesign` VALID ✗）；[`prereqs-docker#1778`](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues/1778) ✗（NDK 入镜像 vs CI 下载 ✗，@dotnet/dotnet-docker-reviewers ✓）。SDK 在飞 **3 笔**（`#56732`／`#56733`／`#56735` ✗）✓。
 
+> **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ be39308d1cc` ✗（**5 文件 17+/4-** ✗；上游已删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗；其余 4 文件按新结构重放 ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
