@@ -63,7 +63,7 @@
 
 > **10-21 S1c PR 已开＋prereqs issue 已提** ✓：[`dotnet/sdk#56735`](https://github.com/dotnet/sdk/pull/56735) ✗（`0e85179ddcc` ✗，**17 文件 1738+/1-** ✗；正文含 scope note「不要则关」✗；设备证据：`dotnet publish -r openharmony-arm64` → apphost `.codesign` VALID ✗）；[`prereqs-docker#1778`](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues/1778) ✗（NDK 入镜像 vs CI 下载 ✗，@dotnet/dotnet-docker-reviewers ✓）。SDK 在飞 **3 笔**（`#56732`／`#56733`／`#56735` ✗）✓。
 
-> **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ be39308d1cc` ✗（**5 文件 17+/4-** ✗；上游已删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗；其余 4 文件按新结构重放 ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
+> **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ 133b6799f5` ✗（**5 文件 17+/4-** ✗；措辞改为「skip **repo-side** NativeAOT」✗——`NativeAotSupported` 只影响仓库自带工具（`aspnetcoretools`／`dotnet-dev-certs`／`dotnet-user-jwts`／`dotnet-user-secrets` ✗）与 E2E harness ✗，**不影响用户 AOT 发布** ✓；上游删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
 
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
