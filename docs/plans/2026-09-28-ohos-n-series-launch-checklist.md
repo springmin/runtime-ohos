@@ -65,6 +65,8 @@
 
 > **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ 133b6799f5` ✗（**5 文件 17+/4-** ✗；措辞改为「skip **repo-side** NativeAOT」✗——`NativeAotSupported` 只影响仓库自带工具（`aspnetcoretools`／`dotnet-dev-certs`／`dotnet-user-jwts`／`dotnet-user-secrets` ✗）与 E2E harness ✗，**不影响用户 AOT 发布** ✓；上游删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
 
+> **10-21 A1 PR 已开** ✓：[`dotnet/aspnetcore#69952`](https://github.com/dotnet/aspnetcore/pull/69952) ✗（`133b6799f5f` ✗，**5 文件 17+/4-** ✗；标题「Add the openharmony RIDs and **skip repo-side NativeAOT**」✗；正文含 Follow-up：等 ILCompiler pack＋交叉工具链再 enable ✗）。全仓在飞：runtime **4**＋sdk **3**＋aspnetcore **1**＝**8 笔** ✗。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
