@@ -69,6 +69,8 @@
 
 > **10-21 A 评审处置（jkotas 6 条 ✗）** ✓：开启 **R2R**（删 IL-only＋pdb 去重 target ✗）、`CommandLineHelpers` 通用映射 `openharmony→Linux` ✗、删局部 `_CrossGenTargetOS`/`_CrossGen2TargetOS` ✗、链路器条件改 `_targetOS` ✗、删 2 处无用注释 ✗；新 head **`7ce2047772e`** ✗（**6 文件 25+/6-** ✗）；6 条 inline 全回复＋总结 [`6306415914`](https://github.com/dotnet/runtime/pull/136185#issuecomment-6306415914) ✗；CI 已在新 head 重跑 ✓。
 
+> **10-21 B 按 `-unix` 重做** ✓：`pr/ohos-batch-libs-unix @ 1990b7d6047` ✗（**6 文件 24+/3-** ✗；`LibrariesOpenHarmonySfxTfm` → `$(NetCoreAppCurrent)-unix` ✗；System.Console 特判＋CA1416 抑制全部移除、文件回到上游 ✗；shims 同组 ✗）；新支已推 fork ✓，**PR 支未动** ✓；jkotas 回复草稿备 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
