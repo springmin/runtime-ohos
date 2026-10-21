@@ -173,11 +173,11 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 
 ## 5. runtime PR 收口状态（2026-10-21）
 
-- `#136185` A：open，head `487e260858d`；Include 条件加 Identity 过滤
-- `#136194` native：open，head `5870fb1efad`；静态 SSL object set 仅 OHOS
+- `#136185` A：open，head `487e260858d`；Include 条件加 Identity 过滤；`Unix.targets` 已含 OHOS 排除
+- `#136194` native：open，head `146fda08281`；按 am11 review 清理为 **3 文件 52+/7-**（process／ifaddrs／CMakeLists），删除自定义静态 SSL／zstd／shim 冗余
 - `#136198` F：open，等 jkotas（按指示保留不动）
 - `#136206` CI leg：draft，head `ee5d7c6b2cb`；OpenSSL/ICU SHA 固定＋path condition
-- `#136211` CoreLib alias：ready，head `393adc619b3`；别名＋OpenHarmony 条件测试
+- `#136211` CoreLib alias：**closed**；huoyaoyuan 认为 `IsOSPlatform(Linux)` 不应为 OHOS true（Android 先例），转 MSBuild `NativeMethodsShared`
 - `#136212` WX precheck：draft，head `d8142fe2ddc`；probe 日志降为 verbose
-- 待：1（`#136194` 区域签字／拆分）、2（`#136198` 关闭）
-- 已处理：3、4、5、6、7、8、9、10、11
+- 待：2（`#136198` 关闭）；1 已由 am11 明确：port PR 可合并，重点转为代码清理
+- 已处理：1（am11 答复）、3、4、5、6、7、8、9、10、11
