@@ -61,6 +61,8 @@
 
 > **10-21 E+F 独立 PR 已开** ✓：[`#136198`](https://github.com/dotnet/runtime/pull/136198) ✗（`b3ddf1cf36f` ✗，**11 文件 123+/9-** ✗；正文注明「源自 OHOS 移植、代码通用」✗）；runtime 在飞 **4 笔**（`#136185`／`#136186`／`#136194`／`#136198` ✗）＋ SDK 2 笔 ✓。
 
+> **10-21 S1c PR 已开＋prereqs issue 已提** ✓：[`dotnet/sdk#56735`](https://github.com/dotnet/sdk/pull/56735) ✗（`0e85179ddcc` ✗，**17 文件 1738+/1-** ✗；正文含 scope note「不要则关」✗；设备证据：`dotnet publish -r openharmony-arm64` → apphost `.codesign` VALID ✗）；[`prereqs-docker#1778`](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues/1778) ✗（NDK 入镜像 vs CI 下载 ✗，@dotnet/dotnet-docker-reviewers ✓）。SDK 在飞 **3 笔**（`#56732`／`#56733`／`#56735` ✗）✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
