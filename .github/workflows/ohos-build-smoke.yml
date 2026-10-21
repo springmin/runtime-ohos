@@ -10,8 +10,6 @@ permissions:
   contents: read
 
 env:
-  OHOS_NDK_HOME: ${{ runner.temp }}/ohos-sdk/linux
-  OHOS_ASSETS: ${{ runner.temp }}/ohos-assets
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: 1
 
@@ -43,7 +41,7 @@ jobs:
           cd "$RUNNER_TEMP/ohos-sdk/linux"
           unzip -q native-linux-x64-*.zip
           rm -f native-linux-x64-*.zip
-          test -f "$OHOS_NDK_HOME/native/build/cmake/ohos.toolchain.cmake"
+          test -f "$RUNNER_TEMP/ohos-sdk/linux/native/build/cmake/ohos.toolchain.cmake"
 
       - name: Cache the cross-built ICU and OpenSSL
         id: assets-cache
@@ -55,8 +53,8 @@ jobs:
       - name: Set up the OpenHarmony cross toolchain
         run: |
           set -euo pipefail
-          NDK_BIN="$OHOS_NDK_HOME/native/llvm/bin"
-          SYSROOT="$OHOS_NDK_HOME/native/sysroot"
+          NDK_BIN="$RUNNER_TEMP/ohos-sdk/linux/native/llvm/bin"
+          SYSROOT="$RUNNER_TEMP/ohos-sdk/linux/native/sysroot"
           TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
           mkdir -p "$TOOLCHAIN"
           mk() {
@@ -79,9 +77,9 @@ jobs:
         run: |
           set -euo pipefail
           TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
-          OPENSSL_INSTALL="$OHOS_ASSETS/openssl"
+          OPENSSL_INSTALL="$RUNNER_TEMP/ohos-assets/openssl"
           SRC="$RUNNER_TEMP/openssl-src"
-          mkdir -p "$OHOS_ASSETS" "$SRC"
+          mkdir -p "$RUNNER_TEMP/ohos-assets" "$SRC"
           curl -fsSL "https://github.com/openssl/openssl/releases/download/openssl-3.3.1/openssl-3.3.1.tar.gz" \
             -o "$RUNNER_TEMP/openssl.tar.gz"
           tar -xzf "$RUNNER_TEMP/openssl.tar.gz" -C "$SRC"
@@ -99,11 +97,11 @@ jobs:
         run: |
           set -euo pipefail
           TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
-          ICU_INSTALL="$OHOS_ASSETS/icu"
+          ICU_INSTALL="$RUNNER_TEMP/ohos-assets/icu"
           SRC="$RUNNER_TEMP/icu-src"
           HOST="$RUNNER_TEMP/icu-host"
           TARGET="$RUNNER_TEMP/icu-target"
-          mkdir -p "$OHOS_ASSETS" "$SRC" "$HOST" "$TARGET"
+          mkdir -p "$RUNNER_TEMP/ohos-assets" "$SRC" "$HOST" "$TARGET"
           curl -fsSL "https://github.com/unicode-org/icu/releases/download/release-75-1/icu4c-75_1-src.tgz" \
             -o "$RUNNER_TEMP/icu.tar.gz"
           tar -xzf "$RUNNER_TEMP/icu.tar.gz" -C "$SRC"
@@ -127,16 +125,16 @@ jobs:
       - name: Verify the cross-built assets
         run: |
           set -euo pipefail
-          test -f "$OHOS_ASSETS/icu/include/unicode/ucurr.h"
-          test -f "$OHOS_ASSETS/icu/lib/libicuuc.a"
-          test -f "$OHOS_ASSETS/icu/lib/libicui18n.a"
-          test -f "$OHOS_ASSETS/icu/lib/libicudata.a"
-          test -f "$OHOS_ASSETS/openssl/include/openssl/ssl.h"
-          test -f "$OHOS_ASSETS/openssl/lib/libcrypto.a"
-          test -f "$OHOS_ASSETS/openssl/lib/libssl.a"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/include/unicode/ucurr.h"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicuuc.a"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicui18n.a"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicudata.a"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/include/openssl/ssl.h"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
 
       - name: Build clr.runtime and libs.native
         run: |
           set -euo pipefail
           ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
-            -cmakeargs "-DCMAKE_ICU_DIR=$OHOS_ASSETS/icu -DOPENSSL_ROOT_DIR=$OHOS_ASSETS/openssl -DOPENSSL_INCLUDE_DIR=$OHOS_ASSETS/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$OHOS_ASSETS/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$OHOS_ASSETS/openssl/lib/libssl.a"
+            -cmakeargs "-DCMAKE_ICU_DIR=$RUNNER_TEMP/ohos-assets/icu -DOPENSSL_ROOT_DIR=$RUNNER_TEMP/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$RUNNER_TEMP/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
