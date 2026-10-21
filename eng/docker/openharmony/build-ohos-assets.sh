@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Build the OpenHarmony NDK and the target-side ICU/OpenSSL assets.
+#
+# The versions are pinned; the OpenSSL and ICU source tarballs are fetched by
+# version. TODO: pin their sha256 values as well (the network was too slow to
+# compute them when this draft was written).
+set -euo pipefail
+
+OHOS_SDK_URL="${OHOS_SDK_URL:-https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz}"
+OHOS_SDK_SHA="${OHOS_SDK_SHA:-a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e}"
+OPENSSL_VERSION="${OPENSSL_VERSION:-3.3.1}"
+ICU_VERSION="${ICU_VERSION:-75.1}"
+
+ICU_TAG="${ICU_VERSION/./-}"
+ICU_FILE="${ICU_VERSION/./_}"
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+NDK_ROOT=/opt/ohos-sdk/linux
+ASSETS=/opt/ohos-assets
+TOOLCHAIN="$WORK/toolchain"
+mkdir -p "$TOOLCHAIN" "$ASSETS"
+
+echo "== SDK =="
+mkdir -p /opt/ohos-sdk
+curl -fsSL "$OHOS_SDK_URL" -o "$WORK/sdk.tar.gz"
+echo "$OHOS_SDK_SHA  $WORK/sdk.tar.gz" | sha256sum -c -
+tar -xzf "$WORK/sdk.tar.gz" -C /opt/ohos-sdk
+rm -rf /opt/ohos-sdk/windows
+cd "$NDK_ROOT"
+unzip -q native-linux-x64-*.zip
+rm -f native-linux-x64-*.zip
+test -f "$NDK_ROOT/native/build/cmake/ohos.toolchain.cmake"
+
+NDK_BIN="$NDK_ROOT/native/llvm/bin"
+SYSROOT="$NDK_ROOT/native/sysroot"
+mk() {
+    printf '#!/bin/sh\nexec %s "$@"\n' "$2" > "$TOOLCHAIN/aarch64-linux-ohos-$1"
+    chmod +x "$TOOLCHAIN/aarch64-linux-ohos-$1"
+}
+mk gcc "$NDK_BIN/clang --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+mk g++ "$NDK_BIN/clang++ --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+mk cc "$NDK_BIN/clang --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+mk c++ "$NDK_BIN/clang++ --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+mk ar "$NDK_BIN/llvm-ar"
+mk ranlib "$NDK_BIN/llvm-ranlib"
+mk nm "$NDK_BIN/llvm-nm"
+mk strip "$NDK_BIN/llvm-strip"
+mk objcopy "$NDK_BIN/llvm-objcopy"
+mk objdump "$NDK_BIN/llvm-objdump"
+
+echo "== OpenSSL $OPENSSL_VERSION =="
+curl -fsSL "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz" \
+    -o "$WORK/openssl.tar.gz"
+tar -xzf "$WORK/openssl.tar.gz" -C "$WORK"
+cd "$WORK/openssl-$OPENSSL_VERSION"
+./Configure linux-aarch64 \
+    --cross-compile-prefix="$TOOLCHAIN/aarch64-linux-ohos-" \
+    --prefix="$ASSETS/openssl" --openssldir="$ASSETS/openssl/ssl" --libdir=lib \
+    no-shared no-tests no-async no-apps -fPIC
+make -j"$(nproc)"
+make install_sw
+
+echo "== ICU $ICU_VERSION =="
+curl -fsSL "https://github.com/unicode-org/icu/releases/download/release-$ICU_TAG/icu4c-$ICU_FILE-src.tgz" \
+    -o "$WORK/icu.tar.gz"
+tar -xzf "$WORK/icu.tar.gz" -C "$WORK"
+mkdir -p "$WORK/icu-host" "$WORK/icu-target"
+
+cd "$WORK/icu-host"
+"$WORK/icu/source/configure" --disable-tests --disable-samples --disable-extras
+make -j"$(nproc)"
+
+cd "$WORK/icu-target"
+CC="$TOOLCHAIN/aarch64-linux-ohos-gcc" CXX="$TOOLCHAIN/aarch64-linux-ohos-g++" \
+AR="$TOOLCHAIN/aarch64-linux-ohos-ar" RANLIB="$TOOLCHAIN/aarch64-linux-ohos-ranlib" \
+"$WORK/icu/source/configure" --host=aarch64-linux-gnu \
+    --with-cross-build="$WORK/icu-host" \
+    --disable-tests --disable-samples --disable-extras \
+    --enable-static --disable-shared --libdir="$ASSETS/icu/lib" \
+    --prefix="$ASSETS/icu"
+make -j"$(nproc)"
+make install
+
+echo "== Verify =="
+test -f "$ASSETS/icu/include/unicode/ucurr.h"
+test -f "$ASSETS/icu/lib/libicuuc.a"
+test -f "$ASSETS/icu/lib/libicui18n.a"
+test -f "$ASSETS/icu/lib/libicudata.a"
+test -f "$ASSETS/openssl/include/openssl/ssl.h"
+test -f "$ASSETS/openssl/lib/libcrypto.a"
+test -f "$ASSETS/openssl/lib/libssl.a"
+echo "OpenHarmony assets are ready under $ASSETS"
