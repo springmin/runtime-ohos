@@ -162,3 +162,10 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 - 堆叠约束：N16 依赖 N15；N13 依赖 ①＋④；C2 若晚于 N15 需处理与 N15 的重复首提交。
 - 一支一提交、单关注点；评审返工只落在该支并同步堆叠子支。
 - 记录：所有 PR 号、tip SHA、CI 状态回填到 pr-drafts 与 playbook（保持单页可追溯）。
+
+## 4. CI 冒烟（fork）
+
+- workflow：`.github/workflows/ohos-build-smoke.yml`（`ci/ohos-smoke` 支）
+- 配方与结果：`docs/plans/2026-10-21-ohos-ci-smoke.md`
+- 首次全绿：`39549305431`（11 分钟，SDK＋OpenSSL/ICU＋`clr.runtime+libs.native`）
+- 产物断言：`libcoreclr.so`／`libSystem.Native.so`／`libSystem.Globalization.Native.so`／`libSystem.Security.Cryptography.Native.OpenSsl.so`
