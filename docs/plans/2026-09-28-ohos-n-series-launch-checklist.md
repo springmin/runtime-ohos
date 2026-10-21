@@ -55,6 +55,8 @@
 
 > **10-21 native 整合支＋设备证据** ✓：`pr/ohos-native-fixes @ c9ea916469a` ✗（**10 文件 315+/18-** ✗；N3+N4+N7+N8+D 合一 ✗）；设备实测（HarmonyOS aarch64 ✗，SDK rc2-112 ✗）：`dotnet --info` RID ✓、hello world ✓、子进程 `exit=0` ✓、NIC 枚举 ✓（`speed=-1` ✗）、RSA 2048 ✓、TLS 577B ✓；证据存 `sync/evidence/native-2026-10-21/` ✓；fire 包 `native-fire.md` ✓。**未开 PR／未关旧四笔** ✓。
 
+> **10-21 native 合并 PR 已开** ✓：[`#136194`](https://github.com/dotnet/runtime/pull/136194) ✗（`c9ea916469a` ✗，**10 文件 315+/18-** ✗）；旧四笔 `#135839`／`#135840`／`#135866`／`#136187` **已关** ✓；am11 回复 [`6305107651`](https://github.com/dotnet/runtime/pull/136132#issuecomment-6305107651) ✗。runtime 在飞 **3 笔**（A `#136185`／B `#136186`／native `#136194` ✗）＋ SDK 2 笔（`#56732`／`#56733` ✗）✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
