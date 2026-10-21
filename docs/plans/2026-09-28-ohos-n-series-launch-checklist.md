@@ -67,6 +67,8 @@
 
 > **10-21 A 通用方案** ✓：`#136185` head **`127135f57d9`** ✗（`eng/targetingpacks.targets` **10+/9-** ✗：apphost 改 `Update`＋`Include` 兜底 ✗、`ResolvedRuntimePack` 收窄对所有 OS 生效 ✗）；2 条 inline 回复＋总结 [`6307048305`](https://github.com/dotnet/runtime/pull/136185#issuecomment-6307048305) ✗；CI 重跑 ✓。
 
+> **10-21 F 讨论回复** ✓：[`r4332720955`](https://github.com/dotnet/runtime/pull/136198#discussion_r4332720955) ✗——附设备证据（修复前 `SEGV_ACCERR` ✗；修复后到托管代码 ✗）＋三选项（keep／fail-fast／drop ✗）；等 jkotas 选择 ✓。
+
 > **10-21 S1c PR 已开＋prereqs issue 已提** ✓：[`dotnet/sdk#56735`](https://github.com/dotnet/sdk/pull/56735) ✗（`0e85179ddcc` ✗，**17 文件 1738+/1-** ✗；正文含 scope note「不要则关」✗；设备证据：`dotnet publish -r openharmony-arm64` → apphost `.codesign` VALID ✗）；[`prereqs-docker#1778`](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues/1778) ✗（NDK 入镜像 vs CI 下载 ✗，@dotnet/dotnet-docker-reviewers ✓）。SDK 在飞 **3 笔**（`#56732`／`#56733`／`#56735` ✗）✓。
 
 > **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ 133b6799f5` ✗（**5 文件 17+/4-** ✗；措辞改为「skip **repo-side** NativeAOT」✗——`NativeAotSupported` 只影响仓库自带工具（`aspnetcoretools`／`dotnet-dev-certs`／`dotnet-user-jwts`／`dotnet-user-secrets` ✗）与 E2E harness ✗，**不影响用户 AOT 发布** ✓；上游删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
