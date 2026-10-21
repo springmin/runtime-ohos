@@ -57,6 +57,8 @@
 
 > **10-21 native 合并 PR 已开** ✓：[`#136194`](https://github.com/dotnet/runtime/pull/136194) ✗（`c9ea916469a` ✗，**10 文件 315+/18-** ✗）；旧四笔 `#135839`／`#135840`／`#135866`／`#136187` **已关** ✓；am11 回复 [`6305107651`](https://github.com/dotnet/runtime/pull/136132#issuecomment-6305107651) ✗。runtime 在飞 **3 笔**（A `#136185`／B `#136186`／native `#136194` ✗）＋ SDK 2 笔（`#56732`／`#56733` ✗）✓。
 
+> **10-21 E+F 合并支已备** ✓：`pr/ohos-native-robustness @ d7d1cb32031` ✗（**11 文件 123+/9-** ✗；E＝corehost 可选 SDK 加载降噪＋测试/文档 ✗；F＝写屏障 Commit 检查／W^X 降级 ✗；两笔通用修复，无 OHOS 字样 ✓）；fire 包 `batchEF-fire.md` ✓。**未开 PR** ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
