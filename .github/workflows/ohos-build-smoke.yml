@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  libs-native:
+  clr-runtime:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -39,11 +39,11 @@ jobs:
           rm -f native-linux-x64-*.zip
           test -f "$RUNNER_TEMP/ohos-sdk/linux/native/build/cmake/ohos.toolchain.cmake"
 
-      - name: Build libs.native
+      - name: Build clr.runtime
         env:
           OHOS_NDK_HOME: ${{ runner.temp }}/ohos-sdk/linux
           DOTNET_CLI_TELEMETRY_OPTOUT: 1
           DOTNET_NOLOGO: 1
         run: |
-          ./build.sh libs.native -os openharmony -arch arm64 -cross -c Release
+          ./build.sh clr.runtime -os openharmony -arch arm64 -cross -c Release
 
