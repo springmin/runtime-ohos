@@ -1,0 +1,49 @@
+name: OHOS build smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ci/ohos-smoke
+
+permissions:
+  contents: read
+
+jobs:
+  libs-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build python3 curl unzip \
+            libssl-dev libicu-dev zlib1g-dev libxml2-dev libkrb5-dev
+
+      - name: Download the OpenHarmony SDK (NDK)
+        run: |
+          set -euo pipefail
+          URL="https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz"
+          SHA="a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e"
+          mkdir -p "$RUNNER_TEMP/ohos-sdk"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/ohos-sdk.tar.gz"
+          echo "$SHA  $RUNNER_TEMP/ohos-sdk.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/ohos-sdk.tar.gz" -C "$RUNNER_TEMP/ohos-sdk"
+          rm -rf "$RUNNER_TEMP/ohos-sdk/windows" "$RUNNER_TEMP/ohos-sdk.tar.gz"
+          cd "$RUNNER_TEMP/ohos-sdk/linux"
+          unzip -q native-linux-x64-*.zip
+          rm -f native-linux-x64-*.zip
+          test -f "$RUNNER_TEMP/ohos-sdk/linux/native/build/cmake/ohos.toolchain.cmake"
+
+      - name: Build libs.native
+        env:
+          OHOS_NDK_HOME: ${{ runner.temp }}/ohos-sdk/linux
+          DOTNET_CLI_TELEMETRY_OPTOUT: 1
+          DOTNET_NOLOGO: 1
+        run: |
+          ./build.sh libs.native -os openharmony -arch arm64 -cross -c Release
+
