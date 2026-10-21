@@ -51,6 +51,8 @@
 
 > **10-20 SDK 两笔已开** ✓：S1a [`dotnet/sdk#56732`](https://github.com/dotnet/sdk/pull/56732) ✗（`41e998e3d0` ✗，**4 文件 545+/3-** ✗）、S1b [`dotnet/sdk#56733`](https://github.com/dotnet/sdk/pull/56733) ✗（`cd0ed5a950` ✗，diff 20 文件（含 S1a ✗），自身 **17 文件 182+/15-** ✗，正文注明叠 #56732 ✗）。runtime D/E/F 仍备而未发 ✓。
 
+> **10-21 S1c 分支已切＋追问已发** ✓：`pr/ohos-sdk-codesign @ 0e85179ddcc` ✗（**17 文件 1738+/1-** ✗：`OpenHarmonyCodesign` 79 行＋`ElfSigner` 1331 行＋`Microsoft.NET.Sdk.targets` 钩子 51 行＋`Strings.resx`／13 个 xlf ✗；资源号 **NETSDK1247–1250** ✓；未含 selfsign CLI ✗）；追问 [`6304910366`](https://github.com/dotnet/runtime/issues/132866#issuecomment-6304910366) ✗（点明分支已备 ✓）。**未开 PR** ✓（等 reviewer 表态 ✗）。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
