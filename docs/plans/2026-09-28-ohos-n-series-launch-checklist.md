@@ -71,6 +71,8 @@
 
 > **10-21 F 追问答复** ✓：[`r4332799573`](https://github.com/dotnet/runtime/pull/136198#discussion_r4332799573) ✗——其他调用成功是因为 fork 的**双映射预检**（全局关 W^X ✗）不在本 PR ✗；F 单独只会推迟失败 ✓；提议把**预检**另开 PR ✓；**`#136198` 暂不关** ✓（待他回复 → 开预检 PR → 再关 ✓）。
 
+> **10-21 预检支已备** ✓：`pr/ohos-wx-precheck @ 48b76b66f75` ✗（1 文件 **32+** ✗：`doublemapping.cpp` 的 RW／`PROT_NONE`／`mprotect RX` 预检 ✗；失败日志每进程一次 ✗）；fire 包 `wxprecheck-fire.md` ✓；**按计划等 jkotas 回复后再开 PR ✗、随后关 `#136198`** ✓。
+
 > **10-21 S1c PR 已开＋prereqs issue 已提** ✓：[`dotnet/sdk#56735`](https://github.com/dotnet/sdk/pull/56735) ✗（`0e85179ddcc` ✗，**17 文件 1738+/1-** ✗；正文含 scope note「不要则关」✗；设备证据：`dotnet publish -r openharmony-arm64` → apphost `.codesign` VALID ✗）；[`prereqs-docker#1778`](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues/1778) ✗（NDK 入镜像 vs CI 下载 ✗，@dotnet/dotnet-docker-reviewers ✓）。SDK 在飞 **3 笔**（`#56732`／`#56733`／`#56735` ✗）✓。
 
 > **10-21 A1 重做支已备** ✓：`pr/ohos-aspnet-rids-rebuild @ 133b6799f5` ✗（**5 文件 17+/4-** ✗；措辞改为「skip **repo-side** NativeAOT」✗——`NativeAotSupported` 只影响仓库自带工具（`aspnetcoretools`／`dotnet-dev-certs`／`dotnet-user-jwts`／`dotnet-user-secrets` ✗）与 E2E harness ✗，**不影响用户 AOT 发布** ✓；上游删 `eng/Dependencies.props` ✗ → 4 条迁入 `Directory.Packages.props` ✗）；目标 `dotnet/aspnetcore:main` ✗；fire 包 `aspA1-fire.md` ✓。**未开 PR** ✓。
