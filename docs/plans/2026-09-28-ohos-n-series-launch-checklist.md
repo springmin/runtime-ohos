@@ -59,6 +59,8 @@
 
 > **10-21 E+F 合并支已备** ✓：`pr/ohos-native-robustness @ d7d1cb32031` ✗（**11 文件 123+/9-** ✗；E＝corehost 可选 SDK 加载降噪＋测试/文档 ✗；F＝写屏障 Commit 检查／W^X 降级 ✗；两笔通用修复，无 OHOS 字样 ✓）；fire 包 `batchEF-fire.md` ✓。**未开 PR** ✓。
 
+> **10-21 E+F 独立 PR 已开** ✓：[`#136198`](https://github.com/dotnet/runtime/pull/136198) ✗（`b3ddf1cf36f` ✗，**11 文件 123+/9-** ✗；正文注明「源自 OHOS 移植、代码通用」✗）；runtime 在飞 **4 笔**（`#136185`／`#136186`／`#136194`／`#136198` ✗）＋ SDK 2 笔 ✓。
+
 > **用途**：#132953（infra）合并后，按既定顺序把 `pr/ohos-*` 批量 rebase 到 post-infra main 并开 PR。
 > **依据**：`2026-09-28-ohos-upstream-fork-sync-playbook.md` §2、`2026-09-28-ohos-upstream-rebase-rehearsal.md`、
 > `2026-09-21-ohos-pr-drafts.md`（每支的 Title/Body 全文）。
