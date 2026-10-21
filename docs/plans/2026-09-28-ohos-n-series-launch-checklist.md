@@ -67,6 +67,8 @@
 
 > **10-21 A 通用方案** ✓：`#136185` head **`127135f57d9`** ✗（`eng/targetingpacks.targets` **10+/9-** ✗：apphost 改 `Update`＋`Include` 兜底 ✗、`ResolvedRuntimePack` 收窄对所有 OS 生效 ✗）；2 条 inline 回复＋总结 [`6307048305`](https://github.com/dotnet/runtime/pull/136185#issuecomment-6307048305) ✗；CI 重跑 ✓。
 
+> **10-21 A RID 列表统一** ✓：`#136185` head **`b149dd91585`** ✗（`targetingpacks.targets` **6+/6-** ✗：runtime／NativeAOT／ILCompiler／Crossgen2／apphost 全改用 `_LocalAppHostRuntimeIdentifiers` ✗；属性扩为并集（含 browser／iOS／tvOS／Android ✗）；修掉一处自引用 ✓）；inline 回复 `4332894342` ✗。
+
 > **10-21 F 讨论回复** ✓：[`r4332720955`](https://github.com/dotnet/runtime/pull/136198#discussion_r4332720955) ✗——附设备证据（修复前 `SEGV_ACCERR` ✗；修复后到托管代码 ✗）＋三选项（keep／fail-fast／drop ✗）；等 jkotas 选择 ✓。
 
 > **10-21 F 追问答复** ✓：[`r4332799573`](https://github.com/dotnet/runtime/pull/136198#discussion_r4332799573) ✗——其他调用成功是因为 fork 的**双映射预检**（全局关 W^X ✗）不在本 PR ✗；F 单独只会推迟失败 ✓；提议把**预检**另开 PR ✓；**`#136198` 暂不关** ✓（待他回复 → 开预检 PR → 再关 ✓）。
