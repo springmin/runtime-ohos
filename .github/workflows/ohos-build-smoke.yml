@@ -139,3 +139,12 @@ jobs:
           export OHOS_NDK_HOME="$RUNNER_TEMP/ohos-sdk/linux"
           ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
             -cmakeargs "-DCMAKE_ICU_DIR=$RUNNER_TEMP/ohos-assets/icu -DOPENSSL_ROOT_DIR=$RUNNER_TEMP/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$RUNNER_TEMP/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
+
+      - name: Verify the build outputs
+        run: |
+          set -euo pipefail
+          find artifacts/bin \( -name 'libcoreclr.so' -o -name 'libSystem.Native.so' -o -name 'libSystem.Globalization.Native.so' -o -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' \) -print | sort
+          test -n "$(find artifacts/bin -name 'libcoreclr.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Globalization.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' -print -quit)"
