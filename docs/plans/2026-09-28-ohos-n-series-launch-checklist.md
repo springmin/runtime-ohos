@@ -169,3 +169,4 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 - 配方与结果：`docs/plans/2026-10-21-ohos-ci-smoke.md`
 - 首次全绿：`39549305431`（11 分钟，SDK＋OpenSSL/ICU＋`clr.runtime+libs.native`）
 - 产物断言：`libcoreclr.so`／`libSystem.Native.so`／`libSystem.Globalization.Native.so`／`libSystem.Security.Cryptography.Native.OpenSsl.so`
+- 缓存命中复跑：`39555889909`（7 分钟，OpenSSL/ICU 构建跳过，产物断言全过）

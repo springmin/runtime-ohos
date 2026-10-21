@@ -35,9 +35,10 @@ export OHOS_NDK_HOME="$RUNNER_TEMP/ohos-sdk/linux"
 ## Results
 
 - `39549305431` (head `0aec810eb6e`): success, 11 minutes, all steps green.
-- `39555889909` (head `6505250a4bc`): same recipe plus build-output assertions
+- `39555889909` (head `6505250a4bc`): success in 7 minutes with a cache hit
+  (OpenSSL/ICU builds skipped). The same recipe plus build-output assertions
   (`libcoreclr.so`, `libSystem.Native.so`, `libSystem.Globalization.Native.so`,
-  `libSystem.Security.Cryptography.Native.OpenSsl.so`); cache-hit path.
+  `libSystem.Security.Cryptography.Native.OpenSsl.so`).
 
 ## Notes
 
