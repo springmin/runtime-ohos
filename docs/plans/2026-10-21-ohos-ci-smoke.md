@@ -13,9 +13,11 @@ and cross-builds `clr.runtime+libs.native` for `openharmony-arm64`.
 - SDK: `https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz`
   - SHA-256: `a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e`
   - Extract `linux/native-linux-x64-*.zip`; use `$RUNNER_TEMP/ohos-sdk/linux` as `OHOS_NDK_HOME`.
-- OpenSSL 3.3.1: static, `no-shared no-tests no-async no-apps -fPIC`, `--libdir=lib`.
+- OpenSSL 3.3.1: static, `no-shared no-tests no-async no-apps -fPIC`, `--libdir=lib`;
+  tarball SHA-256 `777cd596284c883375a2a7a11bf5d2786fc5413255efab20c50d6ffe6d020b7e`.
 - ICU 75.1: host build (tools/data) + cross build, `--enable-static --disable-shared`,
-  `--with-cross-build=<host build dir>`.
+  `--with-cross-build=<host build dir>`; tarball SHA-256
+  `cb968df3e4d2e87e8b11c49a5d01c787bd13b9545280fc6642f826527618caef`.
 
 Both assets install into `$RUNNER_TEMP/ohos-assets` and are cached with key
 `ohos-assets-${runner.os}-openssl-3.3.1-icu-75.1-v1`.

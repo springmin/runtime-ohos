@@ -170,3 +170,14 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 - 首次全绿：`39549305431`（11 分钟，SDK＋OpenSSL/ICU＋`clr.runtime+libs.native`）
 - 产物断言：`libcoreclr.so`／`libSystem.Native.so`／`libSystem.Globalization.Native.so`／`libSystem.Security.Cryptography.Native.OpenSsl.so`
 - 缓存命中复跑：`39555889909`（7 分钟，OpenSSL/ICU 构建跳过，产物断言全过）
+
+## 5. runtime PR 收口状态（2026-10-21）
+
+- `#136185` A：open，head `487e260858d`；Include 条件加 Identity 过滤
+- `#136194` native：open，head `5870fb1efad`；静态 SSL object set 仅 OHOS
+- `#136198` F：open，等 jkotas（按指示保留不动）
+- `#136206` CI leg：draft，head `ee5d7c6b2cb`；OpenSSL/ICU SHA 固定＋path condition
+- `#136211` CoreLib alias：ready，head `393adc619b3`；别名＋OpenHarmony 条件测试
+- `#136212` WX precheck：draft，head `d8142fe2ddc`；probe 日志降为 verbose
+- 待：1（`#136194` 区域签字／拆分）、2（`#136198` 关闭）
+- 已处理：3、4、5、6、7、8、9、10、11
