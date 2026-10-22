@@ -168,10 +168,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      # upstream main + all open OHOS PRs: what CI sees once they are merged.
+      # fork main + #136194 + #135839 + #136206: the closing order rehearsal.
       - uses: actions/checkout@v4
         with:
-          ref: ci/ohos-pr-union
+          ref: ci/final-rehearsal
           fetch-depth: 1
 
       - name: Install build dependencies
