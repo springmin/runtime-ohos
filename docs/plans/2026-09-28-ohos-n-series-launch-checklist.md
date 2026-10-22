@@ -173,12 +173,12 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 
 ## 5. runtime PR 收口状态（2026-10-21）
 
-- `#136185` A：open，head `487e260858d`；Include 条件加 Identity 过滤；`Unix.targets` 已含 OHOS 排除
-- `#136194` native：open，head `146fda08281`；按 am11 review 清理为 **3 文件 52+/7-**（process／ifaddrs／CMakeLists），删除自定义静态 SSL／zstd／shim 冗余
-- `#136198` F：open，等 jkotas（按指示保留不动）
-- `#136206` CI leg：draft，head `ee5d7c6b2cb`；OpenSSL/ICU SHA 固定＋path condition
-- `#136211` CoreLib alias：**closed**；huoyaoyuan 认为 `IsOSPlatform(Linux)` 不应为 OHOS true（Android 先例），转 MSBuild `NativeMethodsShared`
-- MSBuild follow-up：`dotnet/msbuild#15342`（draft；`IsUnixLike` 加 `IsOpenHarmony`）
-- `#136212` WX precheck：draft，head `d8142fe2ddc`；probe 日志降为 verbose
-- 待：2（`#136198` 关闭）；1 已由 am11 明确：port PR 可合并，重点转为代码清理
-- 已处理：1（am11 答复）、3、4、5、6、7、8、9、10、11
+- `#136185` A：open，head `f1859aec926`；Include 条件含 Identity 过滤；删除 `ResolvedRuntimePack` 的 RID 过滤以修复 Mono browser-wasm `NETSDK1112`
+- `#136194` native：open，head `f69b18db2cf`；**4 文件 91+/8-**（process／ifaddrs／CMakeLists／opensslshim）；包含 am11 的 `DlOpenNextToShim`
+- `#136198` F：open，head `cd70774d979`；**repurpose** 为 `s_barrierCopy` 的 Commit 检查（失败即抛 ✗），删除 fallback／config 开关
+- `#136206` CI leg：draft，head `46b4e8146e5`；SHA 固定＋path condition＋Python zip 解压（Azure Linux 无 unzip）
+- `#136211` CoreLib alias：**closed**；huoyaoyuan 认为 `IsOSPlatform(Linux)` 不应为 OHOS true（Android 先例）
+- MSBuild follow-up：`dotnet/msbuild#15342`（draft；`IsUnixLike` 加 `IsOpenHarmony`；CI 14 pass／7 skip）
+- `#136212` WX precheck：draft，head `931e39c9e45`；probe fallback **silent**（jkotras 要求）
+- 待：等 A/native/F/WX 新 CI 与 review；MSBuild #15342 设备验证后转 ready
+- 已处理：1、2（F repurpose）、3、4、5、6、7、8、9、10、11
