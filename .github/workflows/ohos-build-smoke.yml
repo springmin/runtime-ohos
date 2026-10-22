@@ -138,7 +138,7 @@ jobs:
         run: |
           set -euo pipefail
           export OHOS_NDK_HOME="$RUNNER_TEMP/ohos-sdk/linux"
-          ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
+          ./build.sh clr.runtime+clr.corelib+libs.native -os openharmony -arch arm64 -cross -c Release \
             -cmakeargs "-DCMAKE_ICU_DIR=$RUNNER_TEMP/ohos-assets/icu -DOPENSSL_ROOT_DIR=$RUNNER_TEMP/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$RUNNER_TEMP/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
 
       - name: Verify the build outputs
