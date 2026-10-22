@@ -1211,8 +1211,13 @@ void InitThreadManager()
     if (IsWriteBarrierCopyEnabled())
     {
         s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
-        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
         if (s_barrierCopy == NULL)
+        {
+            _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
+
+        if (ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true) == NULL)
         {
             _ASSERTE(!"Allocation of GC barrier code page failed");
             COMPlusThrowWin32();
