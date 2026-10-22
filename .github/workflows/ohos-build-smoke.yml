@@ -157,6 +157,7 @@ jobs:
           path: |
             artifacts/bin/**/libcoreclr.so
             artifacts/bin/**/System.Private.CoreLib.dll
+            artifacts/bin/**/sharedFramework/**
             artifacts/bin/**/libSystem.Native.so
             artifacts/bin/**/libSystem.Globalization.Native.so
             artifacts/bin/**/libSystem.Security.Cryptography.Native.OpenSsl.so
