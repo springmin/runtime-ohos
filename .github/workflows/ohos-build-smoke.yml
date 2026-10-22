@@ -168,10 +168,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      # upstream main + the #136206 CI commits: the tree the upstream CI builds.
+      # upstream main + all open OHOS PRs: what CI sees once they are merged.
       - uses: actions/checkout@v4
         with:
-          ref: ci/official-base
+          ref: ci/ohos-pr-union
           fetch-depth: 1
 
       - name: Install build dependencies
@@ -188,6 +188,16 @@ jobs:
           set -euo pipefail
           chmod +x eng/pipelines/ohos/setup-ohos-assets.sh
           eng/pipelines/ohos/setup-ohos-assets.sh
+
+      - name: Inspect the OHOS sysroot (diagnostic)
+        env:
+          OHOS_NDK_HOME: ${{ runner.temp }}/ohos-sdk/linux
+        run: |
+          set -euo pipefail
+          echo "== qsort_r in stdlib.h"
+          grep -n "qsort_r" "$OHOS_NDK_HOME/native/sysroot/usr/include/stdlib.h" || echo "NOT DECLARED"
+          echo "== _GNU_SOURCE occurrences"
+          grep -n "_GNU_SOURCE" "$OHOS_NDK_HOME/native/sysroot/usr/include/stdlib.h" | head -5 || true
 
       - name: Build the OpenHarmony leg with the official subset
         env:
