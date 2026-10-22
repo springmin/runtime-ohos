@@ -131,14 +131,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(platform);
 
             return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
-#if TARGET_OPENHARMONY
-            // OpenHarmony is Linux-ABI: the NDK targets aarch64-linux-ohos and the
-            // runtime builds against the Linux PAL, so callers that probe for Linux -
-            // for example MSBuild's IsOSPlatform(OSPlatform.Linux), which selects sh
-            // vs Windows-style Exec scripts - behave as on Linux on device, while
-            // OPENHARMONY stays the canonical name.
-            || platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase)
-#endif
 #if TARGET_OSX
             || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)
 #elif TARGET_MACCATALYST

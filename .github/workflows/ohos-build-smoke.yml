@@ -1,0 +1,164 @@
+name: OHOS build smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ci/ohos-smoke
+      - pr/ohos-prefix-runtime
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build python3 curl unzip perl \
+            libssl-dev libicu-dev zlib1g-dev libxml2-dev libkrb5-dev
+
+      - name: Download the OpenHarmony SDK (NDK)
+        run: |
+          set -euo pipefail
+          URL="https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz"
+          SHA="a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e"
+          mkdir -p "$RUNNER_TEMP/ohos-sdk"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/ohos-sdk.tar.gz"
+          echo "$SHA  $RUNNER_TEMP/ohos-sdk.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/ohos-sdk.tar.gz" -C "$RUNNER_TEMP/ohos-sdk"
+          rm -rf "$RUNNER_TEMP/ohos-sdk/windows" "$RUNNER_TEMP/ohos-sdk.tar.gz"
+          cd "$RUNNER_TEMP/ohos-sdk/linux"
+          unzip -q native-linux-x64-*.zip
+          rm -f native-linux-x64-*.zip
+          test -f "$RUNNER_TEMP/ohos-sdk/linux/native/build/cmake/ohos.toolchain.cmake"
+
+      - name: Cache the cross-built ICU and OpenSSL
+        id: assets-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ohos-assets
+          key: ohos-assets-${{ runner.os }}-openssl-3.3.1-icu-75.1-v1
+
+      - name: Set up the OpenHarmony cross toolchain
+        run: |
+          set -euo pipefail
+          NDK_BIN="$RUNNER_TEMP/ohos-sdk/linux/native/llvm/bin"
+          SYSROOT="$RUNNER_TEMP/ohos-sdk/linux/native/sysroot"
+          TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
+          mkdir -p "$TOOLCHAIN"
+          mk() {
+            printf '#!/bin/sh\nexec %s "$@"\n' "$2" > "$TOOLCHAIN/aarch64-linux-ohos-$1"
+            chmod +x "$TOOLCHAIN/aarch64-linux-ohos-$1"
+          }
+          mk gcc "$NDK_BIN/clang --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+          mk g++ "$NDK_BIN/clang++ --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+          mk cc "$NDK_BIN/clang --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+          mk c++ "$NDK_BIN/clang++ --target=aarch64-linux-ohos --sysroot=$SYSROOT"
+          mk ar "$NDK_BIN/llvm-ar"
+          mk ranlib "$NDK_BIN/llvm-ranlib"
+          mk nm "$NDK_BIN/llvm-nm"
+          mk strip "$NDK_BIN/llvm-strip"
+          mk objcopy "$NDK_BIN/llvm-objcopy"
+          mk objdump "$NDK_BIN/llvm-objdump"
+
+      - name: Build OpenSSL for OpenHarmony
+        if: steps.assets-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
+          OPENSSL_INSTALL="$RUNNER_TEMP/ohos-assets/openssl"
+          SRC="$RUNNER_TEMP/openssl-src"
+          mkdir -p "$RUNNER_TEMP/ohos-assets" "$SRC"
+          curl -fsSL "https://github.com/openssl/openssl/releases/download/openssl-3.3.1/openssl-3.3.1.tar.gz" \
+            -o "$RUNNER_TEMP/openssl.tar.gz"
+          tar -xzf "$RUNNER_TEMP/openssl.tar.gz" -C "$SRC"
+          cd "$SRC/openssl-3.3.1"
+          ./Configure linux-aarch64 \
+            --cross-compile-prefix="$TOOLCHAIN/aarch64-linux-ohos-" \
+            --prefix="$OPENSSL_INSTALL" --openssldir="$OPENSSL_INSTALL/ssl" --libdir=lib \
+            no-shared no-tests no-async no-apps -fPIC
+          make -j"$(nproc)"
+          make install_sw
+          rm -rf "$SRC" "$RUNNER_TEMP/openssl.tar.gz"
+
+      - name: Build ICU for OpenHarmony
+        if: steps.assets-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          TOOLCHAIN="$RUNNER_TEMP/ohos-toolchain"
+          ICU_INSTALL="$RUNNER_TEMP/ohos-assets/icu"
+          SRC="$RUNNER_TEMP/icu-src"
+          HOST="$RUNNER_TEMP/icu-host"
+          TARGET="$RUNNER_TEMP/icu-target"
+          mkdir -p "$RUNNER_TEMP/ohos-assets" "$SRC" "$HOST" "$TARGET"
+          curl -fsSL "https://github.com/unicode-org/icu/releases/download/release-75-1/icu4c-75_1-src.tgz" \
+            -o "$RUNNER_TEMP/icu.tar.gz"
+          tar -xzf "$RUNNER_TEMP/icu.tar.gz" -C "$SRC"
+          # The host build provides the ICU data/tool executables used by the cross build.
+          cd "$HOST"
+          "$SRC/icu/source/configure" --disable-tests --disable-samples --disable-extras
+          make -j"$(nproc)"
+          # Cross build the static libraries that the runtime links.
+          cd "$TARGET"
+          CC="$TOOLCHAIN/aarch64-linux-ohos-gcc" CXX="$TOOLCHAIN/aarch64-linux-ohos-g++" \
+          AR="$TOOLCHAIN/aarch64-linux-ohos-ar" RANLIB="$TOOLCHAIN/aarch64-linux-ohos-ranlib" \
+          "$SRC/icu/source/configure" --host=aarch64-linux-gnu \
+            --with-cross-build="$HOST" \
+            --disable-tests --disable-samples --disable-extras \
+            --enable-static --disable-shared --libdir="$ICU_INSTALL/lib" \
+            --prefix="$ICU_INSTALL"
+          make -j"$(nproc)"
+          make install
+          rm -rf "$SRC" "$HOST" "$TARGET" "$RUNNER_TEMP/icu.tar.gz"
+
+      - name: Verify the cross-built assets
+        run: |
+          set -euo pipefail
+          test -f "$RUNNER_TEMP/ohos-assets/icu/include/unicode/ucurr.h"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicuuc.a"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicui18n.a"
+          test -f "$RUNNER_TEMP/ohos-assets/icu/lib/libicudata.a"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/include/openssl/ssl.h"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a"
+          test -f "$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
+
+      - name: Build clr.runtime and libs.native
+        run: |
+          set -euo pipefail
+          export OHOS_NDK_HOME="$RUNNER_TEMP/ohos-sdk/linux"
+          ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
+            -cmakeargs "-DCMAKE_ICU_DIR=$RUNNER_TEMP/ohos-assets/icu -DOPENSSL_ROOT_DIR=$RUNNER_TEMP/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$RUNNER_TEMP/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
+
+      - name: Verify the build outputs
+        run: |
+          set -euo pipefail
+          find artifacts/bin \( -name 'libcoreclr.so' -o -name 'libSystem.Native.so' -o -name 'libSystem.Globalization.Native.so' -o -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' \) -print | sort
+          test -n "$(find artifacts/bin -name 'libcoreclr.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Globalization.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' -print -quit)"
+
+      - name: Upload the pre-fix runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-prefix-runtime
+          path: |
+            artifacts/bin/**/libcoreclr.so
+            artifacts/bin/**/System.Private.CoreLib.dll
+            artifacts/bin/**/libSystem.Native.so
+            artifacts/bin/**/libSystem.Globalization.Native.so
+            artifacts/bin/**/libSystem.Security.Cryptography.Native.OpenSsl.so
+          if-no-files-found: error
+          retention-days: 7
