@@ -188,15 +188,18 @@ jobs:
           chmod +x eng/pipelines/ohos/setup-ohos-assets.sh
           eng/pipelines/ohos/setup-ohos-assets.sh
 
-      - name: Build clr.runtime with the setup assets
+      - name: Build the OpenHarmony leg with the official subset
         env:
           OHOS_NDK_HOME: ${{ runner.temp }}/ohos-sdk/linux
           OHOS_ASSETS: ${{ runner.temp }}/ohos-assets
+          OHOS_CMAKE_ARGS: '-DCMAKE_ICU_DIR=${{ runner.temp }}/ohos-assets/icu -DOPENSSL_ROOT_DIR=${{ runner.temp }}/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=${{ runner.temp }}/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=${{ runner.temp }}/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=${{ runner.temp }}/ohos-assets/openssl/lib/libssl.a'
         run: |
           set -euo pipefail
-          ./build.sh clr.runtime+clr.corelib+libs.native -os openharmony -arch arm64 -cross -c Release \
-            -cmakeargs "-DCMAKE_ICU_DIR=$OHOS_ASSETS/icu -DOPENSSL_ROOT_DIR=$OHOS_ASSETS/openssl -DOPENSSL_INCLUDE_DIR=$OHOS_ASSETS/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$OHOS_ASSETS/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$OHOS_ASSETS/openssl/lib/libssl.a"
+          ./build.sh -s clr.runtime+libs.native -c Release -os openharmony -arch arm64 -cross \
+            -cmakeargs "$OHOS_CMAKE_ARGS"
 
       - name: Verify
         run: |
+          set -euo pipefail
           test -n "$(find artifacts/bin -name libcoreclr.so -print -quit)"
+          test -n "$(find artifacts/bin -name libSystem.Native.so -print -quit)"
