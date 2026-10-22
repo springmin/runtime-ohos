@@ -168,10 +168,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      # main + the OpenHarmony support branch + the #136206 CI commits (stacked PR).
+      # upstream main + the #136206 CI commits: the tree the upstream CI builds.
       - uses: actions/checkout@v4
         with:
-          ref: ci/ohos-leg-stack
+          ref: ci/official-base
           fetch-depth: 1
 
       - name: Install build dependencies
