@@ -298,7 +298,7 @@ target_link_libraries(
 # expression rejects the OpenHarmony NDK linker (lld 15), so use the traditional
 # --whole-archive flag there instead.
 if(CLR_CMAKE_TARGET_OPENHARMONY)
-    target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
+    target_link_libraries(singlefilehost PRIVATE "-Wl,--whole-archive" runtimeinfo "-Wl,--no-whole-archive")
 else()
     target_link_libraries(singlefilehost PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>)
 endif()
