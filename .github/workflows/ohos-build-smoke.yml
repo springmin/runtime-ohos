@@ -168,10 +168,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
-      # fork main + #136194 + #135839 + #136206: the closing order rehearsal.
+      # merged feature/openharmony (upstream main) + #136206.
       - uses: actions/checkout@v4
         with:
-          ref: ci/final-rehearsal
+          ref: ci/final-rehearsal-v2
           fetch-depth: 1
 
       - name: Install build dependencies
