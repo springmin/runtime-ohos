@@ -184,5 +184,5 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 - ASP.NET Core：`#69952` open（重跑 16 绿 / 0 红）；依赖 SDK RID graph
 - Docs：`dotnet/docs#56529` 3/3 绿；NETSDK1247-NETSDK1250 文档
 - 预演：`ci/final-rehearsal` = fork main + #136194 + #135839 + #136206；fork CI 双 job 绿（run `39794666462`）
-- 阻塞：`git fetch upstream main` 连续 TLS/连接失败，本地 `upstream/main` 仍为 `42e0970`（12:40），尚未含 #135839 合并；feature 同步待网络恢复
+- 上游同步：`upstream/main` 已更新到 `a99fb4b2a1b`（23:39），#135839 内容已在 main；feature 落后 145 个提交，潜在冲突 11 个文件；建议等 #136194 批准 + #136198 合并后一次性 merge
 - 待：am11 批 #136194 -> jkoritzinsky 跑 `runtime-community` -> #136206 ready；#136198 合并；#136212 批准
