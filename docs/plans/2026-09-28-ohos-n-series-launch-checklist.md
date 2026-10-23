@@ -171,14 +171,18 @@ gh pr create -R dotnet/runtime --base main --head springmin:"$b" \
 - 产物断言：`libcoreclr.so`／`libSystem.Native.so`／`libSystem.Globalization.Native.so`／`libSystem.Security.Cryptography.Native.OpenSsl.so`
 - 缓存命中复跑：`39555889909`（7 分钟，OpenSSL/ICU 构建跳过，产物断言全过）
 
-## 5. runtime PR 收口状态（2026-10-21）
+## 5. runtime PR 收口状态（2026-10-22）
 
-- `#136185` A：open，head `f1859aec926`；Include 条件含 Identity 过滤；删除 `ResolvedRuntimePack` 的 RID 过滤以修复 Mono browser-wasm `NETSDK1112`
-- `#136194` native：open，head `f69b18db2cf`；**4 文件 91+/8-**（process／ifaddrs／CMakeLists／opensslshim）；包含 am11 的 `DlOpenNextToShim`
-- `#136198` F：open，head `cd70774d979`；**repurpose** 为 `s_barrierCopy` 的 Commit 检查（失败即抛 ✗），删除 fallback／config 开关
-- `#136206` CI leg：draft，head `46b4e8146e5`；SHA 固定＋path condition＋Python zip 解压（Azure Linux 无 unzip）
-- `#136211` CoreLib alias：**closed**；huoyaoyuan 认为 `IsOSPlatform(Linux)` 不应为 OHOS true（Android 先例）
-- MSBuild follow-up：`dotnet/msbuild#15342`（draft；`IsUnixLike` 加 `IsOpenHarmony`；CI 14 pass／7 skip）
-- `#136212` WX precheck：draft，head `931e39c9e45`；probe fallback **silent**（jkotras 要求）
-- 待：等 A/native/F/WX 新 CI 与 review；MSBuild #15342 设备验证后转 ready
-- 已处理：1、2（F repurpose）、3、4、5、6、7、8、9、10、11
+- `#135839` zstd qsort：**merged**（jkotas，merge commit `207ab0e5cfd1`）；6.0/7.0 SDK 均无 `qsort_r` 声明
+- `#136185` A：**merged**
+- `#136194` native：open，head `f69b18db2cf`；4 文件 91+/8-；100/100 绿；等 am11 批准
+- `#136198` F：open，head `32e3078ac8`；**janvorli APPROVED**（"LGTM, thank you!"）；等 maintainer 合并
+- `#136206` CI leg：draft，head `441c78d2dd4b`；88 绿 / 12 红（SOS/诊断，与 OHOS 无关）；OHOS leg 尚未在 Azure 跑；依赖 #136194
+- `#136212` WX precheck：open，head `931e39c9e45`；89 绿 / 11 neutral；等 jkotas
+- MSBuild `dotnet/msbuild#15342`：open（ready）；`IsUnixLike` 加 `IsOpenHarmony`；CI 重跑中（此前 4 红为 flaky/infra）；正文 Test 已更新为 7.0.0.111 设备证据
+- SDK：`#56732` RID graph（20 绿）；`#56733` sandbox（20 绿，堆叠在 #56732）；`#56735` ELF 签名（head `24cfb2c578`，新增 `dotnet selfsign`）
+- ASP.NET Core：`#69952` open（重跑 16 绿 / 0 红）；依赖 SDK RID graph
+- Docs：`dotnet/docs#56529` 3/3 绿；NETSDK1247-NETSDK1250 文档
+- 预演：`ci/final-rehearsal` = fork main + #136194 + #135839 + #136206；fork CI 双 job 绿（run `39794666462`）
+- 阻塞：`git fetch upstream main` 连续 TLS/连接失败，本地 `upstream/main` 仍为 `42e0970`（12:40），尚未含 #135839 合并；feature 同步待网络恢复
+- 待：am11 批 #136194 -> jkoritzinsky 跑 `runtime-community` -> #136206 ready；#136198 合并；#136212 批准
