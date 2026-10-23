@@ -39,7 +39,6 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-# TODO: https://github.com/dotnet/runtime/issues/111523
 if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 endif()
@@ -189,7 +188,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
@@ -294,9 +293,8 @@ target_link_libraries(
     ${NATIVE_LIBS}
 )
 
-# Force the whole runtimeinfo archive into the link. CMake's WHOLE_ARCHIVE generator
-# expression rejects the OpenHarmony NDK linker (lld 15), so use the traditional
-# --whole-archive flag there instead.
+# Workaround for missing OpenHarmony WHOLE_ARCHIVE support in CMake. Remove once
+# the minimum required CMake version is 4.5.
 if(CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(singlefilehost PRIVATE "-Wl,--whole-archive" runtimeinfo "-Wl,--no-whole-archive")
 else()

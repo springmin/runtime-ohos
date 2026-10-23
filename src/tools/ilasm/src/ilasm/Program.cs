@@ -77,11 +77,10 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
-            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and without
-            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
-            // records only the PDB's file name and extension, so that a deterministic image does not depend on
-            // the directory it is written to. Native ilasm records the full path in both modes; this follows
-            // the native linker's /PDBALTPATH:%_PDB% convention instead.
+            // The PDB is <output without extension>.pdb beside the output, and without --deterministic
+            // the image's CodeView entry records the PDB's full path. With --deterministic it records
+            // only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to, which is the native linker's /PDBALTPATH:%_PDB% convention.
             string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
 
             // Report each file being assembled
@@ -94,7 +93,7 @@ internal sealed class Program
             }
 
             // Build individual SourceText for each input file. Its path is the full path, which the PDB records
-            // as the input file's document name, as native ilasm does.
+            // as the input file's document name.
             var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
             foreach (string file in inputFiles)
             {
@@ -193,19 +192,21 @@ internal sealed class Program
             string? includePath = Get(_command.IncludePath);
             string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
 
+            // An included file is named by its full path: its instructions' sequence
+            // points are in a PDB document of that name.
             SourceText LoadIncludedDocument(string path)
             {
                 // Try the path as-is first
                 if (File.Exists(path))
                 {
-                    return new SourceText(File.ReadAllText(path), path);
+                    return new SourceText(File.ReadAllText(path), Path.GetFullPath(path));
                 }
 
                 // Try relative to the base directory
                 string fullPath = Path.Combine(baseDir, path);
                 if (File.Exists(fullPath))
                 {
-                    return new SourceText(File.ReadAllText(fullPath), fullPath);
+                    return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                 }
 
                 // Try the include path if specified
@@ -214,7 +215,7 @@ internal sealed class Program
                     fullPath = Path.Combine(includePath, path);
                     if (File.Exists(fullPath))
                     {
-                        return new SourceText(File.ReadAllText(fullPath), fullPath);
+                        return new SourceText(File.ReadAllText(fullPath), Path.GetFullPath(fullPath));
                     }
                 }
 
