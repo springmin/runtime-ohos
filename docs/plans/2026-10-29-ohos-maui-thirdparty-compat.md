@@ -147,6 +147,43 @@ all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 
 **仍待办**：① TouchBehavior 根因（Border + gesture/behavior 路径）；② Popup View 重载的实际
 弹出（手动点击/截图）；③ AvatarView 模板出画；④ Expander/Touch 的点击截图。
 
+## 9. TouchBehavior 修复与最终矩阵（2026-10-29 晚）
+
+### 9.1 根因
+
+- **单控件隔离**：`COMPAT_CASE=border`（Border + Button，无 behavior）稳定；`COMPAT_CASE=touch`
+  在 attach 时抛 **NullReferenceException**，页面随即退出。
+- 诊断钩子（`AppDomain.FirstChanceException` + `LifecycleChanged`）抓到：
+  `EX NullReferenceException ... site=? stack=`（AOT 裁剪后无栈）；随后 `TouchBehavior: FAIL`。
+- 结论：CommunityToolkit.Maui 15.0.1 的 **平台中性 TouchBehavior** 在 attach 路径上解引用
+  未就绪的 handler/platform view；不是 Border 或 Button 的问题。
+
+### 9.2 修复（应用侧降级，页面不再死）
+
+- Behavior **延迟到 `Loaded` 再 attach**，并包在 try/catch 里；NRE 只记录为 FAIL，不再拖垮页面。
+- 同时给 Border 挂一个 **`TapGestureRecognizer`**（同一 `Command`）作为兜底；`ShouldMakeChildrenInputTransparent=false`。
+- 页面级结果：`COMPAT_CASE=touch` 与 all-case 均稳定 8 s+；all-case 截图 `compat-all-final.jpeg`
+  可见 Expander（header + body）、AvatarView（AB）、DrawingView 行、Touch 兜底按钮、Popup 按钮。
+
+### 9.3 最终矩阵
+
+| 控件 | 结论 | 说明 |
+|---|---|---|
+| `Expander` | **PASS** | handler 生效，header/body 可见 |
+| `AvatarView` | **PASS**（基础） | `AB` 文本可见；图片头像路径未测 |
+| `DrawingView` | **PASS** | `CompatDrawingViewHandler` 生效、稳定；未注入线条数据，画线路径待补测 |
+| `TouchBehavior` | **LIMIT** | toolkit behavior attach NRE；已降级为 TapGestureRecognizer + 同命令，页面稳定；按压/悬停动画不可用 |
+| `Popup`（View 重载） | **LIMIT** | popup-only 页面稳定；手动弹出未执行；`Popup` 控件原路径仍 CppCrash |
+
+**5/5 已分类（3 PASS + 2 LIMIT），满足 T2 验收（≥4/5 PASS 或 LIMIT）。**
+
+### 9.4 证据
+
+- 提交：ohos-workload `a34674f`（deferred attach + fallback + 诊断钩子）
+- 截图：`compat-all-final.jpeg`（all-case）、`touch-shot.jpeg`（Touch 页）
+- 日志：`[compat] EX NullReferenceException` → `TouchBehavior: FAIL` → `summary pass=3 fail=1`
+- 设备：HAD-W24 / 7.0.0.111；进程 8 s+ 存活，无新 fault
+
 复验步骤（设备恢复后）：
 
 ```bash
