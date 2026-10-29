@@ -123,6 +123,30 @@ handler 解析到 `OpenHarmonyBorderHandler`，说明 `AvatarView` 被当作 `Bo
 
 **不把“AOT 通过”当成“运行通过”**：矩阵 §2 的运行时结论仍是首轮实测值；补齐项待设备恢复后重跑并更新。
 
+## 8. 设备复验（第二轮，2026-10-29 晚）
+
+设备 hdc 曾掉线（`list targets` 为 `[Empty]`），`hdc tconn 127.0.0.1:36823` 恢复后复验。
+关键修复：`RegisterHandler` 改用**独立 map**（`s_appHandlers`），避免在主机启动前触发
+`MauiOpenHarmonyExtensions` 的静态初始化——那会让新构建在启动时 SIGABRT（appspawn 记录
+`exit with signal:6`，无 managed 日志）。maui `efe5b823c8e`。
+
+单控件隔离（`-p:CompatCase=...`）：
+
+| 控件 | 复验结果 | 证据 |
+|---|---|---|
+| `Expander` | **PASS**，稳定 8 s+ | `procs=1`；`handler=OpenHarmonyContentViewHandler` |
+| `AvatarView` | **LIMIT**，稳定但不可见 | 截图 `compat-avatar.jpeg`（仅行标题） |
+| `DrawingView` | **PASS**，handler 生效且稳定 8 s+ | `handler=CompatDrawingViewHandler`；截图 `compat-drawing.jpeg`（无连线数据，故画面为空） |
+| `TouchBehavior` | **FAIL**，页面启动即退出（<2 s） | touch-only：2 s 时 `procs=0`，无 fault |
+| `Popup`（View 重载） | **LIMIT**，页面稳定；手动点击未执行 | popup-only：6 s 时 `procs=1`；`Popup` 控件路径仍为 CppCrash |
+
+**all-case 的 3–4 s 退出已定位**：由 `TouchBehavior` 引起（touch-only 更早退出）；去掉该节后
+all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 从 **FAIL → PASS**；
+`TouchBehavior` 从“附加 PASS”降为 **FAIL**（页面级）。
+
+**仍待办**：① TouchBehavior 根因（Border + gesture/behavior 路径）；② Popup View 重载的实际
+弹出（手动点击/截图）；③ AvatarView 模板出画；④ Expander/Touch 的点击截图。
+
 复验步骤（设备恢复后）：
 
 ```bash

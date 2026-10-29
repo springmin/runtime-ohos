@@ -136,9 +136,11 @@
 - **T2 首轮完成（2026-10-29）**：`2026-10-29-ohos-maui-thirdparty-compat.md` + 样例
   `ohos-workload` `7cef629`。结果 = Expander / TouchBehavior 可用；AvatarView handler 通但不出画
   （LIMIT）；DrawingView 无 slice handler；Popup 触发 CppCrash。3/5 可用、2 需移植。
-- **T2 补齐（2026-10-29）**：slice 增加 `RegisterHandler` 扩展点（maui `e1a44c33b6a`）；DrawingView
-  handler、Popup View 重载、AvatarView 尺寸修正已提交（ow `fc9e200`），AOT 通过；
-  **设备复验被启动异常阻断**（`aa start` 成功但无进程/fault，设备高负载），待重启后重跑。
+- **T2 补齐 + 复验（2026-10-29）**：slice `RegisterHandler` 扩展点（maui `e1a44c33b6a`，
+  懒注册修复 `efe5b823c8e`）；DrawingView handler、Popup View 重载、Avatar 尺寸（ow `fc9e200`）。
+  复验：**DrawingView FAIL → PASS**（稳定 8s+）；**TouchBehavior 降为 FAIL**（touch-only 页面
+  <2s 退出，是 all-case 3-4s 退出的根因）；Popup View 重载页面稳定、手点待验；Avatar 仍不可见。
+  详见 `2026-10-29-ohos-maui-thirdparty-compat.md` §8。
 - **T3 待开**：消费 T2 的“可用控件”结论；Reference App 先不用 Popup/DrawingView。
 
 ## 执行顺序与理由
