@@ -112,18 +112,29 @@
 - Consumes: kit 报告中的 `startup`、`fps`、`rss`、`tar_bytes`、`suite` 五项。
 - Produces: `perf-gate: PASS|FAIL` + 退出码（0/1），供 CI/切包链判断。
 
-- [ ] **Step 1: 固定基线**——kit #58：首帧 534 ms（AOT attach→surface）、冷启 ≈3.2 s、
+- [x] **Step 1: 固定基线**——kit #58：首帧 534 ms（AOT attach→surface）、冷启 ≈3.2 s、
       滚动 60 fps、RSS 284–363 MB、tar 70,449,999 B、套件 826/829。
-- [ ] **Step 2: 写门槛**——首帧 ≤600 ms、冷启 ≤3.5 s、fps ≥55、RSS ≤400 MB、
+- [x] **Step 2: 写门槛**——首帧 ≤600 ms、冷启 ≤3.5 s、fps ≥55、RSS ≤400 MB、
       tar ≤75 MB、套件通过数 ≥ floor。
-- [ ] **Step 3: 写脚本**——`python3` 读取 JSON 与门槛，打印逐项对照，任一越界退出 1。
-- [ ] **Step 4: 自测**——基线应 PASS（exit 0）；人为把 fps 改成 40 的 fixture 应 FAIL（exit 1）。
-- [ ] **Step 5: 接入切包链**——`cut-kit.sh` 在 P5 后调用（默认仅报告，`--perf-gate-strict` 才阻断）。
-- [ ] **Step 6: 提交**（脚本 + 基线 + 文档）。
+- [x] **Step 3: 写脚本**——`python3` 读取 JSON 与门槛，打印逐项对照，任一越界退出 1。
+- [x] **Step 4: 自测**——基线 PASS（exit 0）；`scroll_fps=40` / `rss_mb=450` fixture FAIL（exit 1）；
+      `--report-only` 下同一 fixture exit 0。
+- [ ] **Step 5: 接入切包链**——**暂缓**：`cut-kit.sh` 不产生运行时指标（首帧/fps/RSS 来自设备轮），
+      门禁先由设备轮产物手动喂入；等设备轮产出 metrics JSON 后再接。
+- [x] **Step 6: 提交**（脚本 + 基线 + 文档）。
 
 **验收:** 两个 fixture 的退出码正确；切包 dry-run 能看到性能段落且不改变既有产物。
 
 ---
+
+## 执行记录（2026-10-28）
+
+- **T1 完成**：`2026-10-28-ohos-maui-upstream-delta.md`（152 文件 / +50,766 / 4 个侵入文件；
+  143 切片文件 / 48,176 行）。
+- **T4 完成（除接入）**：`ohos-workload` `a4696bc`——`scripts/perf-gate.sh` +
+  `test/perf-gate/{baseline-kit58,thresholds,regression}.json`；基线 PASS、负控 FAIL、
+  `--report-only` 降级为 0 均实测。
+- **T2 / T3 待开**：需要构建与真机；等确认执行方式后排期。
 
 ## 执行顺序与理由
 
