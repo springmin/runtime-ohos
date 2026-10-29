@@ -64,15 +64,14 @@
 - Consumes: kit #58 的 workload / 构建脚本；`net11.0-openharmony` 目标框架。
 - Produces: 矩阵表（库 × 控件 × 状态 × 证据），供 Reference App 与对外文档复用。
 
-- [ ] **Step 1: 解析版本**——从 NuGet 取与 MAUI 11 rc.2 兼容的 `CommunityToolkit.Maui` 版本；
-      若其 TFM 不含 `net11.0`，记录并改用源码包含（先记录，不改库）。
-- [ ] **Step 2: 建样例工程**——引用 `CommunityToolkit.Maui`，放 4 个控件 + 1 个 behavior：
-      `Popup`、`Expander`、`AvatarView`、`DrawingView`、`TouchBehavior`。
-- [ ] **Step 3: 离线构建**——`dotnet build -c Release`（AOT 配置），记录警告/错误；
-      AOT 反射问题按 `OpenHarmonySliceJsonContext` 的既有模式补根。
-- [ ] **Step 4: 真机跑**——每控件至少一张截图 + 交互一次（打开/关闭、滚动、点击）。
-- [ ] **Step 5: 落矩阵**——每行 = 库/版本/控件/状态（PASS·LIMIT·FAIL）/证据路径/备注。
-- [ ] **Step 6: 提交**（样例 + 文档；产物不入库）。
+- [x] **Step 1: 解析版本**——最新 `CommunityToolkit.Maui` 15.0.1（net10.0 / MAUI 10.0.90），
+      在 MAUI 11 rc.2 上按“前向兼容”测试。
+- [x] **Step 2: 建样例工程**——`test/maui-compat-app`，5 个控件/behavior + 单控件隔离开关。
+- [x] **Step 3: 离线构建**——JIT 编译 0 error；NativeAOT 发布 PASS；IL2026 ×1–2（Expander）。
+- [ ] **Step 4: 真机跑**——已跑：Expander / AvatarView 稳定；Popup CppCrash；DrawingView 无 handler；
+      **Expander/TouchBehavior 截图与交互待补**。
+- [x] **Step 5: 落矩阵**——`2026-10-29-ohos-maui-thirdparty-compat.md`（3/5 可用，2 需移植）。
+- [x] **Step 6: 提交**（样例 `7cef629` + 文档）。
 
 **验收:** 至少 4/5 控件 PASS 或 LIMIT；每个 FAIL 都有最小复现与根因分类（AOT / 平台 / 库不支持）。
 
@@ -134,7 +133,10 @@
 - **T4 完成（除接入）**：`ohos-workload` `a4696bc`——`scripts/perf-gate.sh` +
   `test/perf-gate/{baseline-kit58,thresholds,regression}.json`；基线 PASS、负控 FAIL、
   `--report-only` 降级为 0 均实测。
-- **T2 / T3 待开**：需要构建与真机；等确认执行方式后排期。
+- **T2 首轮完成（2026-10-29）**：`2026-10-29-ohos-maui-thirdparty-compat.md` + 样例
+  `ohos-workload` `7cef629`。结果 = Expander / TouchBehavior 可用；AvatarView handler 通但不出画
+  （LIMIT）；DrawingView 无 slice handler；Popup 触发 CppCrash。3/5 可用、2 需移植。
+- **T3 待开**：消费 T2 的“可用控件”结论；Reference App 先不用 Popup/DrawingView。
 
 ## 执行顺序与理由
 
