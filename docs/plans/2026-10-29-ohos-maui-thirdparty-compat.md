@@ -108,3 +108,28 @@ handler 解析到 `OpenHarmonyBorderHandler`，说明 `AvatarView` 被当作 `Bo
 3. 修 `AvatarView` 模板/测量（或记录为上游模板问题）。
 4. 为 Expander / TouchBehavior 各留一张真机截图 + 一次点击。
 5. 结论回填 P0 计划 T2；通过后进入 T3 Reference App。
+
+## 7. 补齐进展（2026-10-29 晚）
+
+代码面已完成，**设备复验被启动异常阻断**：
+
+| 项 | 状态 |
+|---|---|
+| Slice 扩展点 | `OpenHarmonyHandlerConnector.RegisterHandler(viewType, handlerType)`（maui `e1a44c33b6a`）——第三方库 handler 的受支持入口，带 `DynamicallyAccessedMembers` 注解 |
+| DrawingView handler | `CompatDrawingViewHandler`（`OpenHarmonyViewHandler<DrawingView>` + `OpenHarmonyCanvas` 画线），经上述 API 注册；JIT 编译与 AOT 发布 **PASS**（ohos-workload `fc9e200`） |
+| Popup | 改用 `ShowPopupAsync(Page, View, ...)` 的 View 重载（`Border` 内容），不再走 `Popup` 控件路径；AOT **PASS** |
+| AvatarView | 增加 `MinimumWidth/HeightRequest` 与 `Start` 对齐（待出画验证） |
+| 设备复验 | **BLOCKED**：重装后 `aa start` 返回 success，但无 appspawn/进程/fault，dock 图标不可见；设备 load ≈22、内存 27 GB/32 GB。此前同一 hap（未含上述改动）可正常启动，故判为设备态问题，需重启/空闲后重试 |
+
+**不把“AOT 通过”当成“运行通过”**：矩阵 §2 的运行时结论仍是首轮实测值；补齐项待设备恢复后重跑并更新。
+
+复验步骤（设备恢复后）：
+
+```bash
+# 1) 取锁；安装；从 dock 图标启动（aa start 在该设备上不可靠）
+hdc -t 127.0.0.1:36823 install -r test/maui-compat-app/bin/Release/*/openharmony-arm64/maui-compat-app.hap
+hdc -t 127.0.0.1:36823 shell "uitest dumpLayout -p /data/local/tmp/l.json"   # 找 dock 图标 bounds 后 click
+# 2) 检查：进程存活 8s+、无新 CppCrash、页面含 5 行结果
+hdc -t 127.0.0.1:36823 shell "hidumper -e --list mauidemo.dotnet.springmin.com"
+# 3) 截图 + 点 “Show Popup”（View 重载）与 “Fire TouchBehavior command”
+```
