@@ -92,9 +92,13 @@
   复用同一 `srcEntry`/payload，`launchType=multiton`；再用 `sign-for-device.sh` 设备签名。
 - `aa start -a LoginAbility -b mauidemo.dotnet.springmin.com --ps mode login` **启动成功**，
   `ps=1`、`fps=60`。
-- **UI 仍待完成**：第二个 ability 显示的是启动窗口渐变（共享 MAUI host 只绑定主 EntryAbility 的
-  surface），没有渲染登录内容。ability 级别的隔离已打通，surface/host 绑定需要 per-ability
-  实例（或独立 ArkTS 登录页）。
+- **独立进程重试**：给 LoginAbility 加 `"process": "login"` 后，进程变为
+  `mauidemo.dotnet.springmin.comlogin`（独立进程），但仍只显示启动窗口渐变。
+- **结论**：独立进程不是充分条件；共享 `srcEntry`（EntryAbility）不足以让第二个 ability 加载
+  ArkTS 入口/page。需要为 LoginAbility 编译**自己的 ArkTS 模块与页面**（`ets/loginability/LoginAbility.ets`
+  + `ets/pages/Login.ets`），用 `build-arkts-shell.sh`/hvigor 生成自定义 `modules.abc`，再
+  `OpenHarmonyArktsModulesAbc` 打包。ability 级隔离（启动、独立进程）已打通，UI 属 ArkTS
+  壳工程工作，非 .NET host 能单独解决。
 
 #### 冷启 `-U` 的现状
 
