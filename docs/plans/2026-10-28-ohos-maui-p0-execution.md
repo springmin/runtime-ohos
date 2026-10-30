@@ -144,10 +144,11 @@
 - **T2 最终（2026-10-30）**：两个 LIMIT 已修复——`CompatTouchBehavior`（tap/按压/长按，toolkit
   NRE 降级）与 Popup **View 重载**（实测打开成功）。最终矩阵 **5/5 PASS**（2 项走 compat 路径）。
   T2 验收完成；最终 AOT 重建因构建机负载（csc 143）待重跑。
-- **T3 收尾（2026-10-30）**：`test/reference-lob`（ow `acf211b` + 收尾 `79a20fe`）——
-  Form 保存 **PASS**、子窗 **PASS**（create=True）、FrameProbe 1k 列表 **59–60 fps**、PSS ≈128 MB；
-  AOT `IL2026=0`。**Login BLOCKED**：Window.Page/modal/NavigationPage/tab/overlay 五种入口都会让
-  ability 退出（无 fault），登录改为 dormant；需单独立项。详见 `2026-10-30-ohos-maui-reference-app.md`。
+- **T3 收尾（2026-10-30）**：4/4 完成——Form 保存 **PASS**、子窗 **PASS**、1k 列表
+  **59–60 fps** / PSS ≈128 MB、**Login PASS（content swap）**（`test/login-probe` 证明同页
+  Content 交换稳定；页面/标签/模态/导航切换仍不可用）。额外：第二 ability `LoginAbility`
+  启动成功（ability 级隔离打通），UI 仍出启动窗口，待 per-ability host/surface。
+  AOT `IL2026=0`。详见 `2026-10-30-ohos-maui-reference-app.md`。
 
 ## 执行顺序与理由
 

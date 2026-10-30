@@ -56,7 +56,7 @@
 | **Form 保存** | **PASS** | `[ref] form saved`（`app://reference/form/save` 自动填充并写 JSON） |
 | **子窗** | **PASS** | `[ref] selected 1` → `[ref] subwindow create=True item=1`；截图 `ref-subwindow.jpeg` |
 | **1k 滚动 FPS** | **PASS** | FrameProbe：`fps=59.2 / 59.3 / 59.8 / 60.0 / 60.1 / 60.3`；PSS **131,221 kB**（≈128 MB） |
-| **Login** | **BLOCKED** | 四种入口都让 ability 退出（无 fault）：`Window.Page` 切换、`PushModalAsync`、`NavigationPage.Push`、login tab/overlay 可见化；最终代码把 Login 设为 dormant（`ShowLogin` 只记日志） |
+| **Login** | **PASS（content swap）** | `test/login-probe` 证明同一页内 Content 交换稳定（main→login-entries→main→login-labels→main，ps=1）；reference app 改为登录首屏 + Content 交换，60 fps；页面/标签/模态/导航切换仍不可用 |
 
 补充：
 
@@ -68,27 +68,39 @@
   与 T2 的 `TouchBehavior` NRE 不同，这次无 fault、无 managed 异常日志。建议单独立项：
   最小化 Entry 页 → 切换/覆盖 → 观察 handler disconnect / text-input 生命周期。
 
-### 5.1 Login 专项记录（2026-10-30，未解决）
+### 5.1 Login 专项结果（2026-10-30）
 
-按“先解决 Login”做了归因，结论是**被 URI 激活路径阻断**：
+#### Probe #1：同页 Content 交换（`test/login-probe`，提交 `bb7efbb`）
 
-1. **基线（不带 `-U`）稳定**：`[ref] main tabs loaded`、`fps=60.4`，进程 5 s+ 存活。
-2. **任何冷启 `-U app://reference/*` 都会退出**（无 fault、无 managed 异常）：orders、diag/label、
-   diag/entry、diag/password、diag/emailkb、diag/formswitch 全部 `ps=0`；日志只到
-   `[ref] enter Run` + `activation uri=...`。
-3. 已在 `module.json` 声明 `app://reference`（`OpenHarmonyWebAuthenticatorCallbackUrls`）后重试，
-   仍退出 → 不是 skill/URI 未注册的问题。
-4. 因此“label vs entry”“overlay vs page”等诊断模式无法通过深链得到有效结果；此前
-   `Window.Page` / modal / NavigationPage / login tab / overlay 五种登录入口的退出结论仍成立。
-5. **尝试过的代码已回退**到 `79a20fe`（稳定基线：MainTabs 4 tab、Login dormant、FrameProbe、
-   form/save/subwindow 深链）。overlay/diag 代码未保留，避免把未稳定路径带进样例。
+- 单页 + 一个 `ContentView` host，自动序列：
+  `main → login-entries → main → login-labels → main → done`。
+- 结果：**全程稳定**，`ps=1`，无 fault；证明 **Entry 本身、以及含 Entry 的 Content 交换是安全的**。
+- 结论：登录退出不是 Entry 的问题，是**页面/标签/模态/导航切换**（或冷启 URI 激活）的问题。
 
-**下一步（Login 专项）**：
+#### 生产修复：reference app 改为 Content 交换
 
-- 用**最小独立 app** + **屏幕上可见的按钮**（不依赖 `-U`）切换 Login/Main 两种内容，定位是
-  “Entry 页面切换”还是“冷启 URI 激活”导致的退出；
-- 或把 Login 做成**独立 UIAbility**（另一个 entry），由主 ability 显式启动，绕开同页切换；
-- 同时单独立项排查冷启 `-U` 退出（当前 `aa start -U` 在 reference-lob 上不可用，早期构建曾可用）。
+- `DashboardPage` 的 `Content` 是 `ContentView` host；`ShowLogin(true/false)` 在
+  `_mainContent` 与 `LoginView` 之间交换（不 push/pop、不切 tab、不做 overlay visibility）。
+- 启动即登录首屏；实测 `ps=1`、`fps=60.3`，登录页可见。
+- Sign in 走同一个 `ShowLogin(false)`；`LoginView` 的 Sign in 增加 Border + TapGestureRecognizer
+  作为可点击面（canvas Button 的 uitest 点击不稳定，不是逻辑问题）。
+- 页面/标签/模态/导航四种旧入口仍不可用，已从样例移除。
+
+#### Probe #2：独立 UIAbility（`scripts/add-login-ability.sh`，提交 `5234a4e`）
+
+- 打包链只生成一个 ability，因此用后处理把 **LoginAbility** 追加到未签名 hap 的 `module.json`：
+  复用同一 `srcEntry`/payload，`launchType=multiton`；再用 `sign-for-device.sh` 设备签名。
+- `aa start -a LoginAbility -b mauidemo.dotnet.springmin.com --ps mode login` **启动成功**，
+  `ps=1`、`fps=60`。
+- **UI 仍待完成**：第二个 ability 显示的是启动窗口渐变（共享 MAUI host 只绑定主 EntryAbility 的
+  surface），没有渲染登录内容。ability 级别的隔离已打通，surface/host 绑定需要 per-ability
+  实例（或独立 ArkTS 登录页）。
+
+#### 冷启 `-U` 的现状
+
+- reference app 冷启带 `-U app://reference/*` 仍会退出（无 fault、无 managed 日志）；即便声明
+  `app://reference` skill 也未改变。该问题独立于 Login，暂列后续项；不影响无 URI 的正常启动与
+  Content 交换登录。
 
 ## 6. 验证口径说明
 
@@ -101,16 +113,19 @@
 
 ## 7. 下一步
 
-1. 复跑 `79a20fe` 的冷启 + 深链，确认 3 项收尾数据仍成立。
-2. Login 专项：最小 Entry 页 + overlay/切换，定位 ability 退出点（优先看 Entry handler
-   disconnect 与 text-input surface）。
-3. 精确冷启：给 `[ref] enter Run` 加 tick，计算到 `first-frame` 的差值。
-4. 通过后把 T3 标为完成，并把样例作为演示/回归基线。
+1. 复跑 reference app（`bb7efbb`）无 URI 冷启 + form/save + subwindow，确认收尾数据。
+2. **第二 ability UI**：per-ability host/surface，或独立 ArkTS 登录页；当前 LoginAbility 只出启动
+   窗口，ability 启动本身已通过。
+3. **冷启 `-U` 退出**专项：确认是否与 ability/URI want 分发有关（不影响无 URI 启动）。
+4. 精确冷启：给 `[ref] enter Run` 加 tick，计算到 `first-frame` 的差值。
+5. 通过后把 T3 标为完成，并把样例作为演示/回归基线。
 
-## 6. 证据
+## 8. 证据
 
-- 代码：`ohos-workload` `acf211b`（`test/reference-lob`）
-- 截图：`ref-dash.jpeg` / `ref-deeplink.jpeg` / `ref-form.jpeg` / `ref-settings.jpeg`
-- 日志：`[ref] main tabs: 4` / `[ref] activation uri='app://reference/orders'` /
-  `[ref] navigate ...`
+- 代码：`ohos-workload` `acf211b`（reference-lob v1）· `79a20fe`（FrameProbe/深链动作）·
+  `bb7efbb`（login Content 交换 + login-probe）· `5234a4e`（第二 ability 后处理）
+- 截图：`ref-dash.jpeg` / `ref-login-content.jpeg` / `ref-deeplink.jpeg` /
+  `ref-form.jpeg` / `ref-settings.jpeg` / `ref-loginability.jpeg`
+- 日志：`[probe] step=2 login-entries` … `auto sequence done`；
+  `[ref] main tabs: 4`；`[ref] fps=60.x`；`LoginAbility` 启动 success
 - 设备操作后已卸载应用并释放 `.device-lock`
