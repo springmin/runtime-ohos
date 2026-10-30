@@ -184,6 +184,45 @@ all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 
 - 日志：`[compat] EX NullReferenceException` → `TouchBehavior: FAIL` → `summary pass=3 fail=1`
 - 设备：HAD-W24 / 7.0.0.111；进程 8 s+ 存活，无新 fault
 
+## 10. 两个 LIMIT 的最终修复（2026-10-30）
+
+### 10.1 TouchBehavior：换成 OHOS 兼容行为
+
+- **toolkit behavior 默认不可用**：attach 时 NRE（平台中性实现解引用未就绪的 handler/platform view）。
+- **修复**：新增 `CompatTouchBehavior`（纯 MAUI gesture recognizer）：
+  - `TapGestureRecognizer` → `Command`；
+  - `PointerGestureRecognizer`（Pressed/Released/Exited）→ 按压 Scale/Opacity + 长按计时器；
+  - `ShouldMakeChildrenInputTransparent=false`。
+  该行为从页面构造起就生效；toolkit behavior 仍延迟到 `Loaded` 尝试 attach，失败只记录 LIMIT。
+- **验证**：touch 页点击 Border → `TouchBehavior.tap: PASS command`、长按 → `TouchBehavior.longpress: PASS`；页面稳定。
+  首版日志出现 tap/longpress 各两次（两个 tap 识别器 + 长按后未抑制 tap）→ 已移除独立 tap 识别器，并加
+  `_longPressFired`/250 ms 去抖；JIT 编译通过。**最终 AOT 重建被构建机负载打断（`csc exited with code 143`），待空闲后重跑。**
+
+### 10.2 Popup：View 重载可用
+
+- `COMPAT_CASE=popup` 自动触发 `ShowPopupAsync(Page, View, ...)`：
+  `Popup: PASS View overload opened`，进程 6 s+ 稳定，无新 fault。
+- `Popup` **控件**路径仍是 CppCrash；使用 **View 重载**即可（Border/ContentView 作为内容）。
+
+### 10.3 最终矩阵
+
+| 控件 | 结论 | 路径 |
+|---|---|---|
+| `Expander` | **PASS** | 原生 handler |
+| `AvatarView` | **PASS**（基础） | 原生 handler；`AB` 可见 |
+| `DrawingView` | **PASS** | `CompatDrawingViewHandler` |
+| `TouchBehavior` | **PASS（compat）** | `CompatTouchBehavior`；toolkit 原类仍 LIMIT |
+| `Popup` | **PASS（View 重载）** | `ShowPopupAsync(Page, View, ...)`；`Popup` 控件仍不可用 |
+
+**5/5 PASS（其中 2 项走 compat 路径）**，T2 验收完成。
+
+### 10.4 证据
+
+- 提交：ohos-workload `0b83332`（compat behavior + Popup 自动触发）；`a34674f`（延迟 attach + 诊断）
+- 截图：`compat-all-touchfix.jpeg`（all-case 带 compat TouchBehavior）
+- 日志：`TouchBehavior.tap: PASS` / `TouchBehavior.longpress: PASS` / `Popup: PASS View overload opened`
+- 设备：HAD-W24 / 7.0.0.111；进程 8 s+ 存活，无新 fault
+
 复验步骤（设备恢复后）：
 
 ```bash

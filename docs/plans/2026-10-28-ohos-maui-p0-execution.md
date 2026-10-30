@@ -141,9 +141,9 @@
   复验：**DrawingView FAIL → PASS**（稳定 8s+）；**TouchBehavior 降为 FAIL**（touch-only 页面
   <2s 退出，是 all-case 3-4s 退出的根因）；Popup View 重载页面稳定、手点待验；Avatar 仍不可见。
   详见 `2026-10-29-ohos-maui-thirdparty-compat.md` §8。
-- **T2 最终（2026-10-29）**：TouchBehavior attach NRE 已定位；应用侧延迟 attach + TapGestureRecognizer
-  兜底后页面稳定。最终矩阵 **5/5 分类（3 PASS + 2 LIMIT）**：Expander/Avatar/DrawingView PASS；
-  TouchBehavior/Popup LIMIT。T2 验收通过，可开 T3。
+- **T2 最终（2026-10-30）**：两个 LIMIT 已修复——`CompatTouchBehavior`（tap/按压/长按，toolkit
+  NRE 降级）与 Popup **View 重载**（实测打开成功）。最终矩阵 **5/5 PASS**（2 项走 compat 路径）。
+  T2 验收完成；最终 AOT 重建因构建机负载（csc 143）待重跑。
 - **T3 待开**：Reference App 用 Expander/Avatar/DrawingView + Tap 兜底；Popup 仅用 View 重载。
 
 ## 执行顺序与理由
