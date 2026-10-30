@@ -56,6 +56,7 @@
 | **Form 保存** | **PASS** | `[ref] form saved`（`app://reference/form/save` 自动填充并写 JSON） |
 | **子窗** | **PASS** | `[ref] selected 1` → `[ref] subwindow create=True item=1`；截图 `ref-subwindow.jpeg` |
 | **1k 滚动 FPS** | **PASS** | FrameProbe：`fps=59.2 / 59.3 / 59.8 / 60.0 / 60.1 / 60.3`；PSS **131,221 kB**（≈128 MB） |
+| **精确冷启** | **PASS** | `enter Run tick=96007224` → `first-frame tick=96007352` = **128 ms**（managed 起点→首帧）；`/proc/<pid>/stat` starttime `9600634`（CLK_TCK=100）→ **进程启动→首帧 = 1,012 ms** |
 | **Login** | **PASS（content swap）** | `test/login-probe` 证明同一页内 Content 交换稳定（main→login-entries→main→login-labels→main，ps=1）；reference app 改为登录首屏 + Content 交换，60 fps；页面/标签/模态/导航切换仍不可用 |
 
 补充：
@@ -95,10 +96,15 @@
 - **独立进程重试**：给 LoginAbility 加 `"process": "login"` 后，进程变为
   `mauidemo.dotnet.springmin.comlogin`（独立进程），但仍只显示启动窗口渐变。
 - **结论**：独立进程不是充分条件；共享 `srcEntry`（EntryAbility）不足以让第二个 ability 加载
-  ArkTS 入口/page。需要为 LoginAbility 编译**自己的 ArkTS 模块与页面**（`ets/loginability/LoginAbility.ets`
-  + `ets/pages/Login.ets`），用 `build-arkts-shell.sh`/hvigor 生成自定义 `modules.abc`，再
-  `OpenHarmonyArktsModulesAbc` 打包。ability 级隔离（启动、独立进程）已打通，UI 属 ArkTS
-  壳工程工作，非 .NET host 能单独解决。
+  ArkTS 入口/page。需要为 LoginAbility 编译**自己的 ArkTS 模块与页面**，用 hvigor 生成自定义
+  `modules.abc`，再 `OpenHarmonyArktsModulesAbc` 打包。
+- **ArkTS 源已提交**：`scripts/loginability/LoginAbility.ets`（UIAbility，loadContent
+  `pages/Login`）+ `Login.ets`（ArkUI 登录页），提交 `50518e9`。
+- **自定义壳构建受阻**：复制 `build-arkts-shell.sh` 加 LoginAbility 的方案未产出新 abc——补丁
+  在 `write_project_configs` 之前执行，`main_pages.json`/`module.json5` 被随后覆盖；且
+  `module.json5` 是 JSON5（单引号），不能直接 `json.load`。下一版应走**独立 hvigor 工程**
+  （`--scaffold-only` 生成配置 → 加源/改 module.json5 → 直接跑 hvigor），不要改主构建脚本。
+- ability 级隔离（启动、独立进程）已打通；UI 属 ArkTS 壳工程工作，非 .NET host 能单独解决。
 
 #### 冷启 `-U` 的现状
 
@@ -117,12 +123,15 @@
 
 ## 7. 下一步
 
-1. 复跑 reference app（`bb7efbb`）无 URI 冷启 + form/save + subwindow，确认收尾数据。
-2. **第二 ability UI**：per-ability host/surface，或独立 ArkTS 登录页；当前 LoginAbility 只出启动
-   窗口，ability 启动本身已通过。
+1. **第二 ability UI（ArkTS 壳工程）**：用 `--scaffold-only` 生成独立 hvigor 工程 → 加入
+   `scripts/loginability/*` → 修改 `module.json5`/`main_pages.json` → 直接跑 hvigor 产出
+   `modules.abc` → `OpenHarmonyArktsModulesAbc` 打包；当前 LoginAbility 仅出启动窗口。
+2. 复跑 reference app（`50518e9`）无 URI 冷启 + form/save + subwindow，确认收尾数据。
 3. **冷启 `-U` 退出**专项：确认是否与 ability/URI want 分发有关（不影响无 URI 启动）。
-4. 精确冷启：给 `[ref] enter Run` 加 tick，计算到 `first-frame` 的差值。
-5. 通过后把 T3 标为完成，并把样例作为演示/回归基线。
+4. 通过后把 T3 标为完成，并把样例作为演示/回归基线。
+
+> 冷启口径：`[ref] enter Run tick` → `first-frame tick` = **128 ms**（managed 起点→首帧）；
+> 进程启动（`/proc/<pid>/stat` starttime, CLK_TCK=100）→ 首帧 = **1,012 ms**。
 
 ## 8. 证据
 
