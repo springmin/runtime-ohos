@@ -68,6 +68,28 @@
   与 T2 的 `TouchBehavior` NRE 不同，这次无 fault、无 managed 异常日志。建议单独立项：
   最小化 Entry 页 → 切换/覆盖 → 观察 handler disconnect / text-input 生命周期。
 
+### 5.1 Login 专项记录（2026-10-30，未解决）
+
+按“先解决 Login”做了归因，结论是**被 URI 激活路径阻断**：
+
+1. **基线（不带 `-U`）稳定**：`[ref] main tabs loaded`、`fps=60.4`，进程 5 s+ 存活。
+2. **任何冷启 `-U app://reference/*` 都会退出**（无 fault、无 managed 异常）：orders、diag/label、
+   diag/entry、diag/password、diag/emailkb、diag/formswitch 全部 `ps=0`；日志只到
+   `[ref] enter Run` + `activation uri=...`。
+3. 已在 `module.json` 声明 `app://reference`（`OpenHarmonyWebAuthenticatorCallbackUrls`）后重试，
+   仍退出 → 不是 skill/URI 未注册的问题。
+4. 因此“label vs entry”“overlay vs page”等诊断模式无法通过深链得到有效结果；此前
+   `Window.Page` / modal / NavigationPage / login tab / overlay 五种登录入口的退出结论仍成立。
+5. **尝试过的代码已回退**到 `79a20fe`（稳定基线：MainTabs 4 tab、Login dormant、FrameProbe、
+   form/save/subwindow 深链）。overlay/diag 代码未保留，避免把未稳定路径带进样例。
+
+**下一步（Login 专项）**：
+
+- 用**最小独立 app** + **屏幕上可见的按钮**（不依赖 `-U`）切换 Login/Main 两种内容，定位是
+  “Entry 页面切换”还是“冷启 URI 激活”导致的退出；
+- 或把 Login 做成**独立 UIAbility**（另一个 entry），由主 ability 显式启动，绕开同页切换；
+- 同时单独立项排查冷启 `-U` 退出（当前 `aa start -U` 在 reference-lob 上不可用，早期构建曾可用）。
+
 ## 6. 验证口径说明
 
 - 3 项收尾数据来自 **14:08 构建**（MainTabs 根 + FrameProbe + form/save/subwindow 深链）。
