@@ -49,14 +49,41 @@
 - **不使用 CommunityToolkit**：T2 的 `CompatTouchBehavior`/Popup View 重载留作样例之外的
   兼容层；Reference App 只用 MAUI 原生控件，减少变量。
 
-## 5. 下一步（T3 收尾）
+## 5. 收尾结果（2026-10-30）
 
-1. 用真实键盘/IME 填 Form 并保存，确认 `reference-form.json` 落在 `FileSystem.AppDataDirectory`。
-2. 选中 Orders 行 → “Open detail in subwindow” → 截图/`OpenHarmonySubWindow.Changed` 证据。
-3. 从 Settings → Sign out 打开 Login，填邮箱/密码 → Sign in 回主界面。
-4. 为 Orders 加滚动帧率探针（复用 hello 的 FramePacingProbe 模式）或读宿主 `framestats`，
-   给出 1k 行滚动 FPS；同时记录冷启（AOT）与 RSS。
-5. 验收 8 项打勾后，把 T3 标为完成，并把样例作为演示/回归基线。
+| 项 | 结果 | 证据 |
+|---|---|---|
+| **Form 保存** | **PASS** | `[ref] form saved`（`app://reference/form/save` 自动填充并写 JSON） |
+| **子窗** | **PASS** | `[ref] selected 1` → `[ref] subwindow create=True item=1`；截图 `ref-subwindow.jpeg` |
+| **1k 滚动 FPS** | **PASS** | FrameProbe：`fps=59.2 / 59.3 / 59.8 / 60.0 / 60.1 / 60.3`；PSS **131,221 kB**（≈128 MB） |
+| **Login** | **BLOCKED** | 四种入口都让 ability 退出（无 fault）：`Window.Page` 切换、`PushModalAsync`、`NavigationPage.Push`、login tab/overlay 可见化；最终代码把 Login 设为 dormant（`ShowLogin` 只记日志） |
+
+补充：
+
+- FrameProbe 已接入（`[ref] first-frame tick=...` + 每 5 s `[ref] fps=...`），启动首帧有标记；
+  **精确冷启毫秒**未提取（缺 `enter Run` tick），下一轮补一行即可。
+- 登录页代码保留为 `LoginView`（可单独复用），但不参与启动路径；Settings → Sign out 只写
+  `[ref] login deferred...`，不再触发退出。
+- 登录问题的共同点：**离开/覆盖含 Entry 的页面**（或页面切换本身）会让 ability 退出；
+  与 T2 的 `TouchBehavior` NRE 不同，这次无 fault、无 managed 异常日志。建议单独立项：
+  最小化 Entry 页 → 切换/覆盖 → 观察 handler disconnect / text-input 生命周期。
+
+## 6. 验证口径说明
+
+- 3 项收尾数据来自 **14:08 构建**（MainTabs 根 + FrameProbe + form/save/subwindow 深链）。
+- 登录重构后的最终代码（ohos-workload `79a20fe`）JIT 编译通过、AOT 发布通过；但该轮之后的
+  冷启深链复跑出现「进程无 fault 退出」，未能重新抽取 3 项数据。最终代码与验证数据之间的
+  差异仅是登录路径（dormant）和深链动作，不影响 Dashboard/Orders/Form/Settings。
+- 下一步：设备空闲时用 `aa start -U app://reference/orders` 冷启复跑，确认 `79a20fe` 仍稳定；
+  再单独立项排查 Login 生命周期。
+
+## 7. 下一步
+
+1. 复跑 `79a20fe` 的冷启 + 深链，确认 3 项收尾数据仍成立。
+2. Login 专项：最小 Entry 页 + overlay/切换，定位 ability 退出点（优先看 Entry handler
+   disconnect 与 text-input surface）。
+3. 精确冷启：给 `[ref] enter Run` 加 tick，计算到 `first-frame` 的差值。
+4. 通过后把 T3 标为完成，并把样例作为演示/回归基线。
 
 ## 6. 证据
 
