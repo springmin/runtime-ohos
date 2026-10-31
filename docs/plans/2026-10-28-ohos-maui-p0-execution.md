@@ -148,8 +148,9 @@
   **59–60 fps** / PSS ≈128 MB、**Login PASS（content swap）**；**精确冷启** = Run→首帧
   **128 ms**、进程→首帧 **1,012 ms**。**第二 ability `LoginAbility` PASS**：自定义 ArkTS 壳
   abc（648,624 B）含 `LoginAbility`/`pages/Login`，独立进程 `:login` 渲染 ArkUI 登录页；
-  `scripts/build-login-shell.sh` + `add-login-ability.sh` 可复现。AOT `IL2026=0`。详见
-  `2026-10-30-ohos-maui-reference-app.md`。
+  `scripts/build-login-shell.sh` + `add-login-ability.sh` 可复现。**冷启 `-U` 已修复**
+  （pending route + `Loaded` 消费；orders/form/settings/subwindow/form-save 全部 ps=1）。
+  AOT `IL2026=0`。详见 `2026-10-30-ohos-maui-reference-app.md`。
 
 ## 执行顺序与理由
 

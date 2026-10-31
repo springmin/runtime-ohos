@@ -105,11 +105,19 @@
 - **工具链注记**：hvigor 在本机偶发 V8 `Signal 5`；`build-login-shell.sh` 带 3 次重试，
   主构建脚本同样有该保护。产物 abc 已验证；失败时重跑即可。
 
-#### 冷启 `-U` 的现状
+#### 冷启 `-U`：已修复（2026-10-31）
 
-- reference app 冷启带 `-U app://reference/*` 仍会退出（无 fault、无 managed 日志）；即便声明
-  `app://reference` skill 也未改变。该问题独立于 Login，暂列后续项；不影响无 URI 的正常启动与
-  Content 交换登录。
+- **根因**：`HandleActivation` 在 app 启动完成前调用 `MainThread.BeginInvokeOnMainThread`；
+  dispatcher 尚未就绪，进程直接退出。对照：`-U app://test/foo` 因不匹配前缀提前 return，
+  所以稳定；`app://reference/*` 一旦进入 dispatch 就退出。
+- **修复**（ohos-workload `2944cbb`）：激活只把 route 写入 **pending**（加锁），不在启动期
+  dispatch；`MainTabs.Loaded` 后延迟 200 ms 由 `App.ConsumePendingRoute` 消费；已加载时的
+  热激活也走同一 pending 路径。
+- **真机验证**（冷启 `-U`，均 `ps=1`）：
+  - `app://reference/orders` → `consume/apply/navigate 'orders' -> Orders`；截图 `ref-route.jpeg`
+  - `app://reference/form` / `settings` → `navigate` 到对应 tab
+  - `app://reference/form/save` → `navigate 'form'` + **`form saved`**
+  - `app://reference/subwindow` → `navigate 'orders'` + **`subwindow create=True item=1`**
 
 ## 6. 验证口径说明
 
