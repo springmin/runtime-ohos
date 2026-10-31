@@ -87,24 +87,23 @@
   作为可点击面（canvas Button 的 uitest 点击不稳定，不是逻辑问题）。
 - 页面/标签/模态/导航四种旧入口仍不可用，已从样例移除。
 
-#### Probe #2：独立 UIAbility（`scripts/add-login-ability.sh`，提交 `5234a4e`）
+#### Probe #2：独立 UIAbility（**PASS**，2026-10-31）
 
-- 打包链只生成一个 ability，因此用后处理把 **LoginAbility** 追加到未签名 hap 的 `module.json`：
-  复用同一 `srcEntry`/payload，`launchType=multiton`；再用 `sign-for-device.sh` 设备签名。
-- `aa start -a LoginAbility -b mauidemo.dotnet.springmin.com --ps mode login` **启动成功**，
-  `ps=1`、`fps=60`。
-- **独立进程重试**：给 LoginAbility 加 `"process": "login"` 后，进程变为
-  `mauidemo.dotnet.springmin.comlogin`（独立进程），但仍只显示启动窗口渐变。
-- **结论**：独立进程不是充分条件；共享 `srcEntry`（EntryAbility）不足以让第二个 ability 加载
-  ArkTS 入口/page。需要为 LoginAbility 编译**自己的 ArkTS 模块与页面**，用 hvigor 生成自定义
-  `modules.abc`，再 `OpenHarmonyArktsModulesAbc` 打包。
-- **ArkTS 源已提交**：`scripts/loginability/LoginAbility.ets`（UIAbility，loadContent
-  `pages/Login`）+ `Login.ets`（ArkUI 登录页），提交 `50518e9`。
-- **自定义壳构建受阻**：复制 `build-arkts-shell.sh` 加 LoginAbility 的方案未产出新 abc——补丁
-  在 `write_project_configs` 之前执行，`main_pages.json`/`module.json5` 被随后覆盖；且
-  `module.json5` 是 JSON5（单引号），不能直接 `json.load`。下一版应走**独立 hvigor 工程**
-  （`--scaffold-only` 生成配置 → 加源/改 module.json5 → 直接跑 hvigor），不要改主构建脚本。
-- ability 级隔离（启动、独立进程）已打通；UI 属 ArkTS 壳工程工作，非 .NET host 能单独解决。
+- **ArkTS 源**：`scripts/loginability/LoginAbility.ets`（UIAbility，`loadContent('pages/Login')`）
+  + `Login.ets`（ArkUI 登录页），提交 `50518e9`。
+- **自定义壳 abc**：`scripts/build-login-shell.sh` 走独立 hvigor 工程（`--scaffold-only` → 加源 →
+  改 `module.json5`/`main_pages.json` → 直接跑 hvigor），产出
+  **648,624 B** 的 `modules.abc`，含 `loginability/LoginAbility` 与 `pages/Login`。
+- **打包**：reference-lob 通过 `-p:OpenHarmonyArktsModulesAbc=<abc>` 使用自定义壳；
+  `scripts/add-login-ability.sh` 把 LoginAbility 写入 hap `module.json`
+  （`srcEntry ./ets/loginability/LoginAbility.ets`、`launchType=multiton`、`process :login`）
+  并把 `pages/Login` 加入 `main_pages.json`；设备签名后 hap **8,603,319 B**。
+- **真机**：`aa start -a LoginAbility -b mauidemo.dotnet.springmin.com --ps mode login`
+  → 独立进程 `mauidemo.dotnet.springmin.com:login`，`LOGIN_ABILITY: onWindowStageCreate`；
+  截图 `loginability-final.jpeg` 显示 **ArkUI 登录页**（Reference LOB / Email / Password /
+  Sign in / “signed in” demo 状态）。
+- **工具链注记**：hvigor 在本机偶发 V8 `Signal 5`；`build-login-shell.sh` 带 3 次重试，
+  主构建脚本同样有该保护。产物 abc 已验证；失败时重跑即可。
 
 #### 冷启 `-U` 的现状
 

@@ -144,11 +144,11 @@
 - **T2 最终（2026-10-30）**：两个 LIMIT 已修复——`CompatTouchBehavior`（tap/按压/长按，toolkit
   NRE 降级）与 Popup **View 重载**（实测打开成功）。最终矩阵 **5/5 PASS**（2 项走 compat 路径）。
   T2 验收完成；最终 AOT 重建因构建机负载（csc 143）待重跑。
-- **T3 收尾（2026-10-30）**：4/4 完成——Form 保存 **PASS**、子窗 **PASS**、1k 列表
+- **T3 收尾（2026-10-31）**：4/4 完成——Form 保存 **PASS**、子窗 **PASS**、1k 列表
   **59–60 fps** / PSS ≈128 MB、**Login PASS（content swap）**；**精确冷启** = Run→首帧
-  **128 ms**、进程→首帧 **1,012 ms**。额外：第二 ability `LoginAbility` 启动/独立进程打通，
-  ArkTS 登录源已提交（`LoginAbility.ets`/`Login.ets`）；自定义壳 abc 因 hvigor 工程生成顺序
-  未产出，UI 仍待独立 hvigor 工程。AOT `IL2026=0`。详见
+  **128 ms**、进程→首帧 **1,012 ms**。**第二 ability `LoginAbility` PASS**：自定义 ArkTS 壳
+  abc（648,624 B）含 `LoginAbility`/`pages/Login`，独立进程 `:login` 渲染 ArkUI 登录页；
+  `scripts/build-login-shell.sh` + `add-login-ability.sh` 可复现。AOT `IL2026=0`。详见
   `2026-10-30-ohos-maui-reference-app.md`。
 
 ## 执行顺序与理由
