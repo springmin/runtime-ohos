@@ -167,6 +167,8 @@ P0 四条工作流已全部接入可重复门禁（详见 `2026-11-02-ohos-maui-
   IL3050/IL3051 = 0；hap **21,797,680 B / 21,318,452 B**。
 - T4 Step 5 的“切包链”仍保持手动：`cut-kit.sh` 不产生运行时指标；设备轮 JSON 通过
   `p0-gate.sh --metrics <json>` 进入 strict 比较。
+- RTM/#59 切换步骤见 `2026-11-02-ohos-rtm-cutover-runbook.md`；
+  `scripts/rtm-cutover.sh` dry-run 已 PASS（版本 pin 全绿）。
 
 ## 执行顺序与理由
 

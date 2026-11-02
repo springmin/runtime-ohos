@@ -87,7 +87,8 @@ sh scripts/check-upstream-delta.sh
   `sh scripts/p0-gate.sh --quick --skip-delta`（只读 checkout、无 secret）。
   delta 需要 `maui-ohos` 全历史，留在本地/发布轮；full 需要 OpenHarmony workload，
   也留在发布轮。
-- **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门（见下一条建议的 runbook）。
+- **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门（见
+  `2026-11-02-ohos-rtm-cutover-runbook.md`）。
 
 ## 6. 边界
 
