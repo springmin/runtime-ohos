@@ -60,3 +60,15 @@
 | #50 | 68,264,136 / `d70dc786…` / `b4b5055c…` | 661/663 floor 643 | 157/157 | 436,808（`289a5e5d…`） | 73,119,180 / `6a83c0f3…`（`a3417a5489`） |
 | #49 | 67,888,851 / `477974bb…` / `8d03cb4c…` | 607/609 floor 589 | 153/153 | 414,532（`e016db13…`） | `7d06e781…`（`7abaf8132f`） |
 | #42 | 376,256,128 / `ea4e3b58…` / `13f3a086…` | 578/580 floor 560 | 151/151 | 356,468（`dd04dad1…`） | 73,047,352 / `570c0821…`（`35101fe1f5`） |
+
+## 2026-11-02 P0/门禁增量（kit #58 口径不变）
+
+> MAUI P0 四条（上游差异 / 第三方 5/5 / Reference 4/4 / 性能门禁）已收口；hvigor 冷构建
+> 默认 `--jitless`；P0 门禁进 preflight/CI；RTM #59 runbook + dry-run 完成，等官方产物。
+> 详见 `2026-11-02-ohos-maui-p0-gates.md`、`2026-11-02-ohos-rtm-cutover-runbook.md`、
+> `2026-10-30-ohos-maui-reference-app.md`。
+
+- 交付数字仍为 kit #58（tar 70,449,999 / `d7e3311b…`、abc 637,300 / `4070204a…`）；
+  P0 门禁复跑未改变 kit 产物。
+- release-signed 主 hap 直装仍受 `9568322 not trusted app source` 边界；发布走 AGC/市场通道。
+- `READ_PASTEBOARD` ACL 与 #59 RTM 仍为外部等待项。

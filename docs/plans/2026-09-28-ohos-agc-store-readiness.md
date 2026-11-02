@@ -78,3 +78,13 @@ reason/usedScene 模板（`$string:permission_reason_*`；usedScene 现有统一
 
 > 不确定项与边界：AGC 字段与入口名以控制台为准；App Linking 的 HTTPS 投递与 `skills[].uris` 清单声明尚未真机验证（当前只有
 > app.json 白名单 + 托管校验）；TTS 真朗读需 HMS 设备 + harmony 壳；包内数字随重签变化，以 release「## Integrity」为准。
+
+## 6. 2026-11-02 状态
+
+- **发布件直装**：release-signed 主 hap 在真机报 `9568322 not trusted app source`；
+  分发必须走 AGC/应用市场或邀请测试通道，不能依赖 side-load。
+- **ACL**：`READ_PASTEBOARD` 材料已备（`2026-10-15-ohos-acl-submit-pack.md`），等待 AGC
+  提交/批准；未批准前默认/all 权限集不声明，触屏粘贴由 PasteButton 闭环。
+- **RTM #59**：切换 runbook + dry-run 完成（`2026-11-02-ohos-rtm-cutover-runbook.md`），
+  等官方 SDK/workload/MAUI 产物。
+- **P0 证据**：`2026-11-02-ohos-maui-p0-gates.md`（perf/AOT/IL 预算/CI）。

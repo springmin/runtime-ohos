@@ -134,3 +134,22 @@
 - **数字**：7 hap 全 AOT 线（5 MAUI NativeAOT + Blazor 默认/`-nocsp`）、ui/shell abc **637,224/`8503a3c2…`**（headless 24,324/`798b2477…` 不变）、宿主 **367,520/`8826adde…`**（导出 164/164）、套件 **814/817 floor 797**、权限矩阵 1/6/8 非 ACL；kit tar **70,420,041 / `aba73b61…`**、树 `99a37cec…`、sidecar `527b6e3a…`、bundle **73,470,627 / `c678a7ee…`**（sdk 锚 `d62bfe0b79…`）；预签 70,240,169 / `0e062b5e…`；轮包 160,943,858 / `7fd703cc…`。
 - **CI**：ow 5/5 @ `cc6ca34`（interaction 38504581652 / pixel 38504581628 / host-export 38504581746 / ridgraph 38504581637 / markdownlint 38504581605）+ harmony 38504581686 @ cc6ca346；sdk 锚 `d62bfe0b79…`。
 - **剩余外部**：tester 轮（#56 主判点回传）、AGC（App Linking/JIT ACL）、**RC2-OFFICIAL 官方戳重切（三仓 `.105`，另一会话推进中）**、上游（键契约/Blazor WASM/VisualDiagnosticsOverlay/Hot Reload/arm32/ship-the-slice）；本地工程尾巴仅 csc/VBCS 活锁（watchdog 已进 preflight）。**判定不变**：本机可执行功能项 = 0，多窗/媒体波闭合、rc.2 对齐与 ENG-WAVE/TOUCH-PASTE 闭合，余项纯外部/已文档化降级；当前发布 = kit #56（交接 = `2026-10-14-ohos-tester-handoff-kit56.md`）。
+
+## 2026-11-02 P0 收口（非 kit 切包）
+
+- **T1 上游差异**：152 文件 / **+50,788 / −3**（+22 = T2 `RegisterHandler`）；切片 **143 文件 /
+  48,198 行**；4 个侵入文件 **+77/−3**；漂移门禁 `check-upstream-delta.sh` +
+  `test/p0-gate/upstream-delta.json`。
+- **T2 第三方**：CommunityToolkit.Maui 15.0.1 **5/5**（Expander/Avatar/DrawingView 原生，
+  TouchBehavior `CompatTouchBehavior`，Popup View 重载）；TouchBehavior NRE 根因 =
+  MAUI `PlatformBehavior.OnLoaded`（Handler 未就绪），上游补丁草案见
+  `2026-11-02-ohos-maui-touchbehavior-rootcause.md`。
+- **T3 Reference App**：4/4 + 第二 ability + 冷启 **1,012 ms** + `-U` 深链
+  orders/form/settings/subwindow/form-save 全 `ps=1`。
+- **T4 性能**：`perf-gate.sh` 21-check fixture 进 `preflight.sh`；`p0-gate.sh --quick/--full`
+  （compat IL2026 2/2、reference 0/0、hap 21,797,680 / 21,318,452 B）；CI `p0-gate.yml`。
+- **工具链**：hvigor 冷构建默认 `--jitless`，无 Signal 5；stock abc 与 kit 定值
+  `4070204a…` **逐字节一致**。
+- **RTM**：`rtm-cutover.sh` dry-run PASS；#59 等官方产物。
+- **判定**：P0 完成；kit #58 仍为当前发布；剩余外部 = RTM 产物 / AGC ACL / 发布通道 /
+  tester 回执。
