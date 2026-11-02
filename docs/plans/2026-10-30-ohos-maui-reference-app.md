@@ -102,11 +102,13 @@
   → 独立进程 `mauidemo.dotnet.springmin.com:login`，`LOGIN_ABILITY: onWindowStageCreate`；
   截图 `loginability-final.jpeg` 显示 **ArkUI 登录页**（Reference LOB / Email / Password /
   Sign in / “signed in” demo 状态）。
-- **工具链注记（hvigor 稳定性）**：本机 hvigor 的 V8 在**冷构建**上可能连续报
-  `Signal 5` / `Check failed: 12 == (*__errno_location())`；**同一工作项目的 warm 运行/手动
-  重跑已实测成功**（`Finished CompileArkTS`，abc 产出）。`build-login-shell.sh` 现在保留
-  工作项目、3×30 s 重试、失败时打印项目路径；产物 abc 用字符串门禁验证。属工具链环境问题，
-  不影响已验证的 abc/hap。冷构建失败时**不要删项目**，直接重跑脚本（或手动 hvigor）。
+- **工具链注记（hvigor 稳定性，已修复）**：冷构建的 V8 `Signal 5`
+  （`Check failed: 12 == (*__errno_location())`）由 **`--jitless`** 规避。
+  `scripts/build-arkts-shell.sh` 与 `scripts/build-login-shell.sh` 现在默认给 hvigor 加
+  `--jitless`（`HVIGOR_NODE_FLAGS` 可覆盖，仍保留崩溃重试）。实测：
+  - 主 shell 冷构建一次通过：`Finished CompileArkTS` 49.7 s，stock abc **637,300 B**；
+  - 自定义 LoginAbility 壳冷构建一次通过：abc **648,624 B**，无 Signal 5。
+  - 代价：比 JIT 模式慢约 30 s；稳定性优先。
 
 #### 冷启 `-U`：已修复（2026-10-31）
 
@@ -137,8 +139,7 @@
    `scripts/loginability/*` → 修改 `module.json5`/`main_pages.json` → 直接跑 hvigor 产出
    `modules.abc` → `OpenHarmonyArktsModulesAbc` 打包；当前 LoginAbility 仅出启动窗口。
 2. 复跑 reference app（`2944cbb`）无 URI 冷启 + `-U` 深链 + form/save + subwindow，确认收尾数据。
-3. hvigor 稳定性：冷构建 V8 `Signal 5` 为环境级问题；保留 warm 项目/重试，必要时手动 hvigor。
-4. 把 T3 作为演示/回归基线。
+3. 把 T3 作为演示/回归基线（hvigor 冷构建已由默认 `--jitless` 修复）。
 
 > 冷启口径：`[ref] enter Run tick` → `first-frame tick` = **128 ms**（managed 起点→首帧）；
 > 进程启动（`/proc/<pid>/stat` starttime, CLK_TCK=100）→ 首帧 = **1,012 ms**。

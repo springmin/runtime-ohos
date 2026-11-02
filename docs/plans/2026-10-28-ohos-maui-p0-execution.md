@@ -150,8 +150,9 @@
   abc（648,624 B）含 `LoginAbility`/`pages/Login`，独立进程 `:login` 渲染 ArkUI 登录页；
   `scripts/build-login-shell.sh` + `add-login-ability.sh` 可复现。**冷启 `-U` 已修复**
   （pending route + `Loaded` 消费；orders/form/settings/subwindow/form-save 全部 ps=1）。
-  AOT `IL2026=0`。hvigor 冷构建偶发 V8 `Signal 5`（环境级），warm 重跑可过；脚本保留项目
-  并重试。详见 `2026-10-30-ohos-maui-reference-app.md`。
+  AOT `IL2026=0`。**hvigor 冷构建 V8 `Signal 5` 已修复**：默认 `--jitless`，冷构建一次通过
+  （~50 s；stock abc 637,300 B / 自定义壳 648,624 B）。详见
+  `2026-10-30-ohos-maui-reference-app.md`。
 
 ## 执行顺序与理由
 
