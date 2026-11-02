@@ -88,6 +88,10 @@ sh scripts/check-upstream-delta.sh
   `sh scripts/p0-gate.sh --quick --skip-delta`（只读 checkout、无 secret）。
   delta 需要 `maui-ohos` 全历史，留在本地/发布轮；full 需要 OpenHarmony workload，
   也留在发布轮。
+- **CI 切片 pin（2026-11-02）**：`host-export-contract.yml` / `interaction-regression.yml` /
+  `pixel-regression.yml` 的 `maui_ohos_ref` 从 `868d3c8727b…`（10-19）升到
+  **`efe5b823c8e0…`**（10-31，T2 handler connector + T3 切片）。本地等价验证：
+  host-export **167/167**、interaction **826/829 floor 809**、pixel **PASSED**。
 - **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门（见
   `2026-11-02-ohos-rtm-cutover-runbook.md`）。
 
@@ -108,3 +112,5 @@ sh scripts/check-upstream-delta.sh
 - preflight：`preflight.sh --quick --skip-lint` rc=0（69 scripts，perf fixture 21）。
 - 设备冒烟：`smoke.sh` rc=0（默认 19 checks，`--login-hap` 21 checks；cold 464–736 ms /
   60.2–60.4 fps / PSS 99–101.7 MB）；`perf-gate.sh` 负值现在 FAIL（T10 selftest）。
+- CI pin：三 workflow `maui_ohos_ref=efe5b823c8e0…`；host-export 167/167、
+  interaction 826/829 floor 809、pixel PASSED。
