@@ -1,6 +1,6 @@
 # MAUI 上游差异清单（UPSTREAM-DELTA，2026-10-28）
 
-> 口径：`maui-ohos` `feature/openharmony` tip `868d3c8727b`（2026-10-19，merge of
+> 口径：`maui-ohos` `feature/openharmony` tip `efe5b823c8e0`（2026-10-31，基线仍为
 > `dotnet/maui` `d32b7992870` = `release/11.0.1xx-rc2`）。本文只做**离线只读度量**，不构建、不上设备。
 > 目的：把“长期 fork 的同步成本”从感觉变成数字，作为 P0 计划
 > `2026-10-28-ohos-maui-p0-execution.md` 的输入。
@@ -11,13 +11,19 @@
 |---|---|
 | 变更文件 | **152** |
 | 新增 / 修改 / 删除 | **148 / 4 / 0** |
-| 行数 | **+50,766 / −3** |
+| 行数 | **+50,788 / −3**（2026-11-02 重测；首测 +50,766） |
 | 平台切片文件 | **143**（`src/Core/src/Platform/OpenHarmony/**`） |
-| 平台切片代码行 | **48,176** |
+| 平台切片代码行 | **48,198**（2026-11-02 重测；首测 48,176） |
 | 切片起点 | `c7f92a6088f`（2026-09-30，re-anchor 到 rc.2） |
 
 **结论：99.9% 是纯新增（additive）**；对上游文件的侵入只有 4 个，且合计 **+77 / −3**。
 理论上，每次上游同步的冲突面就集中在这 4 个文件，而不是 48k 行。
+
+> 2026-11-02 门禁重测：**+50,788 / −3**、切片 **48,198** 行（+22 = T2
+> `OpenHarmonyHandlerConnector.RegisterHandler`）。漂移门禁 =
+> `ohos-workload scripts/check-upstream-delta.sh` +
+> `test/p0-gate/upstream-delta.json`（容差 ±4 文件 / ±200 行），接入
+> `scripts/p0-gate.sh --quick`；详见 `2026-11-02-ohos-maui-p0-gates.md`。
 
 ## 2. 侵入面（仅 4 个文件）
 
@@ -79,3 +85,5 @@ git ls-files 'src/Core/src/Platform/OpenHarmony/**' | wc -l
 
 - 本清单进入 P0 计划 Task 1；T2–T4（第三方库兼容、Reference App、性能门禁）见
   `2026-10-28-ohos-maui-p0-execution.md`。
+- 每次 RTM/上游同步后重跑 `scripts/check-upstream-delta.sh`；有意变更时同时更新
+  `test/p0-gate/upstream-delta.json` 与本文数字。

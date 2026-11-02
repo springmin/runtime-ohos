@@ -5,6 +5,11 @@
 > 10.0.90）+ `ohos-workload` `test/maui-compat-app`。设备 = HAD-W24 / OpenHarmony 7.0.0.111。
 > AOT 发布、真机运行；每个控件单独一版页面（`-p:CompatCase=...`）隔离崩溃。
 
+> 2026-11-02 门禁重跑（tip `efe5b823c8e0`）：AOT **PASS**，IL2026 **2**（预算 2；Expander
+> 的 warning + trim-analysis duplicate）、IL3050/IL3051 = 0，hap **21,797,680 B**；
+> `Exception.TargetSite` 诊断已移除（自身触发 IL2026）。预算见
+> `ohos-workload test/p0-gate/il-budget.json`，门禁见 `2026-11-02-ohos-maui-p0-gates.md`。
+
 ## 1. 构建面（先于运行）
 
 | 项 | 结果 |

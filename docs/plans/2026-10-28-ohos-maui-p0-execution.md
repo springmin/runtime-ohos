@@ -120,6 +120,7 @@
       `--report-only` 下同一 fixture exit 0。
 - [ ] **Step 5: 接入切包链**——**暂缓**：`cut-kit.sh` 不产生运行时指标（首帧/fps/RSS 来自设备轮），
       门禁先由设备轮产物手动喂入；等设备轮产出 metrics JSON 后再接。
+      2026-11-02：已接入 `preflight.sh` / CI / `p0-gate.sh --metrics`；`cut-kit.sh` 仍只报告。
 - [x] **Step 6: 提交**（脚本 + 基线 + 文档）。
 
 **验收:** 两个 fixture 的退出码正确；切包 dry-run 能看到性能段落且不改变既有产物。
@@ -129,10 +130,10 @@
 ## 执行记录（2026-10-28）
 
 - **T1 完成**：`2026-10-28-ohos-maui-upstream-delta.md`（152 文件 / +50,766 / 4 个侵入文件；
-  143 切片文件 / 48,176 行）。
-- **T4 完成（除接入）**：`ohos-workload` `a4696bc`——`scripts/perf-gate.sh` +
+  143 切片文件 / 48,176 行）。2026-11-02 重测：+50,788 / 48,198 行。
+- **T4 完成（已接入）**：`ohos-workload` `a4696bc`——`scripts/perf-gate.sh` +
   `test/perf-gate/{baseline-kit58,thresholds,regression}.json`；基线 PASS、负控 FAIL、
-  `--report-only` 降级为 0 均实测。
+  `--report-only` 降级为 0 均实测。2026-11-02 接入 preflight/CI/`p0-gate.sh`（见下节）。
 - **T2 首轮完成（2026-10-29）**：`2026-10-29-ohos-maui-thirdparty-compat.md` + 样例
   `ohos-workload` `7cef629`。结果 = Expander / TouchBehavior 可用；AvatarView handler 通但不出画
   （LIMIT）；DrawingView 无 slice handler；Popup 触发 CppCrash。3/5 可用、2 需移植。
@@ -153,6 +154,19 @@
   AOT `IL2026=0`。**hvigor 冷构建 V8 `Signal 5` 已修复**：默认 `--jitless`，冷构建一次通过
   （~50 s；stock abc 637,300 B / 自定义壳 648,624 B）。详见
   `2026-10-30-ohos-maui-reference-app.md`。
+
+## 门禁收口（2026-11-02）
+
+P0 四条工作流已全部接入可重复门禁（详见 `2026-11-02-ohos-maui-p0-gates.md`）：
+
+- `scripts/selftest-perf-gate.sh`（**21 checks**）已进 `preflight.sh` 步骤 1；
+  CI `.github/workflows/p0-gate.yml` 跑 `p0-gate.sh --quick --skip-delta`。
+- `scripts/check-upstream-delta.sh` + `test/p0-gate/upstream-delta.json`：当前
+  **152 文件 / +50,788 / −3**、切片 **143 文件 / 48,198 行**、侵入 **+77/−3**，PASS。
+- `scripts/p0-gate.sh --full`：compat AOT **IL2026 2/2**、reference **0/0**、
+  IL3050/IL3051 = 0；hap **21,797,680 B / 21,318,452 B**。
+- T4 Step 5 的“切包链”仍保持手动：`cut-kit.sh` 不产生运行时指标；设备轮 JSON 通过
+  `p0-gate.sh --metrics <json>` 进入 strict 比较。
 
 ## 执行顺序与理由
 
