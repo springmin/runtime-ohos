@@ -52,17 +52,21 @@ sh scripts/p0-gate.sh --full
 
 实测（2026-11-02，MemAvailable ≈ 11 GB）：
 
-| 应用 | AOT | IL2026 | IL3050 | IL3051 | hap |
-|---|---|---|---|---|---|
-| `test/maui-compat-app` | PASS | 2 / 预算 2 | 0 / 0 | 0 / 0 | 21,797,680 B |
-| `test/reference-lob` | PASS | 0 / 0 | 0 / 0 | 0 / 0 | 21,318,452 B |
+| 应用 | AOT | IL2026 | IL3050 | IL3051 | IL2070 | hap |
+|---|---|---|---|---|---|---|
+| `test/maui-compat-app` | PASS | 2 / 预算 2 | 0 / 0 | 0 / 0 | 0 / 0 | 21,797,675 B |
+| `test/reference-lob` | PASS | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 21,318,442 B |
 
 - compat 的 2 条 IL2026 是 `Expander..ctor` 的 `RequiresUnreferencedCode`（warning +
   trim-analysis duplicate），与 `2026-10-29-ohos-maui-thirdparty-compat.md` 的记录一致；
   预算固定在 `test/p0-gate/il-budget.json`，新增告警即 FAIL。
 - 本轮同时移除了 `Program.cs` 的 `Exception.TargetSite` 诊断（自身触发 IL2026），
   日志仍保留 stack。
+- `--full` 先跑 **slice trim/AOT analyzer**（`-warnaserror:IL2026,IL3050`，grep
+  `warning/error IL`），再 clean AOT；IL2070 也进预算，当前 0/0。
 - 内存低于 2 GB 时 AOT 阶段返回 **SKIP**（不是 FAIL）：publish 脚本本身也会拒绝启动。
+- AOT 前会清 `test/<app>/bin|obj`，避免增量编译吞掉 IL2026；本机 csc 偶发 139 时
+  clean 重试一次。
 
 ## 4. 上游差异漂移
 
@@ -90,8 +94,10 @@ sh scripts/check-upstream-delta.sh
   也留在发布轮。
 - **CI 切片 pin（2026-11-02）**：`host-export-contract.yml` / `interaction-regression.yml` /
   `pixel-regression.yml` 的 `maui_ohos_ref` 从 `868d3c8727b…`（10-19）升到
-  **`efe5b823c8e0…`**（10-31，T2 handler connector + T3 切片）。本地等价验证：
-  host-export **167/167**、interaction **826/829 floor 809**、pixel **PASSED**。
+  **`95a3d320f6e…`**（11-02，IL2070 抑制挂到 `FindSliceHandler`；其下是
+  `efe5b823c8e0` 的 T2 handler connector + T3 切片）。本地等价验证：
+  slice analyzer **PASS（无 IL warning）**、host-export **167/167**、
+  interaction **826/829 floor 809**（属性改动不影响运行路径）、pixel **PASSED**。
 - **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门（见
   `2026-11-02-ohos-rtm-cutover-runbook.md`）。
 
@@ -112,5 +118,7 @@ sh scripts/check-upstream-delta.sh
 - preflight：`preflight.sh --quick --skip-lint` rc=0（69 scripts，perf fixture 21）。
 - 设备冒烟：`smoke.sh` rc=0（默认 19 checks，`--login-hap` 21 checks；cold 464–736 ms /
   60.2–60.4 fps / PSS 99–101.7 MB）；`perf-gate.sh` 负值现在 FAIL（T10 selftest）。
-- CI pin：三 workflow `maui_ohos_ref=efe5b823c8e0…`；host-export 167/167、
-  interaction 826/829 floor 809、pixel PASSED。
+- CI pin：三 workflow `maui_ohos_ref=95a3d320f6e…`；slice analyzer PASS、host-export
+  167/167、interaction 826/829 floor 809、pixel PASSED。
+- P0 修复：`ohos-workload 33f5796`（CI 可移植日志目录 + IL2070 预算 + slice analyzer）、
+  `maui-ohos 95a3d320f6e`（IL2070 抑制挂到 `FindSliceHandler`）。
