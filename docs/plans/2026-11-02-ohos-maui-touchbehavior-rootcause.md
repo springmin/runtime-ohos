@@ -41,48 +41,64 @@ Android/iOS/Windows 使用带 `PLATFORM` 的 Controls 构建，`IsLoaded` 走平
 
 ### 3.1 上游 MAUI（推荐）
 
-`PlatformBehavior` 对 `VisualElement` 同时监听 `HandlerChanged`，并在 `OnLoaded` 空检查。
-草案（未提交）：
+`PlatformBehavior` 对 `VisualElement` 同时监听 `HandlerChanged`，并在 `OnLoaded` 空检查；
+新增路径用 `#if !PLATFORM` 限定在中性构建内，平台构建零新代码。草案（未提交）：
 
 ```diff
- protected sealed override void OnAttachedTo(TView bindable)
- {
-     if (bindable is VisualElement ve)
-     {
-         ve.Loaded += OnLoaded;
-         ve.Unloaded += OnUnloaded;
-+        ve.HandlerChanged += OnHandlerChanged;
-+        if (ve.Handler is not null)
-+            FireAttachedTo(ve);
-     }
-     else
-     {
-         if (bindable.Handler != null)
-             FireAttachedTo(bindable);
-         bindable.HandlerChanged += OnHandlerChanged;
-     }
- }
-@@
-     if (bindable is VisualElement ve)
-     {
-         ve.Loaded -= OnLoaded;
-         ve.Unloaded -= OnUnloaded;
-+        ve.HandlerChanged -= OnHandlerChanged;
-     }
-@@
- 	void OnLoaded(object? sender, EventArgs e)
+@@ protected sealed override void OnAttachedTo(TView bindable)
+ 		if (bindable is VisualElement ve)
+ 		{
+ 			ve.Loaded += OnLoaded;
+ 			ve.Unloaded += OnUnloaded;
++#if !PLATFORM
++			// Window != null can raise Loaded before the handler exists in the neutral build.
++			ve.HandlerChanged += OnHandlerChanged;
++			if (ve.Handler is not null)
++				FireAttachedTo(bindable);
++#endif
+ 		}
+@@ protected sealed override void OnDetachingFrom(TView bindable)
+ 		if (bindable is VisualElement ve)
+ 		{
+ 			ve.Loaded -= OnLoaded;
+ 			ve.Unloaded -= OnUnloaded;
++#if !PLATFORM
++			ve.HandlerChanged -= OnHandlerChanged;
++#endif
+ 		}
+@@ void FireAttachedTo(TView bindable)
+ 		if (bindable?.Handler?.PlatformView is TPlatformView platformView)
+ 		{
++#if !PLATFORM
++			if (ReferenceEquals(_platformView, platformView))
++				return;
++			if (_platformView is not null)
++				OnDetachedFrom(bindable, _platformView);
++#endif
+ 			_platformView = platformView;
+ 			OnAttachedTo(bindable, platformView);
+ 		}
+@@ void OnLoaded(object? sender, EventArgs e)
  	{
 -		if (sender is TView view && view.Handler.PlatformView is TPlatformView platformView)
-+		if (sender is TView view && view.Handler?.PlatformView is TPlatformView platformView)
++		if (sender is TView view)
  		{
- 			_platformView = platformView;
- 			OnAttachedTo(view, platformView);
+-			OnAttachedTo(view, platformView);
+-			_platformView = platformView;
++#if !PLATFORM
++			FireAttachedTo(view);
++#else
++			if (view.Handler?.PlatformView is TPlatformView platformView)
++			{
++				OnAttachedTo(view, platformView);
++				_platformView = platformView;
++			}
++#endif
  		}
- 	}
 ```
 
-`FireAttachedTo` 还需幂等（同一 platformView 不重复 `OnAttachedTo`），避免 `Loaded` 与
-`HandlerChanged` 双触发；这是上游 PR 需要补的单测点。
+`FireAttachedTo` 在非 PLATFORM 下幂等，并在 handler 替换时先 detach 旧 platform view；
+平台构建保持原有 Loaded-only 行为。
 
 ### 3.2 本地 workaround（已采用）
 
@@ -105,9 +121,44 @@ tap / 按压 / 长按均 PASS，并已进入 P0 门禁的 compat pin。
    期望 summary PASS、无 `[compat] EX NullReferenceException`；
 3. AOT：同一用例 AOT 发布 + 稳定 8 s。
 
-## 5. 状态
+## 5. 对其他 OS 的影响与验证
+
+补丁的隔离面：
+
+- 平台 TFM（android / ios / maccatalyst / windows / tizen）定义 `PLATFORM`；新增的
+  `HandlerChanged` 订阅、幂等/替换 detach 全在 `#if !PLATFORM` 内，**不编译**，行为与现状一致。
+- 唯一无条件改动 = `view.Handler?.PlatformView`。平台构建在 Loaded 时 Handler 非空，
+  等价于原逻辑；若为 null，旧代码抛 NRE，新代码安全跳过（防御性）。
+- 非 PLATFORM（netstandard2.0/2.1、net11.0）才走 HandlerChanged 回退；OHOS 消费的
+  net11.0 中性 Controls 是修复目标。
+
+验证：
+
+- 预处理边界：`PlatformBehavior.cs` 顶部 `#elif NETSTANDARD || !PLATFORM`；Controls 平台
+  构建由 SDK 定义 `PLATFORM`（源码中大量现有 `#if PLATFORM` 依赖它）。
+- **文件级 stub 编译（本机）**：把 patched 文件 + 最小 MAUI 桩放进 `net11.0` 项目：
+  - no-PLATFORM：**0 error**（过程中抓到并修正了 `FireAttachedTo(ve)` 的
+    `VisualElement`→`TView` 类型错误，以及 `OnLoaded` 绕过幂等 guard 的双 attach 路径）；
+  - `PLATFORM;ANDROID`：**0 error**，且 `Element.HandlerChanged` 未被使用
+    （`#if !PLATFORM` 的新订阅被排除）。
+  - 该 stub 只验证该文件的语法/预处理路径，不替代 MAUI 全量构建。
+- 完整 net11.0 Controls 构建本机**未完成**：Arcade restore 未生成 `project.assets.json`
+  （网络/feed 阻塞），不是编译错误；不作为通过证据。
+- 上游 PR 需附：net11.0 单测（Loaded 时 Handler=null → HandlerChanged 只 attach 一次）+
+  Android/iOS/Windows 现有 `PlatformBehaviorTests` 全绿（平台代码未变）。
+
+风险：
+
+- 非 PLATFORM 第三方若依赖“Loaded 前不 attach”，会看到更早 attach；对 OHOS 是修复，
+  对 netstandard 测试可能改变时序，应由单测锁定。
+- 平台构建零新代码路径，回归风险低。
+
+## 6. 状态
 
 - 根因：**已定位**（本文）；
 - 上游 issue/PR：**未提交**（本会话不处理上游；草案已备）；
+- 补丁范围：已收敛 `#if !PLATFORM`；stub 编译 no-PLATFORM 与 `PLATFORM;ANDROID`
+  均 **0 error**，平台分支不编译新订阅；
+- 完整 Controls 构建：本机未完成（Arcade restore 阻塞），未作为证据；
 - 本地替代：`CompatTouchBehavior` 已交付并通过 5/5 矩阵；
 - 关联：`2026-10-29-ohos-maui-thirdparty-compat.md` §9/§10。
