@@ -169,6 +169,10 @@ P0 四条工作流已全部接入可重复门禁（详见 `2026-11-02-ohos-maui-
   `p0-gate.sh --metrics <json>` 进入 strict 比较。
 - RTM/#59 切换步骤见 `2026-11-02-ohos-rtm-cutover-runbook.md`；
   `scripts/rtm-cutover.sh` dry-run 已 PASS（版本 pin 全绿）。
+- P1 尾巴：TouchBehavior NRE 根因已定位（MAUI `PlatformBehavior.OnLoaded` 在 Handler
+  未就绪时解引用），上游补丁草案见
+  `2026-11-02-ohos-maui-touchbehavior-rootcause.md`；本地 `CompatTouchBehavior` 继续作为
+  产品 workaround。
 
 ## 执行顺序与理由
 

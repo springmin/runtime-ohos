@@ -149,8 +149,9 @@ handler 解析到 `OpenHarmonyBorderHandler`，说明 `AvatarView` 被当作 `Bo
 all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 从 **FAIL → PASS**；
 `TouchBehavior` 从“附加 PASS”降为 **FAIL**（页面级）。
 
-**仍待办**：① TouchBehavior 根因（Border + gesture/behavior 路径）；② Popup View 重载的实际
-弹出（手动点击/截图）；③ AvatarView 模板出画；④ Expander/Touch 的点击截图。
+**仍待办**：① TouchBehavior 根因（2026-11-02 已定位：MAUI `PlatformBehavior.OnLoaded` 在
+handler 未就绪时解引用；见 `2026-11-02-ohos-maui-touchbehavior-rootcause.md`）；② Popup View
+重载的实际弹出（手动点击/截图）；③ AvatarView 模板出画；④ Expander/Touch 的点击截图。
 
 ## 9. TouchBehavior 修复与最终矩阵（2026-10-29 晚）
 
@@ -162,6 +163,11 @@ all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 
   `EX NullReferenceException ... site=? stack=`（AOT 裁剪后无栈）；随后 `TouchBehavior: FAIL`。
 - 结论：CommunityToolkit.Maui 15.0.1 的 **平台中性 TouchBehavior** 在 attach 路径上解引用
   未就绪的 handler/platform view；不是 Border 或 Button 的问题。
+- **2026-11-02 精确定位（JIT 栈）**：NRE 在
+  `Microsoft.Maui.Controls.PlatformBehavior<TView,TPlatformView>.OnLoaded`
+  （`view.Handler.PlatformView`，Handler 为 null）；根因是 net11.0 中性 Controls 的
+  `VisualElement.IsLoaded = Window != null` 让 `Loaded` 早于 handler 创建。完整分析/上游补丁草案见
+  `2026-11-02-ohos-maui-touchbehavior-rootcause.md`。
 
 ### 9.2 修复（应用侧降级，页面不再死）
 
@@ -193,7 +199,9 @@ all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 
 
 ### 10.1 TouchBehavior：换成 OHOS 兼容行为
 
-- **toolkit behavior 默认不可用**：attach 时 NRE（平台中性实现解引用未就绪的 handler/platform view）。
+- **toolkit behavior 默认不可用**：attach 时 NRE；2026-11-02 已定位到
+  `PlatformBehavior.OnLoaded`（Handler 未就绪时解引用），不是 toolkit 自身；
+  见 `2026-11-02-ohos-maui-touchbehavior-rootcause.md`。
 - **修复**：新增 `CompatTouchBehavior`（纯 MAUI gesture recognizer）：
   - `TapGestureRecognizer` → `Command`；
   - `PointerGestureRecognizer`（Pressed/Released/Exited）→ 按压 Scale/Opacity + 长按计时器；
@@ -201,7 +209,8 @@ all-case 预计稳定（待下轮验证）。补齐的净效果：`DrawingView` 
   该行为从页面构造起就生效；toolkit behavior 仍延迟到 `Loaded` 尝试 attach，失败只记录 LIMIT。
 - **验证**：touch 页点击 Border → `TouchBehavior.tap: PASS command`、长按 → `TouchBehavior.longpress: PASS`；页面稳定。
   首版日志出现 tap/longpress 各两次（两个 tap 识别器 + 长按后未抑制 tap）→ 已移除独立 tap 识别器，并加
-  `_longPressFired`/250 ms 去抖；JIT 编译通过。**最终 AOT 重建被构建机负载打断（`csc exited with code 143`），待空闲后重跑。**
+  `_longPressFired`/250 ms 去抖；JIT 编译通过。**AOT 重建 2026-11-02 已补跑**：
+  `p0-gate.sh --full` PASS（IL2026 2/2、IL3050/3051=0、hap 21,797,680 B）。
 
 ### 10.2 Popup：View 重载可用
 
