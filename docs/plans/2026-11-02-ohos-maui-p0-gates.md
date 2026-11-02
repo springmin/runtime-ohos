@@ -17,7 +17,8 @@
 | Reference App 源码 pin | `p0-gate.sh` 内置 | quick | 否 | CI + 本地 |
 | compat NativeAOT + IL 预算 | `p0-gate.sh --full` | full | 否（host） | 发布/RTM 预演 |
 | Reference NativeAOT + IL 预算 | `p0-gate.sh --full` | full | 否（host） | 发布/RTM 预演 |
-| 真机 4/4 + 第二 ability | 手工 runbook | device | 是 | `2026-10-30-ohos-maui-reference-app.md` |
+| T3 设备冒烟 | `test/reference-lob/smoke.sh` | device | 是 | `--login-hap` 可选；输出 metrics JSON |
+| 真机 4/4 + 第二 ability | `smoke.sh`（自动）/ runbook | device | 是 | `2026-10-30-ohos-maui-reference-app.md` §7.1 |
 
 ## 2. quick 模式（默认）
 
@@ -93,8 +94,10 @@ sh scripts/check-upstream-delta.sh
 ## 6. 边界
 
 - quick 的 pin 是**源码级 tripwire**，不能替代 AOT/真机；full 才覆盖裁剪与 hap 产出。
-- 真机 4/4、第二 ability、冷启 `-U` 仍是手工 runbook；设备指标 JSON 由设备轮产出后
-  通过 `--metrics` 进入门禁。
+- 真机 4/4 已由 `smoke.sh` 自动化（warm-up 冷启、5 条 `-U` 深链、fps/PSS、
+  可选 `LoginAbility`）；设备 metrics JSON 通过 `--metrics` 进入 strict 比较。
+- `smoke.sh` 的 `Run→first frame` 在 hilog 缓冲混入 warm-up stale tick 时记为 SKIP；
+  `cold_start_ms`/fps/PSS 门禁不受影响。
 - SKIP 必须带原因（`--skip-*`、内存、缺 maui slice、缺基线），不得用 SKIP 掩盖失败。
 
 ## 7. 证据
@@ -103,3 +106,5 @@ sh scripts/check-upstream-delta.sh
 - quick：`p0-gate.sh --quick` rc=0（perf 21/21、delta PASS、compat/reference pin PASS）；
 - full：`p0-gate.sh --full` rc=0（compat IL2026 2/2、reference 0/0、两个 hap）；
 - preflight：`preflight.sh --quick --skip-lint` rc=0（69 scripts，perf fixture 21）。
+- 设备冒烟：`smoke.sh` rc=0（默认 19 checks，`--login-hap` 21 checks；cold 464–736 ms /
+  60.2–60.4 fps / PSS 99–101.7 MB）；`perf-gate.sh` 负值现在 FAIL（T10 selftest）。

@@ -135,19 +135,45 @@
 
 ## 7. 下一步
 
-1. **第二 ability UI（ArkTS 壳工程）**：用 `--scaffold-only` 生成独立 hvigor 工程 → 加入
-   `scripts/loginability/*` → 修改 `module.json5`/`main_pages.json` → 直接跑 hvigor 产出
-   `modules.abc` → `OpenHarmonyArktsModulesAbc` 打包；当前 LoginAbility 仅出启动窗口。
-2. 复跑 reference app（`2944cbb`）无 URI 冷启 + `-U` 深链 + form/save + subwindow，确认收尾数据。
+1. **第二 ability UI（ArkTS 壳工程）**：**已完成**——自定义壳 abc 648,624 B +
+   `LoginAbility`（独立 `:login`），见 §5；`smoke.sh --login-hap` 可复跑。
+2. **设备冒烟脚本**：`test/reference-lob/smoke.sh` 自动化无 URI 冷启、5 条 `-U` 深链、
+   form/save、subwindow、fps/PSS 与可选 `LoginAbility`，并输出 metrics JSON（见 §7.1）。
 3. 把 T3 作为演示/回归基线（hvigor 冷构建已由默认 `--jitless` 修复）。
 
 > 冷启口径：`[ref] enter Run tick` → `first-frame tick` = **128 ms**（managed 起点→首帧）；
 > 进程启动（`/proc/<pid>/stat` starttime, CLK_TCK=100）→ 首帧 = **1,012 ms**。
 
+### 7.1 设备冒烟脚本（2026-11-02）
+
+```sh
+sh test/reference-lob/smoke.sh
+sh test/reference-lob/smoke.sh --login-hap <second-ability.hap>
+```
+
+- 安装 AOT hap → **warm-up 启动**（排除首次安装的 page-cache/AOT fault）→ force-stop →
+  计一次冷启；
+- 检查 `[ref] main tabs: 4`、`orders` / `form` / `settings` / `form/save` / `subwindow`
+  五条冷启深链、每步进程存活；
+- Orders 页 `[ref] fps=` ≥ 50、PSS ≤ 300 MB、`perf-gate.sh`（
+  `test/perf-gate/reference-thresholds.json`）；
+- `--login-hap` 或 hap 自带 `LoginAbility` 时，额外启动第二 ability 并检查 `:login` 进程；
+- 输出 `metrics.json`（`cold_start_ms` 为 `aa start`→first-frame log；`first_frame_ms`
+  仅在 tick 对可用时写入）。
+
+实测（2026-11-02，HAD-W24）：
+
+| 场景 | 结果 |
+|---|---|
+| 默认 hap | **rc=0**，19 checks；cold 464–736 ms、fps 60.2–60.4、PSS 99–101.7 MB |
+| `--login-hap` v2（8,603,319 B / `da6981c4…`） | **rc=0**，21 checks；`:login` 进程存活 |
+| 已知限制 | 设备 hilog 偶发把 warm-up 的 stale tick 混进 cold 日志，`Run→first frame` 记为 SKIP；冷启/帧率/PSS 门禁不受影响 |
+
 ## 8. 证据
 
 - 代码：`ohos-workload` `acf211b`（reference-lob v1）· `79a20fe`（FrameProbe/深链动作）·
-  `bb7efbb`（login Content 交换 + login-probe）· `5234a4e`（第二 ability 后处理）
+  `bb7efbb`（login Content 交换 + login-probe）· `5234a4e`（第二 ability 后处理）·
+  `1425f74`（`smoke.sh` + reference thresholds + 负 perf 指标门禁）
 - 截图：`ref-dash.jpeg` / `ref-login-content.jpeg` / `ref-deeplink.jpeg` /
   `ref-form.jpeg` / `ref-settings.jpeg` / `ref-loginability.jpeg`
 - 日志：`[probe] step=2 login-entries` … `auto sequence done`；

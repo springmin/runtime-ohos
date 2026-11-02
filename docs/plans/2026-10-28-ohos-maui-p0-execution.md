@@ -152,8 +152,10 @@
   `scripts/build-login-shell.sh` + `add-login-ability.sh` 可复现。**冷启 `-U` 已修复**
   （pending route + `Loaded` 消费；orders/form/settings/subwindow/form-save 全部 ps=1）。
   AOT `IL2026=0`。**hvigor 冷构建 V8 `Signal 5` 已修复**：默认 `--jitless`，冷构建一次通过
-  （~50 s；stock abc 637,300 B / 自定义壳 648,624 B）。详见
-  `2026-10-30-ohos-maui-reference-app.md`。
+  （~50 s；stock abc 637,300 B / 自定义壳 648,624 B）。**设备冒烟脚本**
+  `test/reference-lob/smoke.sh`（`1425f74`）：默认 19 checks、`--login-hap` 21 checks；
+  cold 464–736 ms / 60.2–60.4 fps / PSS 99–101.7 MB。详见
+  `2026-10-30-ohos-maui-reference-app.md` §7.1。
 
 ## 门禁收口（2026-11-02）
 
