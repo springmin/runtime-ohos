@@ -507,6 +507,20 @@ http_default_trust=PASS
   自签名/过期/错误主机名的负控。当前证据不支持“HAP 自带 CA”这一说法。
 - 证据：`hap-aot/hilog-ca-paths.txt`；HAP 文件列表中没有 `*.pem`/`*.crt`/CA bundle。
 
+### 6.8 AOT probe 的启动与内存（首轮）
+
+2026-11-04 对 `Probe-ca-probe.hap`（bundle `com.example.opensslprobe`，AOT、shared
+OpenSSL 3.5.9，HAP 19,805,009 B）做了一次设备侧观测：
+
+- `aa start` 命令前的设备时间 `1793794813850 ms`；首条
+  `openharmony_app_main entered` 日志为 `1793794814.341 s`，约 **0.49 s**（包含
+  `aa start` 调度，不是纯进程启动时间）。
+- 启动后约 2 s：`VmRSS=121,628 kB`、`VmHWM=121,628 kB`；`hidumper --mem` 的 PSS
+  分量包括 native heap 20,950 kB、`.so` 18,192 kB、ark ts heap 7,257 kB、Graph 10,940 kB、
+  `.hap` 3,614 kB 等。
+- 这是**首轮、非稳态**数据，未做多次冷启动/热启动、TLS 吞吐或长时间内存增长测试；
+  不能当作最终性能指标。
+
 ## 7. 风险与待验证项
 
 ### 7.1 状态
@@ -521,7 +535,7 @@ http_default_trust=PASS
 | HAP 签名/打包闭环 | **部分验证** | AOT HAP 可安装并运行；JIT DeviceCompat HAP 安装成功，旧布局 `9568393` 已确认根因；JIT 启动未测 |
 | 空 Maui batching | **已验证修复** | target 增加空 item 条件；`selftest-hap-targets.sh` 107/0/1 |
 | NativeAOT 静态 vs JIT 共享 | **部分验证** | AOT + shared OpenSSL 已验证；静态链接和 JIT 未验证 |
-| HAP 体积/启动/内存 | **部分验证** | signed probe 19,805,008 B；启动/内存未测 |
+| HAP 体积/启动/内存 | **部分验证** | AOT probe HAP 19,805,009 B；首轮 `aa start` 到托管入口约 0.49 s、2 s 时 VmRSS 121,628 kB；冷/热启动、TLS 吞吐和稳态内存未测 |
 | HAP 内 CA 路径 | **部分验证** | HAP 未带 CA；`http_default_trust=PASS` 与系统 store/`/etc/ssl/certs` 一致，OpenSSL 默认路径是构建机路径；策略待固定 |
 | 任意 bundle 的 UI shell | **已验证 + target gate** | per-bundle shell 在 `com.example.opensslprobe2` 上启动并跑完探针；target 对 bundle 不匹配且未显式给 abc 的构建 fail-fast；自动生成仍待决定 |
 
@@ -544,7 +558,7 @@ http_default_trust=PASS
 2. JIT `9568393` 已确认是 DeviceCompat 两个陷阱：旧 kit HAP 需要重出包或 `-p:OpenHarmonyHapPayloadInLibs=false`；如需验证 JIT 运行路径，再补安装后的启动/崩溃排查。
 3. 验证 NativeAOT **静态链接** OpenSSL（当前 probe 是 AOT + 共享 libssl/libcrypto）。
 4. 固定 HAP 内 CA 策略：优先明确依赖系统 `/etc/ssl/certs`，否则随 HAP 带 CA bundle 并在 OpenSSL 初始化前设置 `SSL_CERT_FILE`/`SSL_CERT_DIR`；补自签名、过期和错误主机名负控。
-5. 实测 HAP 体积、首次启动时间、TLS 握手/吞吐和常驻内存。
+5. 补 HAP 冷/热启动、TLS 握手/吞吐和长时间常驻内存；首轮已有 HAP 19.8 MB、约 0.49 s 到托管入口、2 s VmRSS 121,628 kB 的数据。
 6. 以上通过后，起草 upstream support proposal，把 OpenSSL-on-OHOS 定为 crypto provider 方案。
 7. OH_Crypto 继续作为后续优化项，不作为官方支持 blocker。
 
