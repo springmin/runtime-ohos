@@ -484,6 +484,29 @@ workload target 现在的行为：
   - 无扩展名回归：`ccda70209cb0e1a09bf605a0355bdaba5073d986ecaedf6c5cf0ccb8bc8cc476`
   - 仅 4096 B 回归：`a43dfdf3cb50db151da5e732a4cfb954099f9c9f99071c565ba5094de33a5f5c`
 
+### 6.7 HAP CA 信任路径（部分验证）
+
+2026-11-04 在 AOT probe HAP（bundle `com.example.opensslprobe`）中增加了 CA 路径日志：
+
+```text
+ssl_cert_file_env=<unset>
+ssl_cert_dir_env=<unset>
+openssl_default_cert_file=/data/storage/el2/base/tmp/opencode/openssl-ohos-3.5.9/install/ssl/cert.pem
+openssl_default_cert_dir=/data/storage/el2/base/tmp/opencode/openssl-ohos-3.5.9/install/ssl/certs
+http_default_trust=PASS
+```
+
+- 这两个默认路径是构建机的 OpenSSL install prefix；当前 HAP 只带 `libssl.so.3` /
+  `libcrypto.so.3`，没有 CA 文件，因此不能把这两个路径当作可移植的信任来源。
+- .NET 侧 `pal_x509_root.c` 先读 `SSL_CERT_FILE` / `SSL_CERT_DIR`，再回退到 OpenSSL 默认；
+  `OpenSslCachedSystemStoreProvider` 在默认 store 为空时还会尝试 `/etc/ssl/certs`。
+  观测到的 `http_default_trust=PASS` 与“使用设备系统 CA store”一致，但 HAP 自身没有
+  携带 CA bundle。
+- 待定策略：如果目标 OHOS 镜像保证系统 CA store 可读，可以明确依赖系统 store；否则需要在
+  HAP 中带 CA bundle，并在 OpenSSL 初始化前设置 `SSL_CERT_FILE`/`SSL_CERT_DIR`，同时补
+  自签名/过期/错误主机名的负控。当前证据不支持“HAP 自带 CA”这一说法。
+- 证据：`hap-aot/hilog-ca-paths.txt`；HAP 文件列表中没有 `*.pem`/`*.crt`/CA bundle。
+
 ## 7. 风险与待验证项
 
 ### 7.1 状态
@@ -499,7 +522,7 @@ workload target 现在的行为：
 | 空 Maui batching | **已验证修复** | target 增加空 item 条件；`selftest-hap-targets.sh` 107/0/1 |
 | NativeAOT 静态 vs JIT 共享 | **部分验证** | AOT + shared OpenSSL 已验证；静态链接和 JIT 未验证 |
 | HAP 体积/启动/内存 | **部分验证** | signed probe 19,805,008 B；启动/内存未测 |
-| HAP 内 CA 路径 | **部分验证** | HAP 内 `http_default_trust=PASS`；尚未固定 CA 策略 |
+| HAP 内 CA 路径 | **部分验证** | HAP 未带 CA；`http_default_trust=PASS` 与系统 store/`/etc/ssl/certs` 一致，OpenSSL 默认路径是构建机路径；策略待固定 |
 | 任意 bundle 的 UI shell | **已验证 + target gate** | per-bundle shell 在 `com.example.opensslprobe2` 上启动并跑完探针；target 对 bundle 不匹配且未显式给 abc 的构建 fail-fast；自动生成仍待决定 |
 
 ### 7.2 风险
@@ -508,7 +531,7 @@ workload target 现在的行为：
 |---|---|
 | OpenSSL 上游不支持 OHOS | OHOS 特定问题由集成方负责，需要自维护构建/补丁 |
 | OpenSSL 3.0 已 EOL | 不能把 OpenHarmony 3.0.9 当作长期基线 |
-| CA 信任路径 | HAP 内可能没有 OpenSSL 默认 CA 路径，需要系统路径或 CA bundle |
+| CA 信任路径 | HAP 未带 CA；当前依赖设备系统 store，OpenSSL 默认路径不可移植，需明确系统 store 契约或带 CA bundle |
 | 库加载 | HAP 的 `$ORIGIN`、`dotnet exec` 的相邻目录 fallback 需要分别验证 |
 | UI shell bundle 绑定 | 预编译 `modules.ui.abc` 固定 `mauidemo.dotnet.springmin.com`；target 已 fail-fast 并给出手工生成命令，自动按 bundle 生成仍待决定 |
 | JIT HAP 签名 | 旧布局 payload-in-libs HAP 出现 `9568393`；根因是无扩展名/4096 B 文件，默认 DeviceCompat 已修复，旧 kit HAP 需重出包 |
@@ -520,7 +543,7 @@ workload target 现在的行为：
 1. 决定任意 bundle ArkTS shell 的自动生成策略：当前 target 已对 bundle 不匹配 fail-fast，并给出 `build-arkts-shell.sh` 命令；是否在 pack time 自动运行（受 Node/网络、Windows shell、构建耗时约束）仍需单独评估。
 2. JIT `9568393` 已确认是 DeviceCompat 两个陷阱：旧 kit HAP 需要重出包或 `-p:OpenHarmonyHapPayloadInLibs=false`；如需验证 JIT 运行路径，再补安装后的启动/崩溃排查。
 3. 验证 NativeAOT **静态链接** OpenSSL（当前 probe 是 AOT + 共享 libssl/libcrypto）。
-4. 固定 HAP 内 CA 策略：`SSL_CERT_FILE`、CA bundle 或系统证书路径，并补无网络/自定义 CA 负控。
+4. 固定 HAP 内 CA 策略：优先明确依赖系统 `/etc/ssl/certs`，否则随 HAP 带 CA bundle 并在 OpenSSL 初始化前设置 `SSL_CERT_FILE`/`SSL_CERT_DIR`；补自签名、过期和错误主机名负控。
 5. 实测 HAP 体积、首次启动时间、TLS 握手/吞吐和常驻内存。
 6. 以上通过后，起草 upstream support proposal，把 OpenSSL-on-OHOS 定为 crypto provider 方案。
 7. OH_Crypto 继续作为后续优化项，不作为官方支持 blocker。
