@@ -162,3 +162,23 @@ tap / 按压 / 长按均 PASS，并已进入 P0 门禁的 compat pin。
 - 完整 Controls 构建：本机未完成（Arcade restore 阻塞），未作为证据；
 - 本地替代：`CompatTouchBehavior` 已交付并通过 5/5 矩阵；
 - 关联：`2026-10-29-ohos-maui-thirdparty-compat.md` §9/§10。
+
+## 7. 上游 PR 准备（2026-11-05）
+
+- 重新核对 `dotnet/maui` `main` / `release/11.0.1xx`：`OnLoaded` 仍直接解引用
+  `view.Handler.PlatformView`，根因未修。
+- 本地已准备分支（**未推送**）：
+
+```text
+worktree: /data/storage/el2/base/tmp/opencode/maui-pb-pr
+branch:   fix/platformbehavior-handler-null
+commit:   e42dfc72fb9
+test:     src/Controls/tests/Core.UnitTests/Interactivity/PlatformBehaviorTests.cs
+patch:    /data/storage/el2/base/tmp/opencode/0001-fix-defer-PlatformBehavior-attach-until-the-handler-.patch
+```
+
+- 补丁：`#if !PLATFORM` 内订阅 `HandlerChanged` + 幂等 `FireAttachedTo`；`OnLoaded`
+  走 `FireAttachedTo`；`Handler?` 空检查。平台构建零新代码。
+- 测试：`SendLoaded`（Handler=null）→ 设置 Handler → 只 attach 一次；再次 Loaded 不重复。
+- 目标：`main`，可 cherry-pick 到 `release/11.0.1xx`；需要显式授权后才 push/open PR。
+- 本机未跑完整 MAUI 测试工程（Arcade restore 阻塞），PR 需由上游 CI 验证。
