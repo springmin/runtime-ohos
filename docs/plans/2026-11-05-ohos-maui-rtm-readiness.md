@@ -81,19 +81,20 @@ sh scripts/watch-maui-rtm.sh   # 0=WAIT, 10=READY, 1=所有源失败
 
 - `main` / `release/11.0.1xx` 仍存在：
   `if (sender is TView view && view.Handler.PlatformView is ...)`。
-- 本地已准备 PR 分支（未推送）：
+- 上游已有同根因修复，**不再开重复 PR**：
+  - issue **#39747**（open，`s/verified`）；
+  - PR **#39838**（open，base `main`，含 Core.UnitTests + Android 设备测试）。
+- 本地备份分支（未推送，仅回退用）：
 
 ```text
 branch: fix/platformbehavior-handler-null
 commit: e42dfc72fb9
-test:   src/Controls/tests/Core.UnitTests/Interactivity/PlatformBehaviorTests.cs
 patch:  /data/storage/el2/base/tmp/opencode/0001-fix-defer-PlatformBehavior-attach-until-the-handler-.patch
 ```
 
-- 补丁范围：`#if !PLATFORM` 内新增 `HandlerChanged` 订阅 + 幂等 `FireAttachedTo`；
-  `OnLoaded` 走 `FireAttachedTo`；`Handler?` 空检查。平台构建零新代码。
-- 测试：Loaded 时 Handler=null → 设置 Handler → 只 attach 一次。
-- 需要授权后才推送/开 PR；目标 `main`（可 cherry-pick 到 `release/11.0.1xx`）。
+- #39838 当前 CI 有 Build Insights / `maui-pr-uitests` 失败（2026-11-05），尚未归因；
+  合并前不改本地 shim。
+- 合并后：移除 `CompatTouchBehavior`，重跑 T2/T3/smoke，并更新本文档。
 
 ## 7. 决策门
 

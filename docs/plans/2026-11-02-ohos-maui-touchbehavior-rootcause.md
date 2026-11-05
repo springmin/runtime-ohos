@@ -156,18 +156,25 @@ tap / 按压 / 长按均 PASS，并已进入 P0 门禁的 compat pin。
 ## 6. 状态
 
 - 根因：**已定位**（本文）；
-- 上游 issue/PR：**未提交**（本会话不处理上游；草案已备）；
+- 上游 issue/PR：已有 **#39747**（open，`s/verified`）与 **#39838**（open，同根因修复）；本会话不再开重复 PR；
 - 补丁范围：已收敛 `#if !PLATFORM`；stub 编译 no-PLATFORM 与 `PLATFORM;ANDROID`
   均 **0 error**，平台分支不编译新订阅；
 - 完整 Controls 构建：本机未完成（Arcade restore 阻塞），未作为证据；
 - 本地替代：`CompatTouchBehavior` 已交付并通过 5/5 矩阵；
 - 关联：`2026-10-29-ohos-maui-thirdparty-compat.md` §9/§10。
 
-## 7. 上游 PR 准备（2026-11-05）
+## 7. 上游查重与跟踪（2026-11-05）
 
 - 重新核对 `dotnet/maui` `main` / `release/11.0.1xx`：`OnLoaded` 仍直接解引用
   `view.Handler.PlatformView`，根因未修。
-- 本地已准备分支（**未推送**）：
+- **上游已有同一修复**，不再提交重复 PR：
+  - issue **#39747**：`PlatformBehavior throws NullReferenceException when Loaded is raised
+    before the element has a handler`（open，`s/verified`）；
+  - PR **#39838**：`Attach a PlatformBehavior once its element has both a handler and is
+    loaded`（open，base `main`）；`OnLoaded` 走 `FireAttachedTo`，监听
+    `HandlerChanged`，并用 `VisualElement.IsLoaded` 门控；`FireAttachedTo` 对同一
+    platform view 幂等；含 Core.UnitTests 与 Android 设备测试。
+- 本地仍保留一个**未推送**的备份分支（`#if !PLATFORM` 收敛版 + 单测）：
 
 ```text
 worktree: /data/storage/el2/base/tmp/opencode/maui-pb-pr
@@ -177,8 +184,9 @@ test:     src/Controls/tests/Core.UnitTests/Interactivity/PlatformBehaviorTests.
 patch:    /data/storage/el2/base/tmp/opencode/0001-fix-defer-PlatformBehavior-attach-until-the-handler-.patch
 ```
 
-- 补丁：`#if !PLATFORM` 内订阅 `HandlerChanged` + 幂等 `FireAttachedTo`；`OnLoaded`
-  走 `FireAttachedTo`；`Handler?` 空检查。平台构建零新代码。
-- 测试：`SendLoaded`（Handler=null）→ 设置 Handler → 只 attach 一次；再次 Loaded 不重复。
-- 目标：`main`，可 cherry-pick 到 `release/11.0.1xx`；需要显式授权后才 push/open PR。
-- 本机未跑完整 MAUI 测试工程（Arcade restore 阻塞），PR 需由上游 CI 验证。
+- 该备份仅用于 #39838 长期不合并/回退时，**不推送、不另开 PR**。
+- #39838 当前 CI（2026-11-05）：Build Insights 与多项 `maui-pr-uitests` 失败；尚不能
+  归因于本修复，需上游继续排查/重跑。
+- 合并后动作：移除本地 `CompatTouchBehavior` shim，重跑 T2/T3/smoke，更新
+  `2026-11-05-ohos-maui-rtm-readiness.md` 的状态。
+- 本机未跑完整 MAUI 测试工程（Arcade restore 阻塞）；以上测试结论以上游 CI 为准。
