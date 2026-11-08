@@ -426,7 +426,7 @@ LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 
     UnRegister();
 
-    pTable = newPTable.Extract();
+    pTable = newPTable.Detach();
     cTableCurCount = toIdx;
     cTableMaxCount = desiredSpace;
     cDeletedEntries = 0;
@@ -570,9 +570,9 @@ void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
         // OS registration is deferred to the first flush in FlushPendingEntriesUnderGate.
         NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
 
-        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
+        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, static_cast<UnwindInfoTable*>(newTable), (UnwindInfoTable*)NULL) == NULL)
         {
-            newTable.SuppressRelease();
+            newTable.Detach();
         }
         // else another thread won. NewHolder frees our unregistered table (no OS call).
 
@@ -1767,6 +1767,11 @@ void EEJitManager::SetCpuInfo()
                 CPUCompileFlags.Set(InstructionSet_SveAes);
             }
 
+            if (((cpuFeatures & ARM64IntrinsicConstants_SvePmull128) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SvePmull128))
+            {
+                CPUCompileFlags.Set(InstructionSet_SvePmull128);
+            }
+
             if (((cpuFeatures & ARM64IntrinsicConstants_SveSha3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64SveSha3))
             {
                 CPUCompileFlags.Set(InstructionSet_SveSha3);
@@ -2265,9 +2270,7 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
 #endif
 #else // TARGET_WINDOWS
-#ifdef TARGET_X86
-            altJitName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
-#elif defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
 #elif defined(TARGET_LOONGARCH64)
             altJitName = MAKEDLLNAME_W(W("clrjit_unix_loongarch64_loongarch64"));
@@ -2641,7 +2644,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     _ASSERTE(heapSize >= initialRequestSize);
 
-    // We do not need to memset this memory, since ClrVirtualAlloc() guarantees that the memory is zero.
+    // We do not need to memset this memory, since VirtualAlloc() guarantees that the memory is zero.
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
@@ -2662,7 +2665,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          DBG_ADDR(pHp->startAddress), DBG_ADDR(pHp->startAddress+pHp->maxCodeHeapSize)
          ));
 
-    pCodeHeap.SuppressRelease();
+    pCodeHeap.Detach();
     _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
     return pHp;
 }
@@ -3397,7 +3400,7 @@ EEJitManager::DomainCodeHeapList* EECodeGenManager::CreateCodeHeapList(CodeHeapR
         : m_DomainCodeHeaps.AppendThrowing();
     *ppList = pNewList;
 
-    return pNewList.Extract();
+    return pNewList.Detach();
 }
 
 LoaderHeap *EECodeGenManager::GetJitMetaHeap(MethodDesc *pMD)

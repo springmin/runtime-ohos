@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include <clrdata.h>
+#include <minipal.h>
 #include "typestring.h"
 #include "holder.h"
 #include "debuginfostore.h"
@@ -1566,6 +1567,17 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         {
             blockSize = DAC_INSTANCE_BLOCK_ALLOCATION;
         }
+        else
+        {
+            // AllocateMemory requires a multiple of the system page size.
+            ULONG32 pageSize = minipal_getpagesize();
+            ULONG32 roundedSize = (blockSize + (pageSize - 1)) & ~(pageSize - 1);
+            if (roundedSize < blockSize)
+            {
+                return NULL;
+            }
+            blockSize = roundedSize;
+        }
 
         // If we have a saved block and it's large enough, use it.
         block = m_unusedBlock;
@@ -1582,7 +1594,7 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         else
         {
              block = (DAC_INSTANCE_BLOCK*)
-                ClrVirtualAlloc(NULL, blockSize, MEM_COMMIT, PAGE_READWRITE);
+                VMToOSInterface::AllocateMemory(NULL, blockSize, VMToOSInterface::MemoryProtection::ReadWrite);
         }
 
         if (!block)
@@ -1676,7 +1688,7 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
             _ASSERTE(pPrevBlock->next == block);
             pPrevBlock->next = block->next;
         }
-        ClrVirtualFree(block, 0, MEM_RELEASE);
+        VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
     }
 }
 
@@ -1809,7 +1821,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     {
         if (m_unusedBlock != NULL)
         {
-            ClrVirtualFree(m_unusedBlock, 0, MEM_RELEASE);
+            VMToOSInterface::ReleaseMemoryReservation(m_unusedBlock, DAC_INSTANCE_BLOCK_ALLOCATION);
             m_unusedBlock = NULL;
         }
     }
@@ -1945,7 +1957,7 @@ DacInstanceManager::FreeAllBlocks(bool fSaveBlock)
         }
         else
         {
-            ClrVirtualFree(block, 0, MEM_RELEASE);
+            VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
         }
     }
 }
@@ -5110,9 +5122,7 @@ ClrDataAccess::Initialize(void)
     // Determine our platform based on the pre-processor macros set when we were built
 
 #ifdef TARGET_UNIX
-    #if defined(TARGET_X86)
-        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
-    #elif defined(TARGET_AMD64)
+    #if defined(TARGET_AMD64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
     #elif defined(TARGET_ARM)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
@@ -5520,7 +5530,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars;
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -5557,8 +5567,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     }
 
     *numVarInfo = countNativeVarInfo;
-    *varInfo = nativeVars;
-    nativeVars.SuppressRelease(); // To prevent NewHolder from releasing the memory
+    *varInfo = nativeVars.Detach();
 
     if (codeOffset)
     {
@@ -5600,7 +5609,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy;
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -6695,7 +6704,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
     }
 
     CLRDATA_ADDRESS baseAddressOfRuntime = (CLRDATA_ADDRESS)pContext;
-    NewHolder<LiveProcDataTarget> dataTarget(NULL);
+    NewHolder<LiveProcDataTarget> dataTarget;
 
     dataTarget = new (nothrow) LiveProcDataTarget(hProcess, PId, baseAddressOfRuntime);
     if (dataTarget == NULL)
@@ -6703,7 +6712,7 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
         return E_OUTOFMEMORY;
     }
 
-    NewHolder<ClrDataAccess> pClrDataAccess(NULL);
+    NewHolder<ClrDataAccess> pClrDataAccess;
 
     HRESULT hr = CLRDataAccessCreateInstance(dataTarget, &pClrDataAccess);
     if (hr != S_OK)
