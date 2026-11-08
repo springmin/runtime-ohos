@@ -3,6 +3,7 @@
 usage_list=("-outconfig: Configuration, typically a quadruplet such as 'net8.0-linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 usage_list+=("-linkstaticopenssl: OpenHarmony only. Link the OpenSSL libraries found by find_package(OpenSSL) (they must be built with -fPIC) instead of building the dlopen-based OpenSSL shim.")
+usage_list+=("-aotstaticopenssl: OpenHarmony only. Build the NativeAOT static crypto archive with direct OpenSSL calls (no dlopen shim); the shared library, when built, is also direct. -linkstaticopenssl remains the separate default-shim mode switch.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __nativeroot="$__scriptpath"
@@ -25,6 +26,10 @@ handle_arguments() {
             __LinkStaticOpenSsl=1
             ;;
 
+        aotstaticopenssl|-aotstaticopenssl)
+            __AotStaticOpenSsl=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
@@ -42,6 +47,7 @@ __RootBinDir="$__RepoRootDir/artifacts"
 __SkipConfigure=0
 __StaticLibLink=0
 __LinkStaticOpenSsl=0
+__AotStaticOpenSsl=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
 
@@ -77,6 +83,18 @@ else
     if [[ "$__TargetOS" == openharmony && "$__LinkStaticOpenSsl" == 1 ]]; then
         __FeatureDistroAgnosticSsl=0
         __FeatureDistroAgnosticSslStatic=1
+        __StaticLibLink=1
+    fi
+
+    # NativeAOT links the static crypto archive into the application. When the
+    # application also links libssl/libcrypto (StaticOpenSslLinking, or an
+    # OpenHarmonyStaticOpenSsl build), the archive must contain direct OpenSSL
+    # calls rather than the dlopen shim. Keep this as a separate switch: the
+    # normal -linkstaticopenssl build still needs the shim archive for
+    # NativeAOT packs that link OpenSSL as a shared library.
+    if [[ "$__TargetOS" == openharmony && "$__AotStaticOpenSsl" == 1 ]]; then
+        __FeatureDistroAgnosticSsl=0
+        __FeatureDistroAgnosticSslStatic=0
         __StaticLibLink=1
     fi
 
