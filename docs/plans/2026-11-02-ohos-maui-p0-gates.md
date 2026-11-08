@@ -98,8 +98,9 @@ sh scripts/check-upstream-delta.sh
   `efe5b823c8e0` 的 T2 handler connector + T3 切片）。本地等价验证：
   slice analyzer **PASS（无 IL warning）**、host-export **167/167**、
   interaction **826/829 floor 809**（属性改动不影响运行路径）、pixel **PASSED**。
-- **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门（见
-  `2026-11-02-ohos-rtm-cutover-runbook.md`）。
+- **发布/RTM**：`p0-gate.sh --full` 作为 RTM 切换前的前置门；RTM 观察/rebase/kit 步骤见
+  `2026-11-02-ohos-rtm-cutover-runbook.md` 与
+  `2026-11-05-ohos-maui-rtm-readiness.md`。
 
 ## 6. 边界
 

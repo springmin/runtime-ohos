@@ -15,7 +15,7 @@
 - **OHOS public SDK 不提供 `libssl` / `libcrypto`。** SDK sysroot 只有 `libohcrypto.so`；HAP 必须自带 OpenSSL，或由 .NET workload/runtime pack 提供。
 - **对 .NET 官方支持的含义：** OpenSSL-on-OHOS 可行，且不需要等 OH_Crypto 补齐 X.509/TLS。建议以 **OpenSSL 3.5 LTS** 作为官方支持的 crypto provider 候选；OH_Crypto 仍作为后续优化项。
 - **已验证（2026-11-04）：** OpenSSL 3.5.9 已用 `linux-aarch64` + OHOS clang/sysroot 交叉构建成功；在 HarmonyOS 宿主和 AOT HAP 内均完成了 SHA/AES-GCM/RSA/ECDSA/X.509/TLS 1.3/`HttpClient` 自检，HAP 内 `failures=0`。任意 bundle 的 UI shell 已用 `build-arkts-shell.sh` 手工生成并验证。
-- **仍待验证：** workload 自动生成任意 bundle 的 ArkTS shell、JIT HAP 启动（安装已通过）、OpenSSL 静态链接、HAP 启动/内存，以及 CA 系统 store 的设备契约和完整负控。
+- **仍待验证：** workload 自动生成任意 bundle 的 ArkTS shell、JIT HAP 启动（安装已通过）。OpenSSL 静态链接与 HAP 启动/内存已完成（见 `2026-11-04-ohos-nativeaot-static-openssl.md`）；CA 系统 store 的镜像契约已由 `security_certificate_manager` 源码确认并在 HAP 内复验。
 
 ## 1. 调研口径
 
@@ -499,7 +499,8 @@ http_default_trust=PASS
 - 这两个默认路径是构建机的 OpenSSL install prefix；当前 HAP 只带 `libssl.so.3` /
   `libcrypto.so.3`，没有 CA 文件，因此不能把这两个路径当作可移植的信任来源。
 - .NET 侧 `pal_x509_root.c` 先读 `SSL_CERT_FILE` / `SSL_CERT_DIR`，再回退到 OpenSSL 默认；
-  `OpenSslCachedSystemStoreProvider` 在默认 store 为空时还会尝试 `/etc/ssl/certs`。
+  `OpenSslCachedSystemStoreProvider` 在默认 store 为空时还会尝试 `/etc/ssl/certs`（当时记录；
+  当前默认系统目录见 6.x 的正式契约更新）。
   观测到的 `http_default_trust=PASS` 与“使用设备系统 CA store”一致，但 HAP 自身没有
   携带 CA bundle。
 - 待定策略：如果目标 OHOS 镜像保证系统 CA store 可读，可以明确依赖系统 store；否则需要在
@@ -517,7 +518,7 @@ http_default_trust=PASS
   启动前读取 `<app_dir>/trust.json` 并设置 `SSL_CERT_FILE`/`SSL_CERT_DIR`。`app` 模式显式
   设置空 `SSL_CERT_DIR`，阻止系统 store 回退；`both` 缺少 CA 时退化为 system-only。
 - 设备 A/B：
-  - `both`：`trust: mode=both ca=.../trust-ca.pem dir=/etc/ssl/certs app=1 system=1`，
+  - `both`：`trust: mode=both ca=.../trust-ca.pem dir=/etc/ssl/certs app=1 system=1`（当时默认；2026-11-04 已切换为 `/system/etc/security/certificates`，见下），
     `ssl_cert_file_env`/`ssl_cert_dir_env` 与配置一致，`http_default_trust=PASS`；
   - `app`：`trust: mode=app ... app=1 system=0`，`ssl_cert_dir_env=""`，
     `http_default_trust=FAIL`（预期负控，证明系统 store 被抑制）。
@@ -529,8 +530,12 @@ http_default_trust=PASS
   - `sslstream_wrong_host_expected_reject=PASS expected AuthenticationException`；
   - `sslstream_expired_expected_reject=PASS expected AuthenticationException`；
   - `sslstream_public_default=PASS`、`http_default_trust=PASS`、`failures=0`。
-- 系统 CA 契约：`/etc/ssl/certs` 是单文件 `cacert.pem`，`/system/etc/security/certificates`
-  是 125 个 hash 文件；默认仍使用 `/etc/ssl/certs`，跨镜像需确认两者是否同时存在。
+- 系统 CA 契约（2026-11-04 更新）：`openharmony/security_certificate_manager@2d9792c` 的
+  `config/BUILD.gn` 把 `config/systemCertificates/` 的 125 个 OpenSSL hash 文件以
+  `relative_install_dir = "security/certificates"` 预置到 system/updater 镜像，即
+  `/system/etc/security/certificates`；这是正式契约。`/etc/ssl/certs` 的 `cacert.pem` 不是该
+  part 的产物，只作为兼容回退。默认系统目录已切到
+  `/system/etc/security/certificates`，host 在该目录缺失时回退到 `/etc/ssl/certs`。
 - HAP target 的 T13 覆盖 trust.json/ca 的复制、`app` 缺 CA、`system` 与 CA 冲突、
   `both` 无 CA 退化和非法 mode；`selftest-host-trust.sh` 覆盖三种 mode 的 pure-C 策略。
 - 证据：`hap-aot/hilog-trust-both.txt`、`hap-aot/hilog-trust-app.txt`、
@@ -565,7 +570,7 @@ OpenSSL 3.5.9，HAP 19,805,009 B）做了一次设备侧观测：
 | 空 Maui batching | **已验证修复** | target 增加空 item 条件；`selftest-hap-targets.sh` 119/0/1 |
 | NativeAOT 静态 vs JIT 共享 | **部分验证** | AOT + shared OpenSSL 已验证；静态链接和 JIT 未验证 |
 | HAP 体积/启动/内存 | **部分验证** | AOT probe HAP 19,805,009 B；首轮 `aa start` 到托管入口约 0.49 s、2 s 时 VmRSS 121,628 kB；冷/热启动、TLS 吞吐和稳态内存未测 |
-| HAP 内 CA 路径 | **已验证** | target/host 支持 `system`/`app`/`both`；HAP CA 与系统 `/etc/ssl/certs` 可同时生效；自签名/过期/错误主机名均被拒，`app` 模式系统 store 被抑制 |
+| HAP 内 CA 路径 | **已验证** | target/host 支持 `system`/`app`/`both`；HAP CA 与正式系统 store `/system/etc/security/certificates` 可同时生效；自签名/过期/错误主机名均被拒，`app` 模式系统 store 被抑制 |
 | 任意 bundle 的 UI shell | **已验证 + target gate** | per-bundle shell 在 `com.example.opensslprobe2` 上启动并跑完探针；target 对 bundle 不匹配且未显式给 abc 的构建 fail-fast；自动生成仍待决定 |
 
 ### 7.2 风险
@@ -574,7 +579,7 @@ OpenSSL 3.5.9，HAP 19,805,009 B）做了一次设备侧观测：
 |---|---|
 | OpenSSL 上游不支持 OHOS | OHOS 特定问题由集成方负责，需要自维护构建/补丁 |
 | OpenSSL 3.0 已 EOL | 不能把 OpenHarmony 3.0.9 当作长期基线 |
-| CA 信任路径 | 已实现 system/app/both 与 payload CA；自签名/过期/错误主机名负控已通过；跨镜像仍需确认 `/etc/ssl/certs` 与 `/system/etc/security/certificates` 的并存关系 |
+| CA 信任路径 | 已实现 system/app/both 与 payload CA；自签名/过期/错误主机名负控已通过；正式系统 store `/system/etc/security/certificates` 已由源码确认并在 HAP 内复验，`/etc/ssl/certs` 保留为兼容回退 |
 | 库加载 | HAP 的 `$ORIGIN`、`dotnet exec` 的相邻目录 fallback 需要分别验证 |
 | UI shell bundle 绑定 | 预编译 `modules.ui.abc` 固定 `mauidemo.dotnet.springmin.com`；target 已 fail-fast 并给出手工生成命令，自动按 bundle 生成仍待决定 |
 | JIT HAP 签名 | 旧布局 payload-in-libs HAP 出现 `9568393`；根因是无扩展名/4096 B 文件，默认 DeviceCompat 已修复，旧 kit HAP 需重出包 |
@@ -586,7 +591,7 @@ OpenSSL 3.5.9，HAP 19,805,009 B）做了一次设备侧观测：
 1. 决定任意 bundle ArkTS shell 的自动生成策略：当前 target 已对 bundle 不匹配 fail-fast，并给出 `build-arkts-shell.sh` 命令；是否在 pack time 自动运行（受 Node/网络、Windows shell、构建耗时约束）仍需单独评估。
 2. JIT `9568393` 已确认是 DeviceCompat 两个陷阱：旧 kit HAP 需要重出包或 `-p:OpenHarmonyHapPayloadInLibs=false`；如需验证 JIT 运行路径，再补安装后的启动/崩溃排查。
 3. 验证 NativeAOT **静态链接** OpenSSL（当前 probe 是 AOT + 共享 libssl/libcrypto）。
-4. CA 策略已实现 system/app/both + payload CA；自签名/过期/错误主机名负控已通过；剩余跨镜像确认系统 `/etc/ssl/certs` 与 `/system/etc/security/certificates` 的契约。
+4. CA 策略已实现 system/app/both + payload CA；自签名/过期/错误主机名负控已通过；系统 CA 契约已确认：正式目录为 `/system/etc/security/certificates`，默认已切换并保留 `/etc/ssl/certs` 回退。
 5. 补 HAP 冷/热启动、TLS 握手/吞吐和长时间常驻内存；首轮已有 HAP 19.8 MB、约 0.49 s 到托管入口、2 s VmRSS 121,628 kB 的数据。
 6. 以上通过后，起草 upstream support proposal，把 OpenSSL-on-OHOS 定为 crypto provider 方案。
 7. OH_Crypto 继续作为后续优化项，不作为官方支持 blocker。

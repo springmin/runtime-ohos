@@ -136,3 +136,19 @@ sh scripts/release-notes.sh                   # release notes
   aspnet `44ec71aa7c06`、maui `efe5b823c8e0`、workload `14562d3bf2bc`；
 - CI slice refs：`868d3c8727b…`（3 个 workflow）、`469eae2734a2…`（ridgraph）；
 - 结论：**版本 pin 一致；执行等待 RTM 产物**。
+
+## 7. 2026-11-05 RTM 状态更新
+
+- **rc3 `.31` 已齐但不用于 #59**：SDK `11.0.100-rc.3.26522.148`、workload
+  `1.0.0-preview.31`、rc3 AOT/crossgen2、`selfsign-ohos-arm64` 均已发布；它们只做
+  rc3 平台预演，kit #59 等 RTM。
+- **MAUI 无 rc3/stable**：NuGet 仍 `11.0.0-rc.2.26505.5`；`main`/`release/11.0.1xx`
+  已是 RTM 取向（`11.0.100-rtm.26514.118`），但包未发布。**不做 MAUI rc2 + rc3 的
+  kit 混合**。
+- **观察**：`ohos-workload/scripts/watch-maui-rtm.sh`（0=WAIT，10=READY；
+  MAUI stable / .NET runtime+SDK stable / OpenHarmony runtime+SDK RTM /
+  workload `preview.32+`）。当前 WAIT。
+- **准备**：`2026-11-05-ohos-maui-rtm-readiness.md` 含 rebase/兼容矩阵/kit 步骤；
+  `rtm-pins.json` 仍是 pre-RTM 口径，RTM 出现后统一更新。
+- **全局默认**：rc3 已切（profile）；`runtime-ohos` 仓库仍 pin rc2，kit #58 可复现；
+  #59 在 RTM set 齐前不动。
