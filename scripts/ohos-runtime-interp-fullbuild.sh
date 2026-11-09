@@ -57,7 +57,7 @@ unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
 REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SCR="${SCR:-/data/storage/el2/base/tmp/opencode/r2-interp}"
 DOTNET_HOST="${DOTNET_INSTALL_DIR:-$HOME/.dotnet}"
-OHOS_NDK_HOME="${OHOS_NDK_HOME:-/storage/Users/currentUser/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_1}"
+OHOS_NDK_HOME="${OHOS_NDK_HOME:-$HOME/.harmonybrew/opt/ohos-sdk}"
 ICU_DIR="${ICU_DIR:-$SCR/icu}"
 OPENSSL_DIR="${OPENSSL_DIR:-$SCR/openssl}"
 JOBS="${JOBS:-4}"

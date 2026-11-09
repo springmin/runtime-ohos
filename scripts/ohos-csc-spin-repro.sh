@@ -105,7 +105,7 @@ EOF
   export PATH="$SHIMS:$PATH"
   export DOTNET_NOLOGO=1 MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0
   export DOTNET_PROCESSOR_COUNT=1
-  export OHOS_NDK_HOME="${OHOS_NDK_HOME:-/storage/Users/currentUser/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_1}"
+  export OHOS_NDK_HOME="${OHOS_NDK_HOME:-$HOME/.harmonybrew/opt/ohos-sdk}"
   RESTORE_ARGS=()
   [ -n "${NUGET_CONFIG:-}" ] && RESTORE_ARGS=("/p:RestoreConfigFile=$NUGET_CONFIG")
   (

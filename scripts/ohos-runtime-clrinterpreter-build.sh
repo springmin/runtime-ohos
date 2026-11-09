@@ -45,7 +45,7 @@ set -euo pipefail
 REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SCR="${SCR:-/data/storage/el2/base/tmp/opencode/ohos-interp-build}"
 DOTNET_HOST="${DOTNET_INSTALL_DIR:-$HOME/.dotnet}"
-OHOS_NDK_HOME="${OHOS_NDK_HOME:-/storage/Users/currentUser/.harmonybrew/Cellar/ohos-sdk/26.0.0.18_1}"
+OHOS_NDK_HOME="${OHOS_NDK_HOME:-$HOME/.harmonybrew/opt/ohos-sdk}"
 JOBS="${JOBS:-4}"
 VM_SMOKE=0
 while [ $# -gt 0 ]; do
