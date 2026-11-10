@@ -361,6 +361,8 @@ ohos-workload:
   selftest-hap-targets.sh  checks: 128, failed: 0, skipped: 1
   selftest-selfsign.sh     checks: 13, failed: 0
   task unit tests          [tasks-tests] checks=184 failed=0 assert=True
+  maui-platform-verify     [suite] checks=826 total=829 floor=809 assert=True
+  headless-render          PIXEL ASSERTIONS PASSED
 ```
 
 说明：本机共享 Roslyn 编译器会出现已知 livelock，`verify-slice.sh` 支持
@@ -381,3 +383,7 @@ ohos-workload:
 4. **workload manifest**：`maui-openharmony extends [maui-blazor, openharmony]` 依赖
    `microsoft.net.sdk.openharmony` manifest source；该依赖是平台 side 的职责，MAUI 默认
    workload 不安装它，因此不会影响 `dotnet workload install maui`。
+5. **workload ref pack 补全**：`Microsoft.OpenHarmony.Maui.Graphics` 目前只在 runtime pack，
+   RID-less 的 library build 不会引用 runtime pack，所以 `Core.csproj` 仍需
+   `OpenHarmonyGraphicsAssembly` 覆盖。workload 把该程序集加入 Ref pack 的
+   `FrameworkList.xml` 后，MAUI 可删除这个覆盖，改为纯 framework reference。
