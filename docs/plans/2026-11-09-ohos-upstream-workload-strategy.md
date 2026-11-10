@@ -372,6 +372,7 @@ ohos-workload:
   selftest-tasks.sh        checks: 9, failed: 0
   selftest-hap-targets.sh  checks: 128, failed: 0, skipped: 1
   selftest-selfsign.sh     checks: 13, failed: 0
+  selftest-sdk-defaults.sh checks: 19, failed: 0
   selftest-packs.sh        checks: 30, failed: 0
   task unit tests          [tasks-tests] checks=184 failed=0 assert=True
   maui-platform-verify     [suite] checks=826 total=829 floor=809 assert=True
@@ -408,9 +409,15 @@ ohos-workload:
   `GenerateDependencyFile=false`、`CopyLocalLockFileAssemblies=true`。trust payload
   （`OpenHarmonyTrustMode` / `trust.json` / CA bundle）与 static OpenSSL 由
   `OpenHarmony.Hap.targets` 处理，`selftest-hap-targets.sh` 的 T13/T14 已覆盖。
+  `selftest-sdk-defaults.sh` 用已安装的 `Microsoft.OpenHarmony.Sdk` 评估真实
+  `net11.0-openharmony20.0` 可执行工程，断言上述默认值、`TargetPlatformSupported`、
+  `EnableAppHostPackDownload=false`、`AllowSelfContainedWithoutRuntimeIdentifier=true`
+  以及默认 R2R/NativeAOT 未开启。
 - **KnownCrossgen2Pack**：当前栈只发布 JIT/self-contained 运行包，未启用 ReadyToRun 或
   crossgen2，且 OpenHarmony 的 NativeAOT 已显式关闭（`NativeAotSupported=false`），因此
-  manifest 不声明 `KnownCrossgen2Pack`。如果后续启用 R2R，需要在 workload manifest 增加
+  manifest 不声明 `KnownCrossgen2Pack`。`selftest-sdk-defaults.sh` 断言已安装的
+  `Sdk.targets` 不声明该属性、不默认开启 R2R/AOT，且 manifest 的 `packs` 中没有
+  Crossgen2 pack。如果后续启用 R2R，需要在 workload manifest 增加
   `KnownCrossgen2Pack`（Key: `openharmony-arm64`），并补 crossgen2 pack 的发布/签名验证。
 - **rc.3 runtime pack pin**：`scripts/cut-kit.sh` 已补
   `Microsoft.AspNetCore.App.Runtime.openharmony-arm64/11.0.0-rc.3.26522.148` 的 release tag
