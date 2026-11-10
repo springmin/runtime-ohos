@@ -319,3 +319,65 @@ close_range tracking: https://atomgit.com/openharmony/startup_init/issues/3599
   SDK host build、SDK tarball selfsign/预签名、发布
   Arcade 编排，ESRP 只处理标准产物
 ```
+
+## 13. MAUI 平台切片调整（2026-11-10）
+
+按 runtime/sdk/aspnetcore 已建立的评审口径，MAUI 侧完成以下调整（不急于开 PR）：
+
+### 13.1 已完成的代码调整
+
+| 评审要求 | 调整 |
+|---|---|
+| 不硬编码仓库外路径 | 删除 `Core.csproj` 和 standalone slice 里的 sibling `ohos-workload` 路径；改为必需属性 `OpenHarmonyHostingAssembly` / `OpenHarmonyGraphicsAssembly`，缺失时由 `_MauiValidateOpenHarmonyGraphicsAssembly` / `_OpenHarmonyValidateSliceAssemblies` 给出可操作错误 |
+| 不靠 suppression 过构建 | 删除 `src/Core/src/Platform/OpenHarmony/.editorconfig`（19 条 CA 规则目录级降级）和 csproj 的 `WarningsNotAsErrors` 白名单；逐条修复 61 个 CA 诊断（CA1307/CA1311/CA1806/CA1822/CA1845/CA1846/CA1859/CA1865/CA2249），并把 CS0618/CA2255 收窄到具体文件/成员并写明理由 |
+| 不关闭 NuGet 审计 | 删除 standalone slice 的 `NuGetAudit=false`；离线 partial checkout 由调用方显式覆盖 |
+| AOT 用共享门控 | root `Directory.Build.props` import `eng/common/native/NativeAotSupported.props`，对 OpenHarmony 设 `NativeAotSupported=false`；`Controls.TestCases.HostApp` 的 `PublishAot` 条件改为 `'$(NativeAotSupported)' != 'false'`（对齐 aspnetcore#69952） |
+| previous TFM 一致 | 移除 `MauiPreviousPlatforms` / `MauiSamplePreviousPlatforms` / `MauiManualTestsPreviousPlatforms` 里的 OpenHarmony 条目；当前平台仍由 `MauiPlatforms` / `MauiSamplePlatforms` 提供 |
+| 默认 API level | `OpenHarmonyTargetFrameworkVersion=20.0`（public SDK）；device SDK 用 `-p:OpenHarmonyTargetFrameworkVersion=26.0` 覆盖 |
+| 平台代码隔离 | 保持 `src/Core/src/Platform/OpenHarmony/` + `src/MultiTargeting.targets` 的 TFM 移除规则；非 OpenHarmony TFM 不会编译/引用平台依赖 |
+
+额外清理：删除无接口来源、无调用方的 `OpenHarmonyPermissions.EnsureDeclared<TPermission>()` 公共 API 及其
+`PublicAPI.Unshipped.txt` 条目；`OpenHarmonyFilePicker.PickMultipleAsync` 的返回值空值标注对齐
+`IFilePicker.PickMultipleAsync`（`Task<IEnumerable<FileResult>?>`）。
+
+### 13.2 新增测试与门禁
+
+```text
+src/Core/tests/OpenHarmony.UnitTests/        25 个 host-runnable 单元测试
+  OpenHarmonyPlatformTests.cs                text transform、a11y action map、rawfile/file 路径校验
+eng/openharmony/verify-slice.sh              build（warnings-as-errors）+ test 的唯一入口
+eng/openharmony/README.md                    用法、workload 发现规则、CI leg 边界
+```
+
+验证结果（2026-11-10）：
+
+```text
+verify-slice.sh:
+  Build succeeded. 0 Warning(s) 0 Error(s)
+  Passed! - Failed: 0, Passed: 25, Skipped: 0
+
+ohos-workload:
+  selftest-tasks.sh        checks: 9, failed: 0
+  selftest-hap-targets.sh  checks: 128, failed: 0, skipped: 1
+  selftest-selfsign.sh     checks: 13, failed: 0
+  task unit tests          [tasks-tests] checks=184 failed=0 assert=True
+```
+
+说明：本机共享 Roslyn 编译器会出现已知 livelock，`verify-slice.sh` 支持
+`VERIFY_MSBUILD_ARGS="-p:UseSharedCompilation=false"`，CI 默认不需要。
+
+### 13.3 未完成（需要上游/外部条件）
+
+1. **MAUI CI leg**：workload manifest/packs 发布到公共 feed 后，增加
+   `dotnet workload install openharmony --source <feed>` + `eng/openharmony/verify-slice.sh`
+   的独立 leg；默认 CI 不启用，避免平台中立构建依赖外部 workload。
+2. **设备测试**：HAP 安装、启动、交互、像素与无障碍验证继续在
+   `ohos-workload/test/maui-platform-verify` 等外部 harness 运行。
+3. **Public API 拆分**：`PublicAPI.Unshipped.txt` 仍有约 1,735 行。按可评审粒度拆分：
+   - Phase 1：平台基础集成（TFM gating、workload 引用、AOT/CI、无 handler 实现）；
+   - Phase 2：Core handlers / Essentials（按 handler 分组，补测试）；
+   - Phase 3：Shell / WebView / Accessibility / 多窗口；
+   - Phase 4：API proposal、public/internal 收敛、`maui-openharmony` workload 注册。
+4. **workload manifest**：`maui-openharmony extends [maui-blazor, openharmony]` 依赖
+   `microsoft.net.sdk.openharmony` manifest source；该依赖是平台 side 的职责，MAUI 默认
+   workload 不安装它，因此不会影响 `dotnet workload install maui`。
