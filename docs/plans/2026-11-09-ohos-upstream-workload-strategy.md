@@ -576,40 +576,49 @@ macOS 也没有把签名全部放在 workload，而是分两层：
 
 ## 16. MAUI Core/Controls split（2026-11-10）
 
-第一批按依赖把 6 个内部平台服务移入 `Microsoft.Maui.Core`：
+Core/Controls 拆分已完成：64 个 slice 文件移入 `Microsoft.Maui.Core`，其余 78 个文件按设计
+留在 `Microsoft.Maui.Controls`。
 
-- `OpenHarmonyPaths`
-- `OpenHarmonyPreferences`
-- `OpenHarmonyFlashlight`
-- `OpenHarmonyHaptics`
-- `OpenHarmonyKeystore`
-- `OpenHarmonyNotifications`
+Core 侧（64 files）：
 
-仍留在 `Microsoft.Maui.Controls`：
+- view/handler base：`OpenHarmonyView`、`OpenHarmonyViewHandler`；
+- Core-interface handlers：ActivityIndicator / CheckBox / IndicatorView / ProgressBar / Switch /
+  Border / GraphicsView / Shape / Slider / Stepper / DatePicker / TimePicker / Picker /
+  ScrollView；
+- service layer：Paths / Preferences / FileSystem / Flashlight / Haptics / Keystore /
+  Notifications / Account / Map / Push / LiveView / TextToSpeech / SecureStorage / Sensors /
+  BatteryDisplay / SubWindow / SystemFontScale / ...；
+- compositor helpers：FlowMap / Status / Motion / ScrollPhysics / Scrollbars / FocusRing /
+  Ticker / ScrollAnimation / PaintRenderer / ShapeView；
+- Shell row types 改成 `IView` 并拆到 `OpenHarmonyShellRowTypes.cs`，解除了 `OpenHarmonyView`
+  对 Controls `View` 的依赖。
 
-- handlers/host（依赖 Controls 具体类型；90 个 public 类型仍待 API review）；
-- `OpenHarmonyFileSystem`：编译进 Core 时在 OH host 触发 `csc` exit 139；先保留在 Controls，
-  后续拆 raw-file bridge 或修复编译器问题。
+Controls 侧：
 
-工程改动：
+- Controls-bound handlers/host/shell/window/accessibility/renderer；
+- 剩余 52 个 OpenHarmony public 类型；
+- `OpenHarmonyCoreSlice.props` 是 Core/Controls 拆分的唯一事实源：Core.csproj include，
+  Controls.Core.csproj remove。
 
-- `src/Core/src/Core.csproj` 增加 6 个 `Compile Include`；
-- `src/Controls/src/Core/Controls.Core.csproj` 的 slice glob 排除同一组 6 个文件；
-- 6 个文件补显式 `using`，不再依赖 slice 的 `GlobalUsings.OpenHarmony.cs`（该文件仍留在
-  Controls 供其余 slice 文件使用）。
+API：
 
-验证：
+- Core baseline：3,514 行 / 37 个 OpenHarmony public 类型；
+- Controls baseline：8,169 行 / 52 个 OpenHarmony public 类型；
+- `PublicApiAnalyzers` validate 在 `--tfm` 中通过。
 
-- `verify-slice.sh --tfm` 在同一 6-file split 上曾通过（Core + Controls +
-  PublicApiAnalyzers）；
-- 随后重试时 OH host 的 `csc` 在 Essentials/Core 阶段出现 exit 139（内存/编译器不稳定），
-  不是代码诊断；默认 `verify-slice.sh` 的 slice vehicle + 25/25 测试通过。
-- 结论：6 个服务的 split 可编译；`--tfm` 的最终门禁需要一台内存充足的 OH host 重新跑。
+构建：
 
-验证补充（2026-11-10）：rc3 runtime 的 `libcrypto.so.3` 是 **OpenSSL 3.0.12**；系统
-`/usr/lib/libcrypto.so.3` 也是 3.0.12，`openssl@4` 只提供 `.so.4`，所以 `openssl` CLI 升级
-4.1.0 不等于 runtime 的 `.so.3` ABI 变了。把 rc3 / 3.5.9 / 4.1.0 的库前置到
-`LD_LIBRARY_PATH` 后，`csc` 仍然 hang/crash；`OPENSSL_CONF=/dev/null` + no-locking 只让部分
-运行通过，不是确定性修复。结论：`csc` 139 不能只归因于 OpenSSL 版本，需要稳定 host 或
-`csc` dump 继续定位。OH 沙箱还会拒绝 `createdump`（`/proc/<pid>/mem` permission denied），
-抓 dump 需要非沙箱/稳定 host。`OpenHarmonyFileSystem` 移入 Core 的实验同样受此影响，已回退。
+- 本机 OH host 必须使用 `OPENSSL_CONF=$HOME/.harmonybrew/etc/openssl@3/openssl.cnf` +
+  `DOTNET_SYSTEM_CRYPTOGRAPHY_OPENSSL_NO_LOCKING=1`；`/dev/null` 会让 csc 对每个源文件报
+  CS1504（CryptographicException）。rc3 runtime 和 `/usr/lib` 的 `.so.3` 都是 OpenSSL 3.0.12，
+  `openssl@4` 只提供 `.so.4`。
+- `verify-slice.sh --tfm`：`verify-slice: OK`（Core + Controls + PublicApiAnalyzers）。
+- 默认 `verify-slice.sh`：slice vehicle + 25/25 tests 通过。
+
+剩余工作：
+
+- 继续把 Controls-bound handler 按 Core interface 重构后迁入 Core（Border/Shape/GraphicsView/
+  BoxView/Slider/Stepper/DatePicker/TimePicker/Picker/SearchBar/ScrollView/ContentView/Image/
+  Button/ImageButton/Label/Entry/Editor/...，取决于 Core interface 覆盖）；
+- Shell/Window/AppHost/WindowRenderer/Accessibility 和 Controls 专属 handler 继续留在 Controls；
+- 剩余 66 个 public 类型进入 API review。
