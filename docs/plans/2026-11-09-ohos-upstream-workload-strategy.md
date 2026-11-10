@@ -354,7 +354,8 @@ eng/openharmony/README.md                    用法、workload 发现规则、CI
 验证结果（2026-11-10）：
 
 ```text
-verify-slice.sh --tfm (workload Ref pack only, no explicit assembly paths):
+verify-slice.sh --tfm (workload Ref pack only, no explicit assembly paths,
+PublicApiAnalyzers Validate):
   Core -> artifacts/bin/Core/Release/net11.0-openharmony20.0/Microsoft.Maui.dll
   Controls.Core -> artifacts/bin/Controls.Core/Release/net11.0-openharmony20.0/Microsoft.Maui.Controls.dll
   verify-slice: OK (0 errors)
@@ -363,10 +364,15 @@ verify-slice.sh (net11.0):
   Build succeeded. 0 Warning(s) 0 Error(s)
   Passed! - Failed: 0, Passed: 25, Skipped: 0
 
+verify-slice.sh --slice-tfm:
+  Microsoft.Maui.Platform.OpenHarmony -> .../net11.0-openharmony20.0/...dll
+  verify-slice: OK
+
 ohos-workload:
   selftest-tasks.sh        checks: 9, failed: 0
   selftest-hap-targets.sh  checks: 128, failed: 0, skipped: 1
   selftest-selfsign.sh     checks: 13, failed: 0
+  selftest-packs.sh        checks: 30, failed: 0
   task unit tests          [tasks-tests] checks=184 failed=0 assert=True
   maui-platform-verify     [suite] checks=826 total=829 floor=809 assert=True
   headless-render          PIXEL ASSERTIONS PASSED
@@ -383,12 +389,11 @@ ohos-workload:
    避免平台中立构建依赖外部 workload。
 2. **设备测试**：HAP 安装、启动、交互、像素与无障碍验证继续在
    `ohos-workload/test/maui-platform-verify` 等外部 harness 运行。
-3. **Public API 拆分**：`PublicAPI.Unshipped.txt` 仍有约 1,734 行 / 156 个公共类型；清单和
-   分阶段方案见 `maui-ohos/docs/openharmony-api-review.md`。按可评审粒度拆分：
-   - Phase 1：平台基础集成（TFM gating、workload 引用、AOT/CI、无 handler 实现）；
-   - Phase 2：Core handlers / Essentials（按 handler 分组，补测试）；
-   - Phase 3：Shell / WebView / Accessibility / 多窗口；
-   - Phase 4：API proposal、public/internal 收敛、`maui-openharmony` workload 注册。
+3. **Public API 拆分（已完成基线迁移/收敛，待 API review）**：基线已迁移到
+   `Controls/src/Core/PublicAPI/net-openharmony/` 并重新生成；Core 基线独立生成。切片公共
+   面从 1,734 行 / 156 类型降到 799 行 / 90 类型，Phase 2/3 实现类型已 internal 化，
+   `PublicApiAnalyzers` Validate 通过。剩余是 90 个 feature/handler 类型的 MAUI API review；
+   清单见 `maui-ohos/docs/openharmony-api-review.md`。
 4. **workload manifest**：`maui-openharmony extends [maui-blazor, openharmony]` 依赖
    `microsoft.net.sdk.openharmony` manifest source；该依赖是平台 side 的职责，MAUI 默认
    workload 不安装它，因此不会影响 `dotnet workload install maui`。
