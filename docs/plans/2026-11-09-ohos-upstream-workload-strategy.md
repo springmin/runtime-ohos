@@ -601,6 +601,8 @@ Controls 侧：
 - 剩余 41 个 OpenHarmony public 类型；
 - `OpenHarmonyCoreSlice.props` 是 Core/Controls 拆分的唯一事实源：Core.csproj include，
   Controls.Core.csproj remove。
+- 逐文件边界与阻塞原因见 `maui-ohos/docs/openharmony-split-boundary.md`（62 个直接使用
+  Controls 类型、10 个被 Controls-bound slice helper 挡住、1 个 slice-wide global usings）。
 
 API：
 
