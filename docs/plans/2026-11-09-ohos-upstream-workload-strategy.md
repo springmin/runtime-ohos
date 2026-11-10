@@ -606,8 +606,9 @@ macOS 也没有把签名全部放在 workload，而是分两层：
   不是代码诊断；默认 `verify-slice.sh` 的 slice vehicle + 25/25 测试通过。
 - 结论：6 个服务的 split 可编译；`--tfm` 的最终门禁需要一台内存充足的 OH host 重新跑。
 
-验证补充（2026-11-10）：`csc` exit 139 / `CryptographicException` 的根因是 OH host 的
-OpenSSL 配置/锁；设置 `OPENSSL_CONF=/dev/null` 和
-`DOTNET_SYSTEM_CRYPTOGRAPHY_OPENSSL_NO_LOCKING=1` 后，6-file split 的 `--tfm` 已通过
-（`verify-slice: OK`）。`OpenHarmonyFileSystem` 移入 Core 的实验仍会触发 Controls 编译不稳定，
-已回退，留待更稳定的环境再处理。
+验证补充（2026-11-10）：rc3 runtime 的 `libcrypto.so.3` 是 **OpenSSL 3.0.12**；系统
+`/usr/lib/libcrypto.so.3` 也是 3.0.12，`openssl@4` 只提供 `.so.4`，所以 `openssl` CLI 升级
+4.1.0 不等于 runtime 的 `.so.3` ABI 变了。把 rc3 / 3.5.9 / 4.1.0 的库前置到
+`LD_LIBRARY_PATH` 后，`csc` 仍然 hang/crash；`OPENSSL_CONF=/dev/null` + no-locking 只让部分
+运行通过，不是确定性修复。结论：`csc` 139 不能只归因于 OpenSSL 版本，需要稳定 host 或
+`csc` dump 继续定位。`OpenHarmonyFileSystem` 移入 Core 的实验同样受此影响，已回退。
