@@ -576,10 +576,10 @@ macOS 也没有把签名全部放在 workload，而是分两层：
 
 ## 16. MAUI Core/Controls split（2026-11-10）
 
-Core/Controls 拆分已完成：64 个 slice 文件移入 `Microsoft.Maui.Core`，其余 78 个文件按设计
+Core/Controls 拆分已完成：76 个 slice 文件移入 `Microsoft.Maui.Core`，其余 73 个文件按设计
 留在 `Microsoft.Maui.Controls`。
 
-Core 侧（64 files）：
+Core 侧（76 files）：
 
 - view/handler base：`OpenHarmonyView`、`OpenHarmonyViewHandler`；
 - Core-interface handlers：ActivityIndicator / CheckBox / IndicatorView / ProgressBar / Switch /
@@ -587,23 +587,25 @@ Core 侧（64 files）：
   ScrollView；
 - service layer：Paths / Preferences / FileSystem / Flashlight / Haptics / Keystore /
   Notifications / Account / Map / Push / LiveView / TextToSpeech / SecureStorage / Sensors /
-  BatteryDisplay / SubWindow / SystemFontScale / ...；
+  BatteryDisplay / SubWindow / SystemFontScale / BluetoothGatt / BluetoothPrinting /
+  Email-Sms-PhoneDialer / Geocoding / MediaPlayer / WebAuthenticator / AppLauncher
+  (Launcher-Browser-Share + ability bridge) / ...；
 - compositor helpers：FlowMap / Status / Motion / ScrollPhysics / Scrollbars / FocusRing /
-  Ticker / ScrollAnimation / PaintRenderer / ShapeView；
+  Ticker / ScrollAnimation / PaintRenderer / ShapeView / LogSanitizer；
 - Shell row types 改成 `IView` 并拆到 `OpenHarmonyShellRowTypes.cs`，解除了 `OpenHarmonyView`
   对 Controls `View` 的依赖。
 
 Controls 侧：
 
 - Controls-bound handlers/host/shell/window/accessibility/renderer；
-- 剩余 52 个 OpenHarmony public 类型；
+- 剩余 41 个 OpenHarmony public 类型；
 - `OpenHarmonyCoreSlice.props` 是 Core/Controls 拆分的唯一事实源：Core.csproj include，
   Controls.Core.csproj remove。
 
 API：
 
-- Core baseline：3,514 行 / 37 个 OpenHarmony public 类型；
-- Controls baseline：8,169 行 / 52 个 OpenHarmony public 类型；
+- Core baseline：3,601 行 / 48 个 OpenHarmony public 类型；
+- Controls baseline：8,082 行 / 41 个 OpenHarmony public 类型；
 - `PublicApiAnalyzers` validate 在 `--tfm` 中通过。
 
 构建：
@@ -619,10 +621,14 @@ API：
 
 - 用 `ohos-workload/test/maui-platform-verify` 的 826 项 headless 交互 harness 验证：
   - 拆分前代码（`ddcba5f5e1c`，142 个 slice 文件）：826/829，floor 809，`assert=True`；
-  - 拆分后代码（64 + 78）：826/829，floor 809，`assert=True`；
+  - 拆分后代码（第二批，76 + 73）：826/829，floor 809，`assert=True`；
   - 两次运行的 826 条 `[verify]` 行按路径/计时归一化后逐条完全一致；
-  - perf 预算 `within=True`（拆分后 avg=6.039ms，alloc/frame=9373.2B；拆分前 avg=6.024ms，
-    alloc/frame=9374.6B）。
+  - perf 预算 `within=True`（76/73 拆分 avg=8.32ms，alloc/frame=9403.4B；拆分前 avg=6.37ms，
+    alloc/frame=9368.2B；两者都在 avg<=20ms、alloc/frame<=13824B 预算内）。
+- 第二批迁入 Core 的服务（12 个文件 + 2 个新 helper）：BluetoothGatt、BluetoothPrinting、
+  Email/Sms/PhoneDialer、Geocoding（Core 专用 `OpenHarmonyGeocodingJsonContext`）、
+  MediaPlayer、WebAuthenticator、AppLauncher（Launcher/Browser/Share + ability bridge）、
+  EssentialsBridges、EssentialsUnsupported、`OpenHarmonyLogSanitizer`。
 - harness 的 split-aware 修补（`ohos-workload` 180d015）：
   - 同时读取 Core / Controls 两个 `PublicAPI.Unshipped` 基线；
   - row `.View` 类型在拆分后是 `IView`，harness 显式 cast 回 Controls `View`；
@@ -630,7 +636,7 @@ API：
 - 设备/HAP harness 未运行：本机 `hdc list targets` 返回 `[Empty]`，没有可用设备。这是唯一
   未覆盖的验证层级（headless 交互 harness 已覆盖 826 项）。
 
-剩余 78 个 Controls-bound 文件按设计留在 Controls：
+剩余 73 个 Controls-bound 文件按设计留在 Controls：
 
 - Controls 专属 handler：Button/Label/Entry/Editor/ImageButton/RefreshView/ContentView/
   SearchBar/SwipeView/CollectionView/CarouselView/ListView/TableView/NavigationPage/FlyoutPage/
@@ -645,6 +651,6 @@ API：
 
 - Core 只包含仅依赖 Core/workload 契约的平台代码；Controls 只包含 Controls 集成层；
 - `--tfm` 在 Core + Controls 上通过，PublicApiAnalyzers 通过；默认 25/25 tests 通过；
-- 公共 API 拆分为 37 Core + 52 Controls，两个 baseline 同步；
+- 公共 API 拆分为 48 Core + 41 Controls（并集与拆分前完全一致），两个 baseline 同步；
 - 826 项交互 harness 在拆分前后逐条一致，perf 预算通过；
-- 剩余 52 个 Controls public 类型进入 API review（不阻塞本次拆分）。
+- 剩余 41 个 Controls public 类型进入 API review（不阻塞本次拆分）。
