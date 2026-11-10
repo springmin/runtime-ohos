@@ -525,3 +525,51 @@ changes. Would a follow-up issue tracking the pack publication be acceptable?
 
 结论：item 1 的正确收口是“隔离 + 明确职责”，不是删除 SDK 侧签名；删除会破坏
 `dotnet run file.cs` 和 portable 构建。
+
+### 15.1 macOS 对照：同一套两层签名模型
+
+macOS 也没有把签名全部放在 workload，而是分两层：
+
+| 层 | macOS | OpenHarmony |
+|---|---|---|
+| SDK 触发 | `_EnableMacOSCodeSign`：RID/AppHostRID 以 `osx` 开头 | `_EnableOpenHarmonyCodeSign`：RID/AppHostRID 以 `openharmony` 开头 |
+| SDK 范围 | 只签 apphost / single-file host | 递归签 `$(TargetDir)`/`$(PublishDir)` 的 ELF |
+| SDK 签名类型 | ad-hoc CMS（`codesign --sign -`） | self-sign `.codesign` section |
+| SDK 工具 | `HostWriter` + `MachObjectFile.AdHocSignFile`；layout 用 `codesign` | `OpenHarmonyCodesign` + `ElfSigner`；`dotnet selfsign` |
+| workload 触发 | `EnableCodeSigning` + `_DetectSigningIdentity`（`Microsoft.macOS.Sdk`/`Microsoft.iOS.Sdk`/`Microsoft.MacCatalyst.Sdk`） | `TargetPlatformIdentifier == openharmony` 的 HAP targets |
+| workload 范围 | `.app` bundle、嵌套 code、entitlements、provisioning | HAP staging 的 `libs/<abi>` + HAP 包 |
+| workload 工具 | `Codesign` task + `BuildIpa`/`CreatePackage` | `OpenHarmonyCodesign` + `hap-sign-tool` |
+| 签名性质 | 本地执行（ad-hoc） vs 分发（Developer ID + provisioning/notarization） | 本地执行（self-sign） vs 分发（HAP profile/cert） |
+
+关键证据：
+
+- `sdk-ohos/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets:832`
+  - `_EnableMacOSCodeSign` 只在 RID/AppHostRID 以 `osx` 开头时设置。
+- `sdk-ohos/src/Tasks/Microsoft.NET.Build.Tasks/CreateAppHost.cs:50,104`
+  - `EnableMacOSCodeSign` 只传给 `HostWriter.CreateAppHost`。
+- `runtime-ohos/src/installer/managed/Microsoft.NET.HostModel/AppHost/HostWriter.cs:62,115`
+  - `enableMacOSCodeSign` 的注释是 “Sign the app binary with an anonymous certificate.”；
+  - 只对 apphost / single-file host 调用 `MachObjectFile.AdHocSignFile`。
+- `runtime-ohos/src/installer/managed/Microsoft.NET.HostModel/MachO/MachObjectFile.cs:133`
+  - `AdHocSignFile` 生成的是 ad-hoc CMS 签名，没有身份、provisioning、entitlements。
+- `sdk-ohos/src/Layout/redist/targets/GenerateLayout.targets:79`
+  - SDK 自己的 Roslyn/MSBuild apphost 也是 `codesign --sign - --entitlements ...` 自签。
+- `dotnet/macios/msbuild/Xamarin.Shared/Xamarin.Shared.targets:2171,2722,2771`
+  - `_DetectSigningIdentity` 解析 `CodesignKey`/`CodesignProvision`/`CodesignEntitlements`；
+  - `_CodesignAppBundle` 调用 `ComputeCodesignItems` + `Codesign` 签整个 app bundle。
+- `dotnet/macios/dotnet/targets/Xamarin.Shared.Sdk.targets:3023`
+  - `_ComputeCodesignItems`；
+- `dotnet/macios/dotnet/targets/Xamarin.Shared.Sdk.Publish.targets`
+  - `BuildIpa` / `CreatePackage` 在签名后打包。
+
+对照结论：
+
+- **职责相同**：SDK 负责“本地能执行”，workload 负责“可分发”。
+- **范围不同**：macOS 只签 apphost，是因为 Mach-O 只需要主可执行文件签名；
+  OpenHarmony 递归签所有 ELF，是因为 loader/installer 要求每个 ELF 都有 `.codesign`。
+  这是平台约束，不是边界错误。
+- **不要删除 SDK pass**：删除会破坏 `dotnet run file.cs` 和 portable/self-contained 构建。
+- **不要把 HAP 分发签名放进 SDK**：HAP profile/cert 属于 workload/平台分发层。
+- `ElfSigner` 的两份副本是“workload 自包含”的代价；修改算法时必须同步
+  `sdk-ohos/src/Tasks/Microsoft.NET.Build.Tasks/ElfSigner.cs` 和
+  `ohos-workload/src/Microsoft.OpenHarmony.Tasks/ElfSigner.cs`。
