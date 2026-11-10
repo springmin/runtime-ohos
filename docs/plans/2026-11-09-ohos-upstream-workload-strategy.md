@@ -623,8 +623,8 @@ API：
   - 拆分前代码（`ddcba5f5e1c`，142 个 slice 文件）：826/829，floor 809，`assert=True`；
   - 拆分后代码（第二批，76 + 73）：826/829，floor 809，`assert=True`；
   - 两次运行的 826 条 `[verify]` 行按路径/计时归一化后逐条完全一致；
-  - perf 预算 `within=True`（76/73 拆分 avg=8.32ms，alloc/frame=9403.4B；拆分前 avg=6.37ms，
-    alloc/frame=9368.2B；两者都在 avg<=20ms、alloc/frame<=13824B 预算内）。
+  - perf 预算 `within=True`（76/73 拆分多次采样 avg=7.3-8.4ms，alloc/frame≈9.4KB；拆分前
+    avg=6.37ms，alloc/frame=9368.2B；两者都在 avg<=20ms、alloc/frame<=13824B 预算内）。
 - 第二批迁入 Core 的服务（12 个文件 + 2 个新 helper）：BluetoothGatt、BluetoothPrinting、
   Email/Sms/PhoneDialer、Geocoding（Core 专用 `OpenHarmonyGeocodingJsonContext`）、
   MediaPlayer、WebAuthenticator、AppLauncher（Launcher/Browser/Share + ability bridge）、
