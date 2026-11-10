@@ -335,6 +335,8 @@ close_range tracking: https://atomgit.com/openharmony/startup_init/issues/3599
 | previous TFM 一致 | 移除 `MauiPreviousPlatforms` / `MauiSamplePreviousPlatforms` / `MauiManualTestsPreviousPlatforms` 里的 OpenHarmony 条目；当前平台仍由 `MauiPlatforms` / `MauiSamplePlatforms` 提供 |
 | 默认 API level | `OpenHarmonyTargetFrameworkVersion=20.0`（public SDK）；device SDK 用 `-p:OpenHarmonyTargetFrameworkVersion=26.0` 覆盖 |
 | 平台代码隔离 | 保持 `src/Core/src/Platform/OpenHarmony/` + `src/MultiTargeting.targets` 的 TFM 移除规则；非 OpenHarmony TFM 不会编译/引用平台依赖 |
+| 真实 TFM 构建 | Core 保持平台中立；OpenHarmony TFM 下 `Microsoft.Maui.Controls` 链接编译整个切片并带 Standard fallback，`--tfm` 同时构建 Core/Controls |
+| workload Ref pack | `Microsoft.OpenHarmony.Maui.Graphics.dll` 加入 Ref.20.0/Ref.26.0 的 `FrameworkList.xml` 并由 `prepare-packs.sh` 复制；Controls 改用 framework reference，不再需要显式 `OpenHarmonyGraphicsAssembly` |
 
 额外清理：删除无接口来源、无调用方的 `OpenHarmonyPermissions.EnsureDeclared<TPermission>()` 公共 API 及其
 `PublicAPI.Unshipped.txt` 条目；`OpenHarmonyFilePicker.PickMultipleAsync` 的返回值空值标注对齐
@@ -352,7 +354,12 @@ eng/openharmony/README.md                    用法、workload 发现规则、CI
 验证结果（2026-11-10）：
 
 ```text
-verify-slice.sh:
+verify-slice.sh --tfm (workload Ref pack only, no explicit assembly paths):
+  Core -> artifacts/bin/Core/Release/net11.0-openharmony20.0/Microsoft.Maui.dll
+  Controls.Core -> artifacts/bin/Controls.Core/Release/net11.0-openharmony20.0/Microsoft.Maui.Controls.dll
+  verify-slice: OK (0 errors)
+
+verify-slice.sh (net11.0):
   Build succeeded. 0 Warning(s) 0 Error(s)
   Passed! - Failed: 0, Passed: 25, Skipped: 0
 
@@ -370,12 +377,14 @@ ohos-workload:
 
 ### 13.3 未完成（需要上游/外部条件）
 
-1. **MAUI CI leg**：workload manifest/packs 发布到公共 feed 后，增加
-   `dotnet workload install openharmony --source <feed>` + `eng/openharmony/verify-slice.sh`
-   的独立 leg；默认 CI 不启用，避免平台中立构建依赖外部 workload。
+1. **MAUI CI leg**：入口脚本已就绪（`eng/openharmony/verify-slice.sh --tfm`）；workload
+   manifest/packs 发布到公共 feed 后，增加
+   `dotnet workload install openharmony --source <feed>` + 该脚本的独立 leg。默认 CI 不启用，
+   避免平台中立构建依赖外部 workload。
 2. **设备测试**：HAP 安装、启动、交互、像素与无障碍验证继续在
    `ohos-workload/test/maui-platform-verify` 等外部 harness 运行。
-3. **Public API 拆分**：`PublicAPI.Unshipped.txt` 仍有约 1,735 行。按可评审粒度拆分：
+3. **Public API 拆分**：`PublicAPI.Unshipped.txt` 仍有约 1,734 行 / 156 个公共类型；清单和
+   分阶段方案见 `maui-ohos/docs/openharmony-api-review.md`。按可评审粒度拆分：
    - Phase 1：平台基础集成（TFM gating、workload 引用、AOT/CI、无 handler 实现）；
    - Phase 2：Core handlers / Essentials（按 handler 分组，补测试）；
    - Phase 3：Shell / WebView / Accessibility / 多窗口；
@@ -383,7 +392,6 @@ ohos-workload:
 4. **workload manifest**：`maui-openharmony extends [maui-blazor, openharmony]` 依赖
    `microsoft.net.sdk.openharmony` manifest source；该依赖是平台 side 的职责，MAUI 默认
    workload 不安装它，因此不会影响 `dotnet workload install maui`。
-5. **workload ref pack 补全**：`Microsoft.OpenHarmony.Maui.Graphics` 目前只在 runtime pack，
-   RID-less 的 library build 不会引用 runtime pack，所以 `Core.csproj` 仍需
-   `OpenHarmonyGraphicsAssembly` 覆盖。workload 把该程序集加入 Ref pack 的
-   `FrameworkList.xml` 后，MAUI 可删除这个覆盖，改为纯 framework reference。
+5. **Core/Controls fallback 清理**：OpenHarmony TFM 现在借助 Core/Controls 的 Standard
+   fallback 让共享 handler 基类完整编译；实际运行时由切片注册的 `OpenHarmony*Handler` 接管。
+   后续按 Phase 2 把 Core-only handler 拆回 Core，并逐步替换 Standard no-op。
