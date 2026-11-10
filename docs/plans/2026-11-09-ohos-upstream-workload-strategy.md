@@ -424,3 +424,64 @@ ohos-workload:
   `v11.0.0-rc.3.26522.148-openharmony` 和 nupkg SHA-256
   `1104f0704709e2ae5f09a653088455510b03d1ad814d0c33a97b2c43d9f99a3a`；
   `selftest-packs.sh` 30/30 通过。
+
+## 14. 上游 SDK 评审最新状态（2026-11-10 重新拉取）
+
+### 14.1 PR 状态
+
+| PR | 状态 | 最新评审 |
+|---|---|---|
+| sdk#56732 | open / mergeable / 7 commits | 无 maintainer review comment；marcpopMSFT 在 #56732 的 conversation 中明确“其他四个 OpenHarmony 专属改动应放 fork”，当前 PR 只保留 RID graph + crossgen2 mapping |
+| sdk#56733 | open / mergeable / 13 commits | marcpopMSFT 2026-11-09 APPROVED；jkotas 2026-11-10 追问“NativeAOT 对 SDK 工具几乎必需，OpenHarmony 为什么不启用” |
+| sdk#56735 | closed | 按 marcpopMSFT 意见移到 workload/fork（ELF signer/selfsign） |
+| sdk#56760 | closed | 按意见移到 SDK build pipeline/workload（build/publish 签名） |
+| sdk#56761 | closed | 按意见移到 workload/fork（sandbox 默认值） |
+
+### 14.2 已满足的评审要求
+
+- 平台专属的 distribution/signing/sandbox 不再进 `dotnet/sdk`，与 marcpopMSFT 的
+  “OpenHarmony specific fork” 口径一致。
+- #56732 只保留通用 RID graph + crossgen2 mapping；#56733 只保留通用 build enablement，
+  OpenHarmony environment defaults 已拆分/撤下。
+- #56733 已按 review 改为只在 Net120 RID 列表加入 openharmony，并补
+  `_KnownRuntimeIdentifierPlatforms`、crossgen2 TargetOS 映射。
+- 当前 MAUI/workload 分层（runtime/sdk 通用能力、workload 平台层、SDK build 仓自签）
+  与该口径一致。
+
+### 14.3 尚未满足：`jkotas` 的 NativeAOT 问题
+
+jkotas 在 #56733 的问题是当前唯一未回复的 review thread。PR 目前：
+
+- 在 `Directory.Build.props` 设置 `NativeAotSupported=false`（condition: `OSName == openharmony`）；
+- `dn` / `dotnet-aot` 的 `PublishAot` 只在 `NativeAotSupported == true` 时启用；
+- 说明是“OpenHarmony 没有 NativeAOT toolchain”。
+
+技术现状：
+
+- `dotnet/runtime#136185` 已合并 OpenHarmony NativeAOT/pack 构建集成（TargetOS 映射、
+  lld/ohos ABI、ILCompiler 本地 pack、ILLink managed NTLM 等）。
+- 但面向 SDK 的可发布 `runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler` 和
+  NativeAOT runtime pack 尚未发布到 NuGet/SDK feed；直接 `PublishAot` 会在 restore 阶段
+  找不到 ILCompiler pack。
+- 因此 #56733 的 gate 是“pack 未发布”期间的安全开关，而不是宣称平台永远不支持 AOT。
+
+建议回复 jkotas（待确认后发）：
+
+```text
+NativeAOT is the right direction; the blocker is pack availability, not the platform.
+dotnet/runtime#136185 wired OpenHarmony into NativeAOT and the local pack build, but the
+publishable runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler and NativeAOT runtime packs
+are not in the SDK feeds yet, so PublishAot for dn/dotnet-aot fails during restore. The PR
+gates PublishAot on NativeAotSupported (same pattern as linux-musl) to keep the SDK build green;
+once the runtime packs are published we can remove the override and enable AOT without source
+changes. Would a follow-up issue tracking the pack publication be acceptable?
+```
+
+### 14.4 对当前 MAUI/workload 方案的影响
+
+- MAUI 的 `NativeAotSupported=false` 只用于 **repo-side/test** AOT（`Controls.TestCases.HostApp`
+  等），不是“用户 publish AOT 永久不可用”；用户 AOT 仍依赖 runtime ILCompiler pack。
+  已在 MAUI 注释中改为这一口径（不再写“OpenHarmony is not a NativeAOT target”）。
+- 在 runtime ILCompiler/NativeAOT packs 发布前，不启用 MAUI test-asset AOT；发布后移除
+  gate 并重跑 `--tfm` 的 AOT leg。
+- #56732 仍需要 maintainer review/merge；#56733 需要先回复 jkotas，再请求 re-review。
