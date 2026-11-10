@@ -491,3 +491,37 @@ changes. Would a follow-up issue tracking the pack publication be acceptable?
 - 在 runtime ILCompiler/NativeAOT packs 发布前，不启用 MAUI test-asset AOT；发布后移除
   gate 并重跑 `--tfm` 的 AOT leg。
 - #56732 仍需要 maintainer review/merge；#56733 需要先回复 jkotas，再请求 re-review。
+
+## 15. 边界审计修正（2026-11-10）：SDK build-output codesign 不是冗余
+
+原审计把 sdk-ohos `feature/openharmony` 的 `_OpenHarmonyCodeSign*` 视为“应用侧签名重复”。
+进一步核对 `dotnet run` / file-based 路径后修正：
+
+- 该 pass 的触发条件是 `RuntimeIdentifier` 或 `AppHostRuntimeIdentifier` 以 `openharmony`
+  开头，覆盖：
+  - `dotnet run file.cs`（file-based app，RID 来自 SDK 自身，没有 OH TFM）；
+  - portable/self-contained build（`TargetPlatformIdentifier` 不是 openharmony，workload 的
+    `Sdk.targets` 不会导入）；
+  - `dotnet build` / `dotnet publish` 的直接输出。
+- workload 的 `OpenHarmonyCodesign` 在 `OpenHarmony.Hap.targets` 里只签 HAP staging 的
+  `libs/<abi>`，由 `TargetPlatformIdentifier == openharmony` 触发，覆盖不了上面两类。
+- 因此两者不是同一职责的重复：
+  - SDK：build/publish output codesign（类比 `_EnableMacOSCodeSign`）；
+  - workload：HAP payload codesign。
+- `ElfSigner.cs` 仍是 SDK install selfsign（`eng/ohos-install/selfsign.csproj`）的共享源；
+  workload 为保持自包含保留自己的副本，二者算法需同步。
+- `dotnet selfsign` 不是死代码：`NETSDK1249` 的消息指向它；本次保留。若后续要移除，需要同步
+  修改资源字符串、文档和用户工作流。
+
+本次处理（sdk-ohos `feature/openharmony`，提交 `4485967fba`）：
+
+- 把 `_OpenHarmonyCodeSign*` / `UsingTask` 从通用 `Microsoft.NET.Sdk.targets` 拆到
+  `Microsoft.NET.Sdk.OpenHarmony.targets`，通用文件只保留一行 import；
+- 更新 `test-codesign-filewrites.sh`（新增 import 检查）、tests README 和安装文档；
+- 验证：
+  - `sh eng/ohos-install/tests/test-codesign-filewrites.sh` -> `6 passed, 0 failed`；
+  - MSBuild `-pp` 预处理新 targets（临时 project import）-> `rc=0`；
+  - 完整 SDK 构建未完成：本机 `dotnet build` 在 restore 阶段超时（无输出），未取得 baseline。
+
+结论：item 1 的正确收口是“隔离 + 明确职责”，不是删除 SDK 侧签名；删除会破坏
+`dotnet run file.cs` 和 portable 构建。
