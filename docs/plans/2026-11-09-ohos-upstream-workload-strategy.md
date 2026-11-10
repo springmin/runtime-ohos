@@ -605,3 +605,9 @@ macOS 也没有把签名全部放在 workload，而是分两层：
 - 随后重试时 OH host 的 `csc` 在 Essentials/Core 阶段出现 exit 139（内存/编译器不稳定），
   不是代码诊断；默认 `verify-slice.sh` 的 slice vehicle + 25/25 测试通过。
 - 结论：6 个服务的 split 可编译；`--tfm` 的最终门禁需要一台内存充足的 OH host 重新跑。
+
+验证补充（2026-11-10）：`csc` exit 139 / `CryptographicException` 的根因是 OH host 的
+OpenSSL 配置/锁；设置 `OPENSSL_CONF=/dev/null` 和
+`DOTNET_SYSTEM_CRYPTOGRAPHY_OPENSSL_NO_LOCKING=1` 后，6-file split 的 `--tfm` 已通过
+（`verify-slice: OK`）。`OpenHarmonyFileSystem` 移入 Core 的实验仍会触发 Controls 编译不稳定，
+已回退，留待更稳定的环境再处理。
