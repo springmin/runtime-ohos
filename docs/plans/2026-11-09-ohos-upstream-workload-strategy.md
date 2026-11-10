@@ -615,10 +615,36 @@ API：
 - `verify-slice.sh --tfm`：`verify-slice: OK`（Core + Controls + PublicApiAnalyzers）。
 - 默认 `verify-slice.sh`：slice vehicle + 25/25 tests 通过。
 
-剩余工作：
+功能对照（2026-11-10）：
 
-- 继续把 Controls-bound handler 按 Core interface 重构后迁入 Core（Border/Shape/GraphicsView/
-  BoxView/Slider/Stepper/DatePicker/TimePicker/Picker/SearchBar/ScrollView/ContentView/Image/
-  Button/ImageButton/Label/Entry/Editor/...，取决于 Core interface 覆盖）；
-- Shell/Window/AppHost/WindowRenderer/Accessibility 和 Controls 专属 handler 继续留在 Controls；
-- 剩余 66 个 public 类型进入 API review。
+- 用 `ohos-workload/test/maui-platform-verify` 的 826 项 headless 交互 harness 验证：
+  - 拆分前代码（`ddcba5f5e1c`，142 个 slice 文件）：826/829，floor 809，`assert=True`；
+  - 拆分后代码（64 + 78）：826/829，floor 809，`assert=True`；
+  - 两次运行的 826 条 `[verify]` 行按路径/计时归一化后逐条完全一致；
+  - perf 预算 `within=True`（拆分后 avg=6.039ms，alloc/frame=9373.2B；拆分前 avg=6.024ms，
+    alloc/frame=9374.6B）。
+- harness 的 split-aware 修补（`ohos-workload` 180d015）：
+  - 同时读取 Core / Controls 两个 `PublicAPI.Unshipped` 基线；
+  - row `.View` 类型在拆分后是 `IView`，harness 显式 cast 回 Controls `View`；
+  - row 类型改为在 `OpenHarmonyShellRowTypes.cs` 或原 chrome/flyout 文件中查找。
+- 设备/HAP harness 未运行：本机 `hdc list targets` 返回 `[Empty]`，没有可用设备。这是唯一
+  未覆盖的验证层级（headless 交互 harness 已覆盖 826 项）。
+
+剩余 78 个 Controls-bound 文件按设计留在 Controls：
+
+- Controls 专属 handler：Button/Label/Entry/Editor/ImageButton/RefreshView/ContentView/
+  SearchBar/SwipeView/CollectionView/CarouselView/ListView/TableView/NavigationPage/FlyoutPage/
+  HybridWebView/BlazorWebView/WebView/MediaElement/Map/...；
+- host/window/shell/accessibility/renderer：MauiAppHost/MauiApplication/WindowHandler/
+  WindowHost/WindowRenderer/TitleBar/Shell*/Accessibility/Theme/AppInfo/HandlerConnector/
+  WindowInputRouter/...；
+- 这些文件直接使用 Controls 具体类型或 Controls-only helper；迁入 Core 会重新引入
+  Core→Controls 依赖，因此保留在 Controls。
+
+完成标准：
+
+- Core 只包含仅依赖 Core/workload 契约的平台代码；Controls 只包含 Controls 集成层；
+- `--tfm` 在 Core + Controls 上通过，PublicApiAnalyzers 通过；默认 25/25 tests 通过；
+- 公共 API 拆分为 37 Core + 52 Controls，两个 baseline 同步；
+- 826 项交互 harness 在拆分前后逐条一致，perf 预算通过；
+- 剩余 52 个 Controls public 类型进入 API review（不阻塞本次拆分）。
