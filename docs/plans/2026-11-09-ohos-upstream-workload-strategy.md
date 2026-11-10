@@ -465,7 +465,13 @@ jkotas 在 #56733 的问题是当前唯一未回复的 review thread。PR 目前
   找不到 ILCompiler pack。
 - 因此 #56733 的 gate 是“pack 未发布”期间的安全开关，而不是宣称平台永远不支持 AOT。
 
-建议回复 jkotas（待确认后发）：
+已创建 runtime 跟踪 issue：https://github.com/dotnet/runtime/issues/137243
+（标题：Publish OpenHarmony ILCompiler and NativeAOT runtime packs）。
+
+已在 dotnet/sdk#56733 回复并链接该 issue：
+https://github.com/dotnet/sdk/pull/56733#issuecomment-6763961614
+
+建议回复文本：
 
 ```text
 NativeAOT is the right direction; the blocker is pack availability, not the platform.
