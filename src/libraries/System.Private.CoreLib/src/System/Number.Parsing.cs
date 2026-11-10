@@ -178,6 +178,10 @@ namespace System
 
     internal static partial class Number
     {
+        private const int Int32Precision = 10;
+        private const int UInt32Precision = Int32Precision;
+        private const int Int64Precision = 19;
+        private const int UInt64Precision = 20;
         private const int Int128Precision = 39;
         private const int UInt128Precision = 39;
 
@@ -186,7 +190,7 @@ namespace System
 
         private const int FloatingPointMaxDenormalMantissaBits = 52;
 
-        private static bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
+        private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             number.CheckConsistency();
@@ -198,9 +202,9 @@ namespace System
                 return false;
             }
 
-            ReadOnlySpan<byte> digits = number.Digits;
-            int pos = 0;
+            byte* p = number.DigitsPtr;
 
+            Debug.Assert(p != null);
             TInteger n = TInteger.Zero;
 
             while (--i >= 0)
@@ -212,12 +216,9 @@ namespace System
 
                 n = TInteger.MultiplyBy10(n);
 
-                byte digit = digits[pos];
-
-                if (digit != '\0')
+                if (*p != '\0')
                 {
-                    pos++;
-                    TInteger newN = n + TInteger.CreateTruncating(digit - '0');
+                    TInteger newN = n + TInteger.CreateTruncating(*p++ - '0');
 
                     if (!TInteger.IsSigned && (newN < n))
                     {
@@ -366,40 +367,12 @@ namespace System
                         num = TChar.CastToUInt32(value[index]);
                     }
                 }
-                else if (info.AllowHyphenDuringParsing() && num == '-')
-                {
-                    isNegative = true;
-                    index++;
-
-                    if ((uint)index >= (uint)value.Length)
-                    {
-                        goto FalseExit;
-                    }
-                    num = TChar.CastToUInt32(value[index]);
-                }
                 else
                 {
-                    // Slice a copy rather than reassigning value, so that index (and thus the number
-                    // of elements reported as consumed) stays relative to the original input.
-                    ReadOnlySpan<TChar> remaining = value.Slice(index);
-
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-
-                    if (!positiveSign.IsEmpty && remaining.StartsWith(positiveSign))
+                    int nextIndex = MatchSignChars(value, index, info, out isNegative);
+                    if (nextIndex >= 0)
                     {
-                        index += positiveSign.Length;
-
-                        if ((uint)index >= (uint)value.Length)
-                        {
-                            goto FalseExit;
-                        }
-                        num = TChar.CastToUInt32(value[index]);
-                    }
-                    else if (!negativeSign.IsEmpty && remaining.StartsWith(negativeSign))
-                    {
-                        isNegative = true;
-                        index += negativeSign.Length;
+                        index = nextIndex;
 
                         if ((uint)index >= (uint)value.Length)
                         {
@@ -626,7 +599,7 @@ namespace System
             public static bool IsValidChar(uint ch) => (ch - '0') <= 1;
             public static uint FromChar(uint ch) => ch - '0';
             public static uint MaxDigitValue => 1;
-            public static int MaxDigitCount => sizeof(TInteger) * 8;
+            public static unsafe int MaxDigitCount => sizeof(TInteger) * 8;
             public static TInteger ShiftLeftForNextDigit(TInteger value) => value << 1;
         }
 
@@ -837,18 +810,14 @@ namespace System
             return result;
         }
 
-        internal static bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
+        internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
 
-            // Walk the digits as a span sliced to the digit count. Reading past the end yields
-            // the '\0' terminator, expressed here via the length so the JIT can prove each access
-            // in bounds and elide the checks.
-            ReadOnlySpan<byte> digits = number.Digits.Slice(0, number.DigitsCount);
-            int pos = 0;
+            byte* p = number.DigitsPtr;
             int e = number.Scale;
             bool sign = number.IsNegative;
-            uint c = PeekDigit(digits, pos);
+            uint c = *p;
             if (c == 0)
             {
                 // To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
@@ -866,7 +835,7 @@ namespace System
                 e--;
                 low64 *= 10;
                 low64 += c - '0';
-                c = PeekDigit(digits, ++pos);
+                c = *++p;
                 if (low64 >= ulong.MaxValue / 10)
                     break;
                 if (c == 0)
@@ -898,7 +867,7 @@ namespace System
                     low64 += c;
                     if (low64 < c)
                         high++;
-                    c = PeekDigit(digits, ++pos);
+                    c = *++p;
                 }
                 e--;
             }
@@ -907,7 +876,7 @@ namespace System
             {
                 if ((c == '5') && ((low64 & 1) == 0))
                 {
-                    c = PeekDigit(digits, ++pos);
+                    c = *++p;
 
                     bool hasZeroTail = !number.HasNonZeroTail;
 
@@ -922,7 +891,7 @@ namespace System
                     while ((c != 0) && hasZeroTail)
                     {
                         hasZeroTail &= c == '0';
-                        c = PeekDigit(digits, ++pos);
+                        c = *++p;
                     }
 
                     // We should either be at the end of the stream or have a non-zero tail
@@ -959,11 +928,6 @@ namespace System
                 value = new decimal((int)low64, (int)(low64 >> 32), (int)high, sign, (byte)-e);
             }
             return true;
-
-            // Returns the digit at pos, or '\0' once the digits are exhausted. Guarding the read
-            // with the unsigned length compare lets the JIT elide the bounds check.
-            static uint PeekDigit(ReadOnlySpan<byte> digits, int pos)
-                => (uint)pos < (uint)digits.Length ? digits[pos] : (byte)'\0';
         }
 
         internal static TFloat ParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
@@ -977,7 +941,7 @@ namespace System
             return result;
         }
 
-        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out int elementsConsumed)
+        internal static unsafe ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
@@ -1065,17 +1029,29 @@ namespace System
                     return ParsingStatus.Failed;
                 }
 
-                int negativeSignLength = GetMatchingNegativeSignLength(valueTrim, info.NegativeSignTChar<TChar>(), info);
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
 
-                if (negativeSignLength != 0)
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
                 {
-                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSignLength);
+                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
                     elementsConsumed = value.Length - afterSign.Length;
 
                     if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                     {
                         result = TDecimal.Construct(TDecimal.NaN);
                         return ParsingStatus.OK;
+                    }
+
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
+                    {
+                        ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
+                        elementsConsumed = value.Length - afterHyphen.Length;
+
+                        if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
+                        {
+                            result = TDecimal.Construct(TDecimal.NaN);
+                            return ParsingStatus.OK;
+                        }
                     }
                 }
 
@@ -1095,31 +1071,22 @@ namespace System
             return !span.IsEmpty && (span[0] == c);
         }
 
-        private static int GetMatchingNegativeSignLength<TChar>(ReadOnlySpan<TChar> value, ReadOnlySpan<TChar> negativeSign, NumberFormatInfo info)
-            where TChar : unmanaged, IUtfChar<TChar>
-        {
-            if (SpanStartsWith(value, negativeSign, StringComparison.OrdinalIgnoreCase))
-            {
-                return negativeSign.Length;
-            }
-
-            return info.AllowHyphenDuringParsing() && SpanStartsWith(value, TChar.CastFrom('-')) ? 1 : 0;
-        }
-
         internal static bool SpanStartsWith<TChar>(ReadOnlySpan<TChar> span, ReadOnlySpan<TChar> value, StringComparison comparisonType)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             if (typeof(TChar) == typeof(char))
             {
-                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span)
-                    .StartsWith(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value), comparisonType);
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
+                return typedSpan.StartsWith(typedValue, comparisonType);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span)
-                    .StartsWithUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value), comparisonType);
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                return typedSpan.StartsWithUtf8(typedValue, comparisonType);
             }
         }
 
@@ -1128,15 +1095,17 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span)
-                    .EqualsOrdinalIgnoreCase(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value));
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
+                return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                return Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span)
-                    .EqualsOrdinalIgnoreCaseUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value));
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
             }
         }
 
@@ -1231,24 +1200,10 @@ namespace System
             bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
-                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-                if (!negativeSign.IsEmpty && value[index..].StartsWith(negativeSign))
+                int nextIndex = MatchSignChars(value, index, info, out isNegative);
+                if (nextIndex >= 0)
                 {
-                    isNegative = true;
-                    index += negativeSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    isNegative = true;
-                    index++;
-                }
-                else
-                {
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    if (!positiveSign.IsEmpty && value[index..].StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                    }
+                    index = nextIndex;
                 }
             }
 
@@ -1323,13 +1278,9 @@ namespace System
             if ((styles & NumberStyles.AllowDecimalPoint) != 0 && index < value.Length)
             {
                 ReadOnlySpan<TChar> decimalSeparator = info.NumberDecimalSeparatorTChar<TChar>();
-                ReadOnlySpan<TChar> remaining = value[index..];
-                int separatorLength = !decimalSeparator.IsEmpty && remaining.StartsWith(decimalSeparator)
-                    ? decimalSeparator.Length
-                    : MatchChars(remaining, 0, decimalSeparator);
-                if (separatorLength > 0)
+                if (value.Slice(index).StartsWith(decimalSeparator))
                 {
-                    index += separatorLength;
+                    index += decimalSeparator.Length;
 
                     int fractionalPartStart = index;
                     while (index < value.Length)
@@ -1387,22 +1338,11 @@ namespace System
                     return false;
                 }
 
-                bool exponentIsNegative = false;
-                ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
-                ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
-                if (!negSign.IsEmpty && value[index..].StartsWith(negSign))
+                bool exponentIsNegative;
+                int nextIndex = MatchSignChars(value, index, info, out exponentIsNegative);
+                if (nextIndex >= 0)
                 {
-                    exponentIsNegative = true;
-                    index += negSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    exponentIsNegative = true;
-                    index++;
-                }
-                else if (!posSign.IsEmpty && value[index..].StartsWith(posSign))
-                {
-                    index += posSign.Length;
+                    index = nextIndex;
                 }
 
                 if (index >= value.Length)
@@ -1581,7 +1521,7 @@ namespace System
             return true;
         }
 
-        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
+        internal static unsafe bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
@@ -1667,17 +1607,29 @@ namespace System
                 return false;
             }
 
-            int negativeSignLength = GetMatchingNegativeSignLength(valueTrim, info.NegativeSignTChar<TChar>(), info);
+            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
 
-            if (negativeSignLength != 0)
+            if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
             {
-                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSignLength);
+                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
                 elementsConsumed = value.Length - afterSign.Length;
 
                 if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                 {
                     result = TFloat.NaN;
                     return true;
+                }
+
+                if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
+                {
+                    ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
+                    elementsConsumed = value.Length - afterHyphen.Length;
+
+                    if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
+                    {
+                        result = TFloat.NaN;
+                        return true;
+                    }
                 }
             }
 

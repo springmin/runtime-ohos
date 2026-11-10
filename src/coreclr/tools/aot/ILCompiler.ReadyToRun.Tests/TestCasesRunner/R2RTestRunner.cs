@@ -180,10 +180,12 @@ internal sealed class R2RTestCase(string name, List<CrossgenCompilation> compila
 internal sealed class R2RTestRunner
 {
     private readonly ITestOutputHelper _output;
+    private readonly TestPaths _paths;
 
     public R2RTestRunner(ITestOutputHelper output)
     {
         _output = output;
+        _paths = new TestPaths(output);
     }
 
     /// <summary>
@@ -206,19 +208,19 @@ internal sealed class R2RTestRunner
             var assemblyPaths = CompileAllAssemblies(assembliesToCompile);
 
             // Step 2: Run each crossgen2 compilation and validate
-            var driver = new R2RDriver(_output);
-            List<string> refPaths = BuildReferencePaths();
+            var driver = new R2RDriver(_output, _paths);
+            var refPaths = BuildReferencePaths();
 
             foreach(var compilation in testCase.Compilations)
             {
                 string outputPath = RunCrossgenCompilation(
-                    testCase.Name, compilation, driver, compilation.FilePath, assemblyPaths);
+                    testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
 
                 if (compilation.Validate is not null)
                 {
                     Assert.True(File.Exists(outputPath), $"R2R image not found: {outputPath}");
                     _output.WriteLine($"  Validating R2R image: {outputPath}");
-                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(refPaths), outputPath);
+                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths, assemblyPaths), outputPath);
                     compilation.Validate(reader);
                 }
             }
@@ -236,10 +238,9 @@ internal sealed class R2RTestRunner
     private Dictionary<string, string> CompileAllAssemblies(
         IEnumerable<CompiledAssembly> assemblies)
     {
+        var compiler = new R2RTestCaseCompiler(_paths);
         var paths = new Dictionary<string, string>();
 
-        var defaultReferences = BuildReferencePaths();
-        var compiler = new R2RTestCaseCompiler(defaultReferences);
         foreach (var asm in assemblies)
         {
             var sources = asm.SourceResourceNames
@@ -255,7 +256,7 @@ internal sealed class R2RTestRunner
                 additionalReferences: asm.References.Select(r => r.FilePath).ToList(),
                 features: asm.Features.Count > 0 ? asm.Features : null);
             paths[asm.AssemblyName] = ilPath;
-            _output.WriteLine($"Roslyn compiled '{asm.AssemblyName}' -> {ilPath}");
+            _output.WriteLine($"  Roslyn compiled '{asm.AssemblyName}' -> {ilPath}");
         }
 
         return paths;
@@ -274,6 +275,7 @@ internal sealed class R2RTestRunner
         CrossgenCompilation compilation,
         R2RDriver driver,
         string outputFile,
+        List<string> refPaths,
         Dictionary<string, string> assemblyPaths)
     {
         var args = new List<string>();
@@ -309,13 +311,11 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
-        args.AddRange(["--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture]);
-
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
 
-        // Global refs (shared framework + System.Private.CoreLib)
-        AddRefArgs(args);
+        // Global refs (runtime pack + System.Private.CoreLib)
+        AddRefArgs(args, refPaths);
 
         EnsureDirectoryExists(Path.GetDirectoryName(outputFile));
 
@@ -330,28 +330,27 @@ internal sealed class R2RTestRunner
         return outputFile;
     }
 
-    /// <summary>
-    /// Adds the shared framework references for crossgen2 as a single directory wildcard.
-    /// </summary>
-    private static void AddRefArgs(List<string> args)
+    private static void AddRefArgs(List<string> args, List<string> refPaths)
     {
-        args.Add("-r");
-        args.Add(Path.Combine(TestPaths.LibrariesDir, "*.dll"));
+        foreach (string refPath in refPaths)
+        {
+            args.Add("-r");
+            args.Add(refPath);
+        }
     }
 
-    /// <summary>
-    /// Builds the explicit reference paths used for Roslyn compilation and for resolving assemblies
-    /// when reading back an R2R image, from the shared framework IL assemblies staged for this
-    /// build's target RID. crossgen2 takes the same assemblies as a wildcard; see <see cref="AddRefArgs"/>.
-    /// </summary>
-    private static List<string> BuildReferencePaths()
+    private List<string> BuildReferencePaths()
     {
-        string librariesDir = TestPaths.LibrariesDir;
+        var paths = new List<string>();
 
-        List<string> paths = [.. Directory.GetFiles(librariesDir, "*.dll")];
-        Assert.True(
-            paths.Exists(p => Path.GetFileName(p) == "System.Private.CoreLib.dll"),
-            $"System.Private.CoreLib.dll not found in staged references: {librariesDir}");
+        paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
+
+        string spcl = _paths.SystemPrivateCoreLibPath;
+        Assert.True(File.Exists(spcl),
+            $"System.Private.CoreLib.dll not found at '{spcl}'. " +
+            $"Searched RuntimePackNativeDir='{_paths.RuntimePackNativeDir}' and " +
+            $"CoreCLRArtifactsDir='{_paths.CoreCLRArtifactsDir}'");
+        paths.Add(spcl);
 
         return paths;
     }
