@@ -400,3 +400,20 @@ ohos-workload:
 5. **Core/Controls fallback 清理**：OpenHarmony TFM 现在借助 Core/Controls 的 Standard
    fallback 让共享 handler 基类完整编译；实际运行时由切片注册的 `OpenHarmony*Handler` 接管。
    后续按 Phase 2 把 Core-only handler 拆回 Core，并逐步替换 Standard no-op。
+
+### 13.4 Workload 环境默认值与 crossgen2
+
+- **环境默认值**：`Microsoft.OpenHarmony.Sdk/Sdk/Sdk.targets` 对 `openharmony` 平台设置
+  `UseAppHost=false`、`SelfContained=true`、默认 `RuntimeIdentifier=openharmony-arm64`、
+  `GenerateDependencyFile=false`、`CopyLocalLockFileAssemblies=true`。trust payload
+  （`OpenHarmonyTrustMode` / `trust.json` / CA bundle）与 static OpenSSL 由
+  `OpenHarmony.Hap.targets` 处理，`selftest-hap-targets.sh` 的 T13/T14 已覆盖。
+- **KnownCrossgen2Pack**：当前栈只发布 JIT/self-contained 运行包，未启用 ReadyToRun 或
+  crossgen2，且 OpenHarmony 的 NativeAOT 已显式关闭（`NativeAotSupported=false`），因此
+  manifest 不声明 `KnownCrossgen2Pack`。如果后续启用 R2R，需要在 workload manifest 增加
+  `KnownCrossgen2Pack`（Key: `openharmony-arm64`），并补 crossgen2 pack 的发布/签名验证。
+- **rc.3 runtime pack pin**：`scripts/cut-kit.sh` 已补
+  `Microsoft.AspNetCore.App.Runtime.openharmony-arm64/11.0.0-rc.3.26522.148` 的 release tag
+  `v11.0.0-rc.3.26522.148-openharmony` 和 nupkg SHA-256
+  `1104f0704709e2ae5f09a653088455510b03d1ad814d0c33a97b2c43d9f99a3a`；
+  `selftest-packs.sh` 30/30 通过。
