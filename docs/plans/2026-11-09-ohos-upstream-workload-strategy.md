@@ -573,3 +573,35 @@ macOS 也没有把签名全部放在 workload，而是分两层：
 - `ElfSigner` 的两份副本是“workload 自包含”的代价；修改算法时必须同步
   `sdk-ohos/src/Tasks/Microsoft.NET.Build.Tasks/ElfSigner.cs` 和
   `ohos-workload/src/Microsoft.OpenHarmony.Tasks/ElfSigner.cs`。
+
+## 16. MAUI Core/Controls split（2026-11-10）
+
+第一批按依赖把 6 个内部平台服务移入 `Microsoft.Maui.Core`：
+
+- `OpenHarmonyPaths`
+- `OpenHarmonyPreferences`
+- `OpenHarmonyFlashlight`
+- `OpenHarmonyHaptics`
+- `OpenHarmonyKeystore`
+- `OpenHarmonyNotifications`
+
+仍留在 `Microsoft.Maui.Controls`：
+
+- handlers/host（依赖 Controls 具体类型；90 个 public 类型仍待 API review）；
+- `OpenHarmonyFileSystem`：编译进 Core 时在 OH host 触发 `csc` exit 139；先保留在 Controls，
+  后续拆 raw-file bridge 或修复编译器问题。
+
+工程改动：
+
+- `src/Core/src/Core.csproj` 增加 6 个 `Compile Include`；
+- `src/Controls/src/Core/Controls.Core.csproj` 的 slice glob 排除同一组 6 个文件；
+- 6 个文件补显式 `using`，不再依赖 slice 的 `GlobalUsings.OpenHarmony.cs`（该文件仍留在
+  Controls 供其余 slice 文件使用）。
+
+验证：
+
+- `verify-slice.sh --tfm` 在同一 6-file split 上曾通过（Core + Controls +
+  PublicApiAnalyzers）；
+- 随后重试时 OH host 的 `csc` 在 Essentials/Core 阶段出现 exit 139（内存/编译器不稳定），
+  不是代码诊断；默认 `verify-slice.sh` 的 slice vehicle + 25/25 测试通过。
+- 结论：6 个服务的 split 可编译；`--tfm` 的最终门禁需要一台内存充足的 OH host 重新跑。
