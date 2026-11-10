@@ -431,7 +431,7 @@ ohos-workload:
 
 | PR | 状态 | 最新评审 |
 |---|---|---|
-| sdk#56732 | open / mergeable / 7 commits | 无 maintainer review comment；marcpopMSFT 在 #56732 的 conversation 中明确“其他四个 OpenHarmony 专属改动应放 fork”，当前 PR 只保留 RID graph + crossgen2 mapping |
+| sdk#56732 | open / mergeable / 7 commits / **all checks green** | 无 maintainer review comment；marcpopMSFT 在 #56732 的 conversation 中明确“其他四个 OpenHarmony 专属改动应放 fork”，当前 PR 只保留 RID graph + crossgen2 mapping。2026-11-10 已发 status ping：https://github.com/dotnet/sdk/pull/56732#issuecomment-6764071019 |
 | sdk#56733 | open / mergeable / 13 commits | marcpopMSFT 2026-11-09 APPROVED；jkotas 2026-11-10 追问“NativeAOT 对 SDK 工具几乎必需，OpenHarmony 为什么不启用” |
 | sdk#56735 | closed | 按 marcpopMSFT 意见移到 workload/fork（ELF signer/selfsign） |
 | sdk#56760 | closed | 按意见移到 SDK build pipeline/workload（build/publish 签名） |
