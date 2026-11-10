@@ -611,4 +611,5 @@ macOS 也没有把签名全部放在 workload，而是分两层：
 4.1.0 不等于 runtime 的 `.so.3` ABI 变了。把 rc3 / 3.5.9 / 4.1.0 的库前置到
 `LD_LIBRARY_PATH` 后，`csc` 仍然 hang/crash；`OPENSSL_CONF=/dev/null` + no-locking 只让部分
 运行通过，不是确定性修复。结论：`csc` 139 不能只归因于 OpenSSL 版本，需要稳定 host 或
-`csc` dump 继续定位。`OpenHarmonyFileSystem` 移入 Core 的实验同样受此影响，已回退。
+`csc` dump 继续定位。OH 沙箱还会拒绝 `createdump`（`/proc/<pid>/mem` permission denied），
+抓 dump 需要非沙箱/稳定 host。`OpenHarmonyFileSystem` 移入 Core 的实验同样受此影响，已回退。
