@@ -373,6 +373,12 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(debug)
 endif()
 
+# The static single-file host links the runtimeinfo archive; make the target
+# dependency explicit so Ninja does not race the link against the archive.
+if (TARGET singlefilehost AND TARGET runtimeinfo)
+  add_dependencies(singlefilehost runtimeinfo)
+endif()
+
 add_subdirectory(binder)
 add_subdirectory(dlls)
 
