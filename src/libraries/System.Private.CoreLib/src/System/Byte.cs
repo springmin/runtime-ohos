@@ -1204,8 +1204,6 @@ namespace System
         // IUtfChar
         //
 
-        static bool IUtfChar<byte>.IsUtf8 => true;
-
         static byte IUtfChar<byte>.CastFrom(byte value) => value;
         static byte IUtfChar<byte>.CastFrom(char value) => (byte)value;
         static byte IUtfChar<byte>.CastFrom(int value) => (byte)value;
