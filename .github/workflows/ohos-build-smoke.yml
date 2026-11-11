@@ -28,7 +28,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build python3 curl unzip perl \
+          sudo apt-get install -y build-essential cmake ninja-build python3 curl unzip perl gawk \
             libssl-dev libicu-dev zlib1g-dev libxml2-dev libkrb5-dev
 
       - name: Download the OpenHarmony SDK (NDK)
@@ -165,7 +165,7 @@ jobs:
 
       - name: Install build dependencies with tdnf
         run: |
-          tdnf install -y cmake ninja-build perl-core make gcc gcc-c++ python3 curl tar gzip git
+          tdnf install -y cmake ninja-build perl-core gawk make gcc gcc-c++ python3 curl tar gzip git
           tdnf clean all
 
       - name: Prepare the OpenHarmony SDK and assets with the PR script
