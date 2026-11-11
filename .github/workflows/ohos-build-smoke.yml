@@ -2,9 +2,11 @@ name: OHOS build smoke
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - ci/ohos-smoke
+    inputs:
+      ref:
+        description: Branch, tag, or SHA to build
+        required: true
+        default: pr/ohos-ci-leg
 
 permissions:
   contents: read
@@ -20,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 1
 
       - name: Install build dependencies
@@ -139,6 +142,47 @@ jobs:
           export OHOS_NDK_HOME="$RUNNER_TEMP/ohos-sdk/linux"
           ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
             -cmakeargs "-DCMAKE_ICU_DIR=$RUNNER_TEMP/ohos-assets/icu -DOPENSSL_ROOT_DIR=$RUNNER_TEMP/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$RUNNER_TEMP/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$RUNNER_TEMP/ohos-assets/openssl/lib/libssl.a"
+
+      - name: Verify the build outputs
+        run: |
+          set -euo pipefail
+          find artifacts/bin \( -name 'libcoreclr.so' -o -name 'libSystem.Native.so' -o -name 'libSystem.Globalization.Native.so' -o -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' \) -print | sort
+          test -n "$(find artifacts/bin -name 'libcoreclr.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Globalization.Native.so' -print -quit)"
+          test -n "$(find artifacts/bin -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' -print -quit)"
+
+  build-azurelinux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-crossdeps-builder-amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 1
+
+      - name: Install build dependencies with tdnf
+        run: |
+          tdnf install -y cmake ninja-build perl-core make gcc gcc-c++ python3 curl tar gzip git
+          tdnf clean all
+
+      - name: Prepare the OpenHarmony SDK and assets with the PR script
+        env:
+          OHOS_NDK_HOME: /tmp/ohos-sdk/linux
+          OHOS_ASSETS: /tmp/ohos-assets
+        run: |
+          bash eng/pipelines/ohos/setup-ohos-assets.sh
+
+      - name: Build clr.runtime and libs.native
+        env:
+          OHOS_NDK_HOME: /tmp/ohos-sdk/linux
+          OHOS_ASSETS: /tmp/ohos-assets
+        run: |
+          set -euo pipefail
+          ./build.sh clr.runtime+libs.native -os openharmony -arch arm64 -cross -c Release \
+            -cmakeargs "-DCMAKE_ICU_DIR=$OHOS_ASSETS/icu -DOPENSSL_ROOT_DIR=$OHOS_ASSETS/openssl -DOPENSSL_INCLUDE_DIR=$OHOS_ASSETS/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$OHOS_ASSETS/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$OHOS_ASSETS/openssl/lib/libssl.a"
 
       - name: Verify the build outputs
         run: |
