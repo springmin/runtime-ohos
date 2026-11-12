@@ -1,5 +1,10 @@
 # docs/plans 文档索引
 
+> **环境注记（2026-11-12）**：本目录历史记录中出现的 `Cellar/ohos-sdk/26.0.0.18_1` / `18_2`
+> 均为当时的实测环境；这两个 SDK 已从本机移除，当前统一为
+> `~/.harmonybrew/opt/ohos-sdk`（`Cellar/ohos-sdk/26.0.0.38`）。历史路径保留为证据，
+> 不再是可执行的当前命令。
+>
 > 本目录是 OpenHarmony .NET/MAUI 移植的过程文档库：测试/交付文档、主审计报告、交接状态与历史批次记录。
 > 「状态（最后更新）」列 = 用途 + 该文件最近一次 git 提交日期。图例：✅ 当前生效 · 🔄 进行中/计划 · ⏳ 待执行 · 📦 阶段快照（已完成工作的记录）。
 > kit #56 日期口径（2026-10-14）：数字以 release「## Integrity（kit #56）」与随包校验为准（kit #56 = **rc.2 官方包对齐**（MAUI 四包官方 `11.0.0-rc.2.26505.5`；dnceng feed 已删）+ **TOUCH-PASTE**（壳级 `PasteButton` 安全控件：长按浮层 → 点击 → 文本落聚焦 Entry；opt-in = 沙箱标记）+ **WEBAUTH-LOOPBACK**（`127.0.0.1` 单次监听回跳、免 chooser；含 v6 `localhost` 101 ms）+ **SECURE-STORAGE-FAILCLOSED**（opt-in 开关：HUKS 失败态 Set 抛错不落盘 / sealed 读抛错；默认关）+ kit #55 全量（off-cycle 维护波（launcher identity / pasteboard / media 两修 / webauth 解耦 / subwin completed / packs 加固）+ kit #54 全量）；发布实测 tar **70,420,041 / `aba73b61…`**、树 `99a37cec…`、sidecar `527b6e3a…`（89 B）、bundle **73,470,627 / `c678a7ee…`**（sdk 锚 **`d62bfe0b79…`**）；套件 **814/817 floor 797**、宿主导出 **164/164**、abc **637,224（`8503a3c2…`）**/24,324、宿主 **367,520（`8826adde…`）**；预签已刷新（#56 件：70,240,169 / `0e062b5e…`，asset 639391274/639391884）；降级/人工卡 = a11y 动作 e2e 平台限 / 实键盘敲击人工卡 / Back 平台路由边界 / 弹窗无托管树 / DRM 无 / >64 MiB 无 Range / 池满 2 槽 / api20 镜像级边界 / clipboard 真读=ACL（产品决策）/ touch-paste opt-in 门控 / N=4 壳契约 / 2in1 debug 域)；交接 = `2026-10-14-ohos-tester-handoff-kit56.md`。
