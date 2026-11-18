@@ -13,6 +13,7 @@
 #include "formattype.h"
 #include "gdbjit.h"
 #include "gdbjithelpers.h"
+#include <minipal/environ.h>
 
 thread_local bool tls_isSymReaderInProgress = false;
 
@@ -522,11 +523,12 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
 
     for (int i = 0; i < locals.size; i++)
     {
-        size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, NULL, 0, NULL, NULL);
+        const CHAR16_T* localName = (const CHAR16_T*)methodDebugInfo.locals[i].name;
+        size_t cchLocalName = u16_strlen(methodDebugInfo.locals[i].name) + 1;
+        size_t sizeRequired = minipal_get_length_utf16_to_utf8(localName, cchLocalName, 0);
         locals.localsName[i] = new char[sizeRequired];
 
-        int len = WideCharToMultiByte(
-            CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, locals.localsName[i], sizeRequired, NULL, NULL);
+        minipal_convert_utf16_to_utf8(localName, cchLocalName, locals.localsName[i], sizeRequired, 0);
         locals.localsScope[i].ilStartOffset = methodDebugInfo.locals[i].startOffset;
         locals.localsScope[i].ilEndOffset = methodDebugInfo.locals[i].endOffset;
     }
@@ -554,7 +556,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
             if ((ULONG)(methodDebugInfo.points[i].ilOffset) == map[j].ilOffset)
             {
                 s.fileIndex = 0;
-                int len = WideCharToMultiByte(CP_UTF8, 0, sp.fileName, -1, s.fileName, sizeof(s.fileName), NULL, NULL);
+                size_t len = minipal_convert_utf16_to_utf8((const CHAR16_T*)sp.fileName, u16_strlen(sp.fileName), s.fileName, sizeof(s.fileName) - 1, 0);
                 s.fileName[len] = 0;
                 s.lineNumber = sp.lineNumber;
                 break;
@@ -645,14 +647,16 @@ struct jit_descriptor
   struct jit_code_entry *relevant_entry;
   struct jit_code_entry *first_entry;
 };
+extern "C"
+{
 // GDB puts a breakpoint in this function.
 // To prevent from inlining we add noinline attribute and inline assembler statement.
-extern "C"
-void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
+DLLEXPORT void __attribute__((noinline)) __jit_debug_register_code() { __asm__(""); };
 
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
-struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+DLLEXPORT struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+}
 static CrstStatic g_jitDescriptorCrst;
 
 // END of GDB JIT interface
@@ -2334,6 +2338,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #if defined(TARGET_ARM)
     const unsigned int code_alignment_factor = 2;
     const int data_alignment_factor = -4;
+    const UINT8 return_address_register = 14; // lr
 
     UINT8 cieCode[] = {
         // DW_CFA_def_cfa 13[sp], 0
@@ -2355,11 +2360,12 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #elif defined(TARGET_AMD64)
     const unsigned int code_alignment_factor = 1;
     const int data_alignment_factor = -8;
+    const UINT8 return_address_register = 16; // rip
 
     UINT8 cieCode[] = {
       // DW_CFA_def_cfa 7(rsp), 8
       0x0c, 0x07, 0x08,
-      // DW_CFA_offset 16, -16 (= -8 * 2)
+      // DW_CFA_offset 16, -8 (= -8 * 1)
       (0x02 << 6) | 0x10, 0x01,
     };
 
@@ -2376,6 +2382,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
 #elif defined(TARGET_ARM64)
     const unsigned int code_alignment_factor = 1;
     const int data_alignment_factor = -4;
+    const UINT8 return_address_register = 30; // lr
 
     UINT8 cieCode[] = {
       // DW_CFA_def_cfa 31(sp), 0
@@ -2416,7 +2423,7 @@ static void BuildDebugFrame(Elf_Builder &elfBuilder, PCODE pCode, TADDR codeSize
     Leb128Encode(code_alignment_factor, reinterpret_cast<char *>(&pCIE->code_alignment_factor), 1);
     Leb128Encode(data_alignment_factor, reinterpret_cast<char *>(&pCIE->data_alignment_factor), 1);
 
-    pCIE->return_address_register = 0;
+    pCIE->return_address_register = return_address_register;
 
     memcpy(&pCIE->instructions, cieCode, sizeof(cieCode));
 
@@ -2447,7 +2454,7 @@ void NotifyGdb::Initialize()
     // Get names of interesting modules from environment
     if (g_wszModuleNames == nullptr && g_cBytesNeeded == 0)
     {
-        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
+        DWORD cCharsNeeded = minipal_environ_get_variable_u16((const CHAR16_T*)W("CORECLR_GDBJIT"), NULL, 0);
 
         if (cCharsNeeded == 0)
         {
@@ -2457,7 +2464,7 @@ void NotifyGdb::Initialize()
 
         WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
 
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
+        cCharsNeeded = minipal_environ_get_variable_u16((const CHAR16_T*)W("CORECLR_GDBJIT"), (CHAR16_T*)wszModuleNamesBuf, cCharsNeeded);
 
         if (cCharsNeeded == 0)
         {
@@ -2511,11 +2518,12 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr, PCODE pCode, const C
     const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 
-    int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
+    size_t cchModuleFile = strlen(szModuleFile) + 1;
+    size_t length = minipal_get_length_utf8_to_utf16(szModuleFile, cchModuleFile, 0);
     if (length == 0)
         return;
     WStringHolder wszModuleFile(new WCHAR[length+1]);
-    length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, wszModuleFile, length);
+    length = minipal_convert_utf8_to_utf16(szModuleFile, cchModuleFile, (CHAR16_T*)(WCHAR*)wszModuleFile, length, 0);
 
     if (length == 0)
         return;
@@ -2686,6 +2694,7 @@ bool NotifyGdb::EmitSymtab(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr, P
     Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
     elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
     symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_info = 1; // Index of the first non-local symbol
     symtab->Header()->sh_entsize = sizeof(Elf_Sym);
     elfBuilder.CloseSection();
 
@@ -2895,6 +2904,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     Elf_SectionTracker *symtab = elfBuilder.OpenSection(".symtab", SHT_SYMTAB, 0);
     elfBuilder.Append(sectSymTab.MemPtr, sectSymTab.MemSize);
     symtab->Header()->sh_link = strtab->GetIndex();
+    symtab->Header()->sh_info = 1; // Index of the first non-local symbol
     symtab->Header()->sh_entsize = sizeof(Elf_Sym);
     elfBuilder.CloseSection();
 

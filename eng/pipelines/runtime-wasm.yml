@@ -34,4 +34,3 @@ extends:
           isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
           isRollingBuild: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-          excludeOptional: false

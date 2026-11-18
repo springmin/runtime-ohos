@@ -1,3 +1,4 @@
+# Retained entry point; no optional test jobs remain after retiring Mono Wasm tests.
 trigger: none
 pr: none
 
@@ -33,4 +34,3 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           excludeLibTests: true
           excludeNonLibTests: true
-          excludeOptional: false
