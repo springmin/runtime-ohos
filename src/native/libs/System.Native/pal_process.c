@@ -23,14 +23,13 @@
 #endif
 #include <fcntl.h>
 
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #include <dirent.h>
 #include <stddef.h>
 #endif
 
 #if defined(__linux__)
-// Also provides SYS_getdents64 for the OpenHarmony /proc/self/fd fallback.
-#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
+#if !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
 // close_range was added in Linux 5.9. The syscall number is 436 for all
@@ -43,7 +42,7 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
-#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID)
+#endif // !HAVE_CLOSE_RANGE || defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 #endif // defined(__linux__)
 // OpenHarmony and Android never call close_range (seccomp), so none of the users of
 // this flag compile there; keep the definition off to avoid -Wunused-macros.
@@ -237,11 +236,11 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
-#if HAVE_FDWALK || (defined(TARGET_OPENHARMONY) && defined(__linux__) && defined(SYS_getdents64))
-// Sets FD_CLOEXEC on one open descriptor >= 3. Never closes; see RestrictHandleInheritance.
-// Only defined where a bulk helper below can call it, so no build warns about it being unused.
-static void SetCloexecForFdValue(int fd)
+#if HAVE_FDWALK
+// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
+static int SetCloexecForFd(void* context, int fd)
 {
+    (void)context;
     if (fd >= 3)
     {
         int flags = fcntl(fd, F_GETFD);
@@ -250,174 +249,14 @@ static void SetCloexecForFdValue(int fd)
             fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
         }
     }
-}
-#endif
-
-#if HAVE_FDWALK
-// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
-static int SetCloexecForFd(void* context, int fd)
-{
-    (void)context;
-    SetCloexecForFdValue(fd);
     return 0;
 }
 #endif
 
-#if defined(TARGET_OPENHARMONY) && defined(__linux__) && defined(SYS_getdents64)
-// OpenHarmony traps close_range in seccomp (SIGSYS), so list the open descriptors in
-// /proc/self/fd and touch only the real ones instead of fcntl()ing every number up to
-// RLIMIT_NOFILE (tens of thousands of calls on a device with a high limit).
-//
-// This runs inside the forked child, where malloc is not safe (another thread may have held
-// the allocator lock at fork time), so the listing is read with getdents64 into a stack buffer
-// and no libc directory state is allocated.
-struct SetCloexecProcDirent
-{
-    unsigned long long d_ino;
-    long long d_off;
-    unsigned short d_reclen;
-    unsigned char d_type;
-    char d_name[1];
-};
-
-// Returns false when the listing could not be read completely, so the caller can fall back to
-// the rlimit scan.
-static bool SetCloexecForOpenFdsProc(void)
-{
-    int dirFd;
-    do
-    {
-        dirFd = open("/proc/self/fd", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    } while (dirFd < 0 && errno == EINTR);
-    if (dirFd < 0)
-    {
-        return false;
-    }
-
-    bool complete = true;
-    char buffer[4096];
-    for (;;)
-    {
-        long bytes;
-        do
-        {
-            bytes = syscall(SYS_getdents64, dirFd, buffer, sizeof(buffer));
-        } while (bytes < 0 && errno == EINTR);
-        if (bytes < 0)
-        {
-            complete = false;
-            break;
-        }
-        if (bytes == 0)
-        {
-            break;
-        }
-        for (long offset = 0; offset < bytes;)
-        {
-            struct SetCloexecProcDirent* entry = (struct SetCloexecProcDirent*)(void*)(buffer + offset);
-            size_t dNameOffset = (size_t)((const char*)entry->d_name - (const char*)entry);
-            if ((long)entry->d_reclen <= (long)dNameOffset || (long)entry->d_reclen > (bytes - offset))
-            {
-                // Garbled entry: treat the listing as incomplete so the caller falls back
-                // to the bounded rlimit scan.
-                complete = false;
-                break;
-            }
-            // The names are decimal fd numbers; "." / ".." and any malformed name are skipped.
-            int fd = 0;
-            bool isNumber = entry->d_name[0] != '\0';
-            size_t nameLimit = (size_t)entry->d_reclen - dNameOffset;
-            size_t nameIndex = 0;
-            for (; isNumber && nameIndex < nameLimit && entry->d_name[nameIndex] != '\0'; nameIndex++)
-            {
-                char nameChar = entry->d_name[nameIndex];
-                if (nameChar < '0' || nameChar > '9')
-                {
-                    isNumber = false;
-                    break;
-                }
-                if (fd > (INT_MAX - 9) / 10)
-                {
-                    // Out of int range: treat the listing as incomplete so the caller
-                    // falls back to the bounded rlimit scan.
-                    complete = false;
-                    isNumber = false;
-                    break;
-                }
-                fd = fd * 10 + (nameChar - '0');
-            }
-            if (isNumber && nameIndex == nameLimit)
-            {
-                // The name filled the entry without a terminator; treat it as malformed.
-                isNumber = false;
-            }
-            if (isNumber)
-            {
-                SetCloexecForFdValue(fd);
-            }
-            offset += entry->d_reclen;
-        }
-        if (!complete)
-        {
-            break;
-        }
-    }
-    close(dirFd);
-    return complete;
-}
-#endif
-
-#if defined(TARGET_OPENHARMONY)
-// Sets FD_CLOEXEC on every open descriptor when no bulk close_range is usable
-// (OpenHarmony: the seccomp policy traps it with SIGSYS). Uses the /proc/self/fd listing
-// when available and falls back to a bounded rlimit scan otherwise.
-// Always sets FD_CLOEXEC rather than closing fds directly: closing fds directly would close
-// waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC), making it impossible to
-// report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
-static void SetCloexecForAllFdsFallback(void)
-{
-#if defined(__linux__) && defined(SYS_getdents64)
-    if (SetCloexecForOpenFdsProc())
-    {
-        return;
-    }
-#endif
-    struct rlimit rl;
-    int maxFd;
-    if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY)
-    {
-        maxFd = (int)rl.rlim_cur;
-    }
-    else
-    {
-        maxFd = (int)sysconf(_SC_OPEN_MAX);
-        if (maxFd <= 0)
-        {
-            maxFd = 65536; // reasonable upper bound
-        }
-    }
-
-    // Fallback: iterate over all file descriptors and set FD_CLOEXEC on each open one >= 3.
-    for (int fd = 3; fd < maxFd; fd++)
-    {
-        int flags = fcntl(fd, F_GETFD);
-        if (flags == -1)
-        {
-            continue; // fd not open
-        }
-
-        if ((flags & FD_CLOEXEC) == 0)
-        {
-            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
-        }
-    }
-}
-#endif
-
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 static int SetCloexecForOpenFds(void)
 {
-    // Android's app seccomp policy can kill the child on close_range(), rather than returning ENOSYS.
+    // Android's and OpenHarmony's app seccomp policies can kill the child on close_range(), rather than returning ENOSYS.
     // Enumerate only open descriptors. Use getdents64 directly to avoid opendir/readdir allocations
     // and locks between fork and exec. Android's dirent64 matches the kernel's linux_dirent64 layout:
     // https://man7.org/linux/man-pages/man2/getdents.2.html
@@ -481,7 +320,7 @@ done:
     close(directoryFd);
     return result;
 }
-#endif // defined(TARGET_ANDROID)
+#endif // defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
 
 // Returns 0 on success, or -1 (with errno set to ENOTSUP) if this platform/kernel doesn't provide
 // a performant native way (close_range()/fdwalk()/procfs) to restrict which fds a child process inherits.
@@ -501,24 +340,18 @@ static int32_t RestrictHandleInheritance(int32_t* inheritedFds, int32_t inherite
     // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
     int result;
-#if defined(TARGET_ANDROID)
+#if defined(TARGET_ANDROID) || defined(TARGET_OPENHARMONY)
     result = SetCloexecForOpenFds();
-#elif HAVE_CLOSE_RANGE && !defined(TARGET_OPENHARMONY)
+#elif HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
     result = close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
-#elif defined(__NR_close_range) && !defined(TARGET_OPENHARMONY)
+#elif defined(__NR_close_range)
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
     result = (int)syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC);
 #elif HAVE_FDWALK
     // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
     result = fdwalk(SetCloexecForFd, NULL);
-#elif defined(TARGET_OPENHARMONY)
-    // OpenHarmony's seccomp policy traps close_range with SIGSYS, so set FD_CLOEXEC
-    // by walking /proc/self/fd instead (bounded; falls back to an rlimit scan if the
-    // listing cannot be read).
-    SetCloexecForAllFdsFallback();
-    result = 0;
 #else
     result = -1;
 #endif
