@@ -1,5 +1,10 @@
 # 剩余项复核（REMAINING-AUDIT-FINAL，2026-10-10）
 
+> **2026-11-19 复核**：RTM 产物已到（MAUI 11.0.10 / .NET 11 GA / workload 1.0.1）；rc.2 外部项已闭环；
+> MAUI 上游并入已完成（11.0.10 + #39838 cherry-pick `60b8893`），并新建 `release/ohos-rtm`。
+> 仍待：L7-M2 矩阵/soak、WEBAUTH 隐式、L8 余项、tester/AGC、以及新的 RTM 兼容矩阵与 kit #59（见
+> `2026-11-05-ohos-maui-rtm-readiness.md`）。
+
 > 口径：轻量只读落档（读文档/读码/stdout 复核；不构建、不用设备、不处理上游 PR）。基线 = ow `01b426e` · maui `14cc245902` · runtime `e1e499401e4`（abc 574,336/`930c3efd…`、套件 763/766 floor 746、导出 164/164；#49–#53 资产未动）。前序：`2026-10-08-ohos-maui-coverage-gap-audit.md`（Top-10）· `2026-10-05-ohos-platform-limitations.md` · `2026-10-03-ohos-state-of-the-port.md`。**2026-10-11 复核**：见 `2026-10-11-ohos-unsupported-recheck.md`——§2b 的 platform-limits E4 行已刷新（默认 8 并线）；§2c 的 hybrid-blazor 样例缺已闭环（样例并线 + AOT 轮 PASS）；C1 已缓解（A-M1/B-M1 承载）、WebAuth 隐式已测、N 可配 4。
 
 ## 1. 已闭环（10-08 后，简记）

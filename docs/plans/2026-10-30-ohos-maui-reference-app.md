@@ -1,5 +1,9 @@
 # MAUI Reference LOB on OpenHarmony（v1，2026-10-30）
 
+> **2026-11-19 复核**：RTM 产物（MAUI 11.0.10 / SDK 11.0.101 / workload 1.0.1）已到，但本文四项验证仍需真实设备与 IME：
+> ① Login modal 入口点验；② Form 保存（IME 输入路径）；③ Orders 子窗入口点验；④ 1,000 行滚动 FPS 探针。
+> 均未完成，待下一次设备轮执行；冷启精确毫秒仍需补 `Run` 起点日志。
+
 > 口径：`ohos-workload` `acf211b`（`test/reference-lob`）+ `maui-ohos` `efe5b823c8e`
 > （MAUI 11 rc.2）+ kit #58 构建线。设备 HAD-W24 / OpenHarmony 7.0.0.111。
 > 目标：用一个真实 LOB 样例验证 T2 的可用控件组合（不含 CommunityToolkit；Popup/Touch 不参与）。

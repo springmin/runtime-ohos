@@ -1,5 +1,12 @@
 # CommunityToolkit.Maui 兼容矩阵（第三方库首轮，2026-10-29）
 
+> **2026-11-19 复核**：
+> - **DrawingView**：probe app 已有 `CompatDrawingViewHandler`（`ohos-workload/test/maui-compat-app`，经 connector 的第三方 fallback 注册），切片侧仍无内置 handler；该控件属于 CommunityToolkit，决定保持“probe 侧兼容 handler”而非进入 MAUI 切片。
+> - **AvatarView LIMIT**：仍待模板/测量修复与设备复验。
+> - **Popup View 重载**：仍未验证。
+> - **TouchBehavior shim**：上游 #39838 已合入 `candidate/11.0.1xx-sr2` 并 cherry-pick 到 fork dev（`60b8893`），但探针 app 仍引用 rc2/11.0.10 NuGet 包，**SR2 包或 fork MAUI 包可用前不移除 shim**。
+> - 设备复验仍受设备态影响（见文末 BLOCKED 行）。
+
 > 口径：`maui-ohos` `feature/openharmony` @ `868d3c8727b`（MAUI 11 rc.2）+
 > `CommunityToolkit.Maui` **15.0.1**（NuGet 最新；net10.0 资产，依赖 `Microsoft.Maui.Controls`
 > 10.0.90）+ `ohos-workload` `test/maui-compat-app`。设备 = HAD-W24 / OpenHarmony 7.0.0.111。
