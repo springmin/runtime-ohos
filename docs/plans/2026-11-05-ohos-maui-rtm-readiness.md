@@ -1,8 +1,22 @@
 # MAUI RTM 就绪与 rebase 计划（2026-11-05）
 
-> 状态：**等待 RTM 产物**。MAUI 没有 rc3；`dotnet/maui` 的 `main` / `release/11.0.1xx`
-> 已是 RTM 取向（`MicrosoftNETSdkPackageVersion=11.0.100-rtm.26514.118`），但 NuGet
-> 仍只有 rc2。kit #59 等 MAUI RTM + .NET RTM，rc3 `.31` 只做平台预演。
+> 状态：**RTM 产物已到，切包执行中（2026-11-19）**。MAUI 11.0.0（11-10）与 11.0.10
+> （11-11）已发布，.NET 11 GA 已发布，workload 1.0.1 与 AOT/crossgen2/selfsign 资产已就绪。
+> `rtm-pins.json` 已切到 **MAUI 11.0.10 / SDK 11.0.101 / workload 1.0.1**，并在 maui-ohos
+> 新建 `release/ohos-rtm`（`60b8893`，含 #39838 cherry-pick）。§3.2–§3.4、§4 矩阵与 §5 kit #59
+> 尚未执行。
+
+## 0. 执行状态（2026-11-19）
+
+| 步骤 | 状态 |
+|---|---|
+| `rtm-pins.json` → 11.0.10 / 11.0.101 / 1.0.1 | ✅ 完成 |
+| maui-ohos `release/ohos-rtm` 分支 | ✅ 完成（`60b8893`，含 #39838） |
+| §3.2 切片迁移到 RTM | ⏳ 待执行 |
+| §3.3 版本对齐（Versions.props/global.json/workload） | ⏳ 待执行 |
+| §3.4 门禁更新（upstream-delta/CI pin/IL 预算） | ⏳ 待执行 |
+| §4 RTM 兼容矩阵（10 项） | ⏳ 待执行 |
+| §5 kit #59 | ⏳ 依赖上述步骤 |
 
 ## 1. 当前事实
 
@@ -79,11 +93,12 @@ sh scripts/watch-maui-rtm.sh   # 0=WAIT, 10=READY, 1=所有源失败
 
 ## 6. 上游 PlatformBehavior
 
-- `main` / `release/11.0.1xx` 仍存在：
-  `if (sender is TView view && view.Handler.PlatformView is ...)`。
-- 上游已有同根因修复，**不再开重复 PR**：
-  - issue **#39747**（open，`s/verified`）；
-  - PR **#39838**（open，base `main`，含 Core.UnitTests + Android 设备测试）。
+- `main`（11.0.10）仍存在该空引用路径；修复未进 main。
+- 上游修复 **#39838 已合并（2026-11-11）到 `candidate/11.0.1xx-sr2`**，不是 `main`：
+  - 含 Core.UnitTests（`PlatformBehaviorTests`）；
+  - 已 cherry-pick 到 fork dev（maui-ohos `60b8893`，`release/ohos-rtm` 同点）。
+- 因此 **SR2 NuGet 发布前，探针 app 仍只能引用 rc2/11.0.10 包**，`CompatTouchBehavior`
+  shim 暂不能移除；SR2 包或 fork MAUI 包可用后再去 shim 并重跑 T2/T3/smoke。
 - 本地备份分支（未推送，仅回退用）：
 
 ```text
