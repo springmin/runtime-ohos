@@ -51,6 +51,10 @@ jobs:
             -cmakeargs "-DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include" \
             -cmakeargs "-DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a" \
             -cmakeargs "-DOPENSSL_SSL_LIBRARY=/opt/ohos-assets/openssl/lib/libssl.a" \
+            -cmakeargs "-DICU_ROOT=/opt/ohos-assets/icu" \
+            -cmakeargs "-DICU_INCLUDE_DIR=/opt/ohos-assets/icu/include" \
+            -cmakeargs "-DICU_UC_LIBRARY=/opt/ohos-assets/icu/lib/libicuuc.a" \
+            -cmakeargs "-DICU_I18N_LIBRARY=/opt/ohos-assets/icu/lib/libicui18n.a" \
             $extra
       - uses: actions/upload-artifact@v4
         if: always()
