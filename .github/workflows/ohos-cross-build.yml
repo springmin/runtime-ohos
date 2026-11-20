@@ -16,6 +16,9 @@ on:
       subset:
         description: "Build subset"
         default: "clr.runtime"
+      source_ref:
+        description: "Branch/tag to build (match the device SDK line)"
+        default: "release/ohos-11.0.0"
 
 permissions:
   contents: read
@@ -29,6 +32,8 @@ jobs:
       options: --platform linux/amd64
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
       - name: Show image toolchain
         run: |
           cat /etc/os-release | head -2 || true
