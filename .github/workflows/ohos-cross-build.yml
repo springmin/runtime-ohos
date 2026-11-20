@@ -38,11 +38,20 @@ jobs:
         env:
           STRESS_LOG: ${{ inputs.stress_log }}
           SUBSET: ${{ inputs.subset }}
+          OHOS_ASSETS: /opt/ohos-assets
+          OPENSSL_ROOT_DIR: /opt/ohos-assets/openssl
+          PATH: /opt/ohos-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: |
           set -eu
           extra=""
           [ "$STRESS_LOG" = "true" ] && extra="/p:FeatureStressLog=true"
-          ./build.sh "$SUBSET" -c release -arch arm64 -cross -os openharmony $extra
+          ls /opt/ohos-assets/openssl/lib /opt/ohos-assets/openssl/include 2>/dev/null | head -20 || true
+          ./build.sh "$SUBSET" -c release -arch arm64 -cross -os openharmony \
+            "-cmakeargs:-DOPENSSL_ROOT_DIR=/opt/ohos-assets/openssl" \
+            "-cmakeargs:-DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include" \
+            "-cmakeargs:-DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a" \
+            "-cmakeargs:-DOPENSSL_SSL_LIBRARY=/opt/ohos-assets/openssl/lib/libssl.a" \
+            $extra
       - uses: actions/upload-artifact@v4
         if: always()
         with:
