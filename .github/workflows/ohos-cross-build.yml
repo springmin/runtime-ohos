@@ -90,7 +90,6 @@ jobs:
         with:
           name: coreclr-arm64-openharmony
           path: |
-            artifacts/bin/coreclr/linux.arm64.Release/libcoreclr.so
-            artifacts/bin/coreclr/linux.arm64.Release/createdump*
+            artifacts/bin/coreclr/**
             artifacts/log/**
           if-no-files-found: warn
