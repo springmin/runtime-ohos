@@ -34,6 +34,14 @@ jobs:
           cat /etc/os-release | head -2 || true
           command -v cmake clang ninja || true
           echo "OHOS_NDK_HOME=${OHOS_NDK_HOME:-unset}"
+      - name: Restore
+        env:
+          OHOS_ASSETS: /opt/ohos-assets
+          OPENSSL_ROOT_DIR: /opt/ohos-assets/openssl
+          PATH: /opt/ohos-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        run: |
+          set -eu
+          ./build.sh clr.runtime -c release -arch arm64 -cross -os openharmony -restore
       - name: Build
         env:
           STRESS_LOG: ${{ inputs.stress_log }}
