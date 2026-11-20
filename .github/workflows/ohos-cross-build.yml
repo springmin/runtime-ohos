@@ -1,0 +1,54 @@
+name: ohos-cross-build
+
+# Cross-builds the OpenHarmony arm64 runtime inside the published
+# dotnet-buildtools image (dotnet/dotnet-buildtools-prereqs-docker#1786).
+# The device cannot build its own runtime (`build.sh` -> Unsupported OS
+# harmonyos), so this is the supported way to produce libcoreclr.so,
+# createdump and stress-log builds for on-device verification.
+on:
+  workflow_dispatch:
+    inputs:
+      stress_log:
+        description: "Build with FeatureStressLog=true"
+        type: choice
+        options: ["false", "true"]
+        default: "true"
+      subset:
+        description: "Build subset"
+        default: "clr.runtime"
+
+permissions:
+  contents: read
+
+jobs:
+  cross:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show image toolchain
+        run: |
+          cat /etc/os-release | head -2 || true
+          command -v cmake clang ninja || true
+          echo "OHOS_NDK_HOME=${OHOS_NDK_HOME:-unset}"
+      - name: Build
+        env:
+          STRESS_LOG: ${{ inputs.stress_log }}
+          SUBSET: ${{ inputs.subset }}
+        run: |
+          set -eu
+          extra=""
+          [ "$STRESS_LOG" = "true" ] && extra="/p:FeatureStressLog=true"
+          ./build.sh "$SUBSET" -c release -arch arm64 -cross $extra
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coreclr-arm64-openharmony
+          path: |
+            artifacts/bin/coreclr/linux.arm64.Release/libcoreclr.so
+            artifacts/bin/coreclr/linux.arm64.Release/createdump*
+            artifacts/log/**
+          if-no-files-found: warn
