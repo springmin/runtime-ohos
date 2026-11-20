@@ -61,6 +61,14 @@ jobs:
           set -eu
           extra=""
           [ "$STRESS_LOG" = "true" ] && extra="/p:FeatureStressLog=true"
+          # the OHOS toolchain restricts find_* to the sysroot, so stage ICU/OpenSSL there
+          SYSROOT="${OHOS_NDK_HOME:-/opt/ohos-sdk/linux}/native/sysroot"
+          mkdir -p "$SYSROOT/usr/include" "$SYSROOT/usr/lib"
+          cp -a /opt/ohos-assets/icu/include/unicode "$SYSROOT/usr/include/" 2>/dev/null || true
+          cp -a /opt/ohos-assets/icu/lib/*.a "$SYSROOT/usr/lib/" 2>/dev/null || true
+          cp -a /opt/ohos-assets/openssl/include/openssl "$SYSROOT/usr/include/" 2>/dev/null || true
+          cp -a /opt/ohos-assets/openssl/lib/*.a "$SYSROOT/usr/lib/" 2>/dev/null || true
+          ls "$SYSROOT/usr/include/unicode/ucurr.h" "$SYSROOT/usr/lib" | head -5 || true
           ls /opt/ohos-assets/openssl/lib /opt/ohos-assets/openssl/include 2>/dev/null | head -20 || true
           find /opt/ohos-assets -name ucurr.h 2>/dev/null | head -3 || true
           find /opt/ohos-assets -maxdepth 4 -name "unicode" -type d 2>/dev/null | head -3 || true
