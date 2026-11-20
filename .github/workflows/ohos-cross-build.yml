@@ -47,6 +47,9 @@ jobs:
           [ "$STRESS_LOG" = "true" ] && extra="/p:FeatureStressLog=true"
           ls /opt/ohos-assets/openssl/lib /opt/ohos-assets/openssl/include 2>/dev/null | head -20 || true
           ./build.sh "$SUBSET" -c release -arch arm64 -cross -os openharmony \
+            -cmakeargs "-DCMAKE_PREFIX_PATH=/opt/ohos-assets/icu\;/opt/ohos-assets/openssl" \
+            -cmakeargs "-DCMAKE_INCLUDE_PATH=/opt/ohos-assets/icu/include" \
+            -cmakeargs "-DCMAKE_LIBRARY_PATH=/opt/ohos-assets/icu/lib" \
             -cmakeargs "-DOPENSSL_ROOT_DIR=/opt/ohos-assets/openssl" \
             -cmakeargs "-DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include" \
             -cmakeargs "-DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a" \
