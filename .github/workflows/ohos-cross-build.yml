@@ -47,10 +47,10 @@ jobs:
           [ "$STRESS_LOG" = "true" ] && extra="/p:FeatureStressLog=true"
           ls /opt/ohos-assets/openssl/lib /opt/ohos-assets/openssl/include 2>/dev/null | head -20 || true
           ./build.sh "$SUBSET" -c release -arch arm64 -cross -os openharmony \
-            "-cmakeargs:-DOPENSSL_ROOT_DIR=/opt/ohos-assets/openssl" \
-            "-cmakeargs:-DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include" \
-            "-cmakeargs:-DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a" \
-            "-cmakeargs:-DOPENSSL_SSL_LIBRARY=/opt/ohos-assets/openssl/lib/libssl.a" \
+            -cmakeargs "-DOPENSSL_ROOT_DIR=/opt/ohos-assets/openssl" \
+            -cmakeargs "-DOPENSSL_INCLUDE_DIR=/opt/ohos-assets/openssl/include" \
+            -cmakeargs "-DOPENSSL_CRYPTO_LIBRARY=/opt/ohos-assets/openssl/lib/libcrypto.a" \
+            -cmakeargs "-DOPENSSL_SSL_LIBRARY=/opt/ohos-assets/openssl/lib/libssl.a" \
             $extra
       - uses: actions/upload-artifact@v4
         if: always()
