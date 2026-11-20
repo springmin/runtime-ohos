@@ -38,6 +38,10 @@ jobs:
         env:
           OHOS_ASSETS: /opt/ohos-assets
           OPENSSL_ROOT_DIR: /opt/ohos-assets/openssl
+          CMAKE_INCLUDE_PATH: /opt/ohos-assets/icu/include
+          CMAKE_LIBRARY_PATH: /opt/ohos-assets/icu/lib
+          CMAKE_PREFIX_PATH: /opt/ohos-assets/icu:/opt/ohos-assets/openssl
+          ICU_ROOT: /opt/ohos-assets/icu
           PATH: /opt/ohos-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: |
           set -eu
@@ -48,6 +52,10 @@ jobs:
           SUBSET: ${{ inputs.subset }}
           OHOS_ASSETS: /opt/ohos-assets
           OPENSSL_ROOT_DIR: /opt/ohos-assets/openssl
+          CMAKE_INCLUDE_PATH: /opt/ohos-assets/icu/include
+          CMAKE_LIBRARY_PATH: /opt/ohos-assets/icu/lib
+          CMAKE_PREFIX_PATH: /opt/ohos-assets/icu:/opt/ohos-assets/openssl
+          ICU_ROOT: /opt/ohos-assets/icu
           PATH: /opt/ohos-toolchain/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: |
           set -eu
