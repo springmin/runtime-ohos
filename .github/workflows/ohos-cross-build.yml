@@ -120,6 +120,9 @@ jobs:
         with:
           repository: springmin/maui-ohos
           path: sdk-ohos/maui-ohos
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
       - name: Build verify.dll
         run: |
           set -eu
