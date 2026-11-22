@@ -127,6 +127,8 @@ jobs:
         run: |
           set -eu
           arc="${NUGET_PACKAGES:-$HOME/.nuget/packages}/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
+          # the repo pins SDK 12.0.100-alpha; the container has 11.0.x
+          printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
           printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
             '<configuration><packageSources><clear />' \
             '<add key="nuget.org" value="https://api.nuget.org/v3/index.json" />' \
