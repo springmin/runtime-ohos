@@ -132,6 +132,7 @@ jobs:
           printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
             '<configuration><packageSources><clear />' \
             '<add key="nuget.org" value="https://api.nuget.org/v3/index.json" />' \
+            '<add key="dnceng-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />' \
             '</packageSources></configuration>' > sdk-ohos/NuGet.config
           cd sdk-ohos/ohos-workload/test/maui-platform-verify
           dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
