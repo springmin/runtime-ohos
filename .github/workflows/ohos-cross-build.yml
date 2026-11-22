@@ -98,3 +98,44 @@ jobs:
             artifacts/bin/coreclr/**
             artifacts/log/**
           if-no-files-found: warn
+
+  verify826:
+    name: build verify.dll (container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/sdk-ohos
+          ref: feature/openharmony
+          path: sdk-ohos
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: sdk-ohos/ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          path: sdk-ohos/maui-ohos
+      - name: Build verify.dll
+        run: |
+          set -eu
+          arc="${NUGET_PACKAGES:-$HOME/.nuget/packages}/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
+          cd sdk-ohos/ohos-workload/test/maui-platform-verify
+          dotnet restore /p:RestoreSources= /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+          dotnet build --no-restore -m:1 -noconlog -tl:off \
+            "-flp:logfile=$PWD/build.log;verbosity=minimal" \
+            /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
+            /p:UseSharedCompilation=false /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+          ls -l bin/Debug/net11.0/verify.dll
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verify826
+          path: |
+            sdk-ohos/ohos-workload/test/maui-platform-verify/bin/**
+            sdk-ohos/ohos-workload/test/maui-platform-verify/build.log
+          if-no-files-found: warn
