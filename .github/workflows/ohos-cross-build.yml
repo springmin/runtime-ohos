@@ -192,6 +192,19 @@ jobs:
           echo "bundle: $D"
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
           dotnet workload list
+      - name: Locate the OpenHarmony packaging toolchain
+        run: |
+          set -eu
+          find /opt/ohos-sdk -maxdepth 5 -name 'ohos_packing_tool*' 2>/dev/null | head -5 || true
+          pack="$(find /opt/ohos-sdk -maxdepth 5 -name 'ohos_packing_tool*' 2>/dev/null | head -1)"
+          if [ -n "$pack" ]; then
+            dir="$(dirname "$(dirname "$pack")")"
+            echo "OpenHarmonyToolchainDir=$dir" >> "$GITHUB_ENV"
+            echo "OpenHarmonySdkRoot=$(dirname "$(dirname "$dir")")" >> "$GITHUB_ENV"
+            echo "toolchain dir: $dir"
+          else
+            echo "ohos_packing_tool not found under /opt/ohos-sdk"
+          fi
       - name: Publish hello-maui-app (JIT)
         env:
           MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
