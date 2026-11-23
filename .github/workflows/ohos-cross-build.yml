@@ -129,13 +129,17 @@ jobs:
           arc="${NUGET_PACKAGES:-$HOME/.nuget/packages}/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
           # the repo pins SDK 12.0.100-alpha; the container has 11.0.x
           printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
+          # the version only exists on the internal dnceng feed; use the mirrored nupkg
+          mkdir -p offline-feed
+          curl -fsSL -o offline-feed/arcade.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
           printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
             '<configuration><packageSources><clear />' \
             '<add key="nuget.org" value="https://api.nuget.org/v3/index.json" />' \
             '<add key="dnceng-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />' \
             '</packageSources></configuration>' > sdk-ohos/NuGet.config
           cd sdk-ohos/ohos-workload/test/maui-platform-verify
-          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc" --source "$PWD/../../offline-feed" --source https://api.nuget.org/v3/index.json
           dotnet build --no-restore -m:1 -noconlog -tl:off \
             "-flp:logfile=$PWD/build.log;verbosity=minimal" \
             /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
