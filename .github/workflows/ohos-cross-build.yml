@@ -192,6 +192,26 @@ jobs:
           echo "bundle: $D"
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
           dotnet workload list
+      - name: Cache the OpenHarmony SDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ohos-sdk
+          key: ohos-sdk-public-6.0-v1
+      - name: Fetch the OpenHarmony SDK (packaging tools)
+        run: |
+          set -eu
+          D="$RUNNER_TEMP/ohos-sdk"
+          if [ ! -d "$D" ] || [ -z "$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)" ]; then
+            curl -fL --retry 5 --connect-timeout 30 --max-time 1800 -o /tmp/ohos-sdk.tar.gz \
+              https://netcorenativeassets.blob.core.windows.net/resource-packages/external/OpenHarmony/ohos-sdk-windows_linux-public-6.0.tar.gz
+            mkdir -p "$D" && tar -xzf /tmp/ohos-sdk.tar.gz -C "$D" && rm -f /tmp/ohos-sdk.tar.gz
+          fi
+          tc="$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)"
+          root="$(dirname "$tc")"
+          echo "OpenHarmonySdkRoot=$root" >> "$GITHUB_ENV"
+          echo "OHOS_SDK_ROOT=$root" >> "$GITHUB_ENV"
+          echo "sdk root: $root"
+          ls "$root/toolchains/lib" 2>/dev/null | head -5 || true
       - name: Locate the OpenHarmony packaging toolchain
         run: |
           set -eu
