@@ -158,3 +158,48 @@ jobs:
             sdk-ohos/ohos-workload/test/maui-platform-verify/bin/**
             sdk-ohos/ohos-workload/test/maui-platform-verify/build.log
           if-no-files-found: warn
+
+  jit-hap:
+    name: build JIT hap (container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: feature/openharmony
+          path: maui-ohos
+      - name: Install the OpenHarmony workload
+        run: |
+          set -eu
+          B=https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
+          curl -fsSL -o wl.tar.gz "$B"
+          mkdir -p wl && tar -xzf wl.tar.gz -C wl
+          D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
+          echo "bundle: $D"
+          sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+          dotnet workload list
+      - name: Publish hello-maui-app (JIT)
+        env:
+          MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
+        run: |
+          set -eu
+          cd ohos-workload/test/hello-maui-app
+          dotnet publish hello-maui-app.csproj -c Release -r openharmony-arm64 -m:1 -tl:off \
+            -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyHapPackage=true \
+            -f net11.0-openharmony26.0 -p:OpenHarmonyRuntimeMode=jit -p:InvariantGlobalization=true
+          ls -l bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jit-hap
+          path: |
+            ohos-workload/test/hello-maui-app/bin/**
+          if-no-files-found: warn
