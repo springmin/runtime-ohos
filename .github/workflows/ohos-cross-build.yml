@@ -139,7 +139,7 @@ jobs:
             '<add key="dnceng-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />' \
             '</packageSources></configuration>' > sdk-ohos/NuGet.config
           cd sdk-ohos/ohos-workload/test/maui-platform-verify
-          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc" --source "$PWD/../../offline-feed" --source https://api.nuget.org/v3/index.json
+          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc" --source "$GITHUB_WORKSPACE/offline-feed" --source https://api.nuget.org/v3/index.json
           dotnet build --no-restore -m:1 -noconlog -tl:off \
             "-flp:logfile=$PWD/build.log;verbosity=minimal" \
             /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
