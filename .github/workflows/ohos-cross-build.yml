@@ -119,6 +119,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: springmin/maui-ohos
+          ref: feature/openharmony
           path: sdk-ohos/maui-ohos
       - uses: actions/setup-dotnet@v4
         with:
