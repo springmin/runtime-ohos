@@ -210,6 +210,11 @@ jobs:
           for z in $(find "$D/linux" -maxdepth 2 -name '*toolchains*.zip' -o -maxdepth 2 -name 'native-*.zip' 2>/dev/null); do
             unzip -q -o "$z" -d "$D/linux" 2>/dev/null || true
           done
+          # the public SDK ships no ohos_packing_tool; drop in the DevEco tools
+          curl -fsSL -o /tmp/pack-tools.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/ohos-pack-tools-26.0.0.38/ohos-pack-tools.tar.gz
+          tar -xzf /tmp/pack-tools.tgz -C "$D/linux/toolchains"
+          chmod +x "$D/linux/toolchains/lib/ohos_packing_tool"* 2>/dev/null || true
           pack="$(find "$D" -maxdepth 6 -name 'ohos_packing_tool*' 2>/dev/null | head -1)"
           if [ -z "$pack" ]; then
             echo "ERROR: ohos_packing_tool not found; listing:"; find "$D/linux" -maxdepth 2 | head -20
