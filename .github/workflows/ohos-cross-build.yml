@@ -129,7 +129,7 @@ jobs:
           gp="${NUGET_PACKAGES:-}"
           [ -n "$gp" ] || gp="$HOME/.nuget/packages"
           echo "global packages: $gp"
-          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
           ls -d "$arc" || echo "WARN: arcade tools missing at $arc"
           # the repo pins SDK 12.0.100-alpha; the container has 11.0.x
           printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
