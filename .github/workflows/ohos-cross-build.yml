@@ -206,7 +206,9 @@ jobs:
               https://netcorenativeassets.blob.core.windows.net/resource-packages/external/OpenHarmony/ohos-sdk-windows_linux-public-6.0.tar.gz
             mkdir -p "$D" && tar -xzf /tmp/ohos-sdk.tar.gz -C "$D" && rm -f /tmp/ohos-sdk.tar.gz
           fi
-          tc="$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)"
+          pack="$(find "$D" -maxdepth 6 -name 'ohos_packing_tool*' 2>/dev/null | head -1)"
+          if [ -z "$pack" ]; then echo "ERROR: ohos_packing_tool not found under $D"; find "$D" -maxdepth 3 -type d | head -20; exit 1; fi
+          tc="$(dirname "$(dirname "$pack")")"
           root="$(dirname "$tc")"
           echo "OpenHarmonySdkRoot=$root" >> "$GITHUB_ENV"
           echo "OHOS_SDK_ROOT=$root" >> "$GITHUB_ENV"
