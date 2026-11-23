@@ -218,6 +218,7 @@ jobs:
           fi
           tc="$(dirname "$(dirname "$pack")")"
           root="$(dirname "$tc")"
+          if [ -d "$D/linux/toolchains" ]; then root="$D/linux"; fi
           echo "OpenHarmonySdkRoot=$root" >> "$GITHUB_ENV"
           echo "OHOS_SDK_ROOT=$root" >> "$GITHUB_ENV"
           echo "sdk root: $root"
