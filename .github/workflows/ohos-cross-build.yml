@@ -126,7 +126,11 @@ jobs:
       - name: Build verify.dll
         run: |
           set -eu
-          arc="${NUGET_PACKAGES:-$HOME/.nuget/packages}/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
+          gp="${NUGET_PACKAGES:-}"
+          [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          echo "global packages: $gp"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools"
+          ls -d "$arc" || echo "WARN: arcade tools missing at $arc"
           # the repo pins SDK 12.0.100-alpha; the container has 11.0.x
           printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
           # the version only exists on the internal dnceng feed; use the mirrored nupkg
@@ -142,7 +146,8 @@ jobs:
           dotnet build --no-restore -m:1 -noconlog -tl:off \
             "-flp:logfile=$PWD/build.log;verbosity=minimal" \
             /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
-            /p:UseSharedCompilation=false /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+            /p:UseSharedCompilation=false /p:NuGetAudit=false /p:ArcadeSdkDir="$arc" \
+            || { echo "=== build.log (tail) ==="; tail -30 build.log; exit 1; }
           ls -l bin/Debug/net11.0/verify.dll
       - uses: actions/upload-artifact@v4
         if: always()
