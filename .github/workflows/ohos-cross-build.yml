@@ -233,3 +233,69 @@ jobs:
           name: jit-hap
           path: ohos-workload/test/hello-maui-app/bin/**
           if-no-files-found: warn
+
+  aot-hap:
+    name: build AOT hap (container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: feature/openharmony
+          path: maui-ohos
+      - name: Install the OpenHarmony workload
+        run: |
+          set -eu
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
+          mkdir -p wl && tar -xzf wl.tar.gz -C wl
+          D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
+          sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+      - name: Fetch the AOT feed
+        run: |
+          set -eu
+          mkdir -p feed
+          base=https://github.com/springmin/sdk-ohos/releases/download/aot-packs-11.0.0-rtm
+          for a in Microsoft.DotNet.ILCompiler.11.0.0.nupkg \
+                   Microsoft.NETCore.App.Runtime.NativeAOT.openharmony-arm64.11.0.0.nupkg \
+                   runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler.11.0.0.nupkg; do
+            curl -fsSL -o "feed/$a" "$base/$a" || echo "WARN: missing $a"
+          done
+          ls -l feed
+      - name: Publish AOT hap
+        env:
+          MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
+          OpenHarmonySdkRoot: ${{ runner.temp }}/ohos-sdk/linux
+          OHOS_SDK_ROOT: ${{ runner.temp }}/ohos-sdk/linux
+          AOT_WORKDIR: ${{ runner.temp }}/aot-work
+        run: |
+          set -eu
+          mkdir -p "$AOT_WORKDIR/feed"
+          cp -f feed/*.nupkg "$AOT_WORKDIR/feed/" 2>/dev/null || true
+          cd ohos-workload
+          AOT_WORKDIR="$AOT_WORKDIR" DOTNET="$(command -v dotnet)" \
+            sh test/hello-maui-app/publish-aot.sh || { tail -40 "$AOT_WORKDIR/publish-aot.log" 2>/dev/null; exit 1; }
+          grep -q 'EXIT=0' "$AOT_WORKDIR/publish-aot.log"
+          ls -l test/hello-maui-app/bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aot-hap
+          path: |
+            ohos-workload/test/hello-maui-app/bin/**
+            ${{ runner.temp }}/aot-work/publish-aot.log
+          if-no-files-found: warn
