@@ -229,7 +229,11 @@ jobs:
             chmod +x "$lib/hap-sign-tool"
           fi
           ls -l "$lib/ohos_packing_tool" "$lib/hap-sign-tool" 2>/dev/null || true
-          command -v java || (echo "WARN: java missing; installing" && (zypper -n install java-17-openjdk-headless || dnf -y install java-17-openjdk-headless || true))
+          if ! command -v java >/dev/null 2>&1; then
+            echo "WARN: java missing; trying to install"
+            (zypper -n install -y java-17-openjdk-headless || dnf -y install java-17-openjdk-headless || microdnf -y install java-17-openjdk-headless || true) || true
+          fi
+          command -v java || echo "WARN: java still missing"
       - name: Locate the OpenHarmony packaging toolchain
         run: |
           set -eu
