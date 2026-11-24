@@ -262,7 +262,9 @@ jobs:
           dotnet publish hello-maui-app.csproj -c Release -r openharmony-arm64 -m:1 -tl:off \
             -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyHapPackage=true \
             -f net11.0-openharmony26.0 -p:OpenHarmonyRuntimeMode=jit -p:InvariantGlobalization=true \
-            -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false
+            -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
+            -p:OpenHarmonySdkRoot="$OpenHarmonySdkRoot" \
+            -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains"
           ls -l bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
       - uses: actions/upload-artifact@v4
         if: always()
