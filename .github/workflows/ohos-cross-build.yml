@@ -272,6 +272,7 @@ jobs:
             -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
             -p:OpenHarmonySdkRoot="$OpenHarmonySdkRoot" \
             -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains"
+            -p:OpenHarmonyHapSigning=false
           ls -l bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
       - uses: actions/upload-artifact@v4
         if: always()
