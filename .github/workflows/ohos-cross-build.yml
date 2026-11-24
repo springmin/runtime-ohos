@@ -298,9 +298,10 @@ jobs:
           set -eu
           mkdir -p feed
           base=https://github.com/springmin/sdk-ohos/releases/download/aot-packs-11.0.0-rtm
-          for a in Microsoft.DotNet.ILCompiler.11.0.0.nupkg \
-                   Microsoft.NETCore.App.Runtime.NativeAOT.openharmony-arm64.11.0.0.nupkg \
-                   runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler.11.0.0.nupkg; do
+          for a in Microsoft.DotNet.ILCompiler.11.0.0-rtm.nupkg \
+                   Microsoft.NETCore.App.Runtime.NativeAOT.openharmony-arm64.11.0.0-rtm.nupkg \
+                   runtime.openharmony-arm64.Microsoft.DotNet.ILCompiler.11.0.0-rtm.nupkg \
+                   Microsoft.NET.ILLink.Tasks.11.0.0-rtm.26472.124.nupkg; do
             curl -fsSL -o "feed/$a" "$base/$a" || echo "WARN: missing $a"
           done
           ls -l feed
