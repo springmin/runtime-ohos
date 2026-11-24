@@ -323,6 +323,10 @@ jobs:
             "<configuration><packageSources><clear /><add key='aot-feed' value='$AOT_WORKDIR/feed' /><add key='local-arcade' value='$GITHUB_WORKSPACE/offline-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>" \
             > ohos-workload/NuGet.config
           cat ohos-workload/NuGet.config
+          # publish-aot.sh pins --source to the AOT feed, which hides MAUI/nuget.org
+          sed -i 's#--source "$BASE/feed"#--source "$BASE/feed" --source "$GITHUB_WORKSPACE/offline-feed" --source https://api.nuget.org/v3/index.json#' \
+            ohos-workload/test/hello-maui-app/publish-aot.sh
+          grep -n 'source' ohos-workload/test/hello-maui-app/publish-aot.sh | tail -2
           cd ohos-workload
           AOT_WORKDIR="$AOT_WORKDIR" DOTNET="$(command -v dotnet)" \
             sh test/hello-maui-app/publish-aot.sh || { tail -40 "$AOT_WORKDIR/publish-aot.log" 2>/dev/null; exit 1; }
