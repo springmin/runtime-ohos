@@ -315,6 +315,14 @@ jobs:
           set -eu
           mkdir -p "$AOT_WORKDIR/feed"
           cp -f feed/*.nupkg "$AOT_WORKDIR/feed/" 2>/dev/null || true
+          # restore needs these folders registered as NuGet sources
+          mkdir -p offline-feed
+          curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
+            "<configuration><packageSources><clear /><add key='aot-feed' value='$AOT_WORKDIR/feed' /><add key='local-arcade' value='$GITHUB_WORKSPACE/offline-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>" \
+            > ohos-workload/NuGet.config
+          cat ohos-workload/NuGet.config
           cd ohos-workload
           AOT_WORKDIR="$AOT_WORKDIR" DOTNET="$(command -v dotnet)" \
             sh test/hello-maui-app/publish-aot.sh || { tail -40 "$AOT_WORKDIR/publish-aot.log" 2>/dev/null; exit 1; }
