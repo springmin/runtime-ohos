@@ -211,12 +211,17 @@ jobs:
             unzip -q -o "$z" -d "$D/linux" 2>/dev/null || true
           done
           root="$D/linux"
+          if [ ! -d "$root/toolchains" ]; then
+            root="$(dirname "$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)")"
+          fi
+          [ -d "$root/toolchains" ] || { echo "ERROR: no toolchains under $D"; find "$D" -maxdepth 3 | head -20; exit 1; }
           echo "sdk root: $root"
           ls "$root/toolchains/lib" 2>/dev/null | head -5 || true
       - name: Shim the jar-based OHOS tools
         run: |
           set -eu
-          lib="$OpenHarmonySdkRoot/toolchains/lib"
+          lib="${OpenHarmonySdkRoot:-$RUNNER_TEMP/ohos-sdk/linux}/toolchains/lib"
+          [ -d "$lib" ] || { echo "ERROR: no toolchains/lib at $lib"; exit 1; }
           # a stale arm64 binary from earlier attempts would shadow the shim
           rm -f "$lib/ohos_packing_tool" "$lib/hap-sign-tool" 2>/dev/null || true
           ls "$lib" | head -8 || true
