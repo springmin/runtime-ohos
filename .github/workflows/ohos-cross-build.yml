@@ -186,78 +186,31 @@ jobs:
       - name: Install the OpenHarmony workload
         run: |
           set -eu
-          B=https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
-          curl -fsSL -o wl.tar.gz "$B"
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
-          echo "bundle: $D"
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
-          dotnet workload list
-      - name: Cache the OpenHarmony SDK
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/ohos-sdk
-          key: ohos-sdk-public-6.0-v1
       - name: Fetch the OpenHarmony SDK (packaging tools)
         run: |
           set -eu
           D="$RUNNER_TEMP/ohos-sdk"
-          if [ ! -d "$D" ] || [ -z "$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)" ]; then
-            curl -fL --retry 5 --connect-timeout 30 --max-time 1800 -o /tmp/ohos-sdk.tar.gz \
-              https://netcorenativeassets.blob.core.windows.net/resource-packages/external/OpenHarmony/ohos-sdk-windows_linux-public-6.0.tar.gz
-            mkdir -p "$D" && tar -xzf /tmp/ohos-sdk.tar.gz -C "$D" && rm -f /tmp/ohos-sdk.tar.gz
-          fi
-          # linux/ holds the SDK payloads (toolchains arrive as a nested zip)
+          mkdir -p "$D"
+          curl -fL --retry 5 --connect-timeout 30 --max-time 1800 -o /tmp/sdk.tar.gz \
+            https://netcorenativeassets.blob.core.windows.net/resource-packages/external/OpenHarmony/ohos-sdk-windows_linux-public-6.0.tar.gz
+          tar -xzf /tmp/sdk.tar.gz -C "$D"
           for z in $(find "$D/linux" -maxdepth 2 \( -name '*toolchains*.zip' -o -name 'native-*.zip' \) 2>/dev/null); do
-            unzip -q -o "$z" -d "$D/linux" 2>/dev/null || true
+            unzip -q -o "$z" -d "$D/linux" || true
           done
-          root="$D/linux"
-          if [ ! -d "$root/toolchains" ]; then
-            root="$(dirname "$(find "$D" -maxdepth 3 -type d -name toolchains | head -1)")"
-          fi
-          [ -d "$root/toolchains" ] || { echo "ERROR: no toolchains under $D"; find "$D" -maxdepth 3 | head -20; exit 1; }
-          echo "sdk root: $root"
-          ls "$root/toolchains/lib" 2>/dev/null | head -5 || true
       - name: Shim the jar-based OHOS tools
         run: |
           set -eu
-          lib="${OpenHarmonySdkRoot:-$RUNNER_TEMP/ohos-sdk/linux}/toolchains/lib"
-          [ -d "$lib" ] || { echo "ERROR: no toolchains/lib at $lib"; exit 1; }
-          # a stale arm64 binary from earlier attempts would shadow the shim
-          rm -f "$lib/ohos_packing_tool" "$lib/hap-sign-tool" 2>/dev/null || true
-          ls "$lib" | head -8 || true
-          if [ ! -x "$lib/ohos_packing_tool" ] && [ -f "$lib/app_packing_tool.jar" ]; then
-            printf '#!/bin/sh\nexec java -jar "%s/app_packing_tool.jar" "$@"\n' "$lib" > "$lib/ohos_packing_tool"
-            chmod +x "$lib/ohos_packing_tool"
-          fi
-          if [ ! -x "$lib/hap-sign-tool" ] && [ -f "$lib/hap-sign-tool.jar" ]; then
-            printf '#!/bin/sh\nexec java -jar "%s/hap-sign-tool.jar" "$@"\n' "$lib" > "$lib/hap-sign-tool"
-            chmod +x "$lib/hap-sign-tool"
-          fi
-          ls -l "$lib/ohos_packing_tool" "$lib/hap-sign-tool" 2>/dev/null || true
-          # the targets also look for the tool directly under toolchains/
+          lib="$RUNNER_TEMP/ohos-sdk/linux/toolchains/lib"
+          printf '#!/bin/sh\nexec java -jar "%s/app_packing_tool.jar" "$@"\n' "$lib" > "$lib/ohos_packing_tool"
+          printf '#!/bin/sh\nexec java -jar "%s/hap-sign-tool.jar" "$@"\n' "$lib" > "$lib/hap-sign-tool"
+          chmod +x "$lib/ohos_packing_tool" "$lib/hap-sign-tool"
           tc="$(dirname "$lib")"
-          cp -f "$lib/ohos_packing_tool" "$tc/ohos_packing_tool" 2>/dev/null || true
-          cp -f "$lib/hap-sign-tool" "$tc/hap-sign-tool" 2>/dev/null || true
-          ls -l "$tc/ohos_packing_tool" "$tc/hap-sign-tool" 2>/dev/null || true
-          if ! command -v java >/dev/null 2>&1; then
-            echo "WARN: java missing; trying to install"
-            (zypper -n install -y java-17-openjdk-headless || dnf -y install java-17-openjdk-headless || microdnf -y install java-17-openjdk-headless || true) || true
-          fi
-          command -v java || echo "WARN: java still missing"
-      - name: Locate the OpenHarmony packaging toolchain
-        run: |
-          set -eu
-          find /opt/ohos-sdk -maxdepth 5 -name 'ohos_packing_tool*' 2>/dev/null | head -5 || true
-          pack="$(find /opt/ohos-sdk -maxdepth 5 -name 'ohos_packing_tool*' 2>/dev/null | head -1)"
-          if [ -n "$pack" ]; then
-            dir="$(dirname "$(dirname "$pack")")"
-            echo "OpenHarmonyToolchainDir=$dir" >> "$GITHUB_ENV"
-            echo "OpenHarmonySdkRoot=$(dirname "$(dirname "$dir")")" >> "$GITHUB_ENV"
-            echo "toolchain dir: $dir"
-          else
-            echo "ohos_packing_tool not found under /opt/ohos-sdk"
-          fi
+          cp -f "$lib/ohos_packing_tool" "$tc/ohos_packing_tool"
+          cp -f "$lib/hap-sign-tool" "$tc/hap-sign-tool"
       - name: Publish hello-maui-app (JIT)
         env:
           MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
@@ -271,13 +224,12 @@ jobs:
             -f net11.0-openharmony26.0 -p:OpenHarmonyRuntimeMode=jit -p:InvariantGlobalization=true \
             -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
             -p:OpenHarmonySdkRoot="$OpenHarmonySdkRoot" \
-            -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains"
+            -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains" \
             -p:OpenHarmonyHapSigning=false
           ls -l bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: jit-hap
-          path: |
-            ohos-workload/test/hello-maui-app/bin/**
+          path: ohos-workload/test/hello-maui-app/bin/**
           if-no-files-found: warn
