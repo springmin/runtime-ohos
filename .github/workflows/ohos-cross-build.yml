@@ -256,6 +256,8 @@ jobs:
       - name: Publish hello-maui-app (JIT)
         env:
           MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
+          OpenHarmonySdkRoot: ${{ runner.temp }}/ohos-sdk/linux
+          OHOS_SDK_ROOT: ${{ runner.temp }}/ohos-sdk/linux
         run: |
           set -eu
           cd ohos-workload/test/hello-maui-app
