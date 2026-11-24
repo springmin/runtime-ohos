@@ -166,10 +166,11 @@ jobs:
     container:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
       options: --platform linux/amd64
-    env:
-      OHOS_SDK_ROOT: /opt/ohos-sdk/linux
-      OHOS_NDK_HOME: /opt/ohos-sdk/linux
     steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
