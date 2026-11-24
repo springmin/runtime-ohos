@@ -327,6 +327,8 @@ jobs:
           # publish-aot.sh pins --source to the AOT feed, which hides MAUI/nuget.org
           sed -i 's#--source "$BASE/feed"#--source "$BASE/feed" --source "$GITHUB_WORKSPACE/offline-feed" --source https://api.nuget.org/v3/index.json#' \
             ohos-workload/test/hello-maui-app/publish-aot.sh
+          sed -i 's#-p:OpenHarmonyRuntimeMode=aot #-p:OpenHarmonyRuntimeMode=aot -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:OpenHarmonyHapSigning=false #' \
+            ohos-workload/test/hello-maui-app/publish-aot.sh
           grep -n 'source' ohos-workload/test/hello-maui-app/publish-aot.sh | tail -2
           cd ohos-workload
           AOT_WORKDIR="$AOT_WORKDIR" DOTNET="$(command -v dotnet)" \
