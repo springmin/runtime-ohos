@@ -265,6 +265,34 @@ jobs:
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+      - name: Cache the OpenHarmony SDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ohos-sdk
+          key: ohos-sdk-public-6.0-v1
+      - name: Fetch the OpenHarmony SDK (packaging tools)
+        run: |
+          set -eu
+          D="$RUNNER_TEMP/ohos-sdk"
+          if [ ! -d "$D/linux/toolchains" ]; then
+            mkdir -p "$D"
+            curl -fL --retry 5 --connect-timeout 30 --max-time 1800 -o /tmp/sdk.tar.gz \
+              https://netcorenativeassets.blob.core.windows.net/resource-packages/external/OpenHarmony/ohos-sdk-windows_linux-public-6.0.tar.gz
+            tar -xzf /tmp/sdk.tar.gz -C "$D"
+            for z in $(find "$D/linux" -maxdepth 2 \( -name '*toolchains*.zip' -o -name 'native-*.zip' \) 2>/dev/null); do
+              unzip -q -o "$z" -d "$D/linux" || true
+            done
+          fi
+      - name: Shim the jar-based OHOS tools
+        run: |
+          set -eu
+          lib="$RUNNER_TEMP/ohos-sdk/linux/toolchains/lib"
+          printf '#!/bin/sh\nexec java -jar "%s/app_packing_tool.jar" "$@"\n' "$lib" > "$lib/ohos_packing_tool"
+          printf '#!/bin/sh\nexec java -jar "%s/hap-sign-tool.jar" "$@"\n' "$lib" > "$lib/hap-sign-tool"
+          chmod +x "$lib/ohos_packing_tool" "$lib/hap-sign-tool"
+          tc="$(dirname "$lib")"
+          cp -f "$lib/ohos_packing_tool" "$tc/ohos_packing_tool"
+          cp -f "$lib/hap-sign-tool" "$tc/hap-sign-tool"
       - name: Fetch the AOT feed
         run: |
           set -eu
@@ -282,6 +310,7 @@ jobs:
           OpenHarmonySdkRoot: ${{ runner.temp }}/ohos-sdk/linux
           OHOS_SDK_ROOT: ${{ runner.temp }}/ohos-sdk/linux
           AOT_WORKDIR: ${{ runner.temp }}/aot-work
+          OpenHarmonyHapSigning: "false"
         run: |
           set -eu
           mkdir -p "$AOT_WORKDIR/feed"
