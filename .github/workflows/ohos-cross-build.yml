@@ -228,6 +228,21 @@ jobs:
           echo "OHOS_SDK_ROOT=$root" >> "$GITHUB_ENV"
           echo "sdk root: $root"
           ls "$root/toolchains/lib" 2>/dev/null | head -5 || true
+      - name: Shim the jar-based OHOS tools
+        run: |
+          set -eu
+          lib="$OpenHarmonySdkRoot/toolchains/lib"
+          ls "$lib" | head -8 || true
+          if [ ! -x "$lib/ohos_packing_tool" ] && [ -f "$lib/app_packing_tool.jar" ]; then
+            printf '#!/bin/sh\nexec java -jar "%s/app_packing_tool.jar" "$@"\n' "$lib" > "$lib/ohos_packing_tool"
+            chmod +x "$lib/ohos_packing_tool"
+          fi
+          if [ ! -x "$lib/hap-sign-tool" ] && [ -f "$lib/hap-sign-tool.jar" ]; then
+            printf '#!/bin/sh\nexec java -jar "%s/hap-sign-tool.jar" "$@"\n' "$lib" > "$lib/hap-sign-tool"
+            chmod +x "$lib/hap-sign-tool"
+          fi
+          ls -l "$lib/ohos_packing_tool" "$lib/hap-sign-tool" 2>/dev/null || true
+          command -v java || (echo "WARN: java missing; installing" && (zypper -n install java-17-openjdk-headless || dnf -y install java-17-openjdk-headless || true))
       - name: Locate the OpenHarmony packaging toolchain
         run: |
           set -eu
