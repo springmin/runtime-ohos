@@ -207,20 +207,10 @@ jobs:
             mkdir -p "$D" && tar -xzf /tmp/ohos-sdk.tar.gz -C "$D" && rm -f /tmp/ohos-sdk.tar.gz
           fi
           # linux/ holds the SDK payloads (toolchains arrive as a nested zip)
-          for z in $(find "$D/linux" -maxdepth 2 -name '*toolchains*.zip' -o -maxdepth 2 -name 'native-*.zip' 2>/dev/null); do
+          for z in $(find "$D/linux" -maxdepth 2 \( -name '*toolchains*.zip' -o -name 'native-*.zip' \) 2>/dev/null); do
             unzip -q -o "$z" -d "$D/linux" 2>/dev/null || true
           done
-          pack="$(find "$D" -maxdepth 6 -name 'ohos_packing_tool*' 2>/dev/null | head -1)"
-          if [ -z "$pack" ]; then
-            echo "ERROR: ohos_packing_tool not found; listing:"; find "$D/linux" -maxdepth 2 | head -20
-            ls "$D/linux" | head -10
-            exit 1
-          fi
-          tc="$(dirname "$(dirname "$pack")")"
-          root="$(dirname "$tc")"
-          if [ -d "$D/linux/toolchains" ]; then root="$D/linux"; fi
-          echo "OpenHarmonySdkRoot=$root" >> "$GITHUB_ENV"
-          echo "OHOS_SDK_ROOT=$root" >> "$GITHUB_ENV"
+          root="$D/linux"
           echo "sdk root: $root"
           ls "$root/toolchains/lib" 2>/dev/null | head -5 || true
       - name: Shim the jar-based OHOS tools
