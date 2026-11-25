@@ -104,6 +104,8 @@ Spectre.Console、vs-solutionpersistence。
 
 - 文档中引用 **29 处 `dotnet/runtime` PR**；已提交的上游 PR 包括
   **#132827**（`OSPlatformName="OPENHARMONY"`）、**#132953**（RID 导入 `any` 的 review 修正）。
+- 安装脚本侧的上游 PR：**dotnet/install-scripts#752**（`openharmony` OS 识别 +
+  `--os` 值 + dry-run 测试；仅检测层，feed/签名/workload 留在 fork）。
 - 移植按「4 个可独立评审的 PR」组织：
   A 构建基础设施、B RID/packs、C 原生编译修复、D OHOS 沙箱运行期修复。
   早期口径约 34 文件 / 230 行（`2026-08-27-ohos-upstream-pr-prep.md`）。
@@ -117,6 +119,7 @@ Spectre.Console、vs-solutionpersistence。
 | `springmin/aspnetcore-ohos` | `dotnet/aspnetcore` | runtime-pack RID、NativeAOT 关闭、Kestrel/SignalR 修补（约 4–5 个候选文件） |
 | `springmin/maui-ohos` | `dotnet/maui` | UI 层适配（**不在 VMR 内**） |
 | `springmin/ohos-workload` | 自有仓 | workload 清单、安装器、设备部署脚本 |
+| `springmin/install-scripts-ohos` | `dotnet/install-scripts` | `dotnet-install.sh` 的 HarmonyOS/OpenHarmony 支持（OS 识别、feed/直链、SHA256、ELF 签名、workload bundle、`dotnet-install-ohos.sh` 包装）；上游 PR #752 仅含检测层 |
 
 ## 6. 提交去向对照
 
