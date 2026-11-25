@@ -21,7 +21,7 @@ on:
         default: "release/ohos-11.0.0"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   cross:
@@ -242,6 +242,18 @@ jobs:
           name: jit-hap
           path: ohos-workload/test/hello-maui-app/bin/**
           if-no-files-found: warn
+
+      - name: Publish JIT hap to ci-prebuilts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          TAG=ci-prebuilts
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "CI prebuilts" --notes "Rolling release with the newest container-built haps."
+          f="$(find ohos-workload/test/hello-maui-app/bin -name '*.hap' | head -1)"
+          cp -f "$f" jit-hap.hap
+          gh release upload "$TAG" jit-hap.hap -R "$GITHUB_REPOSITORY" --clobber
 
   aot-hap:
     name: build AOT hap (container)
