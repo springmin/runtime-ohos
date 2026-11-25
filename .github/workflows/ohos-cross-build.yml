@@ -311,9 +311,9 @@ jobs:
           OpenHarmonySdkRoot: ${{ runner.temp }}/ohos-sdk/linux
           OHOS_SDK_ROOT: ${{ runner.temp }}/ohos-sdk/linux
           AOT_WORKDIR: ${{ runner.temp }}/aot-work
-          CppCompilerAndLinker: /opt/ohos-toolchain/bin/aarch64-linux-ohos-clang
-          CC: /opt/ohos-toolchain/bin/aarch64-linux-ohos-clang
-          CXX: /opt/ohos-toolchain/bin/aarch64-linux-ohos-clang++
+          CppCompilerAndLinker: /opt/ohos-toolchain/bin/aarch64-linux-ohos-cc
+          CC: /opt/ohos-toolchain/bin/aarch64-linux-ohos-cc
+          CXX: /opt/ohos-toolchain/bin/aarch64-linux-ohos-c++
           OpenHarmonyHapSigning: "false"
         run: |
           set -eu
