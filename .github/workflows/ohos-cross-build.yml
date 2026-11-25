@@ -34,6 +34,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_ref }}
+      - name: Limit ninja parallelism
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/bin"
+          real="$(command -v ninja)"
+          printf '#!/bin/sh\nexec %s -j4 "$@"\n' "$real" > "$RUNNER_TEMP/bin/ninja"
+          chmod +x "$RUNNER_TEMP/bin/ninja"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          echo "ninja shim -> $real -j4"
       - name: Show image toolchain
         run: |
           cat /etc/os-release | head -2 || true
