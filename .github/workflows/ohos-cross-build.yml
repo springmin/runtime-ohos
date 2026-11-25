@@ -368,3 +368,23 @@ jobs:
             ohos-workload/test/hello-maui-app/bin/**
             ${{ runner.temp }}/aot-work/publish-aot.log
           if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aot-hap
+          path: |
+            ohos-workload/test/hello-maui-app/bin/**
+            ${{ runner.temp }}/aot-work/publish-aot.log
+          if-no-files-found: warn
+      - name: Publish AOT hap to ci-prebuilts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          TAG=ci-prebuilts
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "CI prebuilts" --notes rolling
+          f="$(find ohos-workload/test/hello-maui-app/bin -name '*.hap' | head -1)"
+          cp -f "$f" aot-hap.hap
+          gh release upload "$TAG" aot-hap.hap -R "$GITHUB_REPOSITORY" --clobber
