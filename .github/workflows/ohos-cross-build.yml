@@ -243,17 +243,18 @@ jobs:
           path: ohos-workload/test/hello-maui-app/bin/**
           if-no-files-found: warn
 
-      - name: Publish JIT hap to ci-prebuilts
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Stage the JIT hap asset
         run: |
           set -eu
-          TAG=ci-prebuilts
-          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "CI prebuilts" --notes "Rolling release with the newest container-built haps."
           f="$(find ohos-workload/test/hello-maui-app/bin -name '*.hap' | head -1)"
           cp -f "$f" jit-hap.hap
-          gh release upload "$TAG" jit-hap.hap -R "$GITHUB_REPOSITORY" --clobber
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ci-prebuilts
+          name: CI prebuilts
+          body: Rolling release with the newest container-built haps.
+          files: jit-hap.hap
+          overwrite_files: true
 
   aot-hap:
     name: build AOT hap (container)
@@ -377,14 +378,15 @@ jobs:
             ohos-workload/test/hello-maui-app/bin/**
             ${{ runner.temp }}/aot-work/publish-aot.log
           if-no-files-found: warn
-      - name: Publish AOT hap to ci-prebuilts
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Stage the AOT hap asset
         run: |
           set -eu
-          TAG=ci-prebuilts
-          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "CI prebuilts" --notes rolling
           f="$(find ohos-workload/test/hello-maui-app/bin -name '*.hap' | head -1)"
           cp -f "$f" aot-hap.hap
-          gh release upload "$TAG" aot-hap.hap -R "$GITHUB_REPOSITORY" --clobber
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ci-prebuilts
+          name: CI prebuilts
+          body: Rolling release with the newest container-built haps.
+          files: aot-hap.hap
+          overwrite_files: true
