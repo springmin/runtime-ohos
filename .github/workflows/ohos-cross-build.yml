@@ -140,7 +140,7 @@ jobs:
           path: sdk-ohos/maui-ohos
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.101'
+          dotnet-version: '11.0.x'
       - name: Build verify.dll
         run: |
           set -eu
@@ -202,7 +202,7 @@ jobs:
           java-version: '17'
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.101'
+          dotnet-version: '11.0.x'
       - uses: actions/checkout@v4
         with:
           repository: springmin/ohos-workload
@@ -264,6 +264,7 @@ jobs:
           dotnet publish hello-maui-app.csproj -c Release -r openharmony-arm64 -m:1 -tl:off \
             -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyHapPackage=true \
             -f net11.0-openharmony26.0 -p:OpenHarmonyRuntimeMode=jit -p:InvariantGlobalization=true \
+            -p:RuntimeFrameworkVersion=11.0.1 \
             -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
             -p:OpenHarmonySdkRoot="$OpenHarmonySdkRoot" \
             -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains" \
@@ -303,7 +304,7 @@ jobs:
           java-version: '17'
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.101'
+          dotnet-version: '11.0.x'
       - uses: actions/checkout@v4
         with:
           repository: springmin/ohos-workload
@@ -390,7 +391,7 @@ jobs:
           # publish-aot.sh pins --source to the AOT feed, which hides MAUI/nuget.org
           sed -i 's#--source "$BASE/feed"#--source "$BASE/feed" --source "$GITHUB_WORKSPACE/offline-feed" --source https://api.nuget.org/v3/index.json#' \
             ohos-workload/test/hello-maui-app/publish-aot.sh
-          sed -i 's#-p:OpenHarmonyRuntimeMode=aot #-p:OpenHarmonyRuntimeMode=aot -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:OpenHarmonyHapSigning=false #' \
+          sed -i 's#-p:OpenHarmonyRuntimeMode=aot #-p:OpenHarmonyRuntimeMode=aot -p:RuntimeFrameworkVersion=11.0.1 -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:OpenHarmonyHapSigning=false #' \
             ohos-workload/test/hello-maui-app/publish-aot.sh
           grep -n 'source' ohos-workload/test/hello-maui-app/publish-aot.sh | tail -2
           cd ohos-workload
