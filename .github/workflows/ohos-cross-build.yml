@@ -140,6 +140,14 @@ jobs:
           [ -n "$gp" ] || gp="$HOME/.nuget/packages"
           echo "global packages: $gp"
           arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          # pin the MAUI baseline to what the device gate verified (rc.2)
+          mkdir -p maui-feed
+          curl -fsSL -o /tmp/maui-rc2.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-rc2-11.0.0-rc.2.26505.5/maui-rc2-nupkgs.tar.gz
+          tar -xzf /tmp/maui-rc2.tgz -C maui-feed
+          sed -i 's/Version="11.0.10"/Version="11.0.0-rc.2.26505.5"/g' \
+            sdk-ohos/ohos-workload/test/maui-platform-verify/verify.csproj
+          grep -c '11.0.0-rc.2.26505.5' sdk-ohos/ohos-workload/test/maui-platform-verify/verify.csproj
           ls -d "$arc" || echo "WARN: arcade tools missing at $arc"
           # the repo pins SDK 12.0.100-alpha; the container has 11.0.x
           printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
@@ -148,7 +156,7 @@ jobs:
           curl -fsSL -o "offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg" \
             https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
           ls -l offline-feed
-          CFG="<configuration><packageSources><clear /><add key='local' value='$GITHUB_WORKSPACE/offline-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>"
+          CFG="<configuration><packageSources><clear /><add key='local' value='$GITHUB_WORKSPACE/offline-feed' /><add key='maui' value='$GITHUB_WORKSPACE/maui-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>"
           printf '<?xml version="1.0" encoding="utf-8"?>\n%s\n' "$CFG" > sdk-ohos/NuGet.config
           cat sdk-ohos/NuGet.config
           cd sdk-ohos/ohos-workload/test/maui-platform-verify
