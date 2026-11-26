@@ -381,6 +381,13 @@ jobs:
             sh test/hello-maui-app/publish-aot.sh || { tail -40 "$AOT_WORKDIR/publish-aot.log" 2>/dev/null; exit 1; }
           grep -q 'EXIT=0' "$AOT_WORKDIR/publish-aot.log"
           ls -l test/hello-maui-app/bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
+      - name: Stage the AOT log inside the artifact tree
+        if: always()
+        run: |
+          set -eu
+          src="${{ runner.temp }}/aot-work/publish-aot.log"
+          dst="ohos-workload/test/hello-maui-app/bin/Release/net11.0-openharmony26.0/openharmony-arm64/publish-aot.log"
+          if [ -f "$src" ]; then cp -f "$src" "$dst"; echo "staged $dst"; else echo "WARN: $src missing"; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
