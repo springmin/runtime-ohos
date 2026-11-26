@@ -219,6 +219,10 @@ jobs:
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+          # The 1.0.1 runtime packs (11.0.1) ship only in the bundle feed; expose
+          # them to project restore as a local source.
+          mkdir -p "$GITHUB_WORKSPACE/offline-feed"
+          cp -f "$D"/feed/*.nupkg "$GITHUB_WORKSPACE/offline-feed/" 2>/dev/null || true
       - name: Fetch the OpenHarmony SDK (packaging tools)
         run: |
           set -eu
@@ -240,6 +244,15 @@ jobs:
           tc="$(dirname "$lib")"
           cp -f "$lib/ohos_packing_tool" "$tc/ohos_packing_tool"
           cp -f "$lib/hap-sign-tool" "$tc/hap-sign-tool"
+      - name: Point restore at the workload feed
+        run: |
+          set -eu
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
+            '<configuration><packageSources><clear />' \
+            "<add key=\"local\" value=\"$GITHUB_WORKSPACE/offline-feed\" />" \
+            '<add key="nuget.org" value="https://api.nuget.org/v3/index.json" />' \
+            '</packageSources></configuration>' > ohos-workload/NuGet.config
+          cat ohos-workload/NuGet.config
       - name: Publish hello-maui-app (JIT)
         env:
           MAUI_SLICE_DIR: ${{ github.workspace }}/maui-ohos/src/Core/src/Platform/OpenHarmony
@@ -307,6 +320,10 @@ jobs:
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+          # The 1.0.1 runtime packs (11.0.1) ship only in the bundle feed; expose
+          # them to project restore as a local source.
+          mkdir -p "$GITHUB_WORKSPACE/offline-feed"
+          cp -f "$D"/feed/*.nupkg "$GITHUB_WORKSPACE/offline-feed/" 2>/dev/null || true
       - name: Cache the OpenHarmony SDK
         uses: actions/cache@v4
         with:
@@ -367,7 +384,7 @@ jobs:
           curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
             https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
           printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
-            "<configuration><packageSources><clear /><add key='aot-feed' value='$AOT_WORKDIR/feed' /><add key='local-arcade' value='$GITHUB_WORKSPACE/offline-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>" \
+            "<configuration><packageSources><clear /><add key='aot-feed' value='$AOT_WORKDIR/feed' /><add key='local-arcade' value='$GITHUB_WORKSPACE/offline-feed' /><add key='workload' value='$GITHUB_WORKSPACE/offline-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>" \
             > ohos-workload/NuGet.config
           cat ohos-workload/NuGet.config
           # publish-aot.sh pins --source to the AOT feed, which hides MAUI/nuget.org
