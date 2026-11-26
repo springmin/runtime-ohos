@@ -215,7 +215,7 @@ jobs:
       - name: Install the OpenHarmony workload
         run: |
           set -eu
-          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.1/openharmony-workload-1.0.1.tar.gz
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
@@ -264,7 +264,6 @@ jobs:
           dotnet publish hello-maui-app.csproj -c Release -r openharmony-arm64 -m:1 -tl:off \
             -p:OpenHarmonyUIPage=pages/Index -p:OpenHarmonyHapPackage=true \
             -f net11.0-openharmony26.0 -p:OpenHarmonyRuntimeMode=jit -p:InvariantGlobalization=true \
-            -p:RuntimeFrameworkVersion=11.0.1 \
             -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
             -p:OpenHarmonySdkRoot="$OpenHarmonySdkRoot" \
             -p:OpenHarmonyToolchainDir="$OpenHarmonySdkRoot/toolchains" \
@@ -317,7 +316,7 @@ jobs:
       - name: Install the OpenHarmony workload
         run: |
           set -eu
-          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.1/openharmony-workload-1.0.1.tar.gz
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
@@ -391,7 +390,7 @@ jobs:
           # publish-aot.sh pins --source to the AOT feed, which hides MAUI/nuget.org
           sed -i 's#--source "$BASE/feed"#--source "$BASE/feed" --source "$GITHUB_WORKSPACE/offline-feed" --source https://api.nuget.org/v3/index.json#' \
             ohos-workload/test/hello-maui-app/publish-aot.sh
-          sed -i 's#-p:OpenHarmonyRuntimeMode=aot #-p:OpenHarmonyRuntimeMode=aot -p:RuntimeFrameworkVersion=11.0.1 -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:OpenHarmonyHapSigning=false #' \
+          sed -i 's#-p:OpenHarmonyRuntimeMode=aot #-p:OpenHarmonyRuntimeMode=aot -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:OpenHarmonyHapSigning=false #' \
             ohos-workload/test/hello-maui-app/publish-aot.sh
           grep -n 'source' ohos-workload/test/hello-maui-app/publish-aot.sh | tail -2
           cd ohos-workload
