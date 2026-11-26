@@ -370,14 +370,6 @@ jobs:
             ${{ runner.temp }}/aot-work/publish-aot.log
           if-no-files-found: warn
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: aot-hap
-          path: |
-            ohos-workload/test/hello-maui-app/bin/**
-            ${{ runner.temp }}/aot-work/publish-aot.log
-          if-no-files-found: warn
       - name: Stage the AOT hap asset
         run: |
           set -eu
