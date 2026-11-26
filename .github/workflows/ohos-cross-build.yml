@@ -215,7 +215,7 @@ jobs:
       - name: Install the OpenHarmony workload
         run: |
           set -eu
-          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.1/openharmony-workload-1.0.1.tar.gz
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
@@ -303,7 +303,7 @@ jobs:
       - name: Install the OpenHarmony workload
         run: |
           set -eu
-          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
+          curl -fsSL -o wl.tar.gz https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.1/openharmony-workload-1.0.1.tar.gz
           mkdir -p wl && tar -xzf wl.tar.gz -C wl
           D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
           sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
@@ -385,7 +385,7 @@ jobs:
         if: always()
         run: |
           set -eu
-          src="${{ runner.temp }}/aot-work/publish-aot.log"
+          src="${AOT_WORKDIR}/publish-aot.log"
           dst="ohos-workload/test/hello-maui-app/bin/Release/net11.0-openharmony26.0/openharmony-arm64/publish-aot.log"
           if [ -f "$src" ]; then cp -f "$src" "$dst"; echo "staged $dst"; else echo "WARN: $src missing"; fi
       - uses: actions/upload-artifact@v4
@@ -394,7 +394,6 @@ jobs:
           name: aot-hap
           path: |
             ohos-workload/test/hello-maui-app/bin/**
-            ${{ runner.temp }}/aot-work/publish-aot.log
           if-no-files-found: warn
 
       - name: Stage the AOT hap asset
