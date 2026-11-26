@@ -140,7 +140,7 @@ jobs:
           path: sdk-ohos/maui-ohos
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          dotnet-version: '11.0.101'
       - name: Build verify.dll
         run: |
           set -eu
@@ -202,7 +202,7 @@ jobs:
           java-version: '17'
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          dotnet-version: '11.0.101'
       - uses: actions/checkout@v4
         with:
           repository: springmin/ohos-workload
@@ -303,7 +303,7 @@ jobs:
           java-version: '17'
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          dotnet-version: '11.0.101'
       - uses: actions/checkout@v4
         with:
           repository: springmin/ohos-workload
@@ -400,6 +400,8 @@ jobs:
           ls -l test/hello-maui-app/bin/Release/net11.0-openharmony26.0/openharmony-arm64/*.hap
       - name: Stage the AOT log inside the artifact tree
         if: always()
+        env:
+          AOT_WORKDIR: ${{ runner.temp }}/aot-work
         run: |
           set -eu
           src="${AOT_WORKDIR}/publish-aot.log"
