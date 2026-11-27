@@ -433,10 +433,18 @@ jobs:
           set -eu
           f="$(find ohos-workload/test/hello-maui-app/bin -name '*.hap' | head -1)"
           cp -f "$f" aot-hap.hap
+          out="$(dirname "$f")"
+          rm -rf aot-prebuilt && mkdir -p aot-prebuilt/hap
+          cp -a "$out"/. aot-prebuilt/hap/
+          cp -f "$out/publish-aot.log" aot-prebuilt/publish-aot.log 2>/dev/null || true
+          tar -czf aot-prebuilt.tar.gz -C aot-prebuilt .
+          ls -lh aot-hap.hap aot-prebuilt.tar.gz
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ci-prebuilts
           name: CI prebuilts
           body: Rolling release with the newest container-built haps.
-          files: aot-hap.hap
+          files: |
+            aot-hap.hap
+            aot-prebuilt.tar.gz
           overwrite_files: true
