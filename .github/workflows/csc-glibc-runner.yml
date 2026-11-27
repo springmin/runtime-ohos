@@ -1,0 +1,192 @@
+name: csc glibc runner (self-hosted)
+
+# Dump-capable glibc reproducer for springmin/runtime-ohos#2.
+# Provisioning and acceptance checklist: docs/ohos-glibc-runner-setup.md
+#
+# Jobs:
+#   glibc - builds the 1.27 MB harness on the self-hosted glibc runner with
+#           mini-dump capture (baseline / tiered-off / 1 GB heap).
+#   musl  - the same build inside dotnet/sdk:11.0-alpine with SYS_PTRACE, as a
+#           musl-libc control close to the OpenHarmony runtime.
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: "Rebuilds per variant"
+        default: "10"
+      musl:
+        description: "Run the Alpine/musl control job"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  glibc:
+    name: csc repro (glibc host)
+    runs-on: [self-hosted, linux, x64, glibc, ohos-dump]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/sdk-ohos
+          ref: feature/openharmony
+          path: sdk-ohos
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: sdk-ohos/ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: slice/11.0.10
+          path: sdk-ohos/maui-ohos
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - name: Prepare feeds
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
+          mkdir -p offline-feed maui-feed dumps
+          curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
+          curl -fsSL -o /tmp/maui-ga.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui-ga.tgz -C maui-feed
+          CFG="<configuration><packageSources><clear /><add key='local' value='$GITHUB_WORKSPACE/offline-feed' /><add key='maui' value='$GITHUB_WORKSPACE/maui-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>"
+          printf '<?xml version="1.0" encoding="utf-8"?>\n%s\n' "$CFG" > sdk-ohos/NuGet.config
+          dpsdk="$(dirname "$(readlink -f "$(command -v dotnet)")")/sdk"
+          sha256sum "$dpsdk"/*/Roslyn/bincore/csc.dll 2>/dev/null | tail -1 || true
+      - name: Restore
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          cd sdk-ohos/ohos-workload/test/maui-platform-verify
+          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+      - name: Build matrix with dump capture
+        env:
+          DOTNET_DbgEnableMiniDump: "1"
+          DOTNET_DbgMiniDumpType: "4"
+          COMPlus_DbgEnableMiniDump: "1"
+          COMPlus_DbgMiniDumpType: "4"
+          DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+          DOTNET_NOLOGO: "1"
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          out="$GITHUB_WORKSPACE/dumps"
+          mkdir -p "$out"
+          export DOTNET_DbgMiniDumpName="$out/csc-%p.dmp"
+          export COMPlus_DbgMiniDumpName="$out/csc-%p.dmp"
+          cd sdk-ohos/ohos-workload/test/maui-platform-verify
+          ITER="${{ inputs.iterations }}"
+          cat > build-variant.sh <<'SH'
+          #!/bin/sh
+          set -u
+          name="$1"; shift
+          env_prefix="$1"; shift
+          cd "$(dirname "$0")"
+          rc=0
+          # shellcheck disable=SC2086
+          env $env_prefix dotnet build -t:Rebuild --no-restore -m:1 -noconlog -tl:off \
+            "-flp:logfile=build-$name.log;verbosity=minimal" \
+            /p:UseSharedCompilation=false /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
+            /p:NuGetAudit=false /p:ArcadeSdkDir="$ARC" || rc=$?
+          echo "$name rc=$rc" | tee -a summary.txt
+          SH
+          chmod +x build-variant.sh
+          export ARC="$arc"
+          variants="baseline| tiered-off|DOTNET_TieredCompilation=0 heap-1g|DOTNET_GCHeapHardLimit=0x40000000"
+          for spec in $variants; do
+            v="${spec%%|*}"; envs="${spec#*|}"
+            i=1
+            while [ "$i" -le "$ITER" ]; do
+              echo "=== $v iteration $i ==="
+              sh build-variant.sh "$v-$i" "$envs" || true
+              i=$((i + 1))
+            done
+          done
+          echo "=== dumps ==="
+          ls -l "$out"/csc-*.dmp 2>/dev/null || echo "no dumps"
+          echo "=== rc summary ==="
+          cat summary.txt 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: csc-glibc
+          path: |
+            sdk-ohos/ohos-workload/test/maui-platform-verify/build-*.log
+            sdk-ohos/ohos-workload/test/maui-platform-verify/summary.txt
+            dumps/**
+          if-no-files-found: warn
+
+  musl:
+    name: csc repro (alpine/musl container)
+    if: inputs.musl == 'true'
+    runs-on: [self-hosted, linux, x64, glibc, ohos-dump]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/sdk-ohos
+          ref: feature/openharmony
+          path: sdk-ohos
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: sdk-ohos/ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: slice/11.0.10
+          path: sdk-ohos/maui-ohos
+      - name: Prepare feeds for the container
+        run: |
+          set -eu
+          printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
+          mkdir -p offline-feed maui-feed dumps
+          curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
+          curl -fsSL -o /tmp/maui-ga.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui-ga.tgz -C maui-feed
+          # container paths are /w/..., not the host workspace paths
+          CFG="<configuration><packageSources><clear /><add key='local' value='/w/offline-feed' /><add key='maui' value='/w/maui-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>"
+          printf '<?xml version="1.0" encoding="utf-8"?>\n%s\n' "$CFG" > sdk-ohos/NuGet.config
+      - name: Build in alpine (musl)
+        run: |
+          set -eu
+          docker run --rm --cap-add SYS_PTRACE \
+            -v "$GITHUB_WORKSPACE:/w" -w /w \
+            -e DOTNET_DbgEnableMiniDump=1 -e DOTNET_DbgMiniDumpType=4 \
+            -e DOTNET_DbgMiniDumpName=/w/dumps/csc-%p.dmp \
+            -e COMPlus_DbgEnableMiniDump=1 -e COMPlus_DbgMiniDumpType=4 \
+            mcr.microsoft.com/dotnet/sdk:11.0-alpine \
+            sh -c '
+              set -eu
+              apk add --no-cache curl unzip >/dev/null
+              cd /w/sdk-ohos/ohos-workload/test/maui-platform-verify
+              ARC="/root/.nuget/packages/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+              dotnet --info | head -12
+              dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$ARC"
+              for i in 1 2 3; do
+                echo "=== musl iteration $i ==="
+                dotnet build -t:Rebuild --no-restore -m:1 -v:m \
+                  -p:UseSharedCompilation=false -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false \
+                  -p:ArcadeSdkDir="$ARC" || true
+              done
+              ls -l /w/dumps/csc-*.dmp 2>/dev/null || echo "no dumps"
+            '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: csc-musl
+          path: dumps/**
+          if-no-files-found: warn
