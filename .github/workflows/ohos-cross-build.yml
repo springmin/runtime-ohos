@@ -20,13 +20,13 @@ on:
         description: "Branch/tag to build (match the device SDK line)"
         default: "release/ohos-11.0.0"
       maui_ref:
-        description: "maui-ohos ref (slice/11.0.10 for the MAUI GA validation)"
-        default: "feature/openharmony"
+        description: "maui-ohos ref (GA slice by default; feature/openharmony for the rc.2 baseline)"
+        default: "slice/11.0.10"
       maui_pin:
-        description: "MAUI package pin: rc2 (device baseline) or ga"
+        description: "MAUI package pin: ga (frozen) or rc2 (historical baseline)"
         type: choice
-        options: ["rc2", "ga"]
-        default: "rc2"
+        options: ["ga", "rc2"]
+        default: "ga"
 
 permissions:
   contents: write
