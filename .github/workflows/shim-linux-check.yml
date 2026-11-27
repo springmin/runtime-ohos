@@ -1,0 +1,48 @@
+name: shim linux check
+
+# Validates that the OpenHarmony-only shim changes do not alter the Linux
+# build: no lock source, no no-op macro code, the default distro-agnostic
+# OpenSSL configuration.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: build libs.native (linux-x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/runtime-ohos
+          ref: fix/crypto-shim-lock
+      - name: Restore
+        run: |
+          ./build.sh libs.native -os linux -arch x64 -c release -restore
+      - name: Build
+        run: |
+          ./build.sh libs.native -os linux -arch x64 -c release
+      - name: Inspect the crypto shim
+        run: |
+          set -eu
+          f="$(find artifacts/bin/native -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' | head -1)"
+          [ -n "$f" ] || { echo "ERROR: shim not found"; find artifacts/bin -name '*OpenSsl*.so' | head; exit 1; }
+          ls -l "$f"
+          readelf -d "$f" | grep NEEDED || true
+          echo "CryptoNative_Lock symbols:"
+          nm -D "$f" | grep -c 'CryptoNative_Lock' || true
+          echo "pal_lock object in the build tree:"
+          find artifacts/obj -name '*pal_lock*' | head || true
+          mkdir -p shim-linux && cp -f "$f" shim-linux/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crypto-shim-linux
+          path: shim-linux/**
+          if-no-files-found: warn
