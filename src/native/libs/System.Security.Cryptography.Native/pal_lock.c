@@ -1,5 +1,7 @@
 #include "pal_lock.h"
 
+#if defined(TARGET_OPENHARMONY)
+
 #include <pthread.h>
 
 static pthread_mutex_t g_cryptoLock;
@@ -24,3 +26,5 @@ void CryptoNative_Unlock(void)
 {
     pthread_mutex_unlock(&g_cryptoLock);
 }
+
+#endif
