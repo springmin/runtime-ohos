@@ -40,11 +40,15 @@ if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
     endif()
 endif()
 
-# OpenHarmony: the loader cannot dlopen an app-local OpenSSL, so link the
-# shared shim against the static OpenSSL; keep the dlopen shim for the AOT
-# static archive (ilc does not link libcrypto).
-set(FEATURE_DISTRO_AGNOSTIC_SSL OFF)
-set(FEATURE_DISTRO_AGNOSTIC_SSL_STATIC ON)
+if (CLR_CMAKE_TARGET_OPENHARMONY)
+    # The OpenHarmony loader cannot dlopen an app-local OpenSSL, so the shared
+    # shim links OpenSSL statically. The AOT static archive keeps the dlopen
+    # shim because ilc does not link libcrypto. Other platforms keep their
+    # existing OpenSSL configuration.
+    set(FEATURE_DISTRO_AGNOSTIC_SSL OFF)
+    set(FEATURE_DISTRO_AGNOSTIC_SSL_STATIC ON)
+    add_definitions(-DTARGET_OPENHARMONY)
+endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
@@ -65,7 +69,6 @@ set(NATIVECRYPTO_SOURCES
     pal_eckey.c
     pal_err.c
     pal_evp.c
-    pal_lock.c
     pal_evp_cipher.c
     pal_evp_kdf.c
     pal_evp_kem.c
@@ -89,6 +92,10 @@ set(NATIVECRYPTO_SOURCES
     pal_x509_root.c
     pal_x509ext.c
 )
+
+if (CLR_CMAKE_TARGET_OPENHARMONY)
+    list(APPEND NATIVECRYPTO_SOURCES pal_lock.c)
+endif()
 
 if (LOCAL_BUILD)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -144,9 +151,9 @@ if (GEN_SHARED_LIB)
         SHARED
         $<TARGET_OBJECTS:objlib>
     )
-    if (NOT FEATURE_DISTRO_AGNOSTIC_SSL)
-        # Hide the statically linked OpenSSL exports; the entry-points check
-        # must only see the shim's CryptoNative_* symbols.
+    if ((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_OPENHARMONY) AND NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+        # Hide the statically linked OpenSSL exports on ELF platforms; the
+        # entry-points check must only see the shim's CryptoNative_* symbols.
         target_link_options(System.Security.Cryptography.Native.OpenSsl PRIVATE "LINKER:--exclude-libs,ALL")
     endif()
 endif()
