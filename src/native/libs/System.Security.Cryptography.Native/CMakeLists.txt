@@ -40,6 +40,12 @@ if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
     endif()
 endif()
 
+# OpenHarmony: the loader cannot dlopen an app-local OpenSSL, so link the
+# shared shim against the static OpenSSL; keep the dlopen shim for the AOT
+# static archive (ilc does not link libcrypto).
+set(FEATURE_DISTRO_AGNOSTIC_SSL OFF)
+set(FEATURE_DISTRO_AGNOSTIC_SSL_STATIC ON)
+
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
