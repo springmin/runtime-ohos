@@ -158,6 +158,11 @@ jobs:
               sdk-ohos/ohos-workload/test/maui-platform-verify/verify.csproj
             grep -c '11.0.0-rc.2.26505.5' sdk-ohos/ohos-workload/test/maui-platform-verify/verify.csproj
           else
+            # GA: restore the frozen 11.0.10 packages from the local mirror
+            curl -fsSL -o /tmp/maui-ga.tgz \
+              https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+            tar -xzf /tmp/maui-ga.tgz -C maui-feed
+            ls maui-feed | head -4
             grep -n 'Microsoft.Maui.Controls' sdk-ohos/ohos-workload/test/maui-platform-verify/verify.csproj | head -2
           fi
           ls -d "$arc" || echo "WARN: arcade tools missing at $arc"
@@ -223,6 +228,10 @@ jobs:
           # them to project restore as a local source.
           mkdir -p "$GITHUB_WORKSPACE/offline-feed"
           cp -f "$D"/feed/*.nupkg "$GITHUB_WORKSPACE/offline-feed/" 2>/dev/null || true
+          # frozen MAUI 11.0.10 packages (local mirror; no nuget.org drift)
+          curl -fsSL -o /tmp/maui-ga.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui-ga.tgz -C "$GITHUB_WORKSPACE/offline-feed"
       - name: Fetch the OpenHarmony SDK (packaging tools)
         run: |
           set -eu
@@ -324,6 +333,10 @@ jobs:
           # them to project restore as a local source.
           mkdir -p "$GITHUB_WORKSPACE/offline-feed"
           cp -f "$D"/feed/*.nupkg "$GITHUB_WORKSPACE/offline-feed/" 2>/dev/null || true
+          # frozen MAUI 11.0.10 packages (local mirror; no nuget.org drift)
+          curl -fsSL -o /tmp/maui-ga.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui-ga.tgz -C "$GITHUB_WORKSPACE/offline-feed"
       - name: Cache the OpenHarmony SDK
         uses: actions/cache@v4
         with:
