@@ -61,10 +61,15 @@ jobs:
           cd maui-ohos
           props="-p:IncludeIosTargetFrameworks=false -p:IncludeMacCatalystTargetFrameworks=false -p:IncludeAndroidTargetFrameworks=false -p:IncludeWindowsTargetFrameworks=false -p:IncludeMacOSTargetFrameworks=false -p:IncludeTizenTargetFrameworks=false -p:IncludeOpenHarmonyTargetFrameworks=true -p:OpenHarmonyTargetFrameworkVersion=20.0 -p:IncludePreviousTfms=false -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:ArcadeSdkDir=$arc -p:RestoreUseStaticGraphEvaluation=false"
           dotnet restore src/Core/src/Core.csproj $props /p:NuGetAudit=false
-          dotnet build src/Core/src/Core.csproj --no-restore -m:1 -noconlog -tl:off \
+          dotnet build src/Core/src/Core.csproj --no-restore -m:1 -v:m \
             -f net11.0-openharmony20.0 $props
           dotnet restore src/Controls/src/Core/Controls.Core.csproj $props /p:NuGetAudit=false
-          dotnet build src/Controls/src/Core/Controls.Core.csproj --no-restore -m:1 -noconlog -tl:off \
+          dotnet build src/Controls/src/Core/Controls.Core.csproj --no-restore -m:1 -v:m \
             -f net11.0-openharmony20.0 $props
           echo "=== outputs ==="
-          find src/Core/src/bin src/Controls/src/Core/bin -name 'Microsoft.Maui*.dll' -path '*openharmony20.0*' -printf '%p %s\n'
+          find artifacts -name 'Microsoft.Maui*.dll' -path '*openharmony20.0*' -printf '%p %s\n' | head -10
+          for f in Microsoft.Maui.dll Microsoft.Maui.Controls.dll; do
+            p=$(find artifacts -name "$f" -path '*openharmony20.0*' | head -1)
+            [ -n "$p" ] || { echo "ERROR: $f missing"; find artifacts -maxdepth 5 -type d | head -20; exit 1; }
+            ls -l "$p"
+          done
