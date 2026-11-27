@@ -23,7 +23,7 @@ jobs:
           repository: springmin/runtime-ohos
           ref: fix/crypto-shim-lock
       - name: Install Linux native dependencies
-        run: dnf install -y libicu-devel openssl-devel
+        run: dnf install -y libicu-devel openssl-devel krb5-devel zlib-devel
       - name: Restore
         run: |
           ./build.sh libs.native -os linux -arch x64 -c release -restore
