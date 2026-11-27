@@ -4,6 +4,7 @@
 #include "openssl.h"
 #include "pal_evp.h"
 #include "pal_utilities.h"
+#include "pal_lock.h"
 
 #include <assert.h>
 #include <pthread.h>
@@ -44,6 +45,7 @@
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
 
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
@@ -54,6 +56,7 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
         ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        CryptoNative_Unlock();
         return NULL;
     }
 
@@ -68,34 +71,45 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
     if (!ret)
     {
         EVP_MD_CTX_free(ctx);
+        CryptoNative_Unlock();
         return NULL;
     }
 
+    CryptoNative_Unlock();
     return ctx;
 }
 
 void CryptoNative_EvpMdCtxDestroy(EVP_MD_CTX* ctx)
 {
+    CryptoNative_Lock();
     if (ctx != NULL)
     {
         EVP_MD_CTX_free(ctx);
     }
+    CryptoNative_Unlock();
 }
 
 int32_t CryptoNative_EvpDigestReset(EVP_MD_CTX* ctx, const EVP_MD* type)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
-    return EVP_DigestInit_ex(ctx, type, NULL);
+    int32_t ret = EVP_DigestInit_ex(ctx, type, NULL);
+    CryptoNative_Unlock();
+    return ret;
 }
 
 int32_t CryptoNative_EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, int32_t cnt)
 {
     // No error queue impact
-    return EVP_DigestUpdate(ctx, d, (size_t)cnt);
+    CryptoNative_Lock();
+    int32_t ret = EVP_DigestUpdate(ctx, d, (size_t)cnt);
+    CryptoNative_Unlock();
+    return ret;
 }
 
 int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
 
     unsigned int size;
@@ -105,6 +119,7 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
         *s = size;
     }
 
+    CryptoNative_Unlock();
     return ret;
 }
 
@@ -139,8 +154,10 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
 {
+    CryptoNative_Lock();
     if (ctx == NULL)
     {
+        CryptoNative_Unlock();
         return NULL;
     }
 
@@ -152,20 +169,24 @@ EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
         // This is one of the few places that don't report the error to the queue, so
         // we'll do it here.
         ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+        CryptoNative_Unlock();
         return NULL;
     }
 
     if (!EVP_MD_CTX_copy_ex(dup, ctx))
     {
         EVP_MD_CTX_free(dup);
+        CryptoNative_Unlock();
         return NULL;
     }
 
+    CryptoNative_Unlock();
     return dup;
 }
 
 int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
 
     EVP_MD_CTX* dup = CryptoNative_EvpMdCtxCopyEx(ctx);
@@ -174,14 +195,17 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
     {
         int ret = CryptoNative_EvpDigestFinalEx(dup, md, s);
         EVP_MD_CTX_free(dup);
+        CryptoNative_Unlock();
         return ret;
     }
 
+    CryptoNative_Unlock();
     return 0;
 }
 
 int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
 
     EVP_MD_CTX* dup = CryptoNative_EvpMdCtxCopyEx(ctx);
@@ -190,18 +214,22 @@ int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uin
     {
         int ret = CryptoNative_EvpDigestFinalXOF(dup, md, len);
         EVP_MD_CTX_free(dup);
+        CryptoNative_Unlock();
         return ret;
     }
 
+    CryptoNative_Unlock();
     return 0;
 }
 
 int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
+    CryptoNative_Lock();
     ERR_clear_error();
 
     if (type == NULL || sourceSize < 0 || md == NULL || mdSize == NULL)
     {
+        CryptoNative_Unlock();
         return 0;
     }
 
@@ -209,6 +237,7 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
 
     if (ctx == NULL)
     {
+        CryptoNative_Unlock();
         return 0;
     }
 
@@ -217,12 +246,14 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
     if (ret != SUCCESS)
     {
         CryptoNative_EvpMdCtxDestroy(ctx);
+        CryptoNative_Unlock();
         return 0;
     }
 
     ret = CryptoNative_EvpDigestFinalEx(ctx, md, mdSize);
 
     CryptoNative_EvpMdCtxDestroy(ctx);
+    CryptoNative_Unlock();
     return ret;
 }
 
