@@ -59,6 +59,7 @@ set(NATIVECRYPTO_SOURCES
     pal_eckey.c
     pal_err.c
     pal_evp.c
+    pal_lock.c
     pal_evp_cipher.c
     pal_evp_kdf.c
     pal_evp_kem.c
