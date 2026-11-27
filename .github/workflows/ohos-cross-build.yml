@@ -107,6 +107,24 @@ jobs:
             -cmakeargs "-DICU_UC_LIBRARY=/opt/ohos-assets/icu/lib/libicuuc.a" \
             -cmakeargs "-DICU_I18N_LIBRARY=/opt/ohos-assets/icu/lib/libicui18n.a" \
             $extra
+      - name: Stage the crypto shim
+        if: always()
+        run: |
+          set -eu
+          f="$(find artifacts/bin/native -name 'libSystem.Security.Cryptography.Native.OpenSsl.so' 2>/dev/null | head -1)"
+          if [ -n "$f" ]; then
+            mkdir -p crypto-shim && cp -f "$f" crypto-shim/
+            ls -l crypto-shim
+          else
+            echo "WARN: crypto shim not found under artifacts/bin/native"
+            find artifacts/bin -name '*OpenSsl*.so' 2>/dev/null | head -5 || true
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crypto-shim
+          path: crypto-shim/**
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
         with:
