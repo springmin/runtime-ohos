@@ -1,0 +1,117 @@
+name: csc SIGSEGV repro (glibc)
+
+# Reproduces the csc SIGSEGV tracked in springmin/runtime-ohos#2 on a glibc
+# x64 runner and captures a dump when it fires. The OpenHarmony host does not
+# allow ptrace/createdump, so this workflow is the dump-capable environment.
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: "Rebuilds per variant"
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  repro:
+    name: csc repro (container, glibc)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/sdk-ohos
+          ref: feature/openharmony
+          path: sdk-ohos
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: sdk-ohos/ohos-workload
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: slice/11.0.10
+          path: sdk-ohos/maui-ohos
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - name: Prepare feeds
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113"}}' > sdk-ohos/global.json
+          mkdir -p offline-feed maui-feed
+          curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
+          curl -fsSL -o /tmp/maui-ga.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui-ga.tgz -C maui-feed
+          CFG="<configuration><packageSources><clear /><add key='local' value='$GITHUB_WORKSPACE/offline-feed' /><add key='maui' value='$GITHUB_WORKSPACE/maui-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /></packageSources></configuration>"
+          printf '<?xml version="1.0" encoding="utf-8"?>\n%s\n' "$CFG" > sdk-ohos/NuGet.config
+          echo "arc=$arc"
+          ls -d "$arc" 2>/dev/null || echo "arcade tools will be extracted by restore"
+      - name: Restore
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          cd sdk-ohos/ohos-workload/test/maui-platform-verify
+          dotnet restore /p:NuGetAudit=false /p:ArcadeSdkDir="$arc"
+      - name: Build matrix with dump capture
+        env:
+          DOTNET_DbgEnableMiniDump: "1"
+          DOTNET_DbgMiniDumpType: "4"
+          DOTNET_DbgMiniDumpName: "/__w/runtime-ohos/runtime-ohos/sdk-ohos/ohos-workload/test/maui-platform-verify/csc-%p.dmp"
+          DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+          DOTNET_NOLOGO: "1"
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          cd sdk-ohos/ohos-workload/test/maui-platform-verify
+          ITER="${{ inputs.iterations }}"
+          cat > build-variant.sh <<'SH'
+          #!/bin/sh
+          set -u
+          name="$1"; shift
+          env_prefix="$1"; shift
+          cd "$(dirname "$0")"
+          rc=0
+          # shellcheck disable=SC2086
+          env $env_prefix dotnet build -t:Rebuild --no-restore -m:1 -noconlog -tl:off \
+            "-flp:logfile=build-$name.log;verbosity=minimal" \
+            /p:UseSharedCompilation=false /p:RunAnalyzers=false /p:TreatWarningsAsErrors=false \
+            /p:NuGetAudit=false /p:ArcadeSdkDir="$ARC" || rc=$?
+          echo "$name rc=$rc" | tee -a summary.txt
+          SH
+          chmod +x build-variant.sh
+          export ARC="$arc"
+          variants="baseline| tiered-off|DOTNET_TieredCompilation=0 heap-1g|DOTNET_GCHeapHardLimit=0x40000000"
+          for spec in $variants; do
+            v="${spec%%|*}"; envs="${spec#*|}"
+            i=1
+            while [ "$i" -le "$ITER" ]; do
+              echo "=== $v iteration $i ==="
+              sh build-variant.sh "$v-$i" "$envs" || true
+              i=$((i + 1))
+            done
+          done
+          echo "=== dumps ==="
+          ls -l csc-*.dmp 2>/dev/null || echo "no dumps"
+          echo "=== rc summary ==="
+          cat summary.txt 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: csc-repro
+          path: |
+            sdk-ohos/ohos-workload/test/maui-platform-verify/build-*.log
+            sdk-ohos/ohos-workload/test/maui-platform-verify/summary.txt
+            sdk-ohos/ohos-workload/test/maui-platform-verify/csc-*.dmp
+            sdk-ohos/ohos-workload/test/maui-platform-verify/bin/**
+          if-no-files-found: warn
