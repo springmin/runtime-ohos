@@ -436,6 +436,8 @@ jobs:
           out="$(dirname "$f")"
           rm -rf aot-prebuilt && mkdir -p aot-prebuilt/hap
           cp -a "$out"/. aot-prebuilt/hap/
+          [ -f "aot-prebuilt/hap/hello-maui-app.hap" ] \
+            || cp -f "aot-prebuilt/hap/hello-maui-app-unsigned.hap" "aot-prebuilt/hap/hello-maui-app.hap" 2>/dev/null || true
           cp -f "$out/publish-aot.log" aot-prebuilt/publish-aot.log 2>/dev/null || true
           tar -czf aot-prebuilt.tar.gz -C aot-prebuilt .
           ls -lh aot-hap.hap aot-prebuilt.tar.gz
