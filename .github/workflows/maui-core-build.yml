@@ -1,0 +1,70 @@
+name: maui Core/Controls (OpenHarmony TFM)
+
+# Builds the maui-ohos repository's own projects for net11.0-openharmony20.0,
+# not just the slice sources through the verify harness. This is the M1
+# whole-repo compile gate: it catches csproj/Directory.Build/MultiTargeting
+# regressions that the slice-only verify build cannot see.
+on:
+  workflow_dispatch:
+    inputs:
+      maui_ref:
+        description: "maui-ohos ref"
+        default: "slice/11.0.10"
+
+permissions:
+  contents: read
+
+jobs:
+  maui-core:
+    name: build Core/Controls (container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      options: --platform linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/maui-ohos
+          ref: ${{ inputs.maui_ref }}
+          path: maui-ohos
+      - uses: actions/checkout@v4
+        with:
+          repository: springmin/ohos-workload
+          path: ohos-workload
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - name: Install the workload and feeds
+        run: |
+          set -eu
+          curl -fsSL -o wl.tar.gz \
+            https://github.com/springmin/sdk-ohos/releases/download/workload-1.0.0/openharmony-workload-1.0.0.tar.gz
+          mkdir -p wl && tar -xzf wl.tar.gz -C wl
+          D=$(find wl -mindepth 1 -maxdepth 1 -type d | head -1)
+          sh "$D/install-ohos-workload.sh" --dotnet "$(command -v dotnet)" "$D"
+          mkdir -p offline-feed maui-feed
+          cp -f "$D"/feed/*.nupkg offline-feed/
+          curl -fsSL -o offline-feed/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg \
+            https://github.com/springmin/sdk-ohos/releases/download/arcade-mirror-11.0.0-beta.26527.113/microsoft.dotnet.arcade.sdk.11.0.0-beta.26527.113.nupkg
+          curl -fsSL -o /tmp/maui.tgz \
+            https://github.com/springmin/sdk-ohos/releases/download/maui-11.0.10/maui-11.0.10-nupkgs.tar.gz
+          tar -xzf /tmp/maui.tgz -C maui-feed
+      - name: Restore and build
+        run: |
+          set -eu
+          gp="${NUGET_PACKAGES:-}"; [ -n "$gp" ] || gp="$HOME/.nuget/packages"
+          arc="$gp/microsoft.dotnet.arcade.sdk/11.0.0-beta.26527.113/tools/"
+          printf '%s\n' '{"msbuild-sdks":{"Microsoft.DotNet.Arcade.Sdk":"11.0.0-beta.26527.113","MSBuild.Sdk.Extras":"3.0.44","Microsoft.Build.NoTargets":"3.7.0","Microsoft.DotNet.Helix.Sdk":"11.0.0-beta.26527.113"}}' > maui-ohos/global.json
+          CFG="<configuration><packageSources><clear /><add key='workload' value='$GITHUB_WORKSPACE/offline-feed' /><add key='maui' value='$GITHUB_WORKSPACE/maui-feed' /><add key='nuget.org' value='https://api.nuget.org/v3/index.json' /><add key='dotnet-public' value='https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json' /></packageSources></configuration>"
+          printf '<?xml version="1.0" encoding="utf-8"?>\n%s\n' "$CFG" > maui-ohos/NuGet.config
+          cd maui-ohos
+          props="-p:IncludeIosTargetFrameworks=false -p:IncludeMacCatalystTargetFrameworks=false -p:IncludeAndroidTargetFrameworks=false -p:IncludeWindowsTargetFrameworks=false -p:IncludeMacOSTargetFrameworks=false -p:IncludeTizenTargetFrameworks=false -p:IncludeOpenHarmonyTargetFrameworks=true -p:OpenHarmonyTargetFrameworkVersion=20.0 -p:IncludePreviousTfms=false -p:RunAnalyzers=false -p:TreatWarningsAsErrors=false -p:ArcadeSdkDir=$arc -p:RestoreUseStaticGraphEvaluation=false"
+          dotnet restore src/Core/src/Core.csproj $props /p:NuGetAudit=false
+          dotnet build src/Core/src/Core.csproj --no-restore -m:1 -noconlog -tl:off \
+            -f net11.0-openharmony20.0 $props
+          dotnet restore src/Controls/src/Core/Controls.Core.csproj $props /p:NuGetAudit=false
+          dotnet build src/Controls/src/Core/Controls.Core.csproj --no-restore -m:1 -noconlog -tl:off \
+            -f net11.0-openharmony20.0 $props
+          echo "=== outputs ==="
+          find src/Core/src/bin src/Controls/src/Core/bin -name 'Microsoft.Maui*.dll' -path '*openharmony20.0*' -printf '%p %s\n'
