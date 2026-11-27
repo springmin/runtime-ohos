@@ -144,6 +144,11 @@ if (GEN_SHARED_LIB)
         SHARED
         $<TARGET_OBJECTS:objlib>
     )
+    if (NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+        # Hide the statically linked OpenSSL exports; the entry-points check
+        # must only see the shim's CryptoNative_* symbols.
+        target_link_options(System.Security.Cryptography.Native.OpenSsl PRIVATE "LINKER:--exclude-libs,ALL")
+    endif()
 endif()
 
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
