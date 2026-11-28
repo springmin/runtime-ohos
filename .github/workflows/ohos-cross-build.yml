@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     container:
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      image: ghcr.io/springmin/dotnet-buildtools-prereqs:openharmony-6.0-openssl3.6.5@sha256:59ce05e400250f6072efb6cdff06b1cea39395a1ed10052ef0253a28484e43cb
       options: --platform linux/amd64
     steps:
       - uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     container:
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      image: ghcr.io/springmin/dotnet-buildtools-prereqs:openharmony-6.0-openssl3.6.5@sha256:59ce05e400250f6072efb6cdff06b1cea39395a1ed10052ef0253a28484e43cb
       options: --platform linux/amd64
     steps:
       - uses: actions/checkout@v4
@@ -217,7 +217,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     container:
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      image: ghcr.io/springmin/dotnet-buildtools-prereqs:openharmony-6.0-openssl3.6.5@sha256:59ce05e400250f6072efb6cdff06b1cea39395a1ed10052ef0253a28484e43cb
       options: --platform linux/amd64
     steps:
       - uses: actions/setup-java@v4
@@ -322,7 +322,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     container:
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net12.0-cross-openharmony-6.0-amd64
+      image: ghcr.io/springmin/dotnet-buildtools-prereqs:openharmony-6.0-openssl3.6.5@sha256:59ce05e400250f6072efb6cdff06b1cea39395a1ed10052ef0253a28484e43cb
       options: --platform linux/amd64
     steps:
       - uses: actions/setup-java@v4
