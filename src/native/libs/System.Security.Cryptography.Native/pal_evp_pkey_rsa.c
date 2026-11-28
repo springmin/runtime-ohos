@@ -5,7 +5,6 @@
 #include "pal_evp_pkey_rsa.h"
 #include "pal_utilities.h"
 #include "openssl.h"
-#include "pal_lock.h"
 #include <assert.h>
 
 #if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
@@ -46,14 +45,12 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 
 EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
 {
-    CryptoNative_Lock();
     ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
 
     if (ctx == NULL)
     {
-        CryptoNative_Unlock();
         return NULL;
     }
 
@@ -73,7 +70,6 @@ EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
     }
 
     EVP_PKEY_CTX_free(ctx);
-    CryptoNative_Unlock();
     return ret;
 }
 
@@ -290,7 +286,6 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
                                  uint8_t* destination,
                                  int32_t destinationLen)
 {
-    CryptoNative_Lock();
     assert(pkey != NULL);
     assert(destination != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
@@ -342,7 +337,6 @@ done:
         EVP_PKEY_CTX_free(ctx);
     }
 
-    CryptoNative_Unlock();
     return ret;
 }
 
@@ -355,7 +349,6 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
                                    const uint8_t* signature,
                                    int32_t signatureLen)
 {
-    CryptoNative_Lock();
     assert(pkey != NULL);
     assert(signature != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
@@ -393,7 +386,6 @@ done:
         EVP_PKEY_CTX_free(ctx);
     }
 
-    CryptoNative_Unlock();
     return ret;
 }
 

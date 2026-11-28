@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_x509.h"
-#include "pal_lock.h"
 
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
@@ -256,26 +255,20 @@ int32_t CryptoNative_X509StoreSetRevocationFlag(X509_STORE* ctx, X509RevocationF
 
 X509_STORE_CTX* CryptoNative_X509StoreCtxCreate(void)
 {
-    CryptoNative_Lock();
     ERR_clear_error();
-    X509_STORE_CTX* ctx = X509_STORE_CTX_new();
-    CryptoNative_Unlock();
-    return ctx;
+    return X509_STORE_CTX_new();
 }
 
 void CryptoNative_X509StoreCtxDestroy(X509_STORE_CTX* v)
 {
-    CryptoNative_Lock();
     if (v != NULL)
     {
         X509_STORE_CTX_free(v);
     }
-    CryptoNative_Unlock();
 }
 
 int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509, X509Stack* extraStore)
 {
-    CryptoNative_Lock();
     ERR_clear_error();
 
     int32_t val = X509_STORE_CTX_init(ctx, store, x509, extraStore);
@@ -285,26 +278,19 @@ int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X5
         X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_CHECK_SS_SIGNATURE);
     }
 
-    CryptoNative_Unlock();
     return val;
 }
 
 int32_t CryptoNative_X509VerifyCert(X509_STORE_CTX* ctx)
 {
-    CryptoNative_Lock();
     ERR_clear_error();
-    int32_t ret = X509_verify_cert(ctx);
-    CryptoNative_Unlock();
-    return ret;
+    return X509_verify_cert(ctx);
 }
 
 X509Stack* CryptoNative_X509StoreCtxGetChain(X509_STORE_CTX* ctx)
 {
-    CryptoNative_Lock();
     ERR_clear_error();
-    X509Stack* stack = X509_STORE_CTX_get1_chain(ctx);
-    CryptoNative_Unlock();
-    return stack;
+    return X509_STORE_CTX_get1_chain(ctx);
 }
 
 X509* CryptoNative_X509StoreCtxGetCurrentCert(X509_STORE_CTX* ctx)

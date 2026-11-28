@@ -93,10 +93,6 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
-if (CLR_CMAKE_TARGET_OPENHARMONY)
-    list(APPEND NATIVECRYPTO_SOURCES pal_lock.c)
-endif()
-
 if (LOCAL_BUILD)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_definitions(-DLOCAL_BUILD)
